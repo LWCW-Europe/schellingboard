@@ -1,12 +1,12 @@
 import { test as base, expect, ConsoleMessage } from "@playwright/test";
 
 const ALLOWED_CONSOLE_PATTERNS: RegExp[] = [
-  // Firefox quirk: when a test navigates while a Next.js __nextjs_font
+  // Firefox quirk: when a test navigates while a font
   // woff2 request is still in flight, Firefox aborts the request and logs
   // a "downloadable font: download failed" error. Status 2152398850 is
   // 0x804B0002 = NS_BINDING_ABORTED ("the request was cancelled"), so it's
   // not a real download failure.
-  /downloadable font: download failed.*__nextjs_font.*status=2152398850/,
+  /downloadable font: download failed.*status=2152398850/,
 ];
 
 function isAllowed(text: string): boolean {
