@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useContext, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useContext, useState } from "react";
 
 import type { Rsvp } from "@/db/repositories/interfaces";
 import { EventContext } from "../context";
@@ -15,7 +14,6 @@ export function SessionModal({
   sessionId: string;
   eventSlug: string;
 }) {
-  const router = useRouter();
   const { event, localSessions, guests } = useContext(EventContext);
   const [loaded, setLoaded] = useState<{ id: string; rsvps: Rsvp[] } | null>(
     null
@@ -24,9 +22,7 @@ export function SessionModal({
   const session = localSessions.find((s) => s.id === sessionId);
   const rsvps = loaded?.id === sessionId ? loaded.rsvps : null;
 
-  const onDismiss = useCallback(() => {
-    dismissViewSession(router);
-  }, [router]);
+  const onDismiss = dismissViewSession;
 
   useEffect(() => {
     // Disable body scroll when modal is open
@@ -89,8 +85,6 @@ export function SessionModal({
         </button>
         {!session ? (
           <div className="p-6">Session not found.</div>
-        ) : rsvps === null ? (
-          <div className="p-6">Loading...</div>
         ) : (
           <ViewSession
             session={session}

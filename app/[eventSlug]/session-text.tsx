@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { UserContext, EventContext } from "../context";
 import { CheckCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 import { LockIcon } from "../lock-icon";
-import { markOpenedByPush } from "./modal-nav";
+import { viewSessionLinkProps } from "./modal-nav";
 
 export function SessionText(props: {
   session: Session;
@@ -34,20 +34,14 @@ export function SessionText(props: {
       ? description.substring(0, 200) + "..."
       : description;
 
-  const viewHref = (() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("viewSession", session.id);
-    return `/${eventSlug}?${params.toString()}`;
-  })();
+  const linkProps = viewSessionLinkProps(searchParams, eventSlug, session.id);
 
   return (
     <div className="px-1.5 rounded h-full min-h-10 pt-5 pb-8 relative">
       <div className="flex items-start gap-2">
         <h1 className="font-bold leading-tight flex-1 flex items-center gap-1">
           <Link
-            href={viewHref}
-            scroll={false}
-            onClick={markOpenedByPush}
+            {...linkProps}
             className="cursor-pointer hover:text-blue-600 transition-colors flex items-center gap-1"
           >
             {session.closed && (
