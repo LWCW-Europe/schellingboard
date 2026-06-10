@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { voteChoiceToEmoji, VoteChoice } from "@/app/votes";
+import { voteChoiceToEmoji, VoteChoice } from "@/app/(site)/votes";
 
 describe("voteChoiceToEmoji", () => {
   it("interested → ❤️", () =>

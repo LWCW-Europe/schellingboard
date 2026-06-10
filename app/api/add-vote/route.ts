@@ -1,5 +1,5 @@
 import { getRepositories } from "@/db/container";
-import { VoteChoice } from "@/app/votes";
+import { VoteChoice } from "@/app/(site)/votes";
 
 type VoteParams = {
   proposalId: string;
