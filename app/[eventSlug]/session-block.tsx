@@ -6,7 +6,7 @@ import type { DayWithSessions } from "@/app/context";
 import { Tooltip } from "./tooltip";
 import { DateTime } from "luxon";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useContext, useState } from "react";
 import { CurrentUserModal, ConfirmationModal } from "../modals";
 import { UserContext, EventContext } from "../context";
@@ -17,6 +17,7 @@ import {
   TIME_FORMAT,
 } from "@/utils/utils";
 import { LockIcon } from "../lock-icon";
+import { viewSessionLinkProps } from "./modal-nav";
 
 export function SessionBlock(props: {
   eventName: string;
@@ -189,7 +190,7 @@ export function RealSessionCard(props: {
   const { localSessions, updateRsvp, userBusySessions, event } =
     useContext(EventContext);
   const timezone = event?.timezone ?? "UTC";
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isRsvping, setIsRsvping] = useState(false);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [clashingSession, setClashingSession] = useState<Session | null>(null);
@@ -201,15 +202,9 @@ export function RealSessionCard(props: {
   const formattedHostNames =
     session.hosts.map((h) => h.name).join(", ") || "No hosts";
 
-  const handleClick = () => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const url = `/${eventSlug}/view-session?sessionID=${session.id}&${searchParams.toString()}`;
-    router.push(url);
-  };
+  const linkProps = viewSessionLinkProps(searchParams, eventSlug, session.id);
 
-  const handleRSVP = (event: React.MouseEvent) => {
-    event.stopPropagation();
-
+  const handleRSVP = () => {
     if (!currentUser) {
       setUserModalOpen(true);
       return;
@@ -283,9 +278,9 @@ export function RealSessionCard(props: {
       className={`row-span-${numHalfHours} my-0.5 overflow-hidden group`}
       noTap={true}
     >
-      <button
+      <div
         className={clsx(
-          "py-1 px-1 rounded font-roboto h-full min-h-10 cursor-pointer flex flex-col relative w-full group",
+          "py-1 px-1 rounded font-roboto h-full min-h-10 flex flex-col relative w-full group",
           lowerOpacity
             ? `bg-${location.color}-${200} border-2 border-${
                 location.color
@@ -295,19 +290,23 @@ export function RealSessionCard(props: {
               }-${600}`,
           !lowerOpacity && "text-white"
         )}
-        onClick={handleClick}
       >
-        <p
-          className={clsx(
-            "font-medium text-xs leading-[1.15] text-left flex items-start gap-1",
-            numHalfHours >= 3 ? "line-clamp-2" : "line-clamp-1"
-          )}
+        <Link
+          {...linkProps}
+          className="cursor-pointer after:content-[''] after:absolute after:inset-0"
         >
-          {session.closed && (
-            <LockIcon className="h-3 w-3 flex-shrink-0 mt-0" />
-          )}
-          <span className="flex-1">{session.title}</span>
-        </p>
+          <p
+            className={clsx(
+              "font-medium text-xs leading-[1.15] text-left flex items-start gap-1",
+              numHalfHours >= 3 ? "line-clamp-2" : "line-clamp-1"
+            )}
+          >
+            {session.closed && (
+              <LockIcon className="h-3 w-3 flex-shrink-0 mt-0" />
+            )}
+            <span className="flex-1">{session.title}</span>
+          </p>
+        </Link>
         {numHalfHours > 1 && (
           <p
             className={clsx(
@@ -322,7 +321,7 @@ export function RealSessionCard(props: {
             {formattedHostNames}
           </p>
         )}
-        <div className="absolute bottom-0 right-0 flex gap-1 items-end">
+        <div className="absolute bottom-0 right-0 flex gap-1 items-end z-10">
           {hostStatus && (
             <div
               className="py-[2px] flex items-center"
@@ -342,7 +341,7 @@ export function RealSessionCard(props: {
             {numRSVPs}
           </div>
         </div>
-      </button>
+      </div>
 
       <CurrentUserModal
         open={userModalOpen}

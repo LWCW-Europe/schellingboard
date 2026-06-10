@@ -15,11 +15,13 @@ import { EventContext } from "../context";
 import { hasPhases } from "@/app/utils/events";
 import Link from "next/link";
 import { eventNameToSlug } from "@/utils/utils";
+import { SessionModal } from "./session-modal";
 
 export function EventDisplay() {
   const { event, days, locations, guests, rsvps } = useContext(EventContext);
   const searchParams = useSearchParams();
   const view = searchParams.get("view") ?? "grid";
+  const viewSession = searchParams.get("viewSession");
   const [search, setSearch] = useState("");
 
   if (!event) return <div>No event data available</div>;
@@ -107,6 +109,9 @@ export function EventDisplay() {
           </div>
         ))}
       </div>
+      {viewSession && (
+        <SessionModal sessionId={viewSession} eventSlug={eventSlug} />
+      )}
     </div>
   );
 }
