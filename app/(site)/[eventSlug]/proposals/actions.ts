@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getRepositories } from "@/db/container";
 
@@ -34,7 +33,7 @@ export async function createProposal(formData: FormData) {
     console.error("Error creating proposal:", error);
     return { error: "Failed to create proposal" };
   }
-  redirect(`/${eventSlug}/proposals`);
+  return { success: true };
 }
 
 export async function updateProposal(id: string, formData: FormData) {
@@ -63,7 +62,7 @@ export async function updateProposal(id: string, formData: FormData) {
     console.error("Error updating proposal:", error);
     return { error: "Failed to update proposal" };
   }
-  redirect(`/${eventSlug}/proposals`);
+  return { success: true };
 }
 
 export async function deleteProposal(id: string, eventSlug: string) {
@@ -74,5 +73,5 @@ export async function deleteProposal(id: string, eventSlug: string) {
     console.error("Error deleting proposal:", error);
     return { error: "Failed to delete proposal" };
   }
-  redirect(`/${eventSlug}/proposals`);
+  return { success: true };
 }

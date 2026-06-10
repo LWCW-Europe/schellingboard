@@ -2,6 +2,7 @@
 
 import { useState, useContext } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Input } from "./input";
 import { UserContext } from "../context";
@@ -31,6 +32,7 @@ export function SessionProposalForm(props: {
     ),
   ];
   const { user: currentUserId } = useContext(UserContext);
+  const router = useRouter();
 
   const [title, setTitle] = useState(proposal?.title || "");
   const [description, setDescription] = useState(proposal?.description || "");
@@ -70,8 +72,10 @@ export function SessionProposalForm(props: {
         result = await createProposal(formData);
       }
 
-      if (result && "error" in result) {
+      if (result.error) {
         setError(result.error);
+      } else {
+        router.push(`/${eventSlug}/proposals`);
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -90,8 +94,10 @@ export function SessionProposalForm(props: {
     try {
       const result = await deleteProposal(proposal.id, eventSlug);
 
-      if (result && "error" in result) {
+      if (result.error) {
         setError(result.error);
+      } else {
+        router.push(`/${eventSlug}/proposals`);
       }
     } catch (err) {
       setError("An unexpected error occurred");
