@@ -5,6 +5,7 @@ import {
   createAdminAuthCookie,
   createAdminLogoutCookie,
   isAdminEnabled,
+  safeRedirectPath,
 } from "@/utils/auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -14,11 +15,10 @@ export async function adminLoginAction(
   formData: FormData
 ) {
   const password = formData.get("password") as string;
-  let redirectTo = (formData.get("redirect") as string) || "/admin";
-  // Only allow same-origin paths ("//host" would be a protocol-relative URL)
-  if (!redirectTo.startsWith("/") || redirectTo.startsWith("//")) {
-    redirectTo = "/admin";
-  }
+  const redirectTo = safeRedirectPath(
+    formData.get("redirect") as string,
+    "/admin"
+  );
 
   if (!isAdminEnabled()) {
     return { error: "Admin access is disabled" };

@@ -5,6 +5,7 @@ import {
   createAuthCookie,
   createLogoutCookie,
   isPasswordProtectionEnabled,
+  safeRedirectPath,
 } from "@/utils/auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -14,7 +15,7 @@ export async function loginAction(
   formData: FormData
 ) {
   const password = formData.get("password") as string;
-  const redirectTo = (formData.get("redirect") as string) || "/";
+  const redirectTo = safeRedirectPath(formData.get("redirect") as string, "/");
 
   if (!isPasswordProtectionEnabled()) {
     redirect(redirectTo);
