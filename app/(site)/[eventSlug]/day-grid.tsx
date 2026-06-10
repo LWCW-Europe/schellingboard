@@ -1,0 +1,208 @@
+"use client";
+import { LocationCol } from "./location-col";
+import clsx from "clsx";
+import { useSearchParams } from "next/navigation";
+import { getNumHalfHours, TIME_FORMAT } from "@/utils/utils";
+import { useSafeLayoutEffect } from "@/utils/hooks";
+import { useRef, useState, useContext } from "react";
+import Image from "next/image";
+import { Tooltip } from "./tooltip";
+import { DateTime } from "luxon";
+import type { Guest, Location } from "@/db/repositories/interfaces";
+import type { DayWithSessions } from "@/app/(site)/context";
+import { EventContext } from "@/app/(site)/context";
+
+export function DayGrid(props: {
+  eventName: string;
+  locations: Location[];
+  day: DayWithSessions;
+  guests: Guest[];
+}) {
+  const { eventName, day, locations, guests } = props;
+  const { event } = useContext(EventContext);
+  const timezone = event?.timezone ?? "UTC";
+  const searchParams = useSearchParams();
+  const locParams = searchParams?.getAll("loc");
+  const locationsFromParams = locations.filter((loc) =>
+    locParams?.includes(loc.name)
+  );
+  const includedLocations =
+    locationsFromParams.length === 0 ? locations : locationsFromParams;
+  const numLocations = includedLocations.length;
+  const start = day.start;
+  const end = day.end;
+  const scrollableDivRef = useRef<HTMLDivElement>(null);
+  const [scrolledToRightEnd, setScrolledToRightEnd] = useState(false);
+  const [scrolledToLeftEnd, setScrolledToLeftEnd] = useState(true);
+  // Now that the festival is over, show entire schedule by default
+  const [expanded, setExpanded] = useState(true);
+  // Or use this to hide dates that have already ended
+  // const [expanded, setExpanded] = useState(end >= new Date());
+  useSafeLayoutEffect(() => {
+    const handleScroll = () => {
+      if (scrollableDivRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } =
+          scrollableDivRef.current;
+        if (scrollLeft + clientWidth >= scrollWidth) {
+          setScrolledToRightEnd(true);
+          // Add your logic here
+        } else {
+          setScrolledToRightEnd(false);
+        }
+        if (scrollLeft === 0) {
+          setScrolledToLeftEnd(true);
+        } else {
+          setScrolledToLeftEnd(false);
+        }
+      }
+    };
+
+    handleScroll();
+
+    const div = scrollableDivRef.current;
+    div?.addEventListener("scroll", handleScroll);
+    window.addEventListener("resize", handleScroll);
+
+    // Cleanup the event listener on component unmount
+    return () => {
+      div?.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, []);
+
+  return (
+    <div className="w-full">
+      <div className="flex flex-col">
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold">
+            {DateTime.fromJSDate(day.start)
+              .setZone(timezone)
+              .toFormat("EEEE, MMMM d")}
+          </h2>
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-sm text-gray-500 underline"
+          >
+            ({expanded ? "hide" : "show"})
+          </button>
+        </div>
+      </div>
+      {expanded && (
+        <div className="flex items-end relative w-full overflow-visible">
+          <TimestampCol start={start} end={end} timezone={timezone} />
+          <div
+            className="overflow-x-auto overflow-y-clip flex-shrink"
+            ref={scrollableDivRef}
+          >
+            <div
+              className="grid divide-x divide-gray-100 w-full overflow-visible"
+              style={{
+                gridTemplateColumns: `repeat(${numLocations}, minmax(120px, 2fr))`,
+              }}
+            >
+              {includedLocations.map((loc) => (
+                <Tooltip
+                  key={loc.name}
+                  content={
+                    loc.description ? (
+                      <div className="p-2 space-y-1">
+                        <p className="text-xs font-semibold text-gray-700">
+                          {loc.name}
+                        </p>
+                        <p className="text-sm">{loc.description}</p>
+                      </div>
+                    ) : undefined
+                  }
+                  placement="bottom-start"
+                >
+                  <div
+                    key={loc.name}
+                    className="p-1 border-b border-gray-100 flex flex-col justify-between h-full"
+                  >
+                    <div>
+                      <h3 className="font-semibold text-xs sm:text-sm">
+                        {loc.name}
+                      </h3>
+                      <p className="text-[10px] text-gray-500">
+                        {loc.areaDescription ?? <br />}
+                      </p>
+                      <p className="text-[10px] text-gray-500">
+                        {loc.capacity ? `max ${loc.capacity}` : <br />}
+                      </p>
+                    </div>
+                    {loc.imageUrl && (
+                      <Image
+                        key={loc.name}
+                        src={loc.imageUrl}
+                        alt={loc.name}
+                        className="w-full mt-1 aspect-[4/3]"
+                        style={{ maxHeight: 200 }}
+                        width={500}
+                        height={500}
+                      />
+                    )}
+                  </div>
+                </Tooltip>
+              ))}
+            </div>
+            <div
+              className="grid divide-x divide-gray-100 relative w-full"
+              style={{
+                gridTemplateColumns: `repeat(${numLocations}, minmax(120px, 2fr))`,
+              }}
+            >
+              {/* <NowBar start={start} end={end} /> */}
+              {includedLocations.map((location) => {
+                if (!location) {
+                  return null;
+                }
+                return (
+                  <LocationCol
+                    key={location.name}
+                    sessions={day.sessions.filter((session) =>
+                      session.locations.some((l) => l.id === location.id)
+                    )}
+                    guests={guests}
+                    day={day}
+                    location={location}
+                    eventName={eventName}
+                  />
+                );
+              })}
+            </div>
+          </div>
+          {!scrolledToRightEnd && (
+            <div className="bg-gradient-to-r from-transparent to-white h-full absolute right-0 w-3" />
+          )}
+          {!scrolledToLeftEnd && (
+            <div className="bg-gradient-to-l from-transparent to-white h-full absolute left-8 w-3" />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TimestampCol(props: { start: Date; end: Date; timezone: string }) {
+  const { start, end, timezone } = props;
+  const numHalfHours = getNumHalfHours(start, end);
+  return (
+    <div
+      className={clsx(
+        "grid h-full min-w-8 border-r border-t border-gray-100",
+        `grid-rows-[repeat(${numHalfHours},44px)]`
+      )}
+    >
+      {Array.from({ length: numHalfHours }).map((_, i) => (
+        <div
+          key={i}
+          className="border-b border-gray-100 text-[10px] p-1 text-right h-[44px]"
+        >
+          {DateTime.fromMillis(start.getTime() + i * 30 * 60 * 1000)
+            .setZone(timezone)
+            .toFormat(TIME_FORMAT)}
+        </div>
+      ))}
+    </div>
+  );
+}

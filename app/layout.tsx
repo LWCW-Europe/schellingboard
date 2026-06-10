@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Montserrat, Roboto } from "next/font/google";
 import "./globals.css";
-import NavBar from "./nav-bar";
+import NavBar from "./(site)/nav-bar";
 import Footer from "./footer";
-import { UserProvider } from "./context";
+import { UserProvider } from "./(site)/context";
 import clsx from "clsx";
 import { CONSTS } from "@/utils/constants";
 import { getRepositories } from "@/db/container";
