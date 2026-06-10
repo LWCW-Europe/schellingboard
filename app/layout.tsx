@@ -1,19 +1,7 @@
 import type { Metadata } from "next";
 import { Montserrat, Roboto } from "next/font/google";
 import "./globals.css";
-import NavBar from "./(site)/nav-bar";
-import Footer from "./footer";
-import { UserProvider } from "./(site)/context";
-import clsx from "clsx";
 import { CONSTS } from "@/utils/constants";
-import { getRepositories } from "@/db/container";
-import { eventNameToSlug } from "@/utils/utils";
-import { cookies } from "next/headers";
-import {
-  AUTH_COOKIE_NAME,
-  isAuthCookieValid,
-  isPasswordProtectionEnabledServer,
-} from "@/utils/auth";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -35,44 +23,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const passwordProtected = isPasswordProtectionEnabledServer();
-  const cookieStore = await cookies();
-  const authCookieValue = cookieStore.get(AUTH_COOKIE_NAME)?.value;
-  const isAuthenticated = await isAuthCookieValid(authCookieValue);
-  const initialUser = isAuthenticated
-    ? (cookieStore.get("user")?.value ?? null)
-    : null;
-  const events = isAuthenticated ? await getRepositories().events.list() : [];
-  const multipleEvents = events.length > 1;
-  const navItems = events.map((e) => ({
-    name: e.name,
-    href: `/${eventNameToSlug(e.name)}`,
-    icon: e.icon ?? null,
-  }));
-
   return (
     <html lang="en" className={fontVars}>
       <body className="font-monteserrat flex flex-col min-h-screen">
-        <UserProvider initialUser={initialUser}>
-          <NavBar
-            navItems={multipleEvents ? navItems : []}
-            showLogout={passwordProtected && isAuthenticated}
-          />
-          <main
-            className={clsx(
-              "lg:px-24 p-3 flex-1",
-              multipleEvents ? "py-24 lg:pb-16" : "pt-20 lg:pb-16"
-            )}
-          >
-            {children}
-          </main>
-          <Footer />
-        </UserProvider>
+        {children}
       </body>
     </html>
   );

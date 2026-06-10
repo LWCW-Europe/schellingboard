@@ -65,6 +65,9 @@ export interface GuestsRepository {
   findById(id: string): Promise<Guest | undefined>;
   findByEmail(email: string): Promise<Guest | undefined>;
   create(data: Omit<Guest, "id">): Promise<Guest>;
+  update(id: string, data: Omit<Guest, "id">): Promise<Guest | undefined>;
+  /** Deletes the guest and all records referencing them (votes, RSVPs, host links, event assignments). */
+  delete(id: string): Promise<void>;
 }
 
 // ── Locations ─────────────────────────────────────────────────────────────────

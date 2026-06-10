@@ -36,10 +36,11 @@
    ```bash
    DATABASE_URL=file:./data.db
    SITE_PASSWORD=your-password
+   ADMIN_PASSWORD=your-admin-password
    AUTH_SECRET=<generated via openssl rand -base64 32>
    ```
 
-   See [Environment Variables](#environment-variables) for all options. Note: `AUTH_SECRET` is required only when `SITE_PASSWORD` is set. Omitting this file uses sensible defaults.
+   See [Environment Variables](#environment-variables) for all options. Note: `AUTH_SECRET` is required only when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Omitting this file uses sensible defaults.
 
 3. (Optional) Seed the database with test data:
 
@@ -55,9 +56,13 @@
 
    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+### Admin UI
+
+A web admin UI is available at `/admin` for managing users. It requires `ADMIN_PASSWORD` (and `AUTH_SECRET`) to be set; without `ADMIN_PASSWORD` the admin routes are disabled and return a diagnostic message explaining how to enable them. It is fully separate from the normal user UI: it has its own layout and only requires the admin password (not `SITE_PASSWORD`). It will gradually replace the admin CLI ([#368](https://github.com/omarkohl/schellingboard/issues/368)).
+
 ### Admin CLI
 
-Until a full admin UI is built ([#368](https://github.com/omarkohl/schellingboard/issues/368)), a terminal CLI is available for managing core records (events, guests, phase dates):
+For records not yet covered by the admin UI, a terminal CLI is available for managing core records (events, guests, phase dates):
 
 ```bash
 make dev-admin
@@ -81,10 +86,11 @@ bun set-env.ts production tsx scripts/admin.ts
 
 ### Optional
 
-| Variable        | Description                                                                                        |
-| --------------- | -------------------------------------------------------------------------------------------------- |
-| `SITE_PASSWORD` | Enables site-wide password protection. Omit to disable.                                            |
-| `AUTH_SECRET`   | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` is set. Use ≥32 random bytes. |
+| Variable         | Description                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `SITE_PASSWORD`  | Enables site-wide password protection. Omit to disable.                                                                |
+| `ADMIN_PASSWORD` | Enables the admin UI at `/admin`. Omit to disable (admin routes return a diagnostic message).                          |
+| `AUTH_SECRET`    | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Use ≥32 random bytes. |
 
 `NEXT_PUBLIC_` variables are exposed to the browser; all others are server-side only.
 
