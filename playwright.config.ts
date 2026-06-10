@@ -72,11 +72,14 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /* Run a production build before starting the tests. Testing against
+   * `next dev` is flaky: chunks are compiled on demand and parallel
+   * workers can race, causing intermittent ChunkLoadErrors. */
   webServer: {
-    command: "bun set-env.ts test next dev",
+    command: 'bun set-env.ts test "next build && next start"',
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
+    timeout: 180_000,
   },
 
   expect: { timeout: 10_000 },
