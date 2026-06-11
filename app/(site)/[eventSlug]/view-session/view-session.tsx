@@ -18,7 +18,7 @@ import { LocationTag } from "../session-text";
 export function ViewSession(props: {
   session: Session;
   guests: Guest[];
-  rsvps: Rsvp[];
+  rsvps: Rsvp[] | null; // null means "loading"
   eventSlug: string;
   event: Event;
   isInModal?: boolean;
@@ -45,7 +45,8 @@ export function ViewSession(props: {
 
   // Reconcile session RSVPs with the current user's RSVP from context, so
   // optimistic toggles in EventProvider reflect immediately here.
-  const optimisticRsvps = useMemo<Rsvp[]>(() => {
+  const optimisticRsvps = useMemo<Rsvp[] | null>(() => {
+    if (rsvps === null) return null;
     if (!currentUser) return rsvps;
     const userRsvpForThisSession = userRsvps.find(
       (rsvp) => rsvp.sessionId === session.id
@@ -68,13 +69,14 @@ export function ViewSession(props: {
   const isHost = currentUser && session.hosts.some((h) => h.id === currentUser);
   const isEditable = !!isHost && session.attendeeScheduled;
 
-  const attendeeIds = optimisticRsvps.map((rsvp) => rsvp.guestId);
   const guestMap = new Map(guests.map((guest) => [guest.id, guest.name]));
-
-  const attendeeNames = attendeeIds
-    .map((id) => guestMap.get(id))
-    .filter((name): name is string => name !== undefined)
-    .sort();
+  const attendeeNames =
+    optimisticRsvps === null
+      ? null
+      : optimisticRsvps
+          .map((rsvp) => guestMap.get(rsvp.guestId))
+          .filter((name): name is string => name !== undefined)
+          .sort();
 
   const location = locations.find((loc) => loc.id === session.locations[0]?.id);
 
@@ -256,12 +258,20 @@ export function ViewSession(props: {
         </div>
         <div className="flex gap-2">
           <span className="font-medium">
-            Attendees ({attendeeNames.length}):
+            Attendees (
+            {attendeeNames === null ? session.numRsvps : attendeeNames.length}):
           </span>
+          {/* TODO: If the list of attendees spans multiple lines, the layout will jump on load.
+          Ideas:
+          - move the list of attendees to the bottom, below the description
+          - include ALL RSVPs in the preloaded EventContext, so that we don't need to fetch them later at all
+          */}
           <span>
-            {attendeeNames.length === 0
-              ? "No attendees yet"
-              : `${attendeeNames.join(", ")}`}
+            {attendeeNames === null
+              ? "Loading…"
+              : attendeeNames.length === 0
+                ? "No attendees yet"
+                : attendeeNames.join(", ")}
           </span>
         </div>
       </div>
