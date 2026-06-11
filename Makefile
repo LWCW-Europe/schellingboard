@@ -66,6 +66,8 @@ lint: install
 	bun x eslint --max-warnings 0 .
 
 typecheck: install
+	rm -rf .next/dev/types
+	bun x next typegen
 	bun x tsc --noEmit
 
 lint-watch: install
