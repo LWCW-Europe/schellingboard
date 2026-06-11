@@ -121,8 +121,35 @@ make check-and-format  # Format, lint, type check, and run tests
 
 ## Testing
 
+### Test strategy
+
+Three tiers, in descending priority:
+
+**E2E tests** (Playwright, `tests/e2e/`) — highest value. Cover important user workflows. Do _not_ try to cover every edge case; prefer fewer, high-confidence tests over broad but fragile coverage.
+
+**Integration tests** (Vitest, `tests/`) — Vitest tests that hit a real SQLite DB via repositories and server actions. These should achieve high business-logic coverage. Because they target stable interfaces they rarely need rewrites during internal refactors.
+
+**Unit tests** (Vitest) — use sparingly, only for particularly complex functions with isolated business logic. Do not write unit tests that duplicate what integration tests already cover; that creates noise and maintenance overhead.
+
+### TDD workflow
+
+Every code change must follow red → green → refactor. **Do not skip or reorder steps.**
+
+1. Write a failing test that captures the expected behavior.
+2. Run the test and confirm it actually fails (see commands below).
+3. Implement the minimum code to make it pass.
+4. Run the test again and confirm it is green.
+5. Refactor if needed — do not touch the test during refactor.
+
+**Exceptions** (apply conservatively):
+
+- Pure UI/layout/styling changes with no behavior change
+- Refactors where existing tests already fully cover the changed code
+
+### Running tests
+
 ```bash
-make test                # Run unit and integration tests
+make test                # Run unit and integration tests (Vitest)
 make test-e2e            # Run E2E tests (headed, for local dev)
 make test-e2e-ci         # Run E2E tests (headless)
 ```
@@ -138,7 +165,7 @@ make install-playwright
 Run a single E2E spec:
 
 ```bash
-bun set-env.ts test bun x playwright test tests/proposals.spec.ts
+bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts
 ```
 
 Run against a different environment (e.g. dev database — still resets it):
@@ -147,7 +174,7 @@ Run against a different environment (e.g. dev database — still resets it):
 bun set-env.ts dev bun x playwright test
 ```
 
-### E2E test conventions
+### E2E conventions
 
 - Imitate human behavior — click visible elements, navigate naturally
 - Use semantic locators (`getByRole`, `getByText`, `getByLabel`), not IDs or CSS classes

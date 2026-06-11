@@ -21,4 +21,23 @@ Next.js scheduling app for managing conference/event sessions with three phases:
 
 ## Testing
 
-- Always run tests with `make test` (not `bun test`)
+- Always run tests with `make test` (not `bun test`); E2E tests with `make test-e2e-ci`
+- Full test strategy and TDD rules are in [CONTRIBUTING.md § Testing](CONTRIBUTING.md#testing) — read it before writing any test
+
+### Test tiers (short form)
+
+- **E2E** (Playwright): important user workflows only — quality over quantity
+- **Integration** (Vitest, real DB): high coverage of business logic via repositories/server actions
+- **Unit** (Vitest): only for complex isolated functions; never duplicate integration-test coverage
+
+### Mandatory TDD for agents
+
+Follow red → green → refactor strictly. **No skipping steps.**
+
+1. Write the failing test.
+2. Run `make test` or `make test-e2e-ci` and **confirm the failure output**.
+3. Implement the minimum code to pass.
+4. Run again and confirm green.
+5. Refactor without touching the test.
+
+Exceptions (be very conservative): pure UI/styling-only changes; refactors where existing tests already give full coverage.
