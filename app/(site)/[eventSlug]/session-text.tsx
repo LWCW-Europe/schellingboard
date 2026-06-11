@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { UserContext, EventContext } from "../context";
 import { CheckCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 import { LockIcon } from "../lock-icon";
+import { markOpenedByPush } from "./modal-nav";
 
 export function SessionText(props: {
   session: Session;
@@ -35,10 +36,10 @@ export function SessionText(props: {
       : description;
 
   const handleTitleClick = () => {
-    // Preserve current search parameters including view
-    const currentParams = new URLSearchParams(searchParams.toString());
-    const url = `/${eventSlug}/view-session?sessionID=${session.id}&${currentParams.toString()}`;
-    router.push(url);
+    markOpenedByPush();
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("viewSession", session.id);
+    router.push(`/${eventSlug}?${params.toString()}`, { scroll: false });
   };
 
   return (
