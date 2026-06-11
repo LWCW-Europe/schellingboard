@@ -1,8 +1,8 @@
 import clsx from "clsx";
 import { DateTime } from "luxon";
+import Link from "next/link";
 import type { Session, Location } from "@/db/repositories/interfaces";
 import { getEndTimeMinusBreak, TIME_FORMAT } from "@/utils/utils";
-import { useRouter } from "next/navigation";
 import { useState, useContext } from "react";
 import { useSearchParams } from "next/navigation";
 import { UserContext, EventContext } from "../context";
@@ -16,7 +16,6 @@ export function SessionText(props: {
   eventSlug: string;
 }) {
   const { session, locations, eventSlug } = props;
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { user: currentUser } = useContext(UserContext);
   const { rsvpdForSession, event } = useContext(EventContext);
@@ -35,24 +34,27 @@ export function SessionText(props: {
       ? description.substring(0, 200) + "..."
       : description;
 
-  const handleTitleClick = () => {
-    markOpenedByPush();
+  const viewHref = (() => {
     const params = new URLSearchParams(searchParams.toString());
     params.set("viewSession", session.id);
-    router.push(`/${eventSlug}?${params.toString()}`, { scroll: false });
-  };
+    return `/${eventSlug}?${params.toString()}`;
+  })();
 
   return (
     <div className="px-1.5 rounded h-full min-h-10 pt-5 pb-8 relative">
       <div className="flex items-start gap-2">
-        <h1
-          className="font-bold leading-tight cursor-pointer hover:text-blue-600 transition-colors flex-1 flex items-center gap-1"
-          onClick={handleTitleClick}
-        >
-          {session.closed && (
-            <LockIcon className="h-4 w-4 text-gray-600 flex-shrink-0" />
-          )}
-          {session.title}
+        <h1 className="font-bold leading-tight flex-1 flex items-center gap-1">
+          <Link
+            href={viewHref}
+            scroll={false}
+            onClick={markOpenedByPush}
+            className="cursor-pointer hover:text-blue-600 transition-colors flex items-center gap-1"
+          >
+            {session.closed && (
+              <LockIcon className="h-4 w-4 text-gray-600 flex-shrink-0" />
+            )}
+            {session.title}
+          </Link>
         </h1>
         <div className="flex gap-1">
           {isHost && (
