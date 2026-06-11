@@ -25,14 +25,14 @@ export function SessionModal({
   const onDismiss = dismissViewSession;
 
   useEffect(() => {
-    // Disable body scroll when modal is open
-    document.body.style.overflow = "hidden";
+    // Disable page scroll when modal is open.
+    document.documentElement.style.overflow = "hidden";
     const handleEscapeKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onDismiss();
     };
     document.addEventListener("keydown", handleEscapeKey);
     return () => {
-      document.body.style.overflow = "unset";
+      document.documentElement.style.overflow = "";
       document.removeEventListener("keydown", handleEscapeKey);
     };
   }, [onDismiss]);
