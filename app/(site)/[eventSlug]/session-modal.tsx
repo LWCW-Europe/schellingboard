@@ -1,6 +1,5 @@
 "use client";
 
-import { createPortal } from "react-dom";
 import { useEffect, useCallback, useContext, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -57,13 +56,9 @@ export function SessionModal({
     };
   }, [sessionId]);
 
-  const modalRoot =
-    typeof document !== "undefined"
-      ? document.getElementById("modal-root")
-      : null;
-  if (!modalRoot || !event) return null;
+  if (!event) return null;
 
-  return createPortal(
+  return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       role="dialog"
@@ -108,7 +103,6 @@ export function SessionModal({
           />
         )}
       </div>
-    </div>,
-    modalRoot
+    </div>
   );
 }
