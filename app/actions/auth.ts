@@ -14,7 +14,11 @@ export async function loginAction(
   formData: FormData
 ) {
   const password = formData.get("password") as string;
-  const redirectTo = (formData.get("redirect") as string) || "/";
+  let redirectTo = (formData.get("redirect") as string) || "/";
+  // Only allow same-origin paths ("//host" would be a protocol-relative URL)
+  if (!redirectTo.startsWith("/") || redirectTo.startsWith("//")) {
+    redirectTo = "/";
+  }
 
   if (!isPasswordProtectionEnabled()) {
     redirect(redirectTo);
