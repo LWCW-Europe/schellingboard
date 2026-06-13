@@ -18,10 +18,9 @@ import { LocationTag } from "../session-text";
 export function ViewSession(props: {
   session: Session;
   guests: Guest[];
-  rsvps: Rsvp[];
+  rsvps: Rsvp[] | null; // null means "loading"
   eventSlug: string;
   event: Event;
-  showBackBtn: boolean;
   isInModal?: boolean;
   onCloseModal?: () => void;
 }) {
@@ -31,7 +30,6 @@ export function ViewSession(props: {
     rsvps,
     eventSlug,
     event,
-    showBackBtn,
     isInModal = false,
     onCloseModal,
   } = props;
@@ -47,7 +45,8 @@ export function ViewSession(props: {
 
   // Reconcile session RSVPs with the current user's RSVP from context, so
   // optimistic toggles in EventProvider reflect immediately here.
-  const optimisticRsvps = useMemo<Rsvp[]>(() => {
+  const optimisticRsvps = useMemo<Rsvp[] | null>(() => {
+    if (rsvps === null) return null;
     if (!currentUser) return rsvps;
     const userRsvpForThisSession = userRsvps.find(
       (rsvp) => rsvp.sessionId === session.id
@@ -70,13 +69,14 @@ export function ViewSession(props: {
   const isHost = currentUser && session.hosts.some((h) => h.id === currentUser);
   const isEditable = !!isHost && session.attendeeScheduled;
 
-  const attendeeIds = optimisticRsvps.map((rsvp) => rsvp.guestId);
   const guestMap = new Map(guests.map((guest) => [guest.id, guest.name]));
-
-  const attendeeNames = attendeeIds
-    .map((id) => guestMap.get(id))
-    .filter((name): name is string => name !== undefined)
-    .sort();
+  const attendeeNames =
+    optimisticRsvps === null
+      ? null
+      : optimisticRsvps
+          .map((rsvp) => guestMap.get(rsvp.guestId))
+          .filter((name): name is string => name !== undefined)
+          .sort();
 
   const location = locations.find((loc) => loc.id === session.locations[0]?.id);
 
@@ -171,14 +171,6 @@ export function ViewSession(props: {
           "Are you sure you want to proceed?"
         }
       />
-      {showBackBtn && (
-        <Link
-          className="bg-rose-400 text-white font-semibold py-2 px-4 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12 mt-4 mb-2 block"
-          href={`/${eventSlug}`}
-        >
-          Back to {event.name}
-        </Link>
-      )}
       <div className="flex items-start gap-2 mb-2 mt-5">
         <p
           className="text-xl font-semibold flex-1 flex items-center gap-2"
@@ -266,12 +258,15 @@ export function ViewSession(props: {
         </div>
         <div className="flex gap-2">
           <span className="font-medium">
-            Attendees ({attendeeNames.length}):
+            Attendees (
+            {attendeeNames === null ? session.numRsvps : attendeeNames.length}):
           </span>
           <span>
-            {attendeeNames.length === 0
-              ? "No attendees yet"
-              : `${attendeeNames.join(", ")}`}
+            {attendeeNames === null
+              ? "Loading…"
+              : attendeeNames.length === 0
+                ? "No attendees yet"
+                : attendeeNames.join(", ")}
           </span>
         </div>
       </div>
