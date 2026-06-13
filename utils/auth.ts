@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export const AUTH_COOKIE_NAME = "site-auth";
+export const ADMIN_COOKIE_NAME = "admin-auth";
+export const ADMIN_DISABLED_MESSAGE =
+  "Admin UI is disabled: set the ADMIN_PASSWORD environment variable on the server to enable it. See the project documentation.";
+const ADMIN_SCOPE = "admin";
 const COOKIE_MAX_AGE_SEC = 7 * 24 * 60 * 60;
 const COOKIE_MAX_AGE_MS = COOKIE_MAX_AGE_SEC * 1000;
 
@@ -20,13 +24,25 @@ export function verifyPassword(inputPassword: string): boolean {
   return inputPassword === sitePassword;
 }
 
+export function isAdminEnabled(): boolean {
+  return !!process.env.ADMIN_PASSWORD;
+}
+
+export function verifyAdminPassword(inputPassword: string): boolean {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword) {
+    return false; // Admin access disabled entirely when no password is set
+  }
+  return inputPassword === adminPassword;
+}
+
 const MIN_AUTH_SECRET_LENGTH = 32;
 
 function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET;
   if (!secret) {
     throw new Error(
-      "AUTH_SECRET environment variable must be set when SITE_PASSWORD is set"
+      "AUTH_SECRET environment variable must be set when SITE_PASSWORD or ADMIN_PASSWORD is set"
     );
   }
   if (secret.length < MIN_AUTH_SECRET_LENGTH) {
@@ -68,26 +84,35 @@ function base64UrlToBytes(s: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-async function signCookieValue(): Promise<string> {
+// The scope is part of the signed payload so a cookie signed for one scope
+// (e.g. site auth) can never validate for another (e.g. admin auth).
+async function signCookieValue(scope = ""): Promise<string> {
   const issuedAt = Date.now().toString();
+  const payload = scope ? `${scope}.${issuedAt}` : issuedAt;
   const key = await importHmacKey("sign");
-  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(issuedAt));
-  return `${issuedAt}.${bytesToBase64Url(new Uint8Array(sig))}`;
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+  return `${payload}.${bytesToBase64Url(new Uint8Array(sig))}`;
 }
 
-export async function isAuthCookieValid(
-  value: string | undefined
+async function isSignedCookieValid(
+  value: string | undefined,
+  scope: string
 ): Promise<boolean> {
-  if (!isPasswordProtectionEnabled()) return true;
   if (!value) return false;
 
-  const dot = value.indexOf(".");
-  if (dot < 0) return false;
-  const payload = value.slice(0, dot);
-  const sig = value.slice(dot + 1);
+  let rest = value;
+  if (scope) {
+    if (!rest.startsWith(`${scope}.`)) return false;
+    rest = rest.slice(scope.length + 1);
+  }
 
-  if (!/^\d+$/.test(payload)) return false;
-  const issuedAt = Number(payload);
+  const dot = rest.indexOf(".");
+  if (dot < 0) return false;
+  const timestamp = rest.slice(0, dot);
+  const sig = rest.slice(dot + 1);
+
+  if (!/^\d+$/.test(timestamp)) return false;
+  const issuedAt = Number(timestamp);
   if (!Number.isSafeInteger(issuedAt)) return false;
   const age = Date.now() - issuedAt;
   if (age < 0 || age > COOKIE_MAX_AGE_MS) return false;
@@ -99,8 +124,23 @@ export async function isAuthCookieValid(
     return false;
   }
 
+  const payload = scope ? `${scope}.${timestamp}` : timestamp;
   const key = await importHmacKey("verify");
   return crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(payload));
+}
+
+export async function isAuthCookieValid(
+  value: string | undefined
+): Promise<boolean> {
+  if (!isPasswordProtectionEnabled()) return true;
+  return isSignedCookieValid(value, "");
+}
+
+export async function isAdminCookieValid(
+  value: string | undefined
+): Promise<boolean> {
+  if (!isAdminEnabled()) return false;
+  return isSignedCookieValid(value, ADMIN_SCOPE);
 }
 
 export async function isAuthenticated(request: NextRequest): Promise<boolean> {
@@ -108,17 +148,21 @@ export async function isAuthenticated(request: NextRequest): Promise<boolean> {
   return isAuthCookieValid(cookie);
 }
 
+function cookieOptions(maxAge: number) {
+  return {
+    maxAge,
+    httpOnly: true,
+    path: "/",
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+  };
+}
+
 export async function createAuthCookie() {
   return {
     name: AUTH_COOKIE_NAME,
     value: await signCookieValue(),
-    options: {
-      maxAge: COOKIE_MAX_AGE_SEC,
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax" as const,
-      secure: process.env.NODE_ENV === "production",
-    },
+    options: cookieOptions(COOKIE_MAX_AGE_SEC),
   };
 }
 
@@ -126,13 +170,23 @@ export function createLogoutCookie() {
   return {
     name: AUTH_COOKIE_NAME,
     value: "",
-    options: {
-      maxAge: 0,
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax" as const,
-      secure: process.env.NODE_ENV === "production",
-    },
+    options: cookieOptions(0),
+  };
+}
+
+export async function createAdminAuthCookie() {
+  return {
+    name: ADMIN_COOKIE_NAME,
+    value: await signCookieValue(ADMIN_SCOPE),
+    options: cookieOptions(COOKIE_MAX_AGE_SEC),
+  };
+}
+
+export function createAdminLogoutCookie() {
+  return {
+    name: ADMIN_COOKIE_NAME,
+    value: "",
+    options: cookieOptions(0),
   };
 }
 
@@ -147,6 +201,31 @@ export async function requireAuth(
   }
 
   const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set(
+    "redirect",
+    request.nextUrl.pathname + request.nextUrl.search
+  );
+  return NextResponse.redirect(loginUrl);
+}
+
+export async function isAdminAuthenticated(
+  request: NextRequest
+): Promise<boolean> {
+  const cookie = request.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  return isAdminCookieValid(cookie);
+}
+
+export async function requireAdminAuth(
+  request: NextRequest
+): Promise<NextResponse | null> {
+  if (!isAdminEnabled()) {
+    return new NextResponse(ADMIN_DISABLED_MESSAGE, { status: 404 });
+  }
+  if (await isAdminAuthenticated(request)) {
+    return null;
+  }
+
+  const loginUrl = new URL("/admin/login", request.url);
   loginUrl.searchParams.set(
     "redirect",
     request.nextUrl.pathname + request.nextUrl.search

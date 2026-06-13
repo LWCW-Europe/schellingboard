@@ -9,7 +9,7 @@ import {
 import { DateTime } from "luxon";
 import { useSearchParams } from "next/navigation";
 import { DayText } from "./day-text";
-import { Input } from "./input";
+import { Input } from "@/app/input";
 import { useState, useContext } from "react";
 import { EventContext } from "../context";
 import { hasPhases } from "@/app/(site)/utils/events";

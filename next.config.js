@@ -15,6 +15,13 @@ function getAppVersion() {
 const nextConfig = {
   output: "standalone",
   images: {
+    localPatterns: [
+      // Location uploads carry a ?v=<timestamp> cache-buster; omitting `search`
+      // allows any query string for these paths.
+      { pathname: "/uploads/**" },
+      // Other local/public assets (e.g. /map.png) without a query string.
+      { pathname: "/**", search: "" },
+    ],
     remotePatterns: [
       {
         protocol: "https",
