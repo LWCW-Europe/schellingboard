@@ -323,6 +323,137 @@ describe("event actions", () => {
     });
   });
 
+  describe("updateEventPhasesAction validation", () => {
+    it("rejects when phase end is before its start", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        proposalPhaseStart: "2026-09-15T18:00",
+        proposalPhaseEnd: "2026-09-01T08:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /proposal.*end.*after.*start/i
+      );
+    });
+
+    it("rejects when voting phase end is before its start", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        votingPhaseStart: "2026-09-15T18:00",
+        votingPhaseEnd: "2026-09-01T08:00",
+      });
+      expect(!result.ok && result.error).toMatch(/voting.*end.*after.*start/i);
+    });
+
+    it("rejects when scheduling phase end is before its start", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        schedulingPhaseStart: "2026-09-15T18:00",
+        schedulingPhaseEnd: "2026-09-01T08:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /scheduling.*end.*after.*start/i
+      );
+    });
+
+    it("rejects when voting start is before proposal end", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        proposalPhaseStart: "2026-09-01T08:00",
+        proposalPhaseEnd: "2026-09-20T18:00",
+        votingPhaseStart: "2026-09-10T08:00",
+        votingPhaseEnd: "2026-09-25T18:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /voting.*not.*start.*before.*proposal/i
+      );
+    });
+
+    it("rejects when scheduling start is before voting end", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        votingPhaseStart: "2026-09-01T08:00",
+        votingPhaseEnd: "2026-09-20T18:00",
+        schedulingPhaseStart: "2026-09-10T08:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /scheduling.*not.*start.*before.*voting/i
+      );
+    });
+
+    it("allows phases without an end date", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        proposalPhaseStart: "2026-09-01T08:00",
+      });
+      expect(result.ok).toBe(true);
+    });
+
+    it("allows an open-ended proposal phase with a later voting start", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        proposalPhaseStart: "2026-09-01T08:00",
+        votingPhaseStart: "2026-09-10T08:00",
+      });
+      expect(result.ok).toBe(true);
+    });
+
+    it("rejects when voting starts before proposal starts", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        proposalPhaseStart: "2026-09-10T08:00",
+        votingPhaseStart: "2026-09-01T08:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /voting.*not.*start.*before.*proposal/i
+      );
+    });
+
+    it("rejects when scheduling starts before voting starts", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        votingPhaseStart: "2026-09-10T08:00",
+        schedulingPhaseStart: "2026-09-01T08:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /scheduling.*not.*start.*before.*voting/i
+      );
+    });
+
+    it("rejects when scheduling starts before proposal ends and voting is unset", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        proposalPhaseStart: "2026-09-01T08:00",
+        proposalPhaseEnd: "2026-09-20T18:00",
+        schedulingPhaseStart: "2026-09-10T08:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /scheduling.*not.*start.*before.*proposal/i
+      );
+    });
+
+    it("rejects when scheduling starts before proposal starts and voting is unset", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        proposalPhaseStart: "2026-09-10T08:00",
+        schedulingPhaseStart: "2026-09-01T08:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /scheduling.*not.*start.*before.*proposal/i
+      );
+    });
+  });
+
   describe("updateEventPhasesAction", () => {
     it("sets phase dates", async () => {
       const event = await createEvent();

@@ -132,19 +132,94 @@ function parseDateTime(value: string | undefined): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
+type ParsedPhaseDates = {
+  proposalPhaseStart: Date | undefined;
+  proposalPhaseEnd: Date | undefined;
+  votingPhaseStart: Date | undefined;
+  votingPhaseEnd: Date | undefined;
+  schedulingPhaseStart: Date | undefined;
+  schedulingPhaseEnd: Date | undefined;
+};
+
+function validatePhasesInput(
+  input: EventPhasesInput
+): string | ParsedPhaseDates {
+  const fieldDefs: [keyof Omit<EventPhasesInput, "id">, string][] = [
+    ["proposalPhaseStart", "proposal phase start"],
+    ["proposalPhaseEnd", "proposal phase end"],
+    ["votingPhaseStart", "voting phase start"],
+    ["votingPhaseEnd", "voting phase end"],
+    ["schedulingPhaseStart", "scheduling phase start"],
+    ["schedulingPhaseEnd", "scheduling phase end"],
+  ];
+
+  const parsed: Partial<ParsedPhaseDates> = {};
+  for (const [field, label] of fieldDefs) {
+    const raw = input[field]?.trim();
+    if (raw) {
+      const d = parseDateTime(raw);
+      if (d === undefined) return `Invalid ${label}`;
+      parsed[field] = d;
+    } else {
+      parsed[field] = undefined;
+    }
+  }
+
+  const {
+    proposalPhaseStart: pStart,
+    proposalPhaseEnd: pEnd,
+    votingPhaseStart: vStart,
+    votingPhaseEnd: vEnd,
+    schedulingPhaseStart: sStart,
+    schedulingPhaseEnd: sEnd,
+  } = parsed as ParsedPhaseDates;
+
+  if (pStart && pEnd && pEnd <= pStart) {
+    return "Proposal phase end must be after its start";
+  }
+  if (vStart && vEnd && vEnd <= vStart) {
+    return "Voting phase end must be after its start";
+  }
+  if (sStart && sEnd && sEnd <= sStart) {
+    return "Scheduling phase end must be after its start";
+  }
+  if (pEnd && vStart && vStart < pEnd) {
+    return "Voting phase must not start before proposal phase ends";
+  }
+  if (vEnd && sStart && sStart < vEnd) {
+    return "Scheduling phase must not start before voting phase ends";
+  }
+  // A phase without an explicit end implicitly ends when the next phase starts,
+  // so the starts themselves must stay in order.
+  if (pStart && vStart && vStart < pStart) {
+    return "Voting phase must not start before proposal phase starts";
+  }
+  if (vStart && sStart && sStart < vStart) {
+    return "Scheduling phase must not start before voting phase starts";
+  }
+  // When voting is unset, the checks above leave scheduling unconstrained
+  // relative to the proposal phase. Constrain it directly so scheduling can
+  // never start before the proposal phase starts or ends.
+  if (pStart && sStart && sStart < pStart) {
+    return "Scheduling phase must not start before proposal phase starts";
+  }
+  if (pEnd && sStart && sStart < pEnd) {
+    return "Scheduling phase must not start before proposal phase ends";
+  }
+  return parsed as ParsedPhaseDates;
+}
+
 export async function updateEventPhasesAction(
   input: EventPhasesInput
 ): Promise<AdminActionResult> {
   if (!(await isAdminRequest())) return { ok: false, error: "Unauthorized" };
 
-  const updated = await getRepositories().events.update(input.id, {
-    proposalPhaseStart: parseDateTime(input.proposalPhaseStart),
-    proposalPhaseEnd: parseDateTime(input.proposalPhaseEnd),
-    votingPhaseStart: parseDateTime(input.votingPhaseStart),
-    votingPhaseEnd: parseDateTime(input.votingPhaseEnd),
-    schedulingPhaseStart: parseDateTime(input.schedulingPhaseStart),
-    schedulingPhaseEnd: parseDateTime(input.schedulingPhaseEnd),
-  });
+  const result = validatePhasesInput(input);
+  if (typeof result === "string") {
+    return { ok: false, error: result };
+  }
+
+  const updated = await getRepositories().events.update(input.id, result);
   if (!updated) return { ok: false, error: "Event not found" };
 
   revalidatePath("/admin");
