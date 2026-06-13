@@ -49,6 +49,10 @@ export interface EventsRepository {
   findById(id: string): Promise<Event | undefined>;
   findByName(name: string): Promise<Event | undefined>;
   create(data: Omit<Event, "id">): Promise<Event>;
+  update(
+    id: string,
+    patch: Partial<Omit<Event, "id">>
+  ): Promise<Event | undefined>;
 }
 
 // ── Guests ────────────────────────────────────────────────────────────────────
@@ -65,6 +69,9 @@ export interface GuestsRepository {
   findById(id: string): Promise<Guest | undefined>;
   findByEmail(email: string): Promise<Guest | undefined>;
   create(data: Omit<Guest, "id">): Promise<Guest>;
+  update(id: string, data: Omit<Guest, "id">): Promise<Guest | undefined>;
+  /** Deletes the guest and all records referencing them (votes, RSVPs, host links, event assignments). */
+  delete(id: string): Promise<void>;
 }
 
 // ── Locations ─────────────────────────────────────────────────────────────────
@@ -83,10 +90,27 @@ export type Location = {
 };
 
 export interface LocationsRepository {
+  /** All locations (including hidden), ordered by sortIndex. */
+  list(): Promise<Location[]>;
   listVisible(): Promise<Location[]>;
   listBookable(): Promise<Location[]>;
   findById(id: string): Promise<Location | undefined>;
   create(data: Omit<Location, "id">): Promise<Location>;
+  update(id: string, data: Omit<Location, "id">): Promise<Location | undefined>;
+  /** Deletes the location and all session/event links referencing it. */
+  delete(id: string): Promise<void>;
+  /** Number of sessions linked to this location. */
+  countSessionLinks(id: string): Promise<number>;
+  /** IDs of events this location is assigned to. */
+  listEventIds(id: string): Promise<string[]>;
+  /** Replaces the location's event assignments. */
+  setEventIds(id: string, eventIds: string[]): Promise<void>;
+  /**
+   * Moves the location one position up or down in the sort order.
+   * Normalizes sortIndex values to consecutive integers as a side effect.
+   * Returns false if the location is already at the boundary or unknown.
+   */
+  move(id: string, direction: "up" | "down"): Promise<boolean>;
 }
 
 // ── Sessions ──────────────────────────────────────────────────────────────────

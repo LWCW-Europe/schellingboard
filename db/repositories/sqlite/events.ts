@@ -4,6 +4,8 @@ import { nanoid } from "nanoid";
 import * as schema from "../../schema";
 import type { Event, EventsRepository } from "../interfaces";
 
+type EventRow = typeof schema.events.$inferInsert;
+
 type DB = BetterSQLite3Database<typeof schema>;
 
 function rowToEvent(row: typeof schema.events.$inferSelect): Event {
@@ -86,5 +88,45 @@ export class SqliteEventsRepository implements EventsRepository {
       })
       .run();
     return { id, ...data };
+  }
+
+  async update(
+    id: string,
+    patch: Partial<Omit<Event, "id">>
+  ): Promise<Event | undefined> {
+    const existing = await this.findById(id);
+    if (!existing) return undefined;
+
+    const set: Partial<EventRow> = {};
+    if (patch.name !== undefined) set.name = patch.name;
+    if (patch.description !== undefined) set.description = patch.description;
+    if (patch.website !== undefined) set.website = patch.website;
+    if (patch.start !== undefined) set.start = patch.start.toISOString();
+    if (patch.end !== undefined) set.end = patch.end.toISOString();
+    if ("proposalPhaseStart" in patch)
+      set.proposalPhaseStart = patch.proposalPhaseStart?.toISOString() ?? null;
+    if ("proposalPhaseEnd" in patch)
+      set.proposalPhaseEnd = patch.proposalPhaseEnd?.toISOString() ?? null;
+    if ("votingPhaseStart" in patch)
+      set.votingPhaseStart = patch.votingPhaseStart?.toISOString() ?? null;
+    if ("votingPhaseEnd" in patch)
+      set.votingPhaseEnd = patch.votingPhaseEnd?.toISOString() ?? null;
+    if ("schedulingPhaseStart" in patch)
+      set.schedulingPhaseStart =
+        patch.schedulingPhaseStart?.toISOString() ?? null;
+    if ("schedulingPhaseEnd" in patch)
+      set.schedulingPhaseEnd = patch.schedulingPhaseEnd?.toISOString() ?? null;
+    if (patch.maxSessionDuration !== undefined)
+      set.maxSessionDuration = patch.maxSessionDuration;
+    if (patch.timezone !== undefined) set.timezone = patch.timezone;
+    if ("icon" in patch) set.icon = patch.icon ?? null;
+
+    this.db
+      .update(schema.events)
+      .set(set)
+      .where(eq(schema.events.id, id))
+      .run();
+
+    return { ...existing, ...patch };
   }
 }
