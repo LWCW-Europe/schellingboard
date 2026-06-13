@@ -5,6 +5,7 @@ import { requireAdminPage } from "../../require-admin";
 import { EventDetailForm } from "./event-detail-form";
 import { EventPhasesForm } from "./event-phases-form";
 import { EventDaysManager, type SerializedDay } from "./event-days-manager";
+import { EventGuestsManager, type GuestRow } from "./event-guests-manager";
 
 export default async function AdminEventDetailPage({
   params,
@@ -17,6 +18,17 @@ export default async function AdminEventDetailPage({
   const repos = getRepositories();
   const event = await repos.events.findById(id);
   if (!event) notFound();
+
+  const allGuests = await repos.guests.list();
+  const assignedGuestIds = new Set(
+    (await repos.guests.listByEvent(id)).map((g) => g.id)
+  );
+  const guestRows: GuestRow[] = allGuests.map((g) => ({
+    id: g.id,
+    name: g.name,
+    email: g.email,
+    assigned: assignedGuestIds.has(g.id),
+  }));
 
   const days: SerializedDay[] = (await repos.days.listByEvent(id)).map((d) => ({
     id: d.id,
@@ -43,6 +55,8 @@ export default async function AdminEventDetailPage({
       <EventPhasesForm event={event} />
       <hr className="border-gray-200" />
       <EventDaysManager days={days} eventId={id} />
+      <hr className="border-gray-200" />
+      <EventGuestsManager guests={guestRows} eventId={id} />
     </div>
   );
 }
