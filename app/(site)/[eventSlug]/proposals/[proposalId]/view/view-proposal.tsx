@@ -205,7 +205,7 @@ export function ViewProposal(props: {
             <p>
               This proposal was scheduled on{" "}
               <Link
-                href={`/${eventSlug}/view-session?sessionID=${sessions[0].id}`}
+                href={`/${eventSlug}?viewSession=${sessions[0].id}`}
                 className="text-rose-500 underline hover:text-rose-600 transition-colors"
               >
                 {DateTime.fromJSDate(sessions[0].startTime ?? new Date())
@@ -226,7 +226,7 @@ export function ViewProposal(props: {
                 {sessions.map((session) => (
                   <li key={session.id}>
                     <Link
-                      href={`/${eventSlug}/view-session?sessionID=${session.id}`}
+                      href={`/${eventSlug}?viewSession=${session.id}`}
                       className="text-rose-500 underline hover:text-rose-600 transition-colors"
                     >
                       {DateTime.fromJSDate(session.startTime ?? new Date())
