@@ -49,6 +49,10 @@ export interface EventsRepository {
   findById(id: string): Promise<Event | undefined>;
   findByName(name: string): Promise<Event | undefined>;
   create(data: Omit<Event, "id">): Promise<Event>;
+  update(
+    id: string,
+    patch: Partial<Omit<Event, "id">>
+  ): Promise<Event | undefined>;
 }
 
 // ── Guests ────────────────────────────────────────────────────────────────────
