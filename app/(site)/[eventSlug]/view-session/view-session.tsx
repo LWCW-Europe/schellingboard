@@ -21,7 +21,6 @@ export function ViewSession(props: {
   rsvps: Rsvp[];
   eventSlug: string;
   event: Event;
-  showBackBtn: boolean;
   isInModal?: boolean;
   onCloseModal?: () => void;
 }) {
@@ -31,7 +30,6 @@ export function ViewSession(props: {
     rsvps,
     eventSlug,
     event,
-    showBackBtn,
     isInModal = false,
     onCloseModal,
   } = props;
@@ -171,14 +169,6 @@ export function ViewSession(props: {
           "Are you sure you want to proceed?"
         }
       />
-      {showBackBtn && (
-        <Link
-          className="bg-rose-400 text-white font-semibold py-2 px-4 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12 mt-4 mb-2 block"
-          href={`/${eventSlug}`}
-        >
-          Back to {event.name}
-        </Link>
-      )}
       <div className="flex items-start gap-2 mb-2 mt-5">
         <p
           className="text-xl font-semibold flex-1 flex items-center gap-2"
