@@ -333,6 +333,110 @@ test.describe("Admin UI events", () => {
   });
 });
 
+test.describe("Admin UI days", () => {
+  test("can add, edit, and delete days on an event detail page", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Create a throwaway event so we never touch seeded events
+    const unique = Date.now();
+    const eventName = `E2E Days ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const daysSection = page.getByRole("region", { name: "Days" });
+
+    // Add a day
+    await daysSection.getByRole("button", { name: "Add day" }).click();
+    await daysSection.getByLabel("Start *").fill("2026-10-01T09:00");
+    await daysSection.getByLabel("End *").fill("2026-10-01T18:00");
+    await daysSection.getByLabel("Bookings open *").fill("2026-10-01T09:00");
+    await daysSection.getByLabel("Bookings close *").fill("2026-10-01T17:30");
+    await daysSection.getByRole("button", { name: "Add day" }).click();
+
+    // router.refresh() re-fetches the server component — wait for the day
+    // to appear in the refreshed list
+    await expect(
+      page.getByRole("region", { name: "Days" }).getByRole("listitem")
+    ).toHaveCount(1);
+
+    // Edit the day — router.refresh() also happens after save
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByRole("button", { name: /Edit day/ })
+      .click();
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByLabel("End *")
+      .fill("2026-10-01T20:00");
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByRole("button", { name: "Save" })
+      .click();
+    // Server component refreshes; wait for Days section to re-appear
+    await expect(
+      page.getByRole("region", { name: "Days" }).getByRole("listitem")
+    ).toHaveCount(1);
+
+    // Delete the day
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByRole("button", { name: /Delete day/ })
+      .click();
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByRole("button", { name: "Confirm delete" })
+      .click();
+    // Server component refreshes; list should be empty
+    await expect(
+      page.getByRole("region", { name: "Days" }).getByRole("listitem")
+    ).toHaveCount(0);
+
+    // Validation: end before start shows error (no reload — action returns error)
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByRole("button", { name: "Add day" })
+      .click();
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByLabel("Start *")
+      .fill("2026-10-01T18:00");
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByLabel("End *")
+      .fill("2026-10-01T09:00");
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByLabel("Bookings open *")
+      .fill("2026-10-01T09:00");
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByLabel("Bookings close *")
+      .fill("2026-10-01T17:30");
+    await page
+      .getByRole("region", { name: "Days" })
+      .getByRole("button", { name: "Add day" })
+      .click();
+    await expect(page.getByText(/day end must be after start/i)).toBeVisible();
+
+    // Clean up
+    await page.getByRole("button", { name: "Delete event" }).click();
+    await page.getByLabel("Type the event name to confirm").fill(eventName);
+    await page.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
+  });
+});
+
 async function makeImage(width: number, height: number): Promise<Buffer> {
   return sharp({
     create: { width, height, channels: 3, background: { r: 90, g: 60, b: 30 } },
