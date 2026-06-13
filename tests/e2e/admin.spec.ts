@@ -299,6 +299,20 @@ test.describe("Admin UI events", () => {
       page.getByRole("group", { name: "Proposal phase" }).getByLabel("End")
     ).toHaveValue("2026-09-15T17:00");
 
+    // Validation: end before start shows an error
+    await page
+      .getByRole("group", { name: "Proposal phase" })
+      .getByLabel("Start")
+      .fill("2026-09-20T09:00");
+    await page
+      .getByRole("group", { name: "Proposal phase" })
+      .getByLabel("End")
+      .fill("2026-09-01T09:00");
+    await page.getByRole("button", { name: "Save phases" }).click();
+    await expect(
+      page.getByText(/proposal phase end must be after its start/i)
+    ).toBeVisible();
+
     // Clear the phase dates
     await page
       .getByRole("group", { name: "Proposal phase" })

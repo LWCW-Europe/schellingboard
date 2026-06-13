@@ -51,7 +51,9 @@ export function EventPhasesForm({ event }: { event: Event }) {
     <form onSubmit={handleSave} className="space-y-4">
       <h2 className="text-lg font-semibold text-gray-900">Phases</h2>
       <p className="text-sm text-gray-500">
-        All times are UTC. Leave fields empty to unset a phase.
+        All times are UTC. Leave fields empty to unset a phase. A phase with no
+        end runs until the next phase starts; set an end earlier than the next
+        start to leave an inactive gap.
       </p>
       {saveError && <p className="text-sm text-red-600">{saveError}</p>}
 

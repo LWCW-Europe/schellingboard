@@ -11,7 +11,13 @@ export enum EventPhase {
 }
 
 /**
- * Checks if the current time falls within a date period
+ * Checks if the current time falls within a date period.
+ *
+ * The interval is half-open `[start, end)`: the end is exclusive so that
+ * touching phases (where one phase's implicit end equals the next phase's
+ * start) hand over cleanly at the boundary instead of overlapping for one
+ * instant.
+ *
  * @param start - The start date of the period
  * @param end - The end date of the period (optional, defaults to no end limit)
  * @returns true if current time is within the period
@@ -19,30 +25,47 @@ export enum EventPhase {
 function inDatePeriod(start: Date, end?: Date): boolean {
   const now = Date.now();
   const afterStart = now >= start.getTime();
-  const beforeEnd = !end || now <= end.getTime();
+  const beforeEnd = !end || now < end.getTime();
   return afterStart && beforeEnd;
 }
 
 /**
- * Checks if an event is currently in the proposal phase
+ * Checks if an event is currently in the proposal phase.
+ *
+ * A phase without an explicit end is treated as ending when the next
+ * configured phase starts, so an open-ended proposal phase does not mask
+ * voting/scheduling. An explicit end set before the next phase start creates
+ * an intentional inactive gap.
+ *
  * @param event - The event to check
  * @returns true if the event is in the proposal phase
  */
 export function inProposalPhase(event: Event): boolean {
-  const { proposalPhaseStart, proposalPhaseEnd } = event;
+  const {
+    proposalPhaseStart,
+    proposalPhaseEnd,
+    votingPhaseStart,
+    schedulingPhaseStart,
+  } = event;
+  const effectiveEnd =
+    proposalPhaseEnd ?? votingPhaseStart ?? schedulingPhaseStart;
   return !!(
-    proposalPhaseStart && inDatePeriod(proposalPhaseStart, proposalPhaseEnd)
+    proposalPhaseStart && inDatePeriod(proposalPhaseStart, effectiveEnd)
   );
 }
 
 /**
- * Checks if an event is currently in the voting phase
+ * Checks if an event is currently in the voting phase.
+ *
+ * An open-ended voting phase is treated as ending when scheduling starts.
+ *
  * @param event - The event to check
  * @returns true if the event is in the voting phase
  */
 export function inVotingPhase(event: Event): boolean {
-  const { votingPhaseStart, votingPhaseEnd } = event;
-  return !!(votingPhaseStart && inDatePeriod(votingPhaseStart, votingPhaseEnd));
+  const { votingPhaseStart, votingPhaseEnd, schedulingPhaseStart } = event;
+  const effectiveEnd = votingPhaseEnd ?? schedulingPhaseStart;
+  return !!(votingPhaseStart && inDatePeriod(votingPhaseStart, effectiveEnd));
 }
 
 /**
