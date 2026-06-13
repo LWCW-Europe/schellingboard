@@ -123,13 +123,13 @@ make check-and-format  # Format, lint, type check, and run tests
 
 ### Test strategy
 
-Three tiers, in descending priority:
+See [ADR 0002](docs/adr/0002-testing-strategy.md) for the full rationale. Three tiers, each with a distinct role:
 
-**E2E tests** (Playwright, `tests/e2e/`) — highest value. Cover important user workflows. Do _not_ try to cover every edge case; prefer fewer, high-confidence tests over broad but fragile coverage.
+**Unit tests** (Vitest, `tests/unit/`) — pure functions and isolated business rules only. No DB, no I/O.
 
-**Integration tests** (Vitest, `tests/`) — Vitest tests that hit a real SQLite DB via repositories and server actions. These should achieve high business-logic coverage. Because they target stable interfaces they rarely need rewrites during internal refactors.
+**Integration tests** (Vitest, `tests/integration/`) — server actions and API route handlers against a real in-memory SQLite DB. Verify post-condition state through a read surface in order of preference: (1) the corresponding GET endpoint, (2) repo read methods, (3) direct DB rows (last resort). Only `redirect()` and `revalidatePath()` are mocked.
 
-**Unit tests** (Vitest) — use sparingly, only for particularly complex functions with isolated business logic. Do not write unit tests that duplicate what integration tests already cover; that creates noise and maintenance overhead.
+**E2E tests** (Playwright, `tests/e2e/`) — behavior that only manifests in a browser: routing, phase-dependent UI, modals, form interaction, mobile layout. Prefer fewer, high-confidence tests over broad coverage.
 
 ### TDD workflow
 
