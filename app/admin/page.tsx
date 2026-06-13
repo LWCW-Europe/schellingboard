@@ -1,48 +1,58 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getRepositories } from "@/db/container";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
-import { GuestsManager } from "./guests-manager";
-import { LocationsManager, type AdminLocation } from "./locations-manager";
+import { requireAdminPage } from "./require-admin";
 
 export default async function AdminPage() {
-  // Defense in depth: the proxy already guards /admin, but verify here too
-  const cookieStore = await cookies();
-  const isAdmin = await isAdminCookieValid(
-    cookieStore.get(ADMIN_COOKIE_NAME)?.value
-  );
-  if (!isAdmin) {
-    redirect("/admin/login");
-  }
+  await requireAdminPage();
 
   const repositories = getRepositories();
-  const guests = await repositories.guests.list();
   const events = await repositories.events.list();
-  const locations: AdminLocation[] = await Promise.all(
-    (await repositories.locations.list()).map(async (location) => ({
-      location,
-      eventIds: await repositories.locations.listEventIds(location.id),
-      sessionLinkCount: await repositories.locations.countSessionLinks(
-        location.id
-      ),
-    }))
-  );
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold text-gray-900">Administration</h1>
 
-      <section aria-label="Users" className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">Users</h2>
-        <GuestsManager guests={guests} />
+      <section aria-label="Events" className="space-y-3">
+        <h2 className="text-xl font-semibold text-gray-900">Events</h2>
+        {events.length === 0 ? (
+          <p className="text-sm text-gray-500">No events yet.</p>
+        ) : (
+          <ul className="divide-y divide-gray-200 border-t border-b border-gray-200">
+            {events.map((event) => (
+              <li key={event.id} className="py-3">
+                <p className="font-medium text-gray-900">{event.name}</p>
+                <p className="text-sm text-gray-500">
+                  {event.start.toLocaleDateString()} –{" "}
+                  {event.end.toLocaleDateString()}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
-      <section aria-label="Locations" className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">Locations</h2>
-        <LocationsManager
-          locations={locations}
-          events={events.map((e) => ({ id: e.id, name: e.name }))}
-        />
+      <section aria-label="Global sections" className="space-y-3">
+        <h2 className="text-xl font-semibold text-gray-900">Global</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link
+            href="/admin/users"
+            className="block rounded-md border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
+          >
+            <p className="font-medium text-gray-900">Users</p>
+            <p className="text-sm text-gray-500">
+              Manage the global pool of users.
+            </p>
+          </Link>
+          <Link
+            href="/admin/locations"
+            className="block rounded-md border border-gray-200 p-4 hover:bg-gray-50 transition-colors"
+          >
+            <p className="font-medium text-gray-900">Locations</p>
+            <p className="text-sm text-gray-500">
+              Manage the global pool of locations.
+            </p>
+          </Link>
+        </div>
       </section>
     </div>
   );
