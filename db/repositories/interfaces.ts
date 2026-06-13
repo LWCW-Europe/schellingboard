@@ -22,6 +22,12 @@ export interface DaysRepository {
   listByEvent(eventId: string): Promise<Day[]>;
   findById(id: string): Promise<Day | undefined>;
   create(data: Omit<Day, "id">): Promise<Day>;
+  update(
+    id: string,
+    patch: Partial<Omit<Day, "id" | "eventId">>
+  ): Promise<Day | undefined>;
+  /** Deletes the day and sessions whose times fall within the day's window. */
+  delete(id: string): Promise<void>;
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
