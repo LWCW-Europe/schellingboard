@@ -3,6 +3,7 @@ import Footer from "../footer";
 import { CONSTS } from "@/utils/constants";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import { AdminLogoutButton } from "./logout-button";
+import { AdminNav } from "./admin-nav";
 
 export default async function AdminLayout({
   children,
@@ -17,8 +18,9 @@ export default async function AdminLayout({
   return (
     <>
       <header className="bg-gray-900 text-white">
-        <div className="max-w-3xl mx-auto px-3 py-3 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-3 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 justify-between">
           <span className="font-semibold">{CONSTS.TITLE} Admin</span>
+          {isAdmin && <AdminNav />}
           {isAdmin && <AdminLogoutButton />}
         </div>
       </header>

@@ -16,6 +16,22 @@ async function adminLogin(page: Page) {
   ).toBeVisible();
 }
 
+async function gotoUsers(page: Page) {
+  await page
+    .getByRole("navigation", { name: "Admin" })
+    .getByRole("link", { name: "Users" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
+}
+
+async function gotoLocations(page: Page) {
+  await page
+    .getByRole("navigation", { name: "Admin" })
+    .getByRole("link", { name: "Locations" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Locations" })).toBeVisible();
+}
+
 test.describe("Admin UI", () => {
   // Note: no site login here. The admin UI is independent of the normal
   // user UI and must be reachable with only the admin password.
@@ -33,8 +49,10 @@ test.describe("Admin UI", () => {
   test("shows only admin chrome and can log out", async ({ page }) => {
     await adminLogin(page);
 
-    // No site navigation or site logout button, only the admin logout
-    await expect(page.getByRole("navigation")).toHaveCount(0);
+    // Only the admin nav is present, not the site nav, and only the admin
+    // logout button (no site logout)
+    await expect(page.getByRole("navigation", { name: "Admin" })).toBeVisible();
+    await expect(page.getByRole("navigation")).toHaveCount(1);
     await expect(
       page.getByRole("button", { name: "Logout", exact: true })
     ).toHaveCount(0);
@@ -42,6 +60,33 @@ test.describe("Admin UI", () => {
     await expect(
       page.getByRole("heading", { name: "Admin Access" })
     ).toBeVisible();
+  });
+
+  test("dashboard lists events and links to global sections", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+
+    // Seeded events are listed on the dashboard
+    const eventsRegion = page.getByRole("region", { name: "Events" });
+    await expect(eventsRegion.getByText("Conference Alpha")).toBeVisible();
+
+    // The global section cards navigate to their dedicated pages
+    const globalRegion = page.getByRole("region", { name: "Global sections" });
+    await globalRegion.getByRole("link", { name: /Users/ }).click();
+    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
+
+    await gotoLocations(page);
+  });
+
+  test("guards new admin routes when not authenticated", async ({ page }) => {
+    for (const path of ["/admin/users", "/admin/locations"]) {
+      await page.goto(path);
+      await expect(
+        page.getByRole("heading", { name: "Admin Access" })
+      ).toBeVisible();
+      await expect(page).toHaveURL(/\/admin\/login/);
+    }
   });
 
   test("rejects a wrong admin password", async ({ page }) => {
@@ -56,6 +101,7 @@ test.describe("Admin UI", () => {
 
   test("can create, edit, and delete a user", async ({ page }) => {
     await adminLogin(page);
+    await gotoUsers(page);
 
     const unique = Date.now();
     const email = `e2e-admin-${unique}@test.example`;
@@ -118,6 +164,7 @@ test.describe("Admin UI locations", () => {
 
   test("can create, edit, reorder, and delete locations", async ({ page }) => {
     await adminLogin(page);
+    await gotoLocations(page);
     const region = page.getByRole("region", { name: "Locations" });
 
     const unique = Date.now();
@@ -191,6 +238,7 @@ test.describe("Admin UI locations", () => {
     page,
   }) => {
     await adminLogin(page);
+    await gotoLocations(page);
     const region = page.getByRole("region", { name: "Locations" });
 
     const name = `E2E Photo Room ${Date.now()}`;

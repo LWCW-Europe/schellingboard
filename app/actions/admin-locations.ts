@@ -134,7 +134,7 @@ export async function createLocationAction(
   }
   await locations.setEventIds(location.id, fields.eventIds);
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/locations");
   return { ok: true };
 }
 
@@ -176,7 +176,7 @@ export async function updateLocationAction(
   await locations.update(id, data);
   await locations.setEventIds(id, fields.eventIds);
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/locations");
   return { ok: true };
 }
 
@@ -192,7 +192,7 @@ export async function deleteLocationAction(input: {
   await locations.delete(input.id);
   await deleteLocationImage(input.id);
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/locations");
   return { ok: true };
 }
 
@@ -205,6 +205,6 @@ export async function moveLocationAction(input: {
   const { locations } = getRepositories();
   await locations.move(input.id, input.direction);
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/locations");
   return { ok: true };
 }

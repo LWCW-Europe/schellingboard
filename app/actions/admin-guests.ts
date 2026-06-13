@@ -36,7 +36,7 @@ export async function createGuestAction(input: {
   }
 
   await guests.create({ name, email });
-  revalidatePath("/admin");
+  revalidatePath("/admin/users");
   return { ok: true };
 }
 
@@ -61,7 +61,7 @@ export async function updateGuestAction(input: {
   const updated = await guests.update(input.id, { name, email });
   if (!updated) return { ok: false, error: "User not found" };
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/users");
   return { ok: true };
 }
 
@@ -75,6 +75,6 @@ export async function deleteGuestAction(input: {
   if (!guest) return { ok: false, error: "User not found" };
 
   await guests.delete(input.id);
-  revalidatePath("/admin");
+  revalidatePath("/admin/users");
   return { ok: true };
 }
