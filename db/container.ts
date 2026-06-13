@@ -59,6 +59,9 @@ export function getRepositories(): Repositories {
     const db = drizzle(_sqlite, { schema });
     const migrationsFolder = path.join(process.cwd(), "drizzle");
     migrate(db, { migrationsFolder });
+    // Enable after migrations: PRAGMA cannot be changed inside a transaction,
+    // and the migration recreates tables so FK enforcement must be off during it.
+    _sqlite.pragma("foreign_keys = ON");
     _repositories = buildRepositories(_sqlite);
   }
   return _repositories;
@@ -77,5 +80,6 @@ export function serializeDb(): Buffer {
 
 export function restoreDb(snapshot: Buffer): void {
   _sqlite = new Database(snapshot);
+  _sqlite.pragma("foreign_keys = ON");
   _repositories = buildRepositories(_sqlite);
 }
