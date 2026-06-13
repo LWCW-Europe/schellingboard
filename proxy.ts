@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "./utils/auth";
+import {
+  ADMIN_DISABLED_MESSAGE,
+  isAdminEnabled,
+  requireAdminAuth,
+  requireAuth,
+} from "./utils/auth";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -10,6 +15,21 @@ export async function proxy(request: NextRequest) {
     pathname === "/api/health" ||
     pathname.startsWith("/api/auth/")
   ) {
+    return NextResponse.next();
+  }
+
+  // Admin routes are independent of site auth: they require only admin
+  // authentication (and return 404 when the admin UI is disabled)
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    if (!isAdminEnabled()) {
+      return new NextResponse(ADMIN_DISABLED_MESSAGE, { status: 404 });
+    }
+    if (pathname !== "/admin/login") {
+      const adminResponse = await requireAdminAuth(request);
+      if (adminResponse) {
+        return adminResponse;
+      }
+    }
     return NextResponse.next();
   }
 

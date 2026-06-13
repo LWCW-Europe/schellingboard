@@ -60,4 +60,34 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .run();
     return { id, ...data };
   }
+
+  async update(
+    id: string,
+    data: Omit<Guest, "id">
+  ): Promise<Guest | undefined> {
+    const result = this.db
+      .update(schema.guests)
+      .set(data)
+      .where(eq(schema.guests.id, id))
+      .run();
+    if (result.changes === 0) return undefined;
+    return { id, ...data };
+  }
+
+  async delete(id: string): Promise<void> {
+    this.db.transaction((tx) => {
+      tx.delete(schema.votes).where(eq(schema.votes.guestId, id)).run();
+      tx.delete(schema.rsvps).where(eq(schema.rsvps.guestId, id)).run();
+      tx.delete(schema.proposalHosts)
+        .where(eq(schema.proposalHosts.guestId, id))
+        .run();
+      tx.delete(schema.sessionHosts)
+        .where(eq(schema.sessionHosts.guestId, id))
+        .run();
+      tx.delete(schema.eventGuests)
+        .where(eq(schema.eventGuests.guestId, id))
+        .run();
+      tx.delete(schema.guests).where(eq(schema.guests.id, id)).run();
+    });
+  }
 }

@@ -4,7 +4,7 @@ import { useState, useContext } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { Input } from "./input";
+import { Input } from "@/app/input";
 import { UserContext } from "../context";
 import {
   createProposal,

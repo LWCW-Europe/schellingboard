@@ -9,7 +9,7 @@ import { DateTime } from "luxon";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-import { Input } from "./input";
+import { Input } from "@/app/input";
 import {
   convertParamDateTime,
   dateOnDay,

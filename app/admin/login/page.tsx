@@ -5,21 +5,19 @@ import { useSearchParams } from "next/navigation";
 import { Input } from "@/app/input";
 import clsx from "clsx";
 import { useActionState } from "react";
-import { loginAction } from "@/app/actions/auth";
+import { adminLoginAction } from "../../actions/admin-auth";
 
-function LoginForm() {
+function AdminLoginForm() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams?.get("redirect") || "/";
-  const [state, formAction] = useActionState(loginAction, null);
+  const redirectTo = searchParams?.get("redirect") || "/admin";
+  const [state, formAction] = useActionState(adminLoginAction, null);
 
   return (
     <div className="max-w-md w-full space-y-8">
       <div className="text-center">
-        <h2 className="mt-6 text-3xl font-bold text-gray-900">
-          Access Required
-        </h2>
+        <h2 className="mt-6 text-3xl font-bold text-gray-900">Admin Access</h2>
         <p className="mt-2 text-sm text-gray-600">
-          Please enter the password to access this site
+          Please enter the admin password
         </p>
       </div>
 
@@ -35,7 +33,7 @@ function LoginForm() {
             name="password"
             type="password"
             required
-            placeholder="Enter password"
+            placeholder="Enter admin password"
             error={!!state?.error}
             errorMessage={state?.error}
             className="w-full"
@@ -51,7 +49,7 @@ function LoginForm() {
               "bg-rose-600 hover:bg-rose-700"
             )}
           >
-            Access Site
+            Access Admin
           </button>
         </div>
       </form>
@@ -59,11 +57,11 @@ function LoginForm() {
   );
 }
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Suspense fallback={<div>Loading...</div>}>
-        <LoginForm />
+        <AdminLoginForm />
       </Suspense>
     </div>
   );
