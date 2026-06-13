@@ -19,6 +19,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 function openDb() {
   const url = process.env.DATABASE_URL ?? "file:./data.db";
   const sqlite = new Database(url.replace(/^file:/, ""));
+  // Enforce foreign keys on every connection; the migration below toggles it
+  // off and back on.
+  sqlite.pragma("foreign_keys = ON");
   const db = drizzle(sqlite, { schema });
   try {
     sqlite.pragma("foreign_keys = OFF");

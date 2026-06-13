@@ -101,15 +101,8 @@ export class SqliteLocationsRepository implements LocationsRepository {
   }
 
   async delete(id: string): Promise<void> {
-    this.db.transaction((tx) => {
-      tx.delete(schema.sessionLocations)
-        .where(eq(schema.sessionLocations.locationId, id))
-        .run();
-      tx.delete(schema.eventLocations)
-        .where(eq(schema.eventLocations.locationId, id))
-        .run();
-      tx.delete(schema.locations).where(eq(schema.locations.id, id)).run();
-    });
+    // session_locations and event_locations are removed by ON DELETE CASCADE.
+    this.db.delete(schema.locations).where(eq(schema.locations.id, id)).run();
   }
 
   async countSessionLinks(id: string): Promise<number> {

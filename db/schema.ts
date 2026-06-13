@@ -34,10 +34,10 @@ export const eventGuests = sqliteTable(
   {
     eventId: text("event_id")
       .notNull()
-      .references(() => events.id),
+      .references(() => events.id, { onDelete: "cascade" }),
     guestId: text("guest_id")
       .notNull()
-      .references(() => guests.id),
+      .references(() => guests.id, { onDelete: "cascade" }),
   },
   (t) => [primaryKey({ columns: [t.eventId, t.guestId] })]
 );
@@ -60,10 +60,10 @@ export const eventLocations = sqliteTable(
   {
     eventId: text("event_id")
       .notNull()
-      .references(() => events.id),
+      .references(() => events.id, { onDelete: "cascade" }),
     locationId: text("location_id")
       .notNull()
-      .references(() => locations.id),
+      .references(() => locations.id, { onDelete: "cascade" }),
   },
   (t) => [primaryKey({ columns: [t.eventId, t.locationId] })]
 );
@@ -76,14 +76,14 @@ export const days = sqliteTable("days", {
   endBookings: text("end_bookings").notNull(),
   eventId: text("event_id")
     .notNull()
-    .references(() => events.id),
+    .references(() => events.id, { onDelete: "cascade" }),
 });
 
 export const sessionProposals = sqliteTable("session_proposals", {
   id: text("id").primaryKey(),
   eventId: text("event_id")
     .notNull()
-    .references(() => events.id),
+    .references(() => events.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description"),
   durationMinutes: integer("duration_minutes"),
@@ -95,10 +95,10 @@ export const proposalHosts = sqliteTable(
   {
     proposalId: text("proposal_id")
       .notNull()
-      .references(() => sessionProposals.id),
+      .references(() => sessionProposals.id, { onDelete: "cascade" }),
     guestId: text("guest_id")
       .notNull()
-      .references(() => guests.id),
+      .references(() => guests.id, { onDelete: "cascade" }),
   },
   (t) => [primaryKey({ columns: [t.proposalId, t.guestId] })]
 );
@@ -117,10 +117,12 @@ export const sessions = sqliteTable("sessions", {
     .default(false),
   blocker: integer("blocker", { mode: "boolean" }).notNull().default(false),
   closed: integer("closed", { mode: "boolean" }).notNull().default(false),
-  proposalId: text("proposal_id").references(() => sessionProposals.id),
+  proposalId: text("proposal_id").references(() => sessionProposals.id, {
+    onDelete: "set null",
+  }),
   eventId: text("event_id")
     .notNull()
-    .references(() => events.id),
+    .references(() => events.id, { onDelete: "cascade" }),
 });
 
 export const sessionHosts = sqliteTable(
@@ -128,10 +130,10 @@ export const sessionHosts = sqliteTable(
   {
     sessionId: text("session_id")
       .notNull()
-      .references(() => sessions.id),
+      .references(() => sessions.id, { onDelete: "cascade" }),
     guestId: text("guest_id")
       .notNull()
-      .references(() => guests.id),
+      .references(() => guests.id, { onDelete: "cascade" }),
   },
   (t) => [primaryKey({ columns: [t.sessionId, t.guestId] })]
 );
@@ -141,10 +143,10 @@ export const sessionLocations = sqliteTable(
   {
     sessionId: text("session_id")
       .notNull()
-      .references(() => sessions.id),
+      .references(() => sessions.id, { onDelete: "cascade" }),
     locationId: text("location_id")
       .notNull()
-      .references(() => locations.id),
+      .references(() => locations.id, { onDelete: "cascade" }),
   },
   (t) => [primaryKey({ columns: [t.sessionId, t.locationId] })]
 );
@@ -153,19 +155,19 @@ export const rsvps = sqliteTable("rsvps", {
   id: text("id").primaryKey(),
   sessionId: text("session_id")
     .notNull()
-    .references(() => sessions.id),
+    .references(() => sessions.id, { onDelete: "cascade" }),
   guestId: text("guest_id")
     .notNull()
-    .references(() => guests.id),
+    .references(() => guests.id, { onDelete: "cascade" }),
 });
 
 export const votes = sqliteTable("votes", {
   id: text("id").primaryKey(),
   proposalId: text("proposal_id")
     .notNull()
-    .references(() => sessionProposals.id),
+    .references(() => sessionProposals.id, { onDelete: "cascade" }),
   guestId: text("guest_id")
     .notNull()
-    .references(() => guests.id),
+    .references(() => guests.id, { onDelete: "cascade" }),
   choice: text("choice").notNull(),
 });

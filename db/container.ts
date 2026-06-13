@@ -56,6 +56,11 @@ export function getRepositories(): Repositories {
   if (!_repositories) {
     const url = process.env.DATABASE_URL ?? DEFAULT_DB_URL;
     _sqlite = new Database(url.replace(/^file:/, ""));
+    // Enforce foreign keys on every connection. better-sqlite3 happens to
+    // compile SQLite with SQLITE_DEFAULT_FOREIGN_KEYS=1, but set it explicitly
+    // so our ON DELETE CASCADE / SET NULL behaviour never depends on that
+    // build default. Migrations toggle it off and back on below.
+    _sqlite.pragma("foreign_keys = ON");
     const db = drizzle(_sqlite, { schema });
     const migrationsFolder = path.join(process.cwd(), "drizzle");
     try {
@@ -82,5 +87,7 @@ export function serializeDb(): Buffer {
 
 export function restoreDb(snapshot: Buffer): void {
   _sqlite = new Database(snapshot);
+  // Enforce foreign keys on every connection (see getRepositories).
+  _sqlite.pragma("foreign_keys = ON");
   _repositories = buildRepositories(_sqlite);
 }

@@ -194,14 +194,11 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
   }
 
   async delete(id: string): Promise<void> {
-    this.db.transaction((tx) => {
-      tx.delete(schema.votes).where(eq(schema.votes.proposalId, id)).run();
-      tx.delete(schema.proposalHosts)
-        .where(eq(schema.proposalHosts.proposalId, id))
-        .run();
-      tx.delete(schema.sessionProposals)
-        .where(eq(schema.sessionProposals.id, id))
-        .run();
-    });
+    // votes and proposal_hosts are removed by ON DELETE CASCADE; sessions
+    // referencing this proposal have their proposal_id set to NULL.
+    this.db
+      .delete(schema.sessionProposals)
+      .where(eq(schema.sessionProposals.id, id))
+      .run();
   }
 }

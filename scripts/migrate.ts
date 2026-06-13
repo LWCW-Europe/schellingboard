@@ -10,6 +10,9 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 
 const dbUrl = process.env.DATABASE_URL ?? "file:./data.db";
 const sqlite = new Database(dbUrl.replace(/^file:/, ""));
+// Enforce foreign keys on every connection; the migration below toggles it
+// off and back on.
+sqlite.pragma("foreign_keys = ON");
 const db = drizzle(sqlite);
 
 const migrationsFolder = path.join(

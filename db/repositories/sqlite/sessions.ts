@@ -245,15 +245,8 @@ export class SqliteSessionsRepository implements SessionsRepository {
   }
 
   async delete(id: string): Promise<void> {
-    this.db.transaction((tx) => {
-      tx.delete(schema.rsvps).where(eq(schema.rsvps.sessionId, id)).run();
-      tx.delete(schema.sessionHosts)
-        .where(eq(schema.sessionHosts.sessionId, id))
-        .run();
-      tx.delete(schema.sessionLocations)
-        .where(eq(schema.sessionLocations.sessionId, id))
-        .run();
-      tx.delete(schema.sessions).where(eq(schema.sessions.id, id)).run();
-    });
+    // rsvps, session_hosts and session_locations are removed by ON DELETE
+    // CASCADE.
+    this.db.delete(schema.sessions).where(eq(schema.sessions.id, id)).run();
   }
 }

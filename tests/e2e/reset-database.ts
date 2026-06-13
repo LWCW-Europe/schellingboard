@@ -45,6 +45,9 @@ if (process.env.NODE_ENV === "production" || dbUrl.includes("prod")) {
 
 function openDb() {
   const sqlite = new Database(dbUrl.replace(/^file:/, ""));
+  // Enforce foreign keys on every connection; the migration below toggles it
+  // off and back on.
+  sqlite.pragma("foreign_keys = ON");
   const db = drizzle(sqlite, { schema });
   const migrationsFolder = path.join(
     path.dirname(fileURLToPath(import.meta.url)),
