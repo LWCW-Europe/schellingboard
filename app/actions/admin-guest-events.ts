@@ -1,0 +1,51 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { getRepositories } from "@/db/container";
+import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import type { AdminActionResult } from "./admin-guests";
+
+async function isAdminRequest(): Promise<boolean> {
+  const cookieStore = await cookies();
+  return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
+}
+
+function revalidateEventPaths(eventId: string) {
+  revalidatePath("/admin");
+  revalidatePath("/admin/events");
+  revalidatePath(`/admin/events/${eventId}`);
+}
+
+export async function assignGuestsToEventAction(input: {
+  eventId: string;
+  guestIds: string[];
+}): Promise<AdminActionResult> {
+  if (!(await isAdminRequest())) return { ok: false, error: "Unauthorized" };
+
+  const event = await getRepositories().events.findById(input.eventId);
+  if (!event) return { ok: false, error: "Event not found" };
+
+  for (const guestId of input.guestIds) {
+    const guest = await getRepositories().guests.findById(guestId);
+    if (!guest) return { ok: false, error: "Guest not found" };
+  }
+
+  await getRepositories().guests.assignToEvent(input.eventId, input.guestIds);
+  revalidateEventPaths(input.eventId);
+  return { ok: true };
+}
+
+export async function removeGuestsFromEventAction(input: {
+  eventId: string;
+  guestIds: string[];
+}): Promise<AdminActionResult> {
+  if (!(await isAdminRequest())) return { ok: false, error: "Unauthorized" };
+
+  const event = await getRepositories().events.findById(input.eventId);
+  if (!event) return { ok: false, error: "Event not found" };
+
+  await getRepositories().guests.removeFromEvent(input.eventId, input.guestIds);
+  revalidateEventPaths(input.eventId);
+  return { ok: true };
+}

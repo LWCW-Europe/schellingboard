@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
@@ -72,6 +72,28 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .run();
     if (result.changes === 0) return undefined;
     return { id, ...data };
+  }
+
+  async assignToEvent(eventId: string, guestIds: string[]): Promise<void> {
+    if (guestIds.length === 0) return;
+    this.db
+      .insert(schema.eventGuests)
+      .values(guestIds.map((guestId) => ({ eventId, guestId })))
+      .onConflictDoNothing()
+      .run();
+  }
+
+  async removeFromEvent(eventId: string, guestIds: string[]): Promise<void> {
+    if (guestIds.length === 0) return;
+    this.db
+      .delete(schema.eventGuests)
+      .where(
+        and(
+          eq(schema.eventGuests.eventId, eventId),
+          inArray(schema.eventGuests.guestId, guestIds)
+        )
+      )
+      .run();
   }
 
   async delete(id: string): Promise<void> {

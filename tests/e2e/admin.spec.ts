@@ -437,6 +437,79 @@ test.describe("Admin UI days", () => {
   });
 });
 
+test.describe("Admin UI guest assignment", () => {
+  test("can assign and remove guests from an event", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Create a throwaway event
+    const unique = Date.now();
+    const eventName = `E2E Guests ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const guests = page.getByRole("region", { name: "Guests" });
+    await expect(guests).toBeVisible();
+
+    // Seeded guests are shown; none assigned yet
+    const dataRows = guests
+      .getByRole("row")
+      .filter({ hasNot: page.getByRole("columnheader") });
+    const count = await dataRows.count();
+    expect(count).toBeGreaterThan(0);
+    const firstRow = dataRows.first();
+    await expect(firstRow.getByRole("checkbox")).not.toBeChecked();
+
+    // Assign the first guest — click and wait for server-driven state update
+    await firstRow.getByRole("checkbox").click();
+    await expect(firstRow.getByRole("checkbox")).toBeChecked();
+
+    // Navigate away and back — assignment must persist
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await expect(
+      page
+        .getByRole("region", { name: "Guests" })
+        .getByRole("checkbox", { checked: true })
+    ).toHaveCount(1);
+
+    // Filter: "Assigned" shows exactly 1 row; "Not assigned" hides it
+    const g2 = page.getByRole("region", { name: "Guests" });
+    await g2.getByRole("button", { name: "Assigned", exact: true }).click();
+    await expect(
+      g2.getByRole("row").filter({ hasNot: page.getByRole("columnheader") })
+    ).toHaveCount(1);
+
+    await g2.getByRole("button", { name: "Not assigned", exact: true }).click();
+    await expect(
+      g2.getByRole("row").filter({ hasNot: page.getByRole("columnheader") })
+    ).toHaveCount(count - 1);
+
+    // Switch back to All and remove the assignment
+    await g2.getByRole("button", { name: "All", exact: true }).click();
+    await g2.getByRole("checkbox", { checked: true }).click();
+    await expect(g2.getByRole("checkbox", { checked: true })).toHaveCount(0);
+
+    // Clean up
+    await page.getByRole("button", { name: "Delete event" }).click();
+    await page.getByLabel("Type the event name to confirm").fill(eventName);
+    await page.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
+  });
+});
+
 async function makeImage(width: number, height: number): Promise<Buffer> {
   return sharp({
     create: { width, height, channels: 3, background: { r: 90, g: 60, b: 30 } },
