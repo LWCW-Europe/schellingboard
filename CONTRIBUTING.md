@@ -58,7 +58,7 @@
 
 ### Admin UI
 
-A web admin UI is available at `/admin` for managing users. It requires `ADMIN_PASSWORD` (and `AUTH_SECRET`) to be set; without `ADMIN_PASSWORD` the admin routes are disabled and return a diagnostic message explaining how to enable them. It is fully separate from the normal user UI: it has its own layout and only requires the admin password (not `SITE_PASSWORD`). It will gradually replace the admin CLI ([#368](https://github.com/omarkohl/schellingboard/issues/368)).
+A web admin UI is available at `/admin` for managing users and location. It requires `ADMIN_PASSWORD` (and `AUTH_SECRET`) to be set; without `ADMIN_PASSWORD` the admin routes are disabled and return a diagnostic message explaining how to enable them. It is fully separate from the normal user UI: it has its own layout and only requires the admin password (not `SITE_PASSWORD`). It will gradually replace the admin CLI ([#368](https://github.com/LWCW-Europe/schellingboard/issues/368)).
 
 ### Admin CLI
 
@@ -86,11 +86,12 @@ bun set-env.ts production tsx scripts/admin.ts
 
 ### Optional
 
-| Variable         | Description                                                                                                            |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `SITE_PASSWORD`  | Enables site-wide password protection. Omit to disable.                                                                |
-| `ADMIN_PASSWORD` | Enables the admin UI at `/admin`. Omit to disable (admin routes return a diagnostic message).                          |
-| `AUTH_SECRET`    | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Use ≥32 random bytes. |
+| Variable         | Description                                                                                                                        |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `SITE_PASSWORD`  | Enables site-wide password protection. Omit to disable.                                                                            |
+| `ADMIN_PASSWORD` | Enables the admin UI at `/admin`. Omit to disable (admin routes return a diagnostic message).                                      |
+| `AUTH_SECRET`    | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Use ≥32 random bytes.             |
+| `UPLOADS_DIR`    | Directory for admin-uploaded files (location images). Defaults to `./uploads`; in Docker it is `/data/uploads` so uploads persist. |
 
 `NEXT_PUBLIC_` variables are exposed to the browser; all others are server-side only.
 
