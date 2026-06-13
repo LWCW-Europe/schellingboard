@@ -14,7 +14,19 @@ function getAppVersion() {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "5mb",
+    },
+  },
   images: {
+    localPatterns: [
+      // Location uploads carry a ?v=<timestamp> cache-buster; omitting `search`
+      // allows any query string for these paths.
+      { pathname: "/media/**" },
+      // Other local/public assets (e.g. /map.png) without a query string.
+      { pathname: "/**", search: "" },
+    ],
     remotePatterns: [
       {
         protocol: "https",
