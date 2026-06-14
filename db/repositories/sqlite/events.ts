@@ -129,4 +129,8 @@ export class SqliteEventsRepository implements EventsRepository {
 
     return { ...existing, ...patch };
   }
+
+  async delete(id: string): Promise<void> {
+    this.db.delete(schema.events).where(eq(schema.events.id, id)).run();
+  }
 }

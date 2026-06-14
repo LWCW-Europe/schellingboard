@@ -25,8 +25,16 @@ vi.mock("next/cache", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
-import { createEvent } from "../helpers/factories";
+import {
+  createEvent,
+  createDay,
+  createGuest,
+  createLocation,
+  createProposal,
+  createSession,
+} from "../helpers/factories";
 import { getRepositories } from "@/db/container";
+import { VoteChoice } from "@/db/repositories/interfaces";
 
 describe("events repo", () => {
   beforeAll(() => setupTestDb());
@@ -70,6 +78,65 @@ describe("events repo", () => {
       });
       const fetched = await getRepositories().events.findById(event.id);
       expect(fetched?.name).toBe("Keep");
+    });
+  });
+
+  describe("delete", () => {
+    it("deletes the event", async () => {
+      const event = await createEvent();
+      await getRepositories().events.delete(event.id);
+      expect(await getRepositories().events.findById(event.id)).toBeUndefined();
+    });
+
+    it("cascade-deletes days, proposals, sessions, and all child records", async () => {
+      const repos = getRepositories();
+      const event = await createEvent();
+      const guest = await createGuest();
+      const location = await createLocation();
+
+      await createDay(event.id);
+
+      const proposal = await createProposal(event.id, [guest.id]);
+      await repos.votes.create({
+        proposalId: proposal.id,
+        guestId: guest.id,
+        choice: VoteChoice.interested,
+      });
+
+      const session = await createSession(event.id, {
+        hostIds: [guest.id],
+        locationIds: [location.id],
+      });
+      await repos.rsvps.create({ sessionId: session.id, guestId: guest.id });
+
+      await repos.events.delete(event.id);
+
+      expect(await repos.events.findById(event.id)).toBeUndefined();
+      expect(await repos.days.listByEvent(event.id)).toEqual([]);
+      expect(await repos.sessionProposals.listByEvent(event.id)).toEqual([]);
+      expect(await repos.sessions.listByEvent(event.id)).toEqual([]);
+      expect(await repos.votes.listByGuestAndEvent(guest.id, event.id)).toEqual(
+        []
+      );
+      expect(await repos.rsvps.listByGuest(guest.id)).toEqual([]);
+
+      // Guest and location themselves are untouched
+      expect(await repos.guests.findById(guest.id)).toBeDefined();
+      expect(await repos.locations.findById(location.id)).toBeDefined();
+    });
+
+    it("sessions derived from the event's proposals are also deleted (not kept)", async () => {
+      const repos = getRepositories();
+      const event = await createEvent();
+      const guest = await createGuest();
+      const proposal = await createProposal(event.id, [guest.id]);
+      const session = await createSession(event.id, { hostIds: [guest.id] });
+      // link session to proposal
+      await repos.sessions.update(session.id, { proposalId: proposal.id });
+
+      await repos.events.delete(event.id);
+
+      expect(await repos.sessions.findById(session.id)).toBeUndefined();
     });
   });
 });

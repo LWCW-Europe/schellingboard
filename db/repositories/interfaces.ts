@@ -53,6 +53,8 @@ export interface EventsRepository {
     id: string,
     patch: Partial<Omit<Event, "id">>
   ): Promise<Event | undefined>;
+  /** Deletes the event and all records referencing it (cascades via DB FK). */
+  delete(id: string): Promise<void>;
 }
 
 // ── Guests ────────────────────────────────────────────────────────────────────
