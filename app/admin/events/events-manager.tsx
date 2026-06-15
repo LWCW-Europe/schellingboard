@@ -86,7 +86,6 @@ function AddEventForm({
         </label>
         <Input
           id="ev-website"
-          type="url"
           value={form.website}
           onChange={(e) => set("website", e.target.value)}
           className="w-full h-10"

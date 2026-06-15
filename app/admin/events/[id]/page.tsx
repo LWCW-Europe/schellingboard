@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getRepositories } from "@/db/container";
 import { requireAdminPage } from "../../require-admin";
+import { EventDetailForm } from "./event-detail-form";
 
 export default async function AdminEventDetailPage({
   params,
@@ -16,7 +17,7 @@ export default async function AdminEventDetailPage({
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
+      <div>
         <Link
           href="/admin/events"
           className="text-sm text-gray-500 hover:text-gray-700"
@@ -25,14 +26,7 @@ export default async function AdminEventDetailPage({
         </Link>
       </div>
       <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
-      <p className="text-sm text-gray-500">
-        {event.start.toLocaleDateString()} – {event.end.toLocaleDateString()}
-        {" · "}
-        {event.timezone}
-      </p>
-      <p className="text-sm text-gray-500">
-        More management features coming soon.
-      </p>
+      <EventDetailForm event={event} />
     </div>
   );
 }

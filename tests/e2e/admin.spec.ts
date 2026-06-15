@@ -183,6 +183,82 @@ test.describe("Admin UI events", () => {
       page.getByText(/end date must be after start date/i)
     ).toBeVisible();
   });
+
+  test("can edit event basic info on detail page", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Create a throwaway event so we never touch the shared seeded events
+    const unique = Date.now();
+    const original = `E2E Edit ${unique}`;
+    const renamed = `E2E Edit Updated ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(original);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: original })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await expect(page.getByRole("heading", { name: original })).toBeVisible();
+
+    // Rename and verify via fresh navigation (waits for "Saved!" to confirm the
+    // action completed before navigating away)
+    const nameInput = page.getByLabel("Name *");
+    await expect(nameInput).toHaveValue(original);
+    await nameInput.fill(renamed);
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByText("Saved!")).toBeVisible();
+    await page.goto("/admin/events");
+    await expect(
+      page.getByRole("listitem").filter({ hasText: renamed })
+    ).toBeVisible();
+
+    // Clean up: delete the throwaway event
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: renamed })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await page.getByRole("button", { name: "Delete event" }).click();
+    await page.getByLabel("Type the event name to confirm").fill(renamed);
+    await page.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
+  });
+
+  test("can delete an event via named confirm on detail page", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Create a throwaway event
+    const unique = Date.now();
+    const eventName = `Delete Me ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-11-01");
+    await page.getByLabel("End *").fill("2026-11-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    const row = page.getByRole("listitem").filter({ hasText: eventName });
+    await row.getByRole("link", { name: "Manage" }).click();
+
+    // Delete with named confirm
+    await page.getByRole("button", { name: "Delete event" }).click();
+    const confirmInput = page.getByLabel("Type the event name to confirm");
+    await expect(confirmInput).toBeVisible();
+    const confirmBtn = page.getByRole("button", { name: "Confirm delete" });
+    await expect(confirmBtn).toBeDisabled();
+    await confirmInput.fill(eventName);
+    await expect(confirmBtn).toBeEnabled();
+    await confirmBtn.click();
+
+    // Redirected back to events list; event is gone
+    await expect(page).toHaveURL(/\/admin\/events$/);
+    await expect(page.getByText(eventName)).not.toBeVisible();
+  });
 });
 
 async function makeImage(width: number, height: number): Promise<Buffer> {
@@ -218,7 +294,7 @@ test.describe("Admin UI locations", () => {
 
     // Create a location with details and an event assignment
     await region.getByRole("button", { name: "New location" }).click();
-    await region.getByLabel("Name").fill(nameA);
+    await region.getByLabel("Name", { exact: true }).fill(nameA);
     await region.getByLabel("Capacity").fill("25");
     await region.getByLabel("Bookable").check();
     await region.getByLabel("Conference Alpha").check();
@@ -232,7 +308,7 @@ test.describe("Admin UI locations", () => {
 
     // Create a second location; new locations are appended at the end
     await region.getByRole("button", { name: "New location" }).click();
-    await region.getByLabel("Name").fill(nameB);
+    await region.getByLabel("Name", { exact: true }).fill(nameB);
     await region.getByRole("button", { name: "Add location" }).click();
     const myRows = region
       .getByRole("listitem")
@@ -250,7 +326,7 @@ test.describe("Admin UI locations", () => {
     const editForm = region
       .getByRole("listitem")
       .filter({ has: page.getByRole("button", { name: "Save" }) });
-    await editForm.getByLabel("Name").fill(renamed);
+    await editForm.getByLabel("Name", { exact: true }).fill(renamed);
     await editForm.getByRole("button", { name: "Save" }).click();
     await expect(
       region.getByRole("listitem").filter({ hasText: renamed })
@@ -288,7 +364,7 @@ test.describe("Admin UI locations", () => {
 
     const name = `E2E Photo Room ${Date.now()}`;
     await region.getByRole("button", { name: "New location" }).click();
-    await region.getByLabel("Name").fill(name);
+    await region.getByLabel("Name", { exact: true }).fill(name);
 
     // An image without the 4:3 aspect ratio is rejected
     await region.getByLabel("Image").setInputFiles({
