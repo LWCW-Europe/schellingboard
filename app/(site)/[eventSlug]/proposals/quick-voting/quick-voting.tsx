@@ -117,13 +117,7 @@ export function QuickVoting(props: {
 
   function showNextProposal() {
     if (proposal) {
-      return (
-        <Proposal
-          eventSlug={eventSlug}
-          proposal={proposal}
-          showBackBtn={false}
-        />
-      );
+      return <Proposal proposal={proposal} />;
     } else {
       return (
         <p>

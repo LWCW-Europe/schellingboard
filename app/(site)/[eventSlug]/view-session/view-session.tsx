@@ -14,6 +14,7 @@ import { CurrentUserModal, ConfirmationModal } from "../../modals";
 import { sessionsOverlap } from "../../session_utils";
 import { LockIcon } from "../../lock-icon";
 import { LocationTag } from "../session-text";
+import { viewProposalLinkFromElsewhere } from "../modal-nav";
 
 export function ViewSession(props: {
   session: Session;
@@ -282,12 +283,12 @@ export function ViewSession(props: {
       {session.proposalId && (
         <p className="text-sm text-gray-600">
           This session was scheduled from a proposal. See it{" "}
-          <a
-            href={`/${eventSlug}/proposals/${session.proposalId}/view`}
+          <Link
+            {...viewProposalLinkFromElsewhere(eventSlug, session.proposalId)}
             className="text-rose-500 underline hover:text-rose-600 transition-colors"
           >
             here
-          </a>
+          </Link>
           .
         </p>
       )}

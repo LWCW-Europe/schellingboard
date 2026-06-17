@@ -22,26 +22,21 @@ import { VotingButtons } from "@/app/(site)/[eventSlug]/proposals/voting-buttons
 import { VoteChoice } from "@/app/(site)/votes";
 import { DateTime } from "luxon";
 import { TIME_FORMAT } from "@/utils/utils";
+import { viewSessionLinkFromElsewhere } from "../modal-nav";
 
 export function ViewProposal(props: {
   proposal: SessionProposal;
   sessions: Session[];
   eventSlug: string;
   event: Event;
-  showBackBtn: boolean;
-  titleId?: string;
   isInModal?: boolean;
-  onCloseModal?: () => void;
 }) {
   const {
     proposal,
     eventSlug,
     event,
     sessions: allSessions,
-    showBackBtn,
-    titleId,
     isInModal = false,
-    onCloseModal,
   } = props;
   const { user: currentUserId } = useContext(UserContext);
   const { proposalVoteEmoji, votes } = useContext(VotesContext);
@@ -61,27 +56,7 @@ export function ViewProposal(props: {
     return currentUserId && proposal.hosts.some((h) => h.id === currentUserId);
   };
 
-  const handleEditClick = (e: React.MouseEvent) => {
-    if (isInModal && onCloseModal) {
-      e.preventDefault();
-      onCloseModal();
-      // Small delay to allow modal to close before navigation
-      setTimeout(() => {
-        router.push(`/${eventSlug}/proposals/${proposal.id}/edit`);
-      }, 100);
-    }
-    // If not in modal, let the Link component handle the navigation normally
-  };
-
-  const handleScheduleClick = (e: React.MouseEvent) => {
-    if (isInModal && onCloseModal) {
-      e.preventDefault();
-      onCloseModal();
-      // Small delay to allow modal to close before navigation
-      setTimeout(() => {
-        router.push(`/${eventSlug}/add-session?proposalID=${proposal.id}`);
-      }, 100);
-    }
+  const handleScheduleClick = () => {
     router.push(`/${eventSlug}/add-session?proposalID=${proposal.id}`);
   };
 
@@ -103,12 +78,7 @@ export function ViewProposal(props: {
     <div
       className={`${isInModal ? "w-full p-6" : "max-w-2xl mx-auto"} pb-12 break-words overflow-hidden`}
     >
-      <Proposal
-        eventSlug={eventSlug}
-        proposal={proposal}
-        showBackBtn={showBackBtn}
-        titleId={titleId}
-      />
+      <Proposal proposal={proposal} />
 
       {canEdit() && (
         <div className="mt-6 flex gap-2 flex-wrap">
@@ -116,7 +86,6 @@ export function ViewProposal(props: {
             <Link
               href={`/${eventSlug}/proposals/${proposal.id}/edit`}
               className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors"
-              onClick={handleEditClick}
             >
               <PencilIcon className="h-3 w-3 mr-1" />
               Edit
@@ -205,7 +174,7 @@ export function ViewProposal(props: {
             <p>
               This proposal was scheduled on{" "}
               <Link
-                href={`/${eventSlug}?viewSession=${sessions[0].id}`}
+                {...viewSessionLinkFromElsewhere(eventSlug, sessions[0].id)}
                 className="text-rose-500 underline hover:text-rose-600 transition-colors"
               >
                 {DateTime.fromJSDate(sessions[0].startTime ?? new Date())
@@ -226,7 +195,7 @@ export function ViewProposal(props: {
                 {sessions.map((session) => (
                   <li key={session.id}>
                     <Link
-                      href={`/${eventSlug}?viewSession=${session.id}`}
+                      {...viewSessionLinkFromElsewhere(eventSlug, session.id)}
                       className="text-rose-500 underline hover:text-rose-600 transition-colors"
                     >
                       {DateTime.fromJSDate(session.startTime ?? new Date())

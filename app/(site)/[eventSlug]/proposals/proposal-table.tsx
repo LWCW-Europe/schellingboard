@@ -27,6 +27,7 @@ import { formatDuration, subtractBreakFromDuration } from "@/utils/utils";
 
 import { VotingButtons } from "./voting-buttons";
 import { VoteChoice } from "@/app/(site)/votes";
+import { viewProposalLinkFromOwner } from "../modal-nav";
 
 const ITEMS_PER_PAGE = 1000;
 
@@ -227,10 +228,6 @@ export function ProposalTable({
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE
   );
-
-  const visitViewPage = (proposal: SessionProposal) => {
-    router.push(`/${eventSlug}/proposals/${proposal.id}/view`);
-  };
 
   const canEdit = (hosts: SessionProposal["hosts"]) => {
     if (hosts.length === 0) {
@@ -491,8 +488,7 @@ export function ProposalTable({
               <tr key={proposal.id} className="hover:bg-gray-200">
                 <td className="px-4 lg:px-6 py-4" title={proposal.title}>
                   <Link
-                    href={`/${eventSlug}/proposals/${proposal.id}/view`}
-                    scroll={false}
+                    {...viewProposalLinkFromOwner(eventSlug, proposal.id)}
                     className="block w-full"
                   >
                     <div className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
@@ -644,13 +640,17 @@ export function ProposalTable({
         {currentPageProposals.map((proposal) => (
           <div
             key={proposal.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
-            onClick={() => visitViewPage(proposal)}
+            className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 relative"
           >
             <div className="space-y-3">
               <div>
                 <h3 className="text-base font-medium text-gray-900">
-                  {proposal.title}
+                  <Link
+                    {...viewProposalLinkFromOwner(eventSlug, proposal.id)}
+                    className="hover:text-blue-600 transition-colors after:absolute after:inset-0"
+                  >
+                    {proposal.title}
+                  </Link>
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">
                   Host(s): {proposal.hosts.map((h) => h.name).join(", ") || "-"}
@@ -682,11 +682,13 @@ export function ProposalTable({
                 {currentUserId &&
                   !proposal.hosts.some((h) => h.id === currentUserId) &&
                   !schedEnabled && (
-                    <VotingButtons
-                      proposalId={proposal.id}
-                      votingEnabled={votingEnabled}
-                      votingDisabledText={votingDisabledText}
-                    />
+                    <div className="relative z-10">
+                      <VotingButtons
+                        proposalId={proposal.id}
+                        votingEnabled={votingEnabled}
+                        votingDisabledText={votingDisabledText}
+                      />
+                    </div>
                   )}
                 {schedEnabled && (
                   <>
@@ -736,7 +738,7 @@ export function ProposalTable({
                   </>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 relative z-10">
                   {canEdit(proposal.hosts) && (
                     <div className="relative inline-block group">
                       <button

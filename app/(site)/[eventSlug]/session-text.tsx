@@ -8,7 +8,7 @@ import { useSearchParams } from "next/navigation";
 import { UserContext, EventContext } from "../context";
 import { CheckCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 import { LockIcon } from "../lock-icon";
-import { viewSessionLinkProps } from "./modal-nav";
+import { viewSessionLinkFromOwner } from "./modal-nav";
 
 export function SessionText(props: {
   session: Session;
@@ -34,7 +34,11 @@ export function SessionText(props: {
       ? description.substring(0, 200) + "..."
       : description;
 
-  const linkProps = viewSessionLinkProps(searchParams, eventSlug, session.id);
+  const linkProps = viewSessionLinkFromOwner(
+    searchParams,
+    eventSlug,
+    session.id
+  );
 
   return (
     <div className="px-1.5 rounded h-full min-h-10 pt-5 pb-8 relative">

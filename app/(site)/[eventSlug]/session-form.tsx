@@ -20,6 +20,7 @@ import {
   TIME_FORMAT,
 } from "@/utils/utils";
 import { MyListbox, type Option } from "./select";
+import { viewProposalLinkFromElsewhere } from "./modal-nav";
 import type {
   Day,
   Guest,
@@ -485,12 +486,15 @@ export function SessionForm(props: {
       {sessionID && session.proposalId && (
         <p className="text-sm text-gray-600">
           This session was scheduled from a proposal. See it{" "}
-          <a
-            href={`/${eventNameToSlug(eventName)}/proposals/${session.proposalId}/view`}
+          <Link
+            {...viewProposalLinkFromElsewhere(
+              eventNameToSlug(eventName),
+              session.proposalId
+            )}
             className="text-rose-500 underline hover:text-rose-600 transition-colors"
           >
             here
-          </a>
+          </Link>
           .
         </p>
       )}

@@ -17,7 +17,7 @@ import {
   TIME_FORMAT,
 } from "@/utils/utils";
 import { LockIcon } from "../lock-icon";
-import { viewSessionLinkProps } from "./modal-nav";
+import { viewSessionLinkFromOwner } from "./modal-nav";
 
 export function SessionBlock(props: {
   eventName: string;
@@ -202,7 +202,11 @@ export function RealSessionCard(props: {
   const formattedHostNames =
     session.hosts.map((h) => h.name).join(", ") || "No hosts";
 
-  const linkProps = viewSessionLinkProps(searchParams, eventSlug, session.id);
+  const linkProps = viewSessionLinkFromOwner(
+    searchParams,
+    eventSlug,
+    session.id
+  );
 
   const handleRSVP = () => {
     if (!currentUser) {

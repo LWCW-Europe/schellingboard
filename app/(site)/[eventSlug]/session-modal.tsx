@@ -24,6 +24,7 @@ export function SessionModal({
 
   const onDismiss = dismissViewSession;
 
+  // Duplication, anchor: waggHhba
   useEffect(() => {
     // Disable page scroll when modal is open.
     document.documentElement.style.overflow = "hidden";

@@ -115,10 +115,21 @@ test("should open proposal detail page when clicking on a proposal", async ({
 
   await expect(modal).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(page).toHaveURL(/\/Conference-Alpha\/proposals\?viewProposal=/);
 
   // Verify the proposal title is displayed as a heading within the modal
   await expect(
     modal.getByRole("heading", { name: proposalTitle })
+  ).toBeVisible();
+
+  // Reload with viewProposal in the URL. This is the "paste link" /
+  // "refresh while modal is open" scenario for testing hydration accuracy.
+  await page.reload();
+  await expect(
+    page.getByRole("dialog", { name: "Proposal details" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("dialog").getByRole("heading", { name: proposalTitle })
   ).toBeVisible();
 
   const closeButton = modal.getByRole("button", { name: /close/i });

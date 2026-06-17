@@ -1,50 +1,47 @@
 "use client";
 
-import { createPortal } from "react-dom";
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import type {
-  SessionProposal,
   Event,
   Session,
+  SessionProposal,
 } from "@/db/repositories/interfaces";
-import { ViewProposal } from "@/app/(site)/[eventSlug]/proposals/[proposalId]/view/view-proposal";
+import { dismissViewProposal } from "../modal-nav";
+import { ViewProposal } from "./view-proposal";
 
-export function ProposalModal(props: {
-  proposal: SessionProposal;
+export function ProposalModal({
+  proposal,
+  sessions,
+  eventSlug,
+  event,
+}: {
+  proposal?: SessionProposal;
   sessions: Session[];
   eventSlug: string;
   event: Event;
 }) {
-  const { proposal, sessions, eventSlug, event } = props;
-
   const router = useRouter();
-
   const onDismiss = useCallback(() => {
-    router.back();
+    dismissViewProposal(router);
   }, [router]);
 
+  // Duplication, anchor: waggHhba
   useEffect(() => {
-    // Disable body scroll when modal is open
-    document.body.style.overflow = "hidden";
-
-    // Handle Esc key press
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onDismiss();
-      }
+    // Disable page scroll when modal is open.
+    document.documentElement.style.overflow = "hidden";
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDismiss();
     };
-
     document.addEventListener("keydown", handleEscapeKey);
-
     return () => {
-      document.body.style.overflow = "unset";
+      document.documentElement.style.overflow = "";
       document.removeEventListener("keydown", handleEscapeKey);
     };
   }, [onDismiss]);
 
-  return createPortal(
+  return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
       role="dialog"
@@ -73,17 +70,18 @@ export function ProposalModal(props: {
             />
           </svg>
         </button>
-        <ViewProposal
-          proposal={proposal}
-          sessions={sessions}
-          eventSlug={eventSlug}
-          event={event}
-          showBackBtn={false}
-          isInModal={true}
-          onCloseModal={onDismiss}
-        />
+        {!proposal ? (
+          <div className="p-6">Proposal not found.</div>
+        ) : (
+          <ViewProposal
+            proposal={proposal}
+            sessions={sessions}
+            eventSlug={eventSlug}
+            event={event}
+            isInModal={true}
+          />
+        )}
       </div>
-    </div>,
-    document.getElementById("modal-root")!
+    </div>
   );
 }

@@ -5,15 +5,19 @@ import { eventSlugToName } from "@/utils/utils";
 import { ProposalActionBar } from "./proposal-action-bar";
 import { ProposalTable } from "./proposal-table";
 import { UserSelect } from "@/app/(site)/user-select";
+import { ProposalModal } from "./proposal-modal";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProposalsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ eventSlug: string }>;
+  searchParams: Promise<{ viewProposal?: string }>;
 }) {
   const { eventSlug } = await params;
+  const { viewProposal } = await searchParams;
 
   // Convert slug to event name (simple conversion for now)
   const eventName = eventSlugToName(eventSlug);
@@ -24,10 +28,14 @@ export default async function ProposalsPage({
     return <div>Event not found</div>;
   }
 
-  const [guests, proposals] = await Promise.all([
+  const [guests, proposals, sessions] = await Promise.all([
     repos.guests.list(),
     repos.sessionProposals.listByEvent(event.id),
+    viewProposal ? repos.sessions.listByEvent(event.id) : Promise.resolve([]),
   ]);
+  const viewedProposal = viewProposal
+    ? proposals.find((proposal) => proposal.id === viewProposal)
+    : undefined;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -69,6 +77,14 @@ export default async function ProposalsPage({
       ) : (
         <ProposalTable
           proposals={proposals}
+          eventSlug={eventSlug}
+          event={event}
+        />
+      )}
+      {viewProposal && (
+        <ProposalModal
+          proposal={viewedProposal}
+          sessions={sessions}
           eventSlug={eventSlug}
           event={event}
         />
