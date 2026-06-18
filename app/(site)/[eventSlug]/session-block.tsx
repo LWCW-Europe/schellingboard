@@ -94,10 +94,11 @@ export function BookableSessionCard(props: {
   return (
     <div className={`row-span-${numHalfHours} my-0.5 min-h-10`}>
       <Link
+        aria-label="Add session"
         className="rounded font-roboto h-full w-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
         href={`/${eventSlug}/add-session?location=${location.name}&time=${timeParam}&day=${dayParam}`}
       >
-        <PlusIcon className="h-4 w-4 text-gray-400" />
+        <PlusIcon aria-hidden="true" className="h-4 w-4 text-gray-400" />
       </Link>
     </div>
   );
