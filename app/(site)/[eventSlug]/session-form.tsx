@@ -32,6 +32,7 @@ import { ConfirmDeletionModal } from "../modals";
 import { UserContext, EventContext } from "../context";
 import { sessionsOverlap, newEmptySession } from "../session_utils";
 import { buildSessionInterval } from "@/app/api/session-form-utils";
+import { revalidateEvent } from "./session-actions";
 
 interface ErrorResponse {
   message: string;
@@ -272,6 +273,7 @@ export function SessionForm(props: {
     });
     if (res.ok) {
       const actionType = sessionID ? "updated" : "added";
+      await revalidateEvent(eventNameToSlug(eventName));
       router.push(
         `/${eventNameToSlug(eventName)}/add-session/confirmation?actionType=${actionType}`
       );
@@ -306,6 +308,7 @@ export function SessionForm(props: {
     });
     if (res.ok) {
       console.log("Session deleted successfully");
+      await revalidateEvent(eventNameToSlug(eventName));
       router.push(
         `/${eventNameToSlug(eventName)}/edit-session/deletion-confirmation`
       );
