@@ -165,9 +165,8 @@ export class SqliteSessionsRepository implements SessionsRepository {
 
   async create(data: SessionCreateInput): Promise<Session> {
     const id = nanoid();
-    this.db.transaction(() => {
-      this.db
-        .insert(schema.sessions)
+    this.db.transaction((tx) => {
+      tx.insert(schema.sessions)
         .values({
           id,
           title: data.title,
@@ -184,14 +183,10 @@ export class SqliteSessionsRepository implements SessionsRepository {
         .run();
 
       for (const guestId of data.hostIds) {
-        this.db
-          .insert(schema.sessionHosts)
-          .values({ sessionId: id, guestId })
-          .run();
+        tx.insert(schema.sessionHosts).values({ sessionId: id, guestId }).run();
       }
       for (const locationId of data.locationIds) {
-        this.db
-          .insert(schema.sessionLocations)
+        tx.insert(schema.sessionLocations)
           .values({ sessionId: id, locationId })
           .run();
       }
@@ -200,7 +195,7 @@ export class SqliteSessionsRepository implements SessionsRepository {
   }
 
   async update(id: string, patch: SessionUpdateInput): Promise<Session> {
-    this.db.transaction(() => {
+    this.db.transaction((tx) => {
       const values: Partial<typeof schema.sessions.$inferInsert> = {};
       if (patch.title !== undefined) values.title = patch.title;
       if (patch.description !== undefined)
@@ -218,34 +213,29 @@ export class SqliteSessionsRepository implements SessionsRepository {
       if ("eventId" in patch) values.eventId = patch.eventId ?? null;
 
       if (Object.keys(values).length > 0) {
-        this.db
-          .update(schema.sessions)
+        tx.update(schema.sessions)
           .set(values)
           .where(eq(schema.sessions.id, id))
           .run();
       }
 
       if (patch.hostIds !== undefined) {
-        this.db
-          .delete(schema.sessionHosts)
+        tx.delete(schema.sessionHosts)
           .where(eq(schema.sessionHosts.sessionId, id))
           .run();
         for (const guestId of patch.hostIds) {
-          this.db
-            .insert(schema.sessionHosts)
+          tx.insert(schema.sessionHosts)
             .values({ sessionId: id, guestId })
             .run();
         }
       }
 
       if (patch.locationIds !== undefined) {
-        this.db
-          .delete(schema.sessionLocations)
+        tx.delete(schema.sessionLocations)
           .where(eq(schema.sessionLocations.sessionId, id))
           .run();
         for (const locationId of patch.locationIds) {
-          this.db
-            .insert(schema.sessionLocations)
+          tx.insert(schema.sessionLocations)
             .values({ sessionId: id, locationId })
             .run();
         }
@@ -255,17 +245,15 @@ export class SqliteSessionsRepository implements SessionsRepository {
   }
 
   async delete(id: string): Promise<void> {
-    this.db.transaction(() => {
-      this.db.delete(schema.rsvps).where(eq(schema.rsvps.sessionId, id)).run();
-      this.db
-        .delete(schema.sessionHosts)
+    this.db.transaction((tx) => {
+      tx.delete(schema.rsvps).where(eq(schema.rsvps.sessionId, id)).run();
+      tx.delete(schema.sessionHosts)
         .where(eq(schema.sessionHosts.sessionId, id))
         .run();
-      this.db
-        .delete(schema.sessionLocations)
+      tx.delete(schema.sessionLocations)
         .where(eq(schema.sessionLocations.sessionId, id))
         .run();
-      this.db.delete(schema.sessions).where(eq(schema.sessions.id, id)).run();
+      tx.delete(schema.sessions).where(eq(schema.sessions.id, id)).run();
     });
   }
 }

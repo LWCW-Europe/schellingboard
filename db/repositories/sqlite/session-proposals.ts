@@ -129,9 +129,8 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
   async create(data: SessionProposalCreateInput): Promise<SessionProposal> {
     const id = nanoid();
     const createdTime = new Date().toISOString();
-    this.db.transaction(() => {
-      this.db
-        .insert(schema.sessionProposals)
+    this.db.transaction((tx) => {
+      tx.insert(schema.sessionProposals)
         .values({
           id,
           eventId: data.eventId,
@@ -142,8 +141,7 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
         })
         .run();
       for (const guestId of data.hostIds) {
-        this.db
-          .insert(schema.proposalHosts)
+        tx.insert(schema.proposalHosts)
           .values({ proposalId: id, guestId })
           .run();
       }
@@ -155,7 +153,7 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
     id: string,
     patch: SessionProposalUpdateInput
   ): Promise<SessionProposal> {
-    this.db.transaction(() => {
+    this.db.transaction((tx) => {
       const values: Partial<typeof schema.sessionProposals.$inferInsert> = {};
       if (patch.title !== undefined) values.title = patch.title;
       if (patch.description !== undefined)
@@ -164,28 +162,24 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
         values.durationMinutes = patch.durationMinutes ?? null;
 
       if (Object.keys(values).length > 0) {
-        this.db
-          .update(schema.sessionProposals)
+        tx.update(schema.sessionProposals)
           .set(values)
           .where(eq(schema.sessionProposals.id, id))
           .run();
       }
 
       if (patch.hostIds !== undefined) {
-        this.db
-          .delete(schema.proposalHosts)
+        tx.delete(schema.proposalHosts)
           .where(eq(schema.proposalHosts.proposalId, id))
           .run();
         for (const guestId of patch.hostIds) {
-          this.db
-            .insert(schema.proposalHosts)
+          tx.insert(schema.proposalHosts)
             .values({ proposalId: id, guestId })
             .run();
         }
         // Hosts can't vote for their own proposal; remove their votes.
         if (patch.hostIds.length > 0) {
-          this.db
-            .delete(schema.votes)
+          tx.delete(schema.votes)
             .where(
               and(
                 eq(schema.votes.proposalId, id),
@@ -200,14 +194,12 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
   }
 
   async delete(id: string): Promise<void> {
-    this.db.transaction(() => {
-      this.db.delete(schema.votes).where(eq(schema.votes.proposalId, id)).run();
-      this.db
-        .delete(schema.proposalHosts)
+    this.db.transaction((tx) => {
+      tx.delete(schema.votes).where(eq(schema.votes.proposalId, id)).run();
+      tx.delete(schema.proposalHosts)
         .where(eq(schema.proposalHosts.proposalId, id))
         .run();
-      this.db
-        .delete(schema.sessionProposals)
+      tx.delete(schema.sessionProposals)
         .where(eq(schema.sessionProposals.id, id))
         .run();
     });
