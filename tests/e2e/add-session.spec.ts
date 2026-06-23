@@ -1,7 +1,9 @@
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 
-test("a newly added session appears on the overview", async ({ page }) => {
+test("a newly added session appears on the overview and can be opened", async ({
+  page,
+}) => {
   await login(page);
 
   await page.goto("/Conference-Gamma");
@@ -46,5 +48,13 @@ test("a newly added session appears on the overview", async ({ page }) => {
   ).toBeVisible();
 
   // The new session must be visible WITHOUT reloading (see #253).
-  await expect(page.getByText(sessionTitle)).toBeVisible();
+  const newSessionLink = page.getByRole("link", { name: sessionTitle });
+  await expect(newSessionLink).toBeVisible();
+
+  // Opening the new session exercises the event-layout session data used by
+  // the details modal, not just the schedule card rendered from fresh props.
+  await newSessionLink.click();
+  const dialog = page.getByRole("dialog", { name: "Session details" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText(sessionTitle, { exact: true })).toBeVisible();
 });

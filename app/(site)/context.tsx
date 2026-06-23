@@ -123,13 +123,47 @@ export function EventProvider({
   >;
 }) {
   const { user } = useContext(UserContext);
-  const valueSessions = value.days.flatMap((d) => d.sessions);
+  const serverSessions = value.days.flatMap((d) => d.sessions);
   // value.rsvps seeds the initial state once. The user-change effect below
   // is the only authoritative source of subsequent updates (plus optimistic
   // mutations in updateRsvp). Server-side revalidation is not used for RSVPs.
   const [rsvps, setRsvps] = useState<Rsvp[]>(value.rsvps);
-  // contains all optimistic updates
-  const [localSessions, setLocalSessions] = useState<Session[]>(valueSessions);
+  const [rsvpCountDeltas, setRsvpCountDeltas] = useState(
+    () => new Map<string, number>()
+  );
+
+  const localSessions = serverSessions.map((session) => {
+    const delta = rsvpCountDeltas.get(session.id) ?? 0;
+    if (delta === 0) return session;
+
+    return {
+      ...session,
+      numRsvps: session.numRsvps + delta,
+    };
+  });
+
+  useEffect(() => {
+    // Deltas are relative to serverSessions' numRsvps values. When value.days
+    // changes after an RSC refresh, the old deltas must be discarded so we don't
+    // double-count optimistic changes that are now included by the server.
+    //
+    // Do not reset rsvps here: value.rsvps is only the initial/RSC value, and
+    // may be older than the client-side user fetch or optimistic RSVP state.
+    //
+    // Tradeoffs of doing this in an effect:
+    // - React first renders fresh serverSessions with the previous deltas, then
+    //   this effect clears them, so there can be a transient wrong count.
+    // - Depending on value.days may reset more often than strictly necessary.
+    // - A failed RSVP request already in flight can still restore its old delta
+    //   snapshot after this reset. That race already exists in the optimistic
+    //   update flow; fixing it would require tracking a generation per request.
+    // The alternative is storing generation metadata with the deltas, which is
+    // more complex.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRsvpCountDeltas((current) =>
+      current.size === 0 ? current : new Map<string, number>()
+    );
+  }, [value.days]);
 
   // Fetch RSVPs when user changes
   useEffect(() => {
@@ -156,7 +190,7 @@ export function EventProvider({
   function userBusySessions() {
     if (user) {
       const sessionsWithRSVP = rsvps.map((r) => r.sessionId);
-      return valueSessions.filter(
+      return localSessions.filter(
         (ses) =>
           sessionsWithRSVP.includes(ses.id) ||
           ses.hosts.some((h) => h.id === user)
@@ -176,19 +210,21 @@ export function EventProvider({
     sessionId: string,
     remove: boolean
   ) => {
+    const rsvpsBeforeUpdate = rsvps;
+    const rsvpCountDeltasBeforeUpdate = rsvpCountDeltas;
     try {
       const countChange = remove ? -1 : 1;
-      const newSessions = localSessions.map((session) => {
-        if (session.id === sessionId) {
-          return {
-            ...session,
-            numRsvps: session.numRsvps + countChange,
-          };
+      setRsvpCountDeltas((old) => {
+        const res = new Map(old);
+        const delta = (res.get(sessionId) ?? 0) + countChange;
+        if (delta === 0) {
+          res.delete(sessionId);
         } else {
-          return session;
+          res.set(sessionId, delta);
         }
+        return res;
       });
-      setLocalSessions(newSessions);
+
       if (remove) {
         // Remove RSVP
         setRsvps((prevRsvps) =>
@@ -215,15 +251,15 @@ export function EventProvider({
 
       if (!response.ok) {
         // Revert optimistic update on failure
-        setRsvps(value.rsvps);
-        setLocalSessions(valueSessions);
+        setRsvps(rsvpsBeforeUpdate);
+        setRsvpCountDeltas(rsvpCountDeltasBeforeUpdate);
       }
       return response.ok;
     } catch (error: unknown) {
       // Revert optimistic update on error
       console.error("Error updating RSVP:", error);
-      setRsvps(value.rsvps);
-      setLocalSessions(valueSessions);
+      setRsvps(rsvpsBeforeUpdate);
+      setRsvpCountDeltas(rsvpCountDeltasBeforeUpdate);
       return false;
     }
   };
