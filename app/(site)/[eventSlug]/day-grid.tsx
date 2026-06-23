@@ -12,6 +12,10 @@ import type { Guest, Location } from "@/db/repositories/interfaces";
 import type { DayWithSessions } from "@/app/(site)/context";
 import { EventContext } from "@/app/(site)/context";
 
+// Width of the left time-axis gutter. Shared by the body's TimestampCol and the
+// sticky header's corner spacer so their columns line up. Fits an `HH:mm` label.
+const GUTTER_WIDTH = "w-8";
+
 export function DayGrid(props: {
   eventName: string;
   locations: Location[];
@@ -32,6 +36,7 @@ export function DayGrid(props: {
   const start = day.start;
   const end = day.end;
   const scrollableDivRef = useRef<HTMLDivElement>(null);
+  const headerTrackRef = useRef<HTMLDivElement>(null);
   const [scrolledToRightEnd, setScrolledToRightEnd] = useState(false);
   const [scrolledToLeftEnd, setScrolledToLeftEnd] = useState(true);
   // Now that the festival is over, show entire schedule by default
@@ -40,20 +45,16 @@ export function DayGrid(props: {
   // const [expanded, setExpanded] = useState(end >= new Date());
   useSafeLayoutEffect(() => {
     const handleScroll = () => {
-      if (scrollableDivRef.current) {
-        const { scrollLeft, scrollWidth, clientWidth } =
-          scrollableDivRef.current;
-        if (scrollLeft + clientWidth >= scrollWidth) {
-          setScrolledToRightEnd(true);
-          // Add your logic here
-        } else {
-          setScrolledToRightEnd(false);
-        }
-        if (scrollLeft === 0) {
-          setScrolledToLeftEnd(true);
-        } else {
-          setScrolledToLeftEnd(false);
-        }
+      const div = scrollableDivRef.current;
+      if (!div) return;
+      const { scrollLeft, scrollWidth, clientWidth } = div;
+      setScrolledToRightEnd(scrollLeft + clientWidth >= scrollWidth);
+      setScrolledToLeftEnd(scrollLeft === 0);
+
+      // The sticky room-header row lives outside this horizontal scroller, so
+      // mirror the body's horizontal scroll onto it.
+      if (headerTrackRef.current) {
+        headerTrackRef.current.style.transform = `translateX(${-scrollLeft}px)`;
       }
     };
 
@@ -72,8 +73,10 @@ export function DayGrid(props: {
 
   return (
     <div className="w-full">
-      <div className="flex flex-col">
-        <div className="flex items-center gap-2">
+      {/* Day heading + room headers stick to the top while scrolling through
+          this day, then get pushed out when the next day's grid arrives. */}
+      <div className="sticky top-16 z-20 bg-white">
+        <div className="flex items-center gap-2 py-1">
           <h2 className="text-2xl font-bold">
             {DateTime.fromJSDate(day.start)
               .setZone(timezone)
@@ -86,40 +89,43 @@ export function DayGrid(props: {
             ({expanded ? "hide" : "show"})
           </button>
         </div>
-      </div>
-      {expanded && (
-        <div className="flex items-end relative w-full overflow-visible">
-          <TimestampCol start={start} end={end} timezone={timezone} />
-          <div
-            className="overflow-x-auto overflow-y-clip flex-shrink"
-            ref={scrollableDivRef}
-          >
+        {expanded && (
+          <div className="flex w-full">
+            {/* Spacer matching the time-axis gutter so header columns line up
+                with the body grid below. */}
             <div
-              className="grid divide-x divide-gray-100 w-full overflow-visible"
-              style={{
-                gridTemplateColumns: `repeat(${numLocations}, minmax(120px, 2fr))`,
-              }}
-            >
-              {includedLocations.map((loc) => (
-                <Tooltip
-                  key={loc.name}
-                  content={
-                    loc.description ? (
-                      <div className="p-2 space-y-1">
-                        <p className="text-xs font-semibold text-gray-700">
-                          {loc.name}
-                        </p>
-                        <p className="text-sm">{loc.description}</p>
-                      </div>
-                    ) : undefined
-                  }
-                  placement="bottom-start"
-                >
-                  <div
+              className={clsx(
+                "flex-none border-r border-gray-100",
+                GUTTER_WIDTH
+              )}
+            />
+            <div className="overflow-hidden flex-1">
+              <div
+                ref={headerTrackRef}
+                className="grid divide-x divide-gray-100 w-full will-change-transform"
+                style={{
+                  gridTemplateColumns: `repeat(${numLocations}, minmax(120px, 2fr))`,
+                }}
+              >
+                {includedLocations.map((loc) => (
+                  <Tooltip
                     key={loc.name}
-                    className="p-1 border-b border-gray-100 flex flex-col justify-between h-full"
+                    content={
+                      loc.description ? (
+                        <div className="p-2 space-y-1">
+                          <p className="text-xs font-semibold text-gray-700">
+                            {loc.name}
+                          </p>
+                          <p className="text-sm">{loc.description}</p>
+                        </div>
+                      ) : undefined
+                    }
+                    placement="bottom-start"
                   >
-                    <div>
+                    <div
+                      key={loc.name}
+                      className="p-1 border-b border-gray-100 h-full"
+                    >
                       <h3 className="font-semibold text-xs sm:text-sm">
                         {loc.name}
                       </h3>
@@ -130,21 +136,45 @@ export function DayGrid(props: {
                         {loc.capacity ? `max ${loc.capacity}` : <br />}
                       </p>
                     </div>
+                  </Tooltip>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      {expanded && (
+        <div className="flex items-end relative w-full overflow-visible">
+          <TimestampCol start={start} end={end} timezone={timezone} />
+          <div
+            className="overflow-x-auto overflow-y-clip flex-shrink"
+            ref={scrollableDivRef}
+          >
+            {/* Location images sit above the grid and scroll with it, so they
+                are not pinned along with the sticky room headers. */}
+            {includedLocations.some((loc) => loc.imageUrl) && (
+              <div
+                className="grid w-full"
+                style={{
+                  gridTemplateColumns: `repeat(${numLocations}, minmax(120px, 2fr))`,
+                }}
+              >
+                {includedLocations.map((loc) => (
+                  <div key={loc.name} className="p-1">
                     {loc.imageUrl && (
                       <Image
-                        key={loc.name}
                         src={loc.imageUrl}
                         alt={loc.name}
-                        className="w-full mt-1 aspect-[4/3]"
+                        className="w-full aspect-[4/3]"
                         style={{ maxHeight: 200 }}
                         width={500}
                         height={500}
                       />
                     )}
                   </div>
-                </Tooltip>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
             <div
               className="grid divide-x divide-gray-100 relative w-full"
               style={{
@@ -172,10 +202,10 @@ export function DayGrid(props: {
             </div>
           </div>
           {!scrolledToRightEnd && (
-            <div className="bg-gradient-to-r from-transparent to-white h-full absolute right-0 w-3" />
+            <div className="bg-gradient-to-r from-transparent to-white h-full absolute right-0 w-2" />
           )}
           {!scrolledToLeftEnd && (
-            <div className="bg-gradient-to-l from-transparent to-white h-full absolute left-8 w-3" />
+            <div className="bg-gradient-to-l from-transparent to-white h-full absolute left-8 w-2" />
           )}
         </div>
       )}
@@ -189,14 +219,15 @@ function TimestampCol(props: { start: Date; end: Date; timezone: string }) {
   return (
     <div
       className={clsx(
-        "grid h-full min-w-8 border-r border-t border-gray-100",
+        "grid h-full border-r border-t border-gray-100",
+        GUTTER_WIDTH,
         `grid-rows-[repeat(${numHalfHours},44px)]`
       )}
     >
       {Array.from({ length: numHalfHours }).map((_, i) => (
         <div
           key={i}
-          className="border-b border-gray-100 text-[10px] p-1 text-right h-[44px]"
+          className="border-b border-gray-100 text-[10px] p-1 pl-0 text-right h-[44px]"
         >
           {DateTime.fromMillis(start.getTime() + i * 30 * 60 * 1000)
             .setZone(timezone)

@@ -39,7 +39,7 @@ export default async function SiteLayout({
       />
       <main
         className={clsx(
-          "lg:px-24 p-3 flex-1",
+          "lg:px-24 p-2 sm:p-3 flex-1",
           multipleEvents ? "py-24 lg:pb-16" : "pt-20 lg:pb-16"
         )}
       >
