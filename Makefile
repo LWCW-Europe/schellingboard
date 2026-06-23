@@ -1,6 +1,6 @@
 .PHONY: help dev build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-ci format format-check check-and-format dev-migrate-up dev-migrate-status dev-migrate-create dev-db-reset dev-admin install install-playwright clean clean-all docker-build
 
-SHELL := /bin/bash
+SHELL := /usr/bin/env bash
 
 help:
 	@echo "Available commands:"
