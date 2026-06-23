@@ -6,7 +6,7 @@ export default async function AdminUsersPage() {
   await requireAdminPage();
 
   const repositories = getRepositories();
-  const guests = await repositories.guests.list();
+  const guests = await repositories.guests.listFull();
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">

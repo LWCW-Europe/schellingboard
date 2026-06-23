@@ -2,18 +2,23 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
-import type { Guest, GuestsRepository } from "../interfaces";
+import type { Guest, GuestsRepository, CompleteGuest } from "../interfaces";
+import { sanitizeGuest } from "@/utils/guests";
 
 type DB = BetterSQLite3Database<typeof schema>;
 
-function rowToGuest(row: typeof schema.guests.$inferSelect): Guest {
-  return { id: row.id, name: row.name, email: row.email };
+function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
+  return { id: row.id, name: row.name, info: { email: row.email } };
 }
 
 export class SqliteGuestsRepository implements GuestsRepository {
   constructor(private readonly db: DB) {}
 
   async list(): Promise<Guest[]> {
+    return (await this.listFull()).map(sanitizeGuest);
+  }
+
+  async listFull(): Promise<CompleteGuest[]> {
     return this.db.select().from(schema.guests).all().map(rowToGuest);
   }
 
@@ -22,7 +27,6 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .select({
         id: schema.guests.id,
         name: schema.guests.name,
-        email: schema.guests.email,
       })
       .from(schema.guests)
       .innerJoin(
@@ -30,11 +34,12 @@ export class SqliteGuestsRepository implements GuestsRepository {
         eq(schema.guests.id, schema.eventGuests.guestId)
       )
       .where(eq(schema.eventGuests.eventId, eventId))
-      .all();
+      .all()
+      .map((row) => row as Guest);
     return rows;
   }
 
-  async findById(id: string): Promise<Guest | undefined> {
+  async findById(id: string): Promise<CompleteGuest | undefined> {
     const row = this.db
       .select()
       .from(schema.guests)
@@ -43,7 +48,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return row ? rowToGuest(row) : undefined;
   }
 
-  async findByEmail(email: string): Promise<Guest | undefined> {
+  async findByEmail(email: string): Promise<CompleteGuest | undefined> {
     const row = this.db
       .select()
       .from(schema.guests)
@@ -52,22 +57,29 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return row ? rowToGuest(row) : undefined;
   }
 
-  async create(data: Omit<Guest, "id">): Promise<Guest> {
+  async create(data: Omit<CompleteGuest, "id">): Promise<CompleteGuest> {
     const id = nanoid();
-    this.db
-      .insert(schema.guests)
-      .values({ id, ...data })
-      .run();
+    const {
+      name,
+      info: { email },
+    } = data;
+
+    this.db.insert(schema.guests).values({ id, name, email }).run();
     return { id, ...data };
   }
 
   async update(
     id: string,
-    data: Omit<Guest, "id">
-  ): Promise<Guest | undefined> {
+    data: Omit<CompleteGuest, "id">
+  ): Promise<CompleteGuest | undefined> {
+    const {
+      name,
+      info: { email },
+    } = data;
+
     const result = this.db
       .update(schema.guests)
-      .set(data)
+      .set({ name, email })
       .where(eq(schema.guests.id, id))
       .run();
     if (result.changes === 0) return undefined;

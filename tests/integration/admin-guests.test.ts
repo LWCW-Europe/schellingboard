@@ -159,7 +159,7 @@ describe("admin guest actions", () => {
       const updated = await getRepositories().guests.findById(guest.id);
       expect(updated).toMatchObject({
         name: "New Name",
-        email: "new@test.example",
+        info: { email: "new@test.example" },
       });
     });
 

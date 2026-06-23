@@ -35,7 +35,7 @@ export async function createGuestAction(input: {
     return { ok: false, error: "A user with this email already exists" };
   }
 
-  await guests.create({ name, email });
+  await guests.create({ name, info: { email } });
   revalidatePath("/admin/users");
   return { ok: true };
 }
@@ -58,7 +58,7 @@ export async function updateGuestAction(input: {
     return { ok: false, error: "A user with this email already exists" };
   }
 
-  const updated = await guests.update(input.id, { name, email });
+  const updated = await guests.update(input.id, { name, info: { email } });
   if (!updated) return { ok: false, error: "User not found" };
 
   revalidatePath("/admin/users");

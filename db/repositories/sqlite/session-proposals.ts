@@ -26,7 +26,6 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
         proposalId: schema.proposalHosts.proposalId,
         id: schema.guests.id,
         name: schema.guests.name,
-        email: schema.guests.email,
       })
       .from(schema.proposalHosts)
       .innerJoin(
@@ -58,7 +57,7 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
     const hostsByProposal = new Map<string, ProposalHost[]>();
     for (const r of hostRows) {
       const list = hostsByProposal.get(r.proposalId) ?? [];
-      list.push({ id: r.id, name: r.name, email: r.email });
+      list.push({ id: r.id, name: r.name });
       hostsByProposal.set(r.proposalId, list);
     }
 

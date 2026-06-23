@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import clsx from "clsx";
 import { Input } from "@/app/input";
-import type { Guest } from "@/db/repositories/interfaces";
+import type { CompleteGuest } from "@/db/repositories/interfaces";
 import {
   createGuestAction,
   updateGuestAction,
@@ -75,17 +75,17 @@ function GuestRow({
   guest,
   onError,
 }: {
-  guest: Guest;
+  guest: CompleteGuest;
   onError: (error: string | null) => void;
 }) {
   const [mode, setMode] = useState<"view" | "edit" | "delete">("view");
   const [name, setName] = useState(guest.name);
-  const [email, setEmail] = useState(guest.email);
+  const [email, setEmail] = useState(guest.info.email);
   const [isPending, startTransition] = useTransition();
 
   const startEdit = () => {
     setName(guest.name);
-    setEmail(guest.email);
+    setEmail(guest.info.email);
     onError(null);
     setMode("edit");
   };
@@ -161,7 +161,7 @@ function GuestRow({
     <li className="py-3 flex flex-col sm:flex-row gap-2 sm:items-center">
       <div className="flex-1 min-w-0">
         <p className="font-medium text-gray-900 truncate">{guest.name}</p>
-        <p className="text-sm text-gray-500 truncate">{guest.email}</p>
+        <p className="text-sm text-gray-500 truncate">{guest.info.email}</p>
       </div>
       {mode === "delete" ? (
         <div className="flex gap-2 items-center">
@@ -204,7 +204,7 @@ function GuestRow({
   );
 }
 
-export function GuestsManager({ guests }: { guests: Guest[] }) {
+export function GuestsManager({ guests }: { guests: CompleteGuest[] }) {
   const [error, setError] = useState<string | null>(null);
 
   return (
