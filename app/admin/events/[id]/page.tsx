@@ -24,14 +24,14 @@ export default async function AdminEventDetailPage({
   const event = await repos.events.findById(id);
   if (!event) notFound();
 
-  const allGuests = await repos.guests.list();
+  const allGuests = await repos.guests.listFull();
   const assignedGuestIds = new Set(
     (await repos.guests.listByEvent(id)).map((g) => g.id)
   );
   const guestRows: GuestRow[] = allGuests.map((g) => ({
     id: g.id,
     name: g.name,
-    email: g.email,
+    email: g.info.email,
     assigned: assignedGuestIds.has(g.id),
   }));
 

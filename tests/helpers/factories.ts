@@ -7,6 +7,7 @@ import type {
   Session,
   SessionProposal,
 } from "@/db/repositories/interfaces";
+import { sanitizeGuest } from "@/utils/guests";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -81,10 +82,12 @@ export async function createGuest(opts?: {
 }): Promise<Guest> {
   const { guests } = getRepositories();
   const unique = Date.now();
-  return guests.create({
-    name: opts?.name ?? `Test Guest ${unique}`,
-    email: opts?.email ?? `guest-${unique}@test.example`,
-  });
+  return guests
+    .create({
+      name: opts?.name ?? `Test Guest ${unique}`,
+      info: { email: opts?.email ?? `guest-${unique}@test.example` },
+    })
+    .then((guest) => guest && sanitizeGuest(guest));
 }
 
 export async function createLocation(opts?: {

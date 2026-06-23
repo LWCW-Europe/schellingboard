@@ -66,19 +66,29 @@ export interface EventsRepository {
 
 // ── Guests ────────────────────────────────────────────────────────────────────
 
-export type Guest = {
-  id: string;
-  name: string;
+type GuestPrivateInfo = {
   email: string;
 };
 
+export type Guest<PI extends GuestPrivateInfo | void = void> = {
+  id: string;
+  name: string;
+  info: PI;
+};
+
+export type CompleteGuest = Guest<GuestPrivateInfo>;
+
 export interface GuestsRepository {
   list(): Promise<Guest[]>;
+  listFull(): Promise<CompleteGuest[]>;
   listByEvent(eventId: string): Promise<Guest[]>;
-  findById(id: string): Promise<Guest | undefined>;
-  findByEmail(email: string): Promise<Guest | undefined>;
-  create(data: Omit<Guest, "id">): Promise<Guest>;
-  update(id: string, data: Omit<Guest, "id">): Promise<Guest | undefined>;
+  findById(id: string): Promise<CompleteGuest | undefined>;
+  findByEmail(email: string): Promise<CompleteGuest | undefined>;
+  create(data: Omit<CompleteGuest, "id">): Promise<CompleteGuest>;
+  update(
+    id: string,
+    data: Omit<CompleteGuest, "id">
+  ): Promise<CompleteGuest | undefined>;
   /** Deletes the guest and all records referencing them (votes, RSVPs, host links, event assignments). */
   delete(id: string): Promise<void>;
   assignToEvent(eventId: string, guestIds: string[]): Promise<void>;
@@ -134,7 +144,7 @@ export interface LocationsRepository {
 
 // ── Sessions ──────────────────────────────────────────────────────────────────
 
-export type SessionHost = Pick<Guest, "id" | "name" | "email">;
+export type SessionHost = Pick<Guest, "id" | "name">;
 export type SessionLocation = Pick<Location, "id" | "name" | "color">;
 
 export type Session = {
@@ -208,7 +218,7 @@ export interface RsvpsRepository {
 
 // ── Session Proposals ─────────────────────────────────────────────────────────
 
-export type ProposalHost = Pick<Guest, "id" | "name" | "email">;
+export type ProposalHost = Pick<Guest, "id" | "name">;
 
 export type SessionProposal = {
   id: string;

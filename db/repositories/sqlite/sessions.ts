@@ -51,7 +51,6 @@ export class SqliteSessionsRepository implements SessionsRepository {
         sessionId: schema.sessionHosts.sessionId,
         id: schema.guests.id,
         name: schema.guests.name,
-        email: schema.guests.email,
       })
       .from(schema.sessionHosts)
       .innerJoin(
@@ -86,7 +85,7 @@ export class SqliteSessionsRepository implements SessionsRepository {
     const hostsBySession = new Map<string, SessionHost[]>();
     for (const r of hostRows) {
       const list = hostsBySession.get(r.sessionId) ?? [];
-      list.push({ id: r.id, name: r.name, email: r.email });
+      list.push({ id: r.id, name: r.name });
       hostsBySession.set(r.sessionId, list);
     }
 
