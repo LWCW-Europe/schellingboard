@@ -58,7 +58,12 @@ export function getRepositories(): Repositories {
     _sqlite = new Database(url.replace(/^file:/, ""));
     const db = drizzle(_sqlite, { schema });
     const migrationsFolder = path.join(process.cwd(), "drizzle");
-    migrate(db, { migrationsFolder });
+    try {
+      _sqlite.pragma("foreign_keys = OFF");
+      migrate(db, { migrationsFolder });
+    } finally {
+      _sqlite.pragma("foreign_keys = ON");
+    }
     _repositories = buildRepositories(_sqlite);
   }
   return _repositories;

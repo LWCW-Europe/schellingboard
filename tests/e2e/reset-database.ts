@@ -50,7 +50,13 @@ function openDb() {
     path.dirname(fileURLToPath(import.meta.url)),
     "../../drizzle"
   );
-  migrate(db, { migrationsFolder });
+  try {
+    // https://github.com/drizzle-team/drizzle-orm/issues/4089
+    sqlite.pragma("foreign_keys = OFF");
+    migrate(db, { migrationsFolder });
+  } finally {
+    sqlite.pragma("foreign_keys = ON");
+  }
   return db;
 }
 
