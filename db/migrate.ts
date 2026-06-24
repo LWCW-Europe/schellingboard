@@ -21,6 +21,11 @@ export function resolveDbPath(
  * therefore fail against a populated database. Disabling enforcement here,
  * outside any transaction, is SQLite's recommended workaround.
  * See https://github.com/drizzle-team/drizzle-orm/issues/4089
+ *
+ * Because enforcement is off, a faulty migration could introduce a dangling
+ * reference unnoticed, so afterwards we run `PRAGMA foreign_key_check` and
+ * throw if any violation slipped through (it cannot be rolled back at that
+ * point, but failing loudly surfaces the bad migration in dev/CI).
  */
 export function runMigrations(
   sqlite: Database.Database,
@@ -29,6 +34,13 @@ export function runMigrations(
   try {
     sqlite.pragma("foreign_keys = OFF");
     migrate(drizzle(sqlite), { migrationsFolder });
+    const violations = sqlite.pragma("foreign_key_check") as unknown[];
+    if (violations.length > 0) {
+      throw new Error(
+        `Migration produced ${violations.length} foreign key violation(s): ` +
+          JSON.stringify(violations)
+      );
+    }
   } finally {
     sqlite.pragma("foreign_keys = ON");
   }
