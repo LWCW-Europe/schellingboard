@@ -52,14 +52,20 @@ function buildRepositories(sqlite: Database.Database): Repositories {
 
 export function getRepositories(): Repositories {
   if (!_repositories) {
-    _sqlite = new Database(resolveDbPath());
-    // Enforce foreign keys on every connection. better-sqlite3 happens to
-    // compile SQLite with SQLITE_DEFAULT_FOREIGN_KEYS=1, but set it explicitly
-    // so our ON DELETE CASCADE / SET NULL behaviour never depends on that
-    // build default. runMigrations toggles it off and back on internally.
-    _sqlite.pragma("foreign_keys = ON");
-    runMigrations(_sqlite, path.join(process.cwd(), "drizzle"));
-    _repositories = buildRepositories(_sqlite);
+    const conn = new Database(resolveDbPath());
+    try {
+      // Enforce foreign keys on every connection. better-sqlite3 happens to
+      // compile SQLite with SQLITE_DEFAULT_FOREIGN_KEYS=1, but set it explicitly
+      // so our ON DELETE CASCADE / SET NULL behaviour never depends on that
+      // build default. runMigrations toggles it off and back on internally.
+      conn.pragma("foreign_keys = ON");
+      runMigrations(conn, path.join(process.cwd(), "drizzle"));
+      _sqlite = conn;
+      _repositories = buildRepositories(conn);
+    } catch (e) {
+      conn.close();
+      throw e;
+    }
   }
   return _repositories;
 }
