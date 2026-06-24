@@ -1,6 +1,5 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import fs from "fs";
 import { nanoid } from "nanoid";
 import dotenv from "dotenv";
@@ -8,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { DateTime } from "luxon";
 import * as schema from "@/db/schema";
+import { resolveDbPath, runMigrations } from "@/db/migrate";
 import { VoteChoice } from "@/db/repositories/interfaces";
 
 const TZ = "Europe/Berlin";
@@ -37,30 +37,21 @@ const envFile = fs.existsSync(envFileLocal)
     : null;
 if (envFile) dotenv.config({ path: envFile });
 
-const dbUrl = process.env.DATABASE_URL ?? "file:./data.db";
-
-if (process.env.NODE_ENV === "production" || dbUrl.includes("prod")) {
+if (process.env.NODE_ENV === "production") {
   throw new Error("🚨 SAFETY: Cannot reset production database!");
 }
 
 function openDb() {
-  const sqlite = new Database(dbUrl.replace(/^file:/, ""));
-  // Enforce foreign keys on every connection; the migration below toggles it
-  // off and back on.
+  const sqlite = new Database(resolveDbPath());
+  // Enforce foreign keys on every connection; runMigrations toggles it off and
+  // back on internally.
   sqlite.pragma("foreign_keys = ON");
-  const db = drizzle(sqlite, { schema });
   const migrationsFolder = path.join(
     path.dirname(fileURLToPath(import.meta.url)),
     "../../drizzle"
   );
-  try {
-    // https://github.com/drizzle-team/drizzle-orm/issues/4089
-    sqlite.pragma("foreign_keys = OFF");
-    migrate(db, { migrationsFolder });
-  } finally {
-    sqlite.pragma("foreign_keys = ON");
-  }
-  return db;
+  runMigrations(sqlite, migrationsFolder);
+  return drizzle(sqlite, { schema });
 }
 
 let _seedForRandom = 42;
@@ -606,7 +597,7 @@ function seedTestData() {
 function resetDatabase() {
   try {
     console.log("🔄 Resetting test database to known state...");
-    console.log(`📍 Database: ${dbUrl}`);
+    console.log(`📍 Database: ${resolveDbPath()}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || "dev"}`);
 
     clearAll();

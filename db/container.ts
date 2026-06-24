@@ -1,8 +1,8 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import path from "path";
 import * as schema from "./schema";
+import { resolveDbPath, runMigrations } from "./migrate";
 import { SqliteDaysRepository } from "./repositories/sqlite/days";
 import { SqliteEventsRepository } from "./repositories/sqlite/events";
 import { SqliteGuestsRepository } from "./repositories/sqlite/guests";
@@ -33,8 +33,6 @@ export type Repositories = {
   votes: VotesRepository;
 };
 
-const DEFAULT_DB_URL = "file:./data.db";
-
 let _sqlite: Database.Database | null = null;
 let _repositories: Repositories | null = null;
 
@@ -54,21 +52,13 @@ function buildRepositories(sqlite: Database.Database): Repositories {
 
 export function getRepositories(): Repositories {
   if (!_repositories) {
-    const url = process.env.DATABASE_URL ?? DEFAULT_DB_URL;
-    _sqlite = new Database(url.replace(/^file:/, ""));
+    _sqlite = new Database(resolveDbPath());
     // Enforce foreign keys on every connection. better-sqlite3 happens to
     // compile SQLite with SQLITE_DEFAULT_FOREIGN_KEYS=1, but set it explicitly
     // so our ON DELETE CASCADE / SET NULL behaviour never depends on that
-    // build default. Migrations toggle it off and back on below.
+    // build default. runMigrations toggles it off and back on internally.
     _sqlite.pragma("foreign_keys = ON");
-    const db = drizzle(_sqlite, { schema });
-    const migrationsFolder = path.join(process.cwd(), "drizzle");
-    try {
-      _sqlite.pragma("foreign_keys = OFF");
-      migrate(db, { migrationsFolder });
-    } finally {
-      _sqlite.pragma("foreign_keys = ON");
-    }
+    runMigrations(_sqlite, path.join(process.cwd(), "drizzle"));
     _repositories = buildRepositories(_sqlite);
   }
   return _repositories;

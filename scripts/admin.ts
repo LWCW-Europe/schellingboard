@@ -6,32 +6,23 @@
 import * as p from "@clack/prompts";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { eq, inArray } from "drizzle-orm";
 import fs from "fs";
 import { nanoid } from "nanoid";
 import path from "path";
 import { fileURLToPath } from "url";
 import * as schema from "../db/schema.js";
+import { resolveDbPath, runMigrations } from "../db/migrate.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function openDb() {
-  const url = process.env.DATABASE_URL ?? "file:./data.db";
-  const sqlite = new Database(url.replace(/^file:/, ""));
-  // Enforce foreign keys on every connection; the migration below toggles it
-  // off and back on.
+  const sqlite = new Database(resolveDbPath());
+  // Enforce foreign keys on every connection; runMigrations toggles it off and
+  // back on internally.
   sqlite.pragma("foreign_keys = ON");
-  const db = drizzle(sqlite, { schema });
-  try {
-    sqlite.pragma("foreign_keys = OFF");
-    migrate(db, {
-      migrationsFolder: path.join(__dirname, "../drizzle"),
-    });
-  } finally {
-    sqlite.pragma("foreign_keys = ON");
-  }
-  return db;
+  runMigrations(sqlite, path.join(__dirname, "../drizzle"));
+  return drizzle(sqlite, { schema });
 }
 
 type DB = ReturnType<typeof openDb>;
