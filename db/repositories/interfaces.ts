@@ -73,6 +73,9 @@ type GuestPrivateInfo = {
 export type Guest<PI extends GuestPrivateInfo | void = void> = {
   id: string;
   name: string;
+  // Public: shown on the guest's profile to anyone who can view it.
+  aboutMe?: string | null;
+  avatarUrl?: string | null;
   info: PI;
 };
 
@@ -85,9 +88,15 @@ export interface GuestsRepository {
   findById(id: string): Promise<CompleteGuest | undefined>;
   findByEmail(email: string): Promise<CompleteGuest | undefined>;
   create(data: Omit<CompleteGuest, "id">): Promise<CompleteGuest>;
+  // Usage: an admin updates a user (name and private info such as email).
   update(
     id: string,
-    data: Omit<CompleteGuest, "id">
+    data: Pick<CompleteGuest, "name" | "info">
+  ): Promise<CompleteGuest | undefined>;
+  // Usage: a user updates their own profile (name and public aboutMe).
+  updateProfile(
+    id: string,
+    data: { name: string; aboutMe: string | null; avatarUrl: string | null }
   ): Promise<CompleteGuest | undefined>;
   /** Deletes the guest and all records referencing them (votes, RSVPs, host links, event assignments). */
   delete(id: string): Promise<void>;
@@ -191,6 +200,8 @@ export interface SessionsRepository {
   listScheduled(): Promise<Session[]>;
   listByEvent(eventId: string): Promise<Session[]>;
   listScheduledByEvent(eventId: string): Promise<Session[]>;
+  listHostedByGuest(guestId: string): Promise<Session[]>;
+  listRsvpdByGuest(guestId: string): Promise<Session[]>;
   findById(id: string): Promise<Session | undefined>;
   create(data: SessionCreateInput): Promise<Session>;
   update(id: string, patch: SessionUpdateInput): Promise<Session>;
@@ -251,6 +262,7 @@ export type SessionProposalUpdateInput = {
 
 export interface SessionProposalsRepository {
   listByEvent(eventId: string): Promise<SessionProposal[]>;
+  listByHost(guestId: string): Promise<SessionProposal[]>;
   findById(id: string): Promise<SessionProposal | undefined>;
   create(data: SessionProposalCreateInput): Promise<SessionProposal>;
   update(
@@ -287,4 +299,14 @@ export interface VotesRepository {
     proposalId: string,
     guestIds: string[]
   ): Promise<void>;
+}
+
+// ── Images ─────────────────────────────────────────────────────────────────────
+
+export interface ImageResourceRepository<Id> {
+  validate(
+    buffer: Buffer
+  ): Promise<{ buffer: Buffer; ext: string } | { error: string }>;
+  save(id: Id, buffer: Buffer, ext: string): Promise<string>;
+  delete(id: Id): Promise<void>;
 }

@@ -118,6 +118,20 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
     return this.enrichProposals(rows);
   }
 
+  async listByHost(guestId: string): Promise<SessionProposal[]> {
+    const rows = this.db
+      .select({ proposal: schema.sessionProposals })
+      .from(schema.sessionProposals)
+      .innerJoin(
+        schema.proposalHosts,
+        eq(schema.proposalHosts.proposalId, schema.sessionProposals.id)
+      )
+      .where(eq(schema.proposalHosts.guestId, guestId))
+      .all()
+      .map((r) => r.proposal);
+    return this.enrichProposals(rows);
+  }
+
   async findById(id: string): Promise<SessionProposal | undefined> {
     const row = this.db
       .select()

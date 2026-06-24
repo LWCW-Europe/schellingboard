@@ -70,14 +70,13 @@ export function ViewSession(props: {
   const isHost = currentUser && session.hosts.some((h) => h.id === currentUser);
   const isEditable = !!isHost && session.attendeeScheduled;
 
-  const guestMap = new Map(guests.map((guest) => [guest.id, guest.name]));
-  const attendeeNames =
+  const guestMap = new Map(guests.map((guest) => [guest.id, guest]));
+  const attendees =
     optimisticRsvps === null
       ? null
       : optimisticRsvps
-          .map((rsvp) => guestMap.get(rsvp.guestId))
-          .filter((name): name is string => name !== undefined)
-          .sort();
+          .flatMap((rsvp) => guestMap.get(rsvp.guestId) ?? [])
+          .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
   const location = locations.find((loc) => loc.id === session.locations[0]?.id);
 
@@ -239,7 +238,19 @@ export function ViewSession(props: {
       <div className="space-y-2 mb-6 text-sm text-gray-700">
         <div className="flex gap-2">
           <span className="font-medium">Hosts(s):</span>
-          <span>{hostNames}</span>
+          <span>
+            {session.hosts.map((h, i) => (
+              <span key={h.id}>
+                {i > 0 && ", "}
+                <Link
+                  href={`/guests/${h.id}`}
+                  className="text-rose-500 hover:text-rose-600 hover:underline"
+                >
+                  {h.name}
+                </Link>
+              </span>
+            ))}
+          </span>
         </div>
         <div className="flex gap-2">
           <span className="font-medium">Location:</span>
@@ -260,7 +271,7 @@ export function ViewSession(props: {
         <div className="flex gap-2">
           <span className="font-medium">
             Attendees (
-            {attendeeNames === null ? session.numRsvps : attendeeNames.length}):
+            {attendees === null ? session.numRsvps : attendees.length}):
           </span>
           {/* TODO: If the list of attendees spans multiple lines, the layout will jump on load.
           Ideas:
@@ -268,11 +279,21 @@ export function ViewSession(props: {
           - include ALL RSVPs in the preloaded EventContext, so that we don't need to fetch them later at all
           */}
           <span>
-            {attendeeNames === null
+            {attendees === null
               ? "Loading…"
-              : attendeeNames.length === 0
+              : attendees.length === 0
                 ? "No attendees yet"
-                : attendeeNames.join(", ")}
+                : attendees.map((a, i) => (
+                    <span key={a.id}>
+                      {i > 0 && ", "}
+                      <Link
+                        href={`/guests/${a.id}`}
+                        className="text-rose-500 hover:text-rose-600 hover:underline"
+                      >
+                        {a.name}
+                      </Link>
+                    </span>
+                  ))}
           </span>
         </div>
       </div>

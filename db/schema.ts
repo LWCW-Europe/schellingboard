@@ -10,6 +10,8 @@ export const guests = sqliteTable("guests", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  aboutMe: text("about_me"),
+  avatarUrl: text("avatar_url"),
 });
 
 export const events = sqliteTable("events", {

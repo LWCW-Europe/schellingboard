@@ -57,6 +57,13 @@
       "when": 1783004074395,
       "tag": "0007_faulty_pete_wisdom",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1782451329873,
+      "tag": "0008_unknown_chamber",
+      "breakpoints": true
     }
   ]
 }

@@ -8,7 +8,13 @@ import { sanitizeGuest } from "@/utils/guests";
 type DB = BetterSQLite3Database<typeof schema>;
 
 function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
-  return { id: row.id, name: row.name, info: { email: row.email } };
+  return {
+    id: row.id,
+    name: row.name,
+    aboutMe: row.aboutMe,
+    avatarUrl: row.avatarUrl,
+    info: { email: row.email },
+  };
 }
 
 export class SqliteGuestsRepository implements GuestsRepository {
@@ -27,6 +33,8 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .select({
         id: schema.guests.id,
         name: schema.guests.name,
+        avatarUrl: schema.guests.avatarUrl,
+        aboutMe: schema.guests.aboutMe,
       })
       .from(schema.guests)
       .innerJoin(
@@ -70,7 +78,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
 
   async update(
     id: string,
-    data: Omit<CompleteGuest, "id">
+    data: Pick<CompleteGuest, "name" | "info">
   ): Promise<CompleteGuest | undefined> {
     const {
       name,
@@ -83,7 +91,24 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .where(eq(schema.guests.id, id))
       .run();
     if (result.changes === 0) return undefined;
-    return { id, ...data };
+    return this.findById(id);
+  }
+
+  async updateProfile(
+    id: string,
+    data: { name: string; aboutMe: string | null; avatarUrl: string | null }
+  ): Promise<CompleteGuest | undefined> {
+    const result = this.db
+      .update(schema.guests)
+      .set({
+        name: data.name,
+        aboutMe: data.aboutMe,
+        avatarUrl: data.avatarUrl,
+      })
+      .where(eq(schema.guests.id, id))
+      .run();
+    if (result.changes === 0) return undefined;
+    return this.findById(id);
   }
 
   async assignToEvent(eventId: string, guestIds: string[]): Promise<void> {

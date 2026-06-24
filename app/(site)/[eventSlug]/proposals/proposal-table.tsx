@@ -498,7 +498,19 @@ export function ProposalTable({
                 </td>
                 <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <div className="truncate">
-                    {proposal.hosts.map((h) => h.name).join(", ") || "-"}
+                    {proposal.hosts.length === 0
+                      ? "-"
+                      : proposal.hosts.map((h, i) => (
+                          <span key={h.id}>
+                            {i > 0 && ", "}
+                            <Link
+                              href={`/guests/${h.id}`}
+                              className="hover:text-blue-600 transition-colors"
+                            >
+                              {h.name}
+                            </Link>
+                          </span>
+                        ))}
                   </div>
                 </td>
                 <td className="px-4 lg:px-6 py-4" title={proposal.description}>
