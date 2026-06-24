@@ -10,7 +10,6 @@ import {
 import fs from "fs";
 import os from "os";
 import path from "path";
-import sharp from "sharp";
 
 const cookieJar = new Map<string, string>();
 
@@ -42,6 +41,7 @@ import {
   deleteLocationAction,
   moveLocationAction,
 } from "@/app/actions/admin-locations";
+import { createImageFile } from "@/tests/helpers/utils";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef"; // 32 chars
 
@@ -69,12 +69,7 @@ async function makeImageFile(
   height: number,
   name = "room.png"
 ): Promise<File> {
-  const buffer = await sharp({
-    create: { width, height, channels: 3, background: { r: 1, g: 2, b: 3 } },
-  })
-    .png()
-    .toBuffer();
-  return new File([new Uint8Array(buffer)], name, { type: "image/png" });
+  return createImageFile(width, height, name);
 }
 
 let uploadsDir: string;

@@ -88,9 +88,11 @@ export type NavItem = {
 export default function NavBar({
   navItems,
   showLogout,
+  showGuestsLink,
 }: {
   navItems: NavItem[];
   showLogout: boolean;
+  showGuestsLink: boolean;
 }) {
   return (
     <Disclosure
@@ -124,6 +126,15 @@ export default function NavBar({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
+                  {showGuestsLink && (
+                    <Link
+                      href="/guests"
+                      className="group flex gap-1 cursor-pointer items-center rounded-md px-3 py-2 text-sm font-medium text-gray-400 hover:bg-gray-100"
+                    >
+                      <UserGroupIcon className="block h-5 w-auto" />
+                      Participants
+                    </Link>
+                  )}
                   <MapModal />
                   <ExportScheduleModal />
                   {showLogout && <LogoutButton />}

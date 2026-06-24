@@ -22,8 +22,6 @@ export function SessionText(props: {
   const timezone = event?.timezone ?? "UTC";
   const breakMinutes = useBreakMinutes();
   const [showFullDescription, setShowFullDescription] = useState(false);
-  const formattedHostNames =
-    session.hosts.map((h) => h.name).join(", ") || "No hosts";
 
   const rsvpd = currentUser ? rsvpdForSession(session.id) : false;
   const isHost = currentUser && session.hosts.some((h) => h.id === currentUser);
@@ -91,7 +89,24 @@ export function SessionText(props: {
                 .toFormat(TIME_FORMAT)}
             </span>
           </div>
-          •<span>{formattedHostNames}</span>
+          •
+          {session.hosts.length === 0 ? (
+            <span>No hosts</span>
+          ) : (
+            <span>
+              {session.hosts.map((h, i) => (
+                <span key={h.id}>
+                  {i > 0 && ", "}
+                  <Link
+                    href={`/guests/${h.id}`}
+                    className="hover:text-blue-600 transition-colors"
+                  >
+                    {h.name}
+                  </Link>
+                </span>
+              ))}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           {locations.map((loc) => (
