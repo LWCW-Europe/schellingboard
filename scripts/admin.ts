@@ -20,9 +20,14 @@ function openDb() {
   const url = process.env.DATABASE_URL ?? "file:./data.db";
   const sqlite = new Database(url.replace(/^file:/, ""));
   const db = drizzle(sqlite, { schema });
-  migrate(db, {
-    migrationsFolder: path.join(__dirname, "../drizzle"),
-  });
+  try {
+    sqlite.pragma("foreign_keys = OFF");
+    migrate(db, {
+      migrationsFolder: path.join(__dirname, "../drizzle"),
+    });
+  } finally {
+    sqlite.pragma("foreign_keys = ON");
+  }
   return db;
 }
 

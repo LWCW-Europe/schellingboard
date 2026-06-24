@@ -113,7 +113,7 @@ clean-all: clean
 	rm -rf node_modules
 
 dev-migrate-up: install
-	bun set-env.ts dev bun x drizzle-kit migrate
+	bun set-env.ts dev bun x tsx scripts/migrate.ts
 
 dev-migrate-status: install
 	bun set-env.ts dev bun x drizzle-kit check
