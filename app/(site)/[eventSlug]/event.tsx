@@ -34,48 +34,50 @@ export function EventDisplay() {
 
   return (
     <div className="flex flex-col items-start w-full">
-      <h1 className="sm:text-4xl text-3xl font-bold mt-20">
-        {event.name} Schedule
-      </h1>
-      <div className="flex text-gray-500 text-sm mt-1 gap-5 font-medium">
-        <span className="flex gap-1 items-center">
-          <CalendarIcon className="h-4 w-4 stroke-2" />
-          <span>
-            {DateTime.fromJSDate(event.start)
-              .setZone(event.timezone)
-              .toFormat("LLL d")}
-            {multipleDays && (
-              <>
-                {" - "}
-                {DateTime.fromJSDate(event.end)
-                  .setZone(event.timezone)
-                  .toFormat("LLL d")}
-              </>
-            )}
-            {" · "}
-            {event.timezone}
+      <div className="mx-2">
+        <h1 className="sm:text-4xl text-3xl font-bold mt-20">
+          {event.name} Schedule
+        </h1>
+        <div className="flex text-gray-500 text-sm mt-1 gap-5 font-medium">
+          <span className="flex gap-1 items-center">
+            <CalendarIcon className="h-4 w-4 stroke-2" />
+            <span>
+              {DateTime.fromJSDate(event.start)
+                .setZone(event.timezone)
+                .toFormat("LLL d")}
+              {multipleDays && (
+                <>
+                  {" - "}
+                  {DateTime.fromJSDate(event.end)
+                    .setZone(event.timezone)
+                    .toFormat("LLL d")}
+                </>
+              )}
+              {" · "}
+              {event.timezone}
+            </span>
           </span>
-        </span>
-        <a
-          className="flex gap-1 items-center hover:underline"
-          href={`https://${event.website}`}
-        >
-          <LinkIcon className="h-4 w-4 stroke-2" />
-          <span>{event.website}</span>
-        </a>
-      </div>
-      <p className="text-gray-900 mt-3 mb-5">{event.description}</p>
-      {hasPhases(event) && (
-        <div className="mb-5">
-          <Link
-            href={`/${eventNameToSlug(event.name)}/proposals`}
-            className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2`}
+          <a
+            className="flex gap-1 items-center hover:underline"
+            href={`https://${event.website}`}
           >
-            <ClipboardDocumentListIcon className="h-4 w-4" />
-            View Session Proposals
-          </Link>
+            <LinkIcon className="h-4 w-4 stroke-2" />
+            <span>{event.website}</span>
+          </a>
         </div>
-      )}
+        <p className="text-gray-900 mt-3 mb-5">{event.description}</p>
+        {hasPhases(event) && (
+          <div className="mb-5">
+            <Link
+              href={`/${eventNameToSlug(event.name)}/proposals`}
+              className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2`}
+            >
+              <ClipboardDocumentListIcon className="h-4 w-4" />
+              View Session Proposals
+            </Link>
+          </div>
+        )}
+      </div>
       <div className="mb-10 w-full">
         <ScheduleSettings guests={guests} />
       </div>
