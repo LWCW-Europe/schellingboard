@@ -45,7 +45,7 @@ export function DayGrid(props: {
     <div
       className="grid bg-white"
       style={{
-        gridTemplateColumns: `${GUTTER} repeat(${numLocations}, minmax(120px, 1fr))`,
+        gridTemplateColumns: `${GUTTER} repeat(${numLocations}, minmax(120px, 240px))`,
       }}
     >
       {/* Row 1 — room-name header, sticky to the top. The corner cell (where no
