@@ -1,6 +1,6 @@
 import type { Session } from "@/db/repositories/interfaces";
 
-export function newEmptySession(): Session {
+export function newEmptySession(eventId: string): Session {
   return {
     id: "",
     title: "",
@@ -15,7 +15,7 @@ export function newEmptySession(): Session {
     blocker: false,
     closed: false,
     proposalId: undefined,
-    eventId: undefined,
+    eventId,
   };
 }
 

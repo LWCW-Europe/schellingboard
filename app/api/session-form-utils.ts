@@ -66,7 +66,7 @@ export function prepareToInsert(params: SessionParams): SessionCreateInput {
     duration,
     params.timezone
   );
-  const input: SessionCreateInput = {
+  return {
     title,
     description,
     closed,
@@ -78,11 +78,8 @@ export function prepareToInsert(params: SessionParams): SessionCreateInput {
     attendeeScheduled: true,
     blocker: false,
     proposalId: params.proposal ?? undefined,
+    eventId: day.eventId,
   };
-  if (day.eventId) {
-    input.eventId = day.eventId;
-  }
-  return input;
 }
 
 export const validateSession = (

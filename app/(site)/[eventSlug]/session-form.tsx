@@ -23,6 +23,7 @@ import { MyListbox, type Option } from "./select";
 import { viewProposalLinkFromElsewhere } from "./modal-nav";
 import type {
   Day,
+  Event,
   Guest,
   Location,
   Session,
@@ -30,7 +31,7 @@ import type {
   SessionProposal,
 } from "@/db/repositories/interfaces";
 import { ConfirmDeletionModal } from "../modals";
-import { UserContext, EventContext } from "../context";
+import { UserContext } from "../context";
 import { sessionsOverlap, newEmptySession } from "../session_utils";
 import { buildSessionInterval } from "@/app/api/session-form-utils";
 import { revalidateEvent } from "./session-actions";
@@ -40,7 +41,7 @@ interface ErrorResponse {
 }
 
 export function SessionForm(props: {
-  eventName: string;
+  event: Event;
   days: Day[];
   sessions: Session[];
   locations: Location[];
@@ -49,7 +50,7 @@ export function SessionForm(props: {
   maxSessionDuration: number;
 }) {
   const {
-    eventName,
+    event,
     days,
     sessions,
     locations,
@@ -58,8 +59,8 @@ export function SessionForm(props: {
     maxSessionDuration,
   } = props;
   const { user: currentUser } = useContext(UserContext);
-  const { event } = useContext(EventContext);
-  const timezone = event?.timezone ?? "UTC";
+  const eventName = event.name;
+  const timezone = event.timezone ?? "UTC";
 
   const searchParams = useSearchParams();
   const dayParam = searchParams?.get("day");
@@ -69,7 +70,7 @@ export function SessionForm(props: {
   const proposalID = searchParams?.get("proposalID");
   const initialProposal = proposals.find((p) => p.id === proposalID) ?? null;
   const session =
-    sessions.find((ses) => ses.id === sessionID) || newEmptySession();
+    sessions.find((ses) => ses.id === sessionID) || newEmptySession(event.id);
   const initDateTime =
     dayParam && timeParam
       ? convertParamDateTime(dayParam, timeParam, timezone)
@@ -169,7 +170,7 @@ export function SessionForm(props: {
     }
   }
 
-  let dummySession = newEmptySession();
+  let dummySession = newEmptySession(event.id);
   if (effectiveStartTime !== undefined && day) {
     const { start, end } = buildSessionInterval(
       day,
@@ -178,7 +179,7 @@ export function SessionForm(props: {
       timezone
     );
     dummySession = {
-      ...newEmptySession(),
+      ...newEmptySession(event.id),
       startTime: start,
       endTime: end,
       id: sessionID || "",

@@ -12,7 +12,7 @@ export function LocationCol(props: {
   guests: Guest[];
 }) {
   const { eventName, sessions, location, day, guests } = props;
-  const sessionsWithBlanks = insertBlankSessions(sessions, day.start, day.end);
+  const sessionsWithBlanks = insertBlankSessions(sessions, day);
   const numHalfHours = getNumHalfHours(day.start, day.end);
   return (
     <div className={"px-0.5"}>
@@ -41,13 +41,12 @@ export function LocationCol(props: {
 
 function insertBlankSessions(
   sessions: Session[],
-  dayStart: Date,
-  dayEnd: Date
+  day: DayWithSessions
 ): Session[] {
   const sessionsWithBlanks: Session[] = [];
   for (
-    let currentTime = dayStart.getTime();
-    currentTime < dayEnd.getTime();
+    let currentTime = day.start.getTime();
+    currentTime < day.end.getTime();
     currentTime += 1800000
   ) {
     const sessionNow = sessions.find((session) => {
@@ -75,6 +74,7 @@ function insertBlankSessions(
         attendeeScheduled: false,
         blocker: false,
         closed: false,
+        eventId: day.eventId,
       });
     }
   }

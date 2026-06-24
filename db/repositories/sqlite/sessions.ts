@@ -31,7 +31,7 @@ function buildSessions(
     blocker: row.blocker,
     closed: row.closed,
     proposalId: row.proposalId ?? undefined,
-    eventId: row.eventId ?? undefined,
+    eventId: row.eventId,
     hosts: hostsBySession.get(row.id) ?? [],
     locations: locationsBySession.get(row.id) ?? [],
     numRsvps: rsvpCountBySession.get(row.id) ?? 0,
@@ -178,7 +178,7 @@ export class SqliteSessionsRepository implements SessionsRepository {
           blocker: data.blocker,
           closed: data.closed,
           proposalId: data.proposalId ?? null,
-          eventId: data.eventId ?? null,
+          eventId: data.eventId,
         })
         .run();
 
@@ -210,7 +210,7 @@ export class SqliteSessionsRepository implements SessionsRepository {
       if (patch.blocker !== undefined) values.blocker = patch.blocker;
       if (patch.closed !== undefined) values.closed = patch.closed;
       if ("proposalId" in patch) values.proposalId = patch.proposalId ?? null;
-      if ("eventId" in patch) values.eventId = patch.eventId ?? null;
+      if (patch.eventId !== undefined) values.eventId = patch.eventId;
 
       if (Object.keys(values).length > 0) {
         tx.update(schema.sessions)

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const repos = getRepositories();
   const input = prepareToInsert(params);
   const allSessions = (await repos.sessions.listScheduled()).filter(
-    (s) => !input.eventId || s.eventId === input.eventId
+    (s) => s.eventId === input.eventId
   );
   const prevSession = allSessions.find((ses) => ses.id === params.id);
   if (prevSession === undefined) {

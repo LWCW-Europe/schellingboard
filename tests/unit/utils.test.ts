@@ -75,6 +75,7 @@ const DAY: Day = {
   end: new Date("2025-06-15T18:00:00Z"),
   startBookings: new Date("2025-06-15T09:00:00Z"),
   endBookings: new Date("2025-06-15T17:00:00Z"),
+  eventId: "111",
 };
 
 describe("dateOnDay", () => {
@@ -149,6 +150,7 @@ function makeSession(startTime: Date, endTime: Date): Session {
     numRsvps: 0,
     startTime,
     endTime,
+    eventId: "111",
   };
 }
 

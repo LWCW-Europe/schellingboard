@@ -13,7 +13,7 @@ function rowToDay(row: typeof schema.days.$inferSelect): Day {
     end: new Date(row.end),
     startBookings: new Date(row.startBookings),
     endBookings: new Date(row.endBookings),
-    eventId: row.eventId ?? undefined,
+    eventId: row.eventId,
   };
 }
 
@@ -57,7 +57,7 @@ export class SqliteDaysRepository implements DaysRepository {
         end: data.end.toISOString(),
         startBookings: data.startBookings.toISOString(),
         endBookings: data.endBookings.toISOString(),
-        eventId: data.eventId ?? null,
+        eventId: data.eventId,
       })
       .run();
     return { id, ...data };

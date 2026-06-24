@@ -74,7 +74,9 @@ export const days = sqliteTable("days", {
   end: text("end").notNull(),
   startBookings: text("start_bookings").notNull(),
   endBookings: text("end_bookings").notNull(),
-  eventId: text("event_id").references(() => events.id),
+  eventId: text("event_id")
+    .notNull()
+    .references(() => events.id),
 });
 
 export const sessionProposals = sqliteTable("session_proposals", {
@@ -116,7 +118,9 @@ export const sessions = sqliteTable("sessions", {
   blocker: integer("blocker", { mode: "boolean" }).notNull().default(false),
   closed: integer("closed", { mode: "boolean" }).notNull().default(false),
   proposalId: text("proposal_id").references(() => sessionProposals.id),
-  eventId: text("event_id").references(() => events.id),
+  eventId: text("event_id")
+    .notNull()
+    .references(() => events.id),
 });
 
 export const sessionHosts = sqliteTable(

@@ -14,7 +14,7 @@ export type Day = {
   end: Date;
   startBookings: Date;
   endBookings: Date;
-  eventId?: string;
+  eventId: string;
 };
 
 export interface DaysRepository {
@@ -125,7 +125,7 @@ export type Session = {
   blocker: boolean;
   closed: boolean;
   proposalId?: string;
-  eventId?: string;
+  eventId: string;
   hosts: SessionHost[];
   locations: SessionLocation[];
   numRsvps: number;
@@ -141,7 +141,7 @@ export type SessionCreateInput = {
   blocker: boolean;
   closed: boolean;
   proposalId?: string;
-  eventId?: string;
+  eventId: string;
   hostIds: string[];
   locationIds: string[];
 };

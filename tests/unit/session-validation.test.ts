@@ -22,6 +22,7 @@ function makeInput(
     locationIds: [LOC_A],
     startTime: fromNow(60),
     endTime: fromNow(120),
+    eventId: "111",
     ...overrides,
   };
 }
@@ -44,6 +45,7 @@ function makeExisting(
     numRsvps: 0,
     startTime: start,
     endTime: end,
+    eventId: "111",
   };
 }
 

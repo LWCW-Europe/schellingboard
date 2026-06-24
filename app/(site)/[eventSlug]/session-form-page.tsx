@@ -37,7 +37,7 @@ export async function renderSessionForm(props: {
     <Suspense fallback={<div>Loading...</div>}>
       <div className="max-w-2xl mx-auto pb-24">
         <SessionForm
-          eventName={eventName}
+          event={event}
           days={days}
           locations={filteredLocations}
           sessions={sessions}
