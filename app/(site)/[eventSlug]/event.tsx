@@ -70,7 +70,7 @@ export function EventDisplay() {
           <div className="mb-5">
             <Link
               href={`/${eventNameToSlug(event.name)}/proposals`}
-              className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2`}
+              className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 max-w-fit`}
             >
               <ClipboardDocumentListIcon className="h-4 w-4" />
               View Session Proposals
