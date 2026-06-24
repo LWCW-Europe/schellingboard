@@ -3,8 +3,7 @@ import { LocationCol } from "./location-col";
 import clsx from "clsx";
 import { useSearchParams } from "next/navigation";
 import { getNumHalfHours, TIME_FORMAT } from "@/utils/utils";
-import { useSafeLayoutEffect } from "@/utils/hooks";
-import { useRef, useState, useContext } from "react";
+import { useContext } from "react";
 import Image from "next/image";
 import { Tooltip } from "./tooltip";
 import { DateTime } from "luxon";
@@ -12,10 +11,15 @@ import type { Guest, Location } from "@/db/repositories/interfaces";
 import type { DayWithSessions } from "@/app/(site)/context";
 import { EventContext } from "@/app/(site)/context";
 
-// Width of the left time-axis gutter. Shared by the body's TimestampCol and the
-// sticky header's corner spacer so their columns line up. Fits an `HH:mm` label.
-const GUTTER_WIDTH = "w-8";
+// Width of the left time-axis gutter. The body rows show `HH:mm` labels and the
+// header corner shows the day's date, so it has to fit a short date.
+const GUTTER = "2.5rem";
 
+// One day is a single CSS grid: column 1 is the time gutter, the remaining
+// columns are the locations. The room-name row sticks to the top and the gutter
+// sticks to the left, so both stay visible while you scroll the schedule. No
+// JS, no scroll listeners — just `position: sticky` inside the scroll container
+// that wraps every day (see `EventDisplay`).
 export function DayGrid(props: {
   eventName: string;
   locations: Location[];
@@ -33,206 +37,107 @@ export function DayGrid(props: {
   const includedLocations =
     locationsFromParams.length === 0 ? locations : locationsFromParams;
   const numLocations = includedLocations.length;
-  const start = day.start;
-  const end = day.end;
-  const scrollableDivRef = useRef<HTMLDivElement>(null);
-  const headerTrackRef = useRef<HTMLDivElement>(null);
-  const [scrolledToRightEnd, setScrolledToRightEnd] = useState(false);
-  const [scrolledToLeftEnd, setScrolledToLeftEnd] = useState(true);
-  // Now that the festival is over, show entire schedule by default
-  const [expanded, setExpanded] = useState(true);
-  // Or use this to hide dates that have already ended
-  // const [expanded, setExpanded] = useState(end >= new Date());
-  useSafeLayoutEffect(() => {
-    const handleScroll = () => {
-      const div = scrollableDivRef.current;
-      if (!div) return;
-      const { scrollLeft, scrollWidth, clientWidth } = div;
-      setScrolledToRightEnd(scrollLeft + clientWidth >= scrollWidth);
-      setScrolledToLeftEnd(scrollLeft === 0);
+  const numHalfHours = getNumHalfHours(day.start, day.end);
+  const hasImages = includedLocations.some((loc) => loc.imageUrl);
+  const date = DateTime.fromJSDate(day.start).setZone(timezone);
 
-      // The sticky room-header row lives outside this horizontal scroller, so
-      // mirror the body's horizontal scroll onto it.
-      if (headerTrackRef.current) {
-        headerTrackRef.current.style.transform = `translateX(${-scrollLeft}px)`;
-      }
-    };
-
-    handleScroll();
-
-    const div = scrollableDivRef.current;
-    div?.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", handleScroll);
-
-    // Cleanup the event listener on component unmount
-    return () => {
-      div?.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-    };
-  }, []);
-
-  return (
-    <div className="w-full">
-      {/* Day heading + room headers stick to the top while scrolling through
-          this day, then get pushed out when the next day's grid arrives. */}
-      <div className="sticky top-16 z-20 bg-white">
-        <div className="flex items-center gap-2 py-1">
-          <h2 className="text-2xl font-bold">
-            {DateTime.fromJSDate(day.start)
-              .setZone(timezone)
-              .toFormat("EEEE, MMMM d")}
-          </h2>
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-sm text-gray-500 underline"
-          >
-            ({expanded ? "hide" : "show"})
-          </button>
-        </div>
-        {expanded && (
-          <div className="flex w-full">
-            {/* Spacer matching the time-axis gutter so header columns line up
-                with the body grid below. */}
-            <div
-              className={clsx(
-                "flex-none border-r border-gray-100",
-                GUTTER_WIDTH
-              )}
-            />
-            <div className="overflow-hidden flex-1">
-              <div
-                ref={headerTrackRef}
-                className="grid divide-x divide-gray-100 w-full will-change-transform"
-                style={{
-                  gridTemplateColumns: `repeat(${numLocations}, minmax(120px, 2fr))`,
-                }}
-              >
-                {includedLocations.map((loc) => (
-                  <Tooltip
-                    key={loc.name}
-                    content={
-                      loc.description ? (
-                        <div className="p-2 space-y-1">
-                          <p className="text-xs font-semibold text-gray-700">
-                            {loc.name}
-                          </p>
-                          <p className="text-sm">{loc.description}</p>
-                        </div>
-                      ) : undefined
-                    }
-                    placement="bottom-start"
-                  >
-                    <div
-                      key={loc.name}
-                      className="p-1 border-b border-gray-100 h-full"
-                    >
-                      <h3 className="font-semibold text-xs sm:text-sm">
-                        {loc.name}
-                      </h3>
-                      <p className="text-[10px] text-gray-500">
-                        {loc.areaDescription ?? <br />}
-                      </p>
-                      <p className="text-[10px] text-gray-500">
-                        {loc.capacity ? `max ${loc.capacity}` : <br />}
-                      </p>
-                    </div>
-                  </Tooltip>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      {expanded && (
-        <div className="flex items-end relative w-full overflow-visible">
-          <TimestampCol start={start} end={end} timezone={timezone} />
-          <div
-            className="overflow-x-auto overflow-y-clip flex-shrink"
-            ref={scrollableDivRef}
-          >
-            {/* Location images sit above the grid and scroll with it, so they
-                are not pinned along with the sticky room headers. */}
-            {includedLocations.some((loc) => loc.imageUrl) && (
-              <div
-                className="grid w-full"
-                style={{
-                  gridTemplateColumns: `repeat(${numLocations}, minmax(120px, 2fr))`,
-                }}
-              >
-                {includedLocations.map((loc) => (
-                  <div key={loc.name} className="p-1">
-                    {loc.imageUrl && (
-                      <Image
-                        src={loc.imageUrl}
-                        alt={loc.name}
-                        className="w-full aspect-[4/3]"
-                        style={{ maxHeight: 200 }}
-                        width={500}
-                        height={500}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            <div
-              className="grid divide-x divide-gray-100 relative w-full"
-              style={{
-                gridTemplateColumns: `repeat(${numLocations}, minmax(120px, 2fr))`,
-              }}
-            >
-              {/* <NowBar start={start} end={end} /> */}
-              {includedLocations.map((location) => {
-                if (!location) {
-                  return null;
-                }
-                return (
-                  <LocationCol
-                    key={location.name}
-                    sessions={day.sessions.filter((session) =>
-                      session.locations.some((l) => l.id === location.id)
-                    )}
-                    guests={guests}
-                    day={day}
-                    location={location}
-                    eventName={eventName}
-                  />
-                );
-              })}
-            </div>
-          </div>
-          {!scrolledToRightEnd && (
-            <div className="bg-gradient-to-r from-transparent to-white h-full absolute right-0 w-2" />
-          )}
-          {!scrolledToLeftEnd && (
-            <div className="bg-gradient-to-l from-transparent to-white h-full absolute left-8 w-2" />
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TimestampCol(props: { start: Date; end: Date; timezone: string }) {
-  const { start, end, timezone } = props;
-  const numHalfHours = getNumHalfHours(start, end);
   return (
     <div
-      className={clsx(
-        "grid h-full border-r border-t border-gray-100",
-        GUTTER_WIDTH,
-        `grid-rows-[repeat(${numHalfHours},44px)]`
-      )}
+      className="grid bg-white"
+      style={{
+        gridTemplateColumns: `${GUTTER} repeat(${numLocations}, minmax(120px, 1fr))`,
+      }}
     >
-      {Array.from({ length: numHalfHours }).map((_, i) => (
-        <div
-          key={i}
-          className="border-b border-gray-100 text-[10px] p-1 pl-0 text-right h-[44px]"
+      {/* Row 1 — room-name header, sticky to the top. The corner cell (where no
+          hour is) carries the day's date, so it gets replaced by the next day's
+          date as that day scrolls into view. */}
+      <div className="sticky top-0 left-0 z-21 flex flex-col justify-end bg-white border-b border-r border-gray-100 p-1 leading-tight">
+        <span className="text-[11px] font-bold">{date.toFormat("EEE")}</span>
+        <span className="text-[10px] text-gray-500">
+          {date.toFormat("MMM d")}
+        </span>
+      </div>
+      {includedLocations.map((loc) => (
+        <Tooltip
+          key={loc.name}
+          content={
+            loc.description ? (
+              <div className="p-2 space-y-1">
+                <p className="text-xs font-semibold text-gray-700">
+                  {loc.name}
+                </p>
+                <p className="text-sm">{loc.description}</p>
+              </div>
+            ) : undefined
+          }
+          placement="bottom-start"
+          className="sticky top-0 z-20 bg-white border-b border-l border-gray-100"
         >
-          {DateTime.fromMillis(start.getTime() + i * 30 * 60 * 1000)
-            .setZone(timezone)
-            .toFormat(TIME_FORMAT)}
-        </div>
+          <div className="p-1 h-full">
+            <h3 className="font-semibold text-xs sm:text-sm">{loc.name}</h3>
+            <p className="text-[10px] text-gray-500">
+              {loc.areaDescription ?? <br />}
+            </p>
+            <p className="text-[10px] text-gray-500">
+              {loc.capacity ? `max ${loc.capacity}` : <br />}
+            </p>
+          </div>
+        </Tooltip>
+      ))}
+
+      {/* Row 2 — location images. These deliberately scroll away with the body
+          (not sticky); only the empty gutter spacer stays pinned to the left so
+          the left column reads as one continuous strip. */}
+      {hasImages && (
+        <>
+          <div className="sticky left-0 z-20 bg-white border-r border-gray-100" />
+          {includedLocations.map((loc) => (
+            <div key={loc.name} className="border-l border-gray-100 p-1">
+              {loc.imageUrl && (
+                <Image
+                  src={loc.imageUrl}
+                  alt={loc.name}
+                  className="w-full aspect-[4/3]"
+                  style={{ maxHeight: 200 }}
+                  width={500}
+                  height={500}
+                />
+              )}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* Row 3 — body. The time gutter sticks to the left; each location renders
+          its session blocks in a matching 44px-row grid so the times line up. */}
+      <div
+        className={clsx(
+          "sticky left-0 z-20 grid bg-white border-r border-gray-100",
+          `grid-rows-[repeat(${numHalfHours},44px)]`
+        )}
+      >
+        {Array.from({ length: numHalfHours }).map((_, i) => (
+          <div
+            key={i}
+            className="border-b border-gray-100 text-[10px] p-1 h-[44px]"
+          >
+            {DateTime.fromMillis(day.start.getTime() + i * 30 * 60 * 1000)
+              .setZone(timezone)
+              .toFormat(TIME_FORMAT)}
+          </div>
+        ))}
+      </div>
+      {includedLocations.map((location) => (
+        <LocationCol
+          key={location.name}
+          sessions={day.sessions.filter((session) =>
+            session.locations.some((l) => l.id === location.id)
+          )}
+          guests={guests}
+          day={day}
+          location={location}
+          eventName={eventName}
+        />
       ))}
     </div>
   );

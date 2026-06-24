@@ -34,7 +34,7 @@ export function EventDisplay() {
 
   return (
     <div className="flex flex-col items-start w-full">
-      <h1 className="sm:text-4xl text-3xl font-bold mt-5">
+      <h1 className="sm:text-4xl text-3xl font-bold mt-20">
         {event.name} Schedule
       </h1>
       <div className="flex text-gray-500 text-sm mt-1 gap-5 font-medium">
@@ -87,17 +87,28 @@ export function EventDisplay() {
           onChange={(event) => setSearch(event.target.value)}
         />
       )}
-      <div className="flex flex-col gap-12 w-full">
-        {daysForEvent.map((day) => (
-          <div key={day.id}>
-            {view === "grid" ? (
-              <DayGrid
-                day={day}
-                locations={locationsForEvent}
-                guests={guests}
-                eventName={event.name}
-              />
-            ) : (
+      {view === "grid" ? (
+        // One scroll container for every day, so the room-name row and time
+        // gutter stay pinned (sticky) and each day's date in the corner is
+        // replaced by the next day's as you scroll past it.
+        <div
+          data-testid="schedule-scroll"
+          className="w-full overflow-auto max-h-[calc(100vh-4rem)] rounded-lg border border-gray-200"
+        >
+          {daysForEvent.map((day) => (
+            <DayGrid
+              key={day.id}
+              day={day}
+              locations={locationsForEvent}
+              guests={guests}
+              eventName={event.name}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-12 w-full">
+          {daysForEvent.map((day) => (
+            <div key={day.id}>
               <DayText
                 day={day}
                 search={search}
@@ -105,10 +116,10 @@ export function EventDisplay() {
                 rsvps={view === "rsvp" ? rsvps : []}
                 eventSlug={eventSlug}
               />
-            )}
-          </div>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      )}
       {viewSession && (
         <SessionModal sessionId={viewSession} eventSlug={eventSlug} />
       )}
