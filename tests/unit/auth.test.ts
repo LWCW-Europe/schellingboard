@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { NextResponse } from "next/server";
 import {
   isAuthCookieValid,
   createAuthCookie,
@@ -6,6 +7,24 @@ import {
   isPasswordProtectionEnabled,
   AUTH_COOKIE_NAME,
 } from "@/utils/auth";
+
+// Serialize a cookie object the exact way the app does at runtime:
+//   (await cookies()).set(await createAuthCookie())
+// This is the seam where attributes are dropped if the cookie object's shape
+// does not match what Next's ResponseCookies.set() expects (flat attributes,
+// not a nested `options` key). Asserting on the resulting Set-Cookie header
+// catches that; asserting on the helper's return shape does not.
+//
+// We go through the public `NextResponse` API (whose `.cookies` is the same
+// ResponseCookies surface the runtime `cookies()` helper exposes)
+function emittedSetCookieHeader(cookie: {
+  name: string;
+  value: string;
+}): string {
+  const res = new NextResponse();
+  res.cookies.set(cookie);
+  return res.headers.get("set-cookie") ?? "";
+}
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef"; // 32 chars
 const OTHER_SECRET = "ffffffffffffffffffffffffffffffff"; // 32 chars, different
@@ -63,13 +82,13 @@ describe("createAuthCookie", () => {
 
   it("sets httpOnly and lax sameSite", async () => {
     const c = await createAuthCookie();
-    expect(c.options.httpOnly).toBe(true);
-    expect(c.options.sameSite).toBe("lax");
+    expect(c.httpOnly).toBe(true);
+    expect(c.sameSite).toBe("lax");
   });
 
   it("sets a 7-day max-age (in seconds)", async () => {
     const c = await createAuthCookie();
-    expect(c.options.maxAge).toBe(7 * 24 * 60 * 60);
+    expect(c.maxAge).toBe(7 * 24 * 60 * 60);
   });
 
   it("produces a value of the form 'timestamp.signature'", async () => {
@@ -85,6 +104,34 @@ describe("createAuthCookie", () => {
   it("throws if AUTH_SECRET is too short", async () => {
     withEnv({ SITE_PASSWORD: "pw", AUTH_SECRET: "short" });
     await expect(createAuthCookie()).rejects.toThrow(/at least 32/);
+  });
+});
+
+describe("createAuthCookie — emitted Set-Cookie header", () => {
+  beforeEach(() => {
+    withEnv({ SITE_PASSWORD: "pw", AUTH_SECRET: VALID_SECRET });
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is a persistent cookie (carries Max-Age), not a session cookie", async () => {
+    const header = emittedSetCookieHeader(await createAuthCookie());
+    expect(header).toMatch(/Max-Age=604800/);
+  });
+
+  it("is HttpOnly and SameSite=Lax", async () => {
+    const header = emittedSetCookieHeader(await createAuthCookie());
+    expect(header).toMatch(/HttpOnly/i);
+    expect(header).toMatch(/SameSite=lax/i);
+  });
+
+  it("is Secure in production", async () => {
+    withEnv({
+      SITE_PASSWORD: "pw",
+      AUTH_SECRET: VALID_SECRET,
+      NODE_ENV: "production",
+    });
+    const header = emittedSetCookieHeader(await createAuthCookie());
+    expect(header).toMatch(/Secure/);
   });
 });
 

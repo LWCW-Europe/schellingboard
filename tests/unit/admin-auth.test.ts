@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { NextResponse } from "next/server";
 import {
   verifyAdminPassword,
   createAdminAuthCookie,
@@ -6,6 +7,15 @@ import {
   createAuthCookie,
   isAuthCookieValid,
 } from "@/utils/auth";
+
+function emittedSetCookieHeader(cookie: {
+  name: string;
+  value: string;
+}): string {
+  const res = new NextResponse();
+  res.cookies.set(cookie);
+  return res.headers.get("set-cookie") ?? "";
+}
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef"; // 32 chars
 
@@ -40,6 +50,13 @@ describe("createAdminAuthCookie", () => {
   it("throws if AUTH_SECRET is missing", async () => {
     withEnv({ AUTH_SECRET: "" });
     await expect(createAdminAuthCookie()).rejects.toThrow(/AUTH_SECRET/);
+  });
+
+  it("emits a persistent, HttpOnly Set-Cookie header (not a session cookie)", async () => {
+    const header = emittedSetCookieHeader(await createAdminAuthCookie());
+    expect(header).toMatch(/Max-Age=604800/);
+    expect(header).toMatch(/HttpOnly/i);
+    expect(header).toMatch(/SameSite=lax/i);
   });
 });
 
