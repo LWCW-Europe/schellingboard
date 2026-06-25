@@ -114,7 +114,7 @@ dev-migrate-create: install
 	bun set-env.ts dev bun x drizzle-kit generate
 
 dev-db-seed: install
-	bun set-env.ts dev bun x tsx tests/e2e/reset-database.ts
+	bun set-env.ts dev bun x tsx scripts/seed-database.ts
 
 dev-admin: install
 	bun set-env.ts dev bun x tsx scripts/admin.ts

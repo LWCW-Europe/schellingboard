@@ -48,7 +48,7 @@ function openDb() {
   sqlite.pragma("foreign_keys = ON");
   const migrationsFolder = path.join(
     path.dirname(fileURLToPath(import.meta.url)),
-    "../../drizzle"
+    "../drizzle"
   );
   runMigrations(sqlite, migrationsFolder);
   return drizzle(sqlite, { schema });
