@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/app/input";
-import { UserContext } from "../context";
+import { UserContext, useBreakMinutes } from "../context";
 import {
   createProposal,
   updateProposal,
@@ -14,7 +14,7 @@ import {
 import type { SessionProposal, Guest } from "@/db/repositories/interfaces";
 import { SelectHosts } from "@/app/(site)/[eventSlug]/session-form";
 import { ConfirmDeletionModal } from "../modals";
-import { formatDuration, subtractBreakFromDuration } from "@/utils/utils";
+import { formatDuration, durationMinusBreak } from "@/utils/utils";
 
 export function SessionProposalForm(props: {
   eventID: string;
@@ -24,6 +24,7 @@ export function SessionProposalForm(props: {
   maxSessionDuration: number;
 }) {
   const { eventID, eventSlug, proposal, guests, maxSessionDuration } = props;
+  const breakMinutes = useBreakMinutes();
   const DURATION_OPTIONS = [
     undefined,
     ...Array.from(
@@ -188,7 +189,10 @@ export function SessionProposalForm(props: {
                     className="ml-3 block text-sm font-medium leading-6 text-gray-900"
                   >
                     {value
-                      ? formatDuration(subtractBreakFromDuration(value), true)
+                      ? formatDuration(
+                          durationMinusBreak(value, breakMinutes),
+                          true
+                        )
                       : "Undecided"}
                   </label>
                 </div>

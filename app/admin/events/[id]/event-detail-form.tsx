@@ -29,6 +29,7 @@ export function EventDetailForm({ event }: { event: Event }) {
     end: toDateInputValue(event.end),
     timezone: event.timezone,
     maxSessionDuration: String(event.maxSessionDuration),
+    breakMinutes: String(event.breakMinutes),
     icon: event.icon ?? "",
   });
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -165,6 +166,20 @@ export function EventDetailForm({ event }: { event: Event }) {
               min="1"
               value={form.maxSessionDuration}
               onChange={(e) => set("maxSessionDuration", e.target.value)}
+              required
+              className="w-full h-10"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="ev-break" className="text-sm text-gray-600">
+              Break before each session (min)
+            </label>
+            <Input
+              id="ev-break"
+              type="number"
+              min="0"
+              value={form.breakMinutes}
+              onChange={(e) => set("breakMinutes", e.target.value)}
               required
               className="w-full h-10"
             />

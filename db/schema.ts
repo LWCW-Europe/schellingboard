@@ -25,6 +25,7 @@ export const events = sqliteTable("events", {
   schedulingPhaseStart: text("scheduling_phase_start"),
   schedulingPhaseEnd: text("scheduling_phase_end"),
   maxSessionDuration: integer("max_session_duration").notNull().default(120),
+  breakMinutes: integer("break_minutes").notNull().default(10),
   timezone: text("timezone").notNull().default("UTC"),
   icon: text("icon"),
 });

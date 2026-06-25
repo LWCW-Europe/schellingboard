@@ -1,10 +1,12 @@
 "use client";
 
 import type { SessionProposal } from "@/db/repositories/interfaces";
-import { formatDuration, subtractBreakFromDuration } from "@/utils/utils";
+import { formatDuration, durationMinusBreak } from "@/utils/utils";
+import { useBreakMinutes } from "@/app/(site)/context";
 
 export function Proposal(props: { proposal: SessionProposal }) {
   const { proposal } = props;
+  const breakMinutes = useBreakMinutes();
   return (
     <>
       <h1 className="text-xl font-semibold mb-2 mt-5">{proposal.title}</h1>
@@ -16,7 +18,7 @@ export function Proposal(props: { proposal: SessionProposal }) {
         <p className="text-sm text-gray-600 mb-4">
           Duration:{" "}
           {formatDuration(
-            subtractBreakFromDuration(proposal.durationMinutes),
+            durationMinusBreak(proposal.durationMinutes, breakMinutes),
             true
           )}
         </p>

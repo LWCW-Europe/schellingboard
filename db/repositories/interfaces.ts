@@ -40,6 +40,7 @@ export type Event = {
   schedulingPhaseStart?: Date;
   schedulingPhaseEnd?: Date;
   maxSessionDuration: number;
+  breakMinutes: number;
   timezone: string;
   icon?: string | null;
 };

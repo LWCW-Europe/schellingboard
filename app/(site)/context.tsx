@@ -16,6 +16,7 @@ import type {
   Rsvp,
 } from "@/db/repositories/interfaces";
 import { Vote, voteChoiceToEmoji } from "@/app/(site)/votes";
+import { DEFAULT_BREAK_MINUTES } from "@/utils/utils";
 
 export type DayWithSessions = Day & { sessions: Session[] };
 
@@ -61,6 +62,16 @@ export const EventContext = createContext<EventContextType>({
     return false;
   },
 });
+
+/**
+ * The current event's break length, read from EventContext so duration/time
+ * displays don't have to prop-drill it. Falls back to DEFAULT_BREAK_MINUTES
+ * when no event is in context (e.g. before the provider has loaded).
+ */
+export function useBreakMinutes(): number {
+  const { event } = useContext(EventContext);
+  return event?.breakMinutes ?? DEFAULT_BREAK_MINUTES;
+}
 
 export interface VotesContextType {
   votes: Vote[];

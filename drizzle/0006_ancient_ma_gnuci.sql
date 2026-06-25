@@ -1,0 +1,1 @@
+ALTER TABLE `events` ADD `break_minutes` integer DEFAULT 10 NOT NULL;

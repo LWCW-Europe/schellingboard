@@ -15,6 +15,7 @@ const DEFAULT_FORM: EventInput = {
   end: "",
   timezone: "UTC",
   maxSessionDuration: "60",
+  breakMinutes: "10",
 };
 
 function AddEventForm({

@@ -2,10 +2,10 @@ import clsx from "clsx";
 import { DateTime } from "luxon";
 import Link from "next/link";
 import type { Session, Location } from "@/db/repositories/interfaces";
-import { getEndTimeMinusBreak, TIME_FORMAT } from "@/utils/utils";
+import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
 import { useState, useContext } from "react";
 import { useSearchParams } from "next/navigation";
-import { UserContext, EventContext } from "../context";
+import { UserContext, EventContext, useBreakMinutes } from "../context";
 import { CheckCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 import { LockIcon } from "../lock-icon";
 import { viewSessionLinkFromOwner } from "./modal-nav";
@@ -20,6 +20,7 @@ export function SessionText(props: {
   const { user: currentUser } = useContext(UserContext);
   const { rsvpdForSession, event } = useContext(EventContext);
   const timezone = event?.timezone ?? "UTC";
+  const breakMinutes = useBreakMinutes();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const formattedHostNames =
     session.hosts.map((h) => h.name).join(", ") || "No hosts";
@@ -77,15 +78,15 @@ export function SessionText(props: {
         <div className="flex gap-2 text-sm text-gray-500">
           <div className="flex gap-1">
             <span>
-              {DateTime.fromJSDate(session.startTime ?? new Date())
+              {getStartTimePlusBreak(session, breakMinutes)
                 .setZone(timezone)
                 .toFormat("EEEE")}
               ,{" "}
-              {DateTime.fromJSDate(session.startTime ?? new Date())
+              {getStartTimePlusBreak(session, breakMinutes)
                 .setZone(timezone)
                 .toFormat(TIME_FORMAT)}{" "}
               -{" "}
-              {getEndTimeMinusBreak(session)
+              {DateTime.fromJSDate(session.endTime ?? new Date())
                 .setZone(timezone)
                 .toFormat(TIME_FORMAT)}
             </span>

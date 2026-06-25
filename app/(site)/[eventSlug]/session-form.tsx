@@ -13,10 +13,10 @@ import { Input } from "@/app/input";
 import {
   convertParamDateTime,
   dateOnDay,
-  getEndTimeMinusBreak,
+  getStartTimePlusBreak,
   eventNameToSlug,
   formatDuration,
-  subtractBreakFromDuration,
+  durationMinusBreak,
   TIME_FORMAT,
 } from "@/utils/utils";
 import { MyListbox, type Option } from "./select";
@@ -123,6 +123,7 @@ export function SessionForm(props: {
     sessions,
     session,
     maxSessionDuration,
+    event.breakMinutes,
     timezone,
     locationId
   );
@@ -231,7 +232,7 @@ export function SessionForm(props: {
       const formatTime = (d: DateTime) =>
         d.setZone(timezone).toFormat(TIME_FORMAT);
       const displayInterval = (ses: Session) =>
-        `from ${formatTime(DateTime.fromJSDate(ses.startTime ?? new Date()))} to ${formatTime(getEndTimeMinusBreak(ses))}`;
+        `from ${formatTime(getStartTimePlusBreak(ses, event.breakMinutes))} to ${formatTime(DateTime.fromJSDate(ses.endTime ?? new Date()))}`;
       const sessionErrors = sessionClashes.map(
         (ses) => `${hostName} is hosting ${ses.title} ${displayInterval(ses)}`
       );
@@ -485,6 +486,7 @@ export function SessionForm(props: {
           duration={effectiveDuration}
           setDuration={setDuration}
           maxDuration={maxDuration}
+          breakMinutes={event.breakMinutes}
         />
       </div>
       {sessionID && session.proposalId && (
@@ -559,6 +561,7 @@ function getAvailableStartTimes(
   sessions: Session[],
   currentSession: Session,
   maxSessionDuration: number,
+  breakMinutes: number,
   timezone: string,
   locationId?: string
 ) {
@@ -582,7 +585,12 @@ function getAvailableStartTimes(
     t += 30 * 60 * 1000
   ) {
     const dt = DateTime.fromMillis(t).setZone(timezone);
-    const formattedTime = dt.toFormat(TIME_FORMAT);
+    // The break sits at the start of each slot, so the displayed start is
+    // pushed back by breakMinutes (e.g. a 9:00 slot shows as 9:10). The stored
+    // value (minutesFromMidnight) stays on the round slot boundary.
+    const formattedTime = dt
+      .plus({ minutes: breakMinutes })
+      .toFormat(TIME_FORMAT);
     const minutesFromMidnight = dt.hour * 60 + dt.minute;
     if (locationSelected) {
       const sessionNow = sortedSessions.find(
@@ -765,8 +773,9 @@ function SelectDuration(props: {
   duration: number;
   setDuration: (duration: number) => void;
   maxDuration?: number;
+  breakMinutes: number;
 }) {
-  const { duration, setDuration, maxDuration } = props;
+  const { duration, setDuration, maxDuration, breakMinutes } = props;
   const limit = maxDuration ?? 180;
   const availableDurations = Array.from(
     { length: Math.floor(limit / 30) },
@@ -788,7 +797,7 @@ function SelectDuration(props: {
               htmlFor={`duration-${value}`}
               className="ml-3 block text-sm font-medium leading-6 text-gray-900"
             >
-              {formatDuration(subtractBreakFromDuration(value), true)}
+              {formatDuration(durationMinusBreak(value, breakMinutes), true)}
             </label>
           </div>
         ))}

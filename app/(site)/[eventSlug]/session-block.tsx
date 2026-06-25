@@ -9,11 +9,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useContext, useState } from "react";
 import { CurrentUserModal, ConfirmationModal } from "../modals";
-import { UserContext, EventContext } from "../context";
+import { UserContext, EventContext, useBreakMinutes } from "../context";
 import { sessionsOverlap } from "../session_utils";
 import {
   eventNameToSlug,
-  getEndTimeMinusBreak,
+  getStartTimePlusBreak,
   TIME_FORMAT,
 } from "@/utils/utils";
 import { LockIcon } from "../lock-icon";
@@ -138,6 +138,7 @@ function SessionInfoDisplay({
   numRSVPs: number;
   timezone: string;
 }) {
+  const breakMinutes = useBreakMinutes();
   return (
     <>
       <h1 className="text-lg font-bold leading-tight flex items-center gap-1">
@@ -164,11 +165,11 @@ function SessionInfoDisplay({
         <div className="flex gap-1">
           <ClockIcon className="h-4 w-4" />
           <span>
-            {DateTime.fromJSDate(session.startTime ?? new Date())
+            {getStartTimePlusBreak(session, breakMinutes)
               .setZone(timezone)
               .toFormat(TIME_FORMAT)}{" "}
             -{" "}
-            {getEndTimeMinusBreak(session)
+            {DateTime.fromJSDate(session.endTime ?? new Date())
               .setZone(timezone)
               .toFormat(TIME_FORMAT)}
           </span>

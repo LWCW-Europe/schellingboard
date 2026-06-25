@@ -8,7 +8,7 @@ import { PencilIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 
 import type { Event, Guest, Session, Rsvp } from "@/db/repositories/interfaces";
-import { getEndTimeMinusBreak, TIME_FORMAT } from "@/utils/utils";
+import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
 import { UserContext, EventContext } from "../../context";
 import { CurrentUserModal, ConfirmationModal } from "../../modals";
 import { sessionsOverlap } from "../../session_utils";
@@ -248,11 +248,11 @@ export function ViewSession(props: {
         <div className="flex gap-2">
           <span className="font-medium">Time:</span>
           <span>
-            {DateTime.fromJSDate(session.startTime ?? new Date())
+            {getStartTimePlusBreak(session, event.breakMinutes)
               .setZone(event.timezone)
               .toFormat(`EEEE ${TIME_FORMAT}`)}{" "}
             -{" "}
-            {getEndTimeMinusBreak(session)
+            {DateTime.fromJSDate(session.endTime ?? new Date())
               .setZone(event.timezone)
               .toFormat(TIME_FORMAT)}
           </span>

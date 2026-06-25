@@ -1,24 +1,27 @@
 import { describe, it, expect } from "vitest";
 import {
-  subtractBreakFromDuration,
+  durationMinusBreak,
   formatDuration,
   eventNameToSlug,
   eventSlugToName,
   dateOnDay,
   getPercentThroughDay,
   getNumHalfHours,
-  getEndTimeMinusBreak,
+  getStartTimePlusBreak,
 } from "@/utils/utils";
 import type { Day, Session } from "@/db/repositories/interfaces";
 
-// ── subtractBreakFromDuration ────────────────────────────────────────────────
+// ── durationMinusBreak ───────────────────────────────────────────────────────
 
-describe("subtractBreakFromDuration", () => {
-  it("30 minutes → 25", () => expect(subtractBreakFromDuration(30)).toBe(25));
-  it("60 minutes → 55", () => expect(subtractBreakFromDuration(60)).toBe(55));
-  it("61 minutes → 51", () => expect(subtractBreakFromDuration(61)).toBe(51));
-  it("120 minutes → 110", () =>
-    expect(subtractBreakFromDuration(120)).toBe(110));
+describe("durationMinusBreak", () => {
+  it("60 min, 10 break → 50", () =>
+    expect(durationMinusBreak(60, 10)).toBe(50));
+  it("30 min, 5 break → 25", () => expect(durationMinusBreak(30, 5)).toBe(25));
+  it("90 min, 10 break → 80", () =>
+    expect(durationMinusBreak(90, 10)).toBe(80));
+  it("0 break → unchanged", () => expect(durationMinusBreak(60, 0)).toBe(60));
+  it("clamps to 0 when break ≥ duration", () =>
+    expect(durationMinusBreak(10, 10)).toBe(0));
 });
 
 // ── formatDuration ───────────────────────────────────────────────────────────
@@ -134,7 +137,7 @@ describe("getNumHalfHours", () => {
   });
 });
 
-// ── getEndTimeMinusBreak ─────────────────────────────────────────────────────
+// ── getStartTimePlusBreak ────────────────────────────────────────────────────
 
 function makeSession(startTime: Date, endTime: Date): Session {
   return {
@@ -154,22 +157,22 @@ function makeSession(startTime: Date, endTime: Date): Session {
   };
 }
 
-describe("getEndTimeMinusBreak", () => {
-  it("≤60 min session: subtracts 5 minutes from end", () => {
+describe("getStartTimePlusBreak", () => {
+  it("adds a 10 minute break to the start", () => {
     const start = new Date("2025-06-15T10:00:00Z");
-    const end = new Date("2025-06-15T11:00:00Z"); // 60 minutes
-    const adjusted = getEndTimeMinusBreak(makeSession(start, end));
+    const end = new Date("2025-06-15T11:00:00Z");
+    const adjusted = getStartTimePlusBreak(makeSession(start, end), 10);
     expect(adjusted.toJSDate().getTime()).toBe(
-      new Date("2025-06-15T10:55:00Z").getTime()
+      new Date("2025-06-15T10:10:00Z").getTime()
     );
   });
 
-  it(">60 min session: subtracts 10 minutes from end", () => {
+  it("adds a 5 minute break to the start", () => {
     const start = new Date("2025-06-15T10:00:00Z");
-    const end = new Date("2025-06-15T11:30:00Z"); // 90 minutes
-    const adjusted = getEndTimeMinusBreak(makeSession(start, end));
+    const end = new Date("2025-06-15T11:30:00Z");
+    const adjusted = getStartTimePlusBreak(makeSession(start, end), 5);
     expect(adjusted.toJSDate().getTime()).toBe(
-      new Date("2025-06-15T11:20:00Z").getTime()
+      new Date("2025-06-15T10:05:00Z").getTime()
     );
   });
 });
