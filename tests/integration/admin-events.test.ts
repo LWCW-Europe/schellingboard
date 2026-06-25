@@ -58,6 +58,7 @@ const VALID_EVENT_INPUT = {
   end: "2026-09-03",
   timezone: "Europe/Berlin",
   maxSessionDuration: "60",
+  breakMinutes: "10",
 };
 
 describe("events repo", () => {
@@ -242,6 +243,34 @@ describe("event actions", () => {
         /end.*after.*start|start.*before.*end/i
       );
     });
+
+    it("persists the configured break", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        breakMinutes: "7",
+      });
+      expect(result.ok).toBe(true);
+      const event = await getRepositories().events.findByName("Test Event");
+      expect(event?.breakMinutes).toBe(7);
+    });
+
+    it("allows a zero break", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        breakMinutes: "0",
+      });
+      expect(result.ok).toBe(true);
+      const event = await getRepositories().events.findByName("Test Event");
+      expect(event?.breakMinutes).toBe(0);
+    });
+
+    it("rejects a negative break", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        breakMinutes: "-5",
+      });
+      expect(!result.ok && result.error).toMatch(/break/i);
+    });
   });
 
   describe("updateEventAction", () => {
@@ -264,6 +293,19 @@ describe("event actions", () => {
         ...VALID_EVENT_INPUT,
       });
       expect(!result.ok && result.error).toBe("Event not found");
+    });
+
+    it("updates the break", async () => {
+      const event = await createEvent({ name: "Breaky" });
+      const result = await updateEventAction({
+        id: event.id,
+        ...VALID_EVENT_INPUT,
+        breakMinutes: "15",
+      });
+      expect(result.ok).toBe(true);
+      expect(
+        (await getRepositories().events.findById(event.id))?.breakMinutes
+      ).toBe(15);
     });
   });
 

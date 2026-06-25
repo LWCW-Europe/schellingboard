@@ -37,11 +37,21 @@ export function eventSlugToName(slug: string): string {
 }
 
 /**
- * Calculate adjusted duration by subtracting break time
- * Rule: ≤60 minutes subtract 5 minutes, >60 minutes subtract 10 minutes
+ * Default per-event break length, used when an event's value is unavailable
+ * (e.g. before context has loaded). Mirrors the events schema default.
  */
-export function subtractBreakFromDuration(durationMinutes: number): number {
-  return durationMinutes <= 60 ? durationMinutes - 5 : durationMinutes - 10;
+export const DEFAULT_BREAK_MINUTES = 10;
+
+/**
+ * Effective working duration of a slot once its fixed break is removed.
+ * The break is a single per-event value; clamps at 0 so absurd configs
+ * (break ≥ duration) never produce a negative label.
+ */
+export function durationMinusBreak(
+  durationMinutes: number,
+  breakMinutes: number
+): number {
+  return Math.max(0, durationMinutes - breakMinutes);
 }
 
 /**
@@ -62,20 +72,16 @@ export function formatDuration(
 }
 
 /**
- * Calculate the adjusted end time for a session, accounting for enforced breaks.
- * Rule: ≤60 minutes subtract 5 minutes, >60 minutes subtract 10 minutes
+ * The displayed start time of a session: the break sits at the START of the
+ * slot, so the session is shown starting `breakMinutes` after its stored start.
  *
  * Note: This is only used for DISPLAY purposes on existing sessions.
  */
-export function getEndTimeMinusBreak(session: Session): DateTime {
-  const startTime = DateTime.fromJSDate(session.startTime ?? new Date(0));
-  const endTime = DateTime.fromJSDate(session.endTime ?? new Date(0));
-  const originalDurationMs = endTime.toMillis() - startTime.toMillis();
-  const originalDurationMinutes = originalDurationMs / (1000 * 60);
-
-  const adjustedDurationMinutes = subtractBreakFromDuration(
-    originalDurationMinutes
-  );
-
-  return startTime.plus({ minutes: adjustedDurationMinutes });
+export function getStartTimePlusBreak(
+  session: Session,
+  breakMinutes: number
+): DateTime {
+  return DateTime.fromJSDate(session.startTime ?? new Date(0)).plus({
+    minutes: breakMinutes,
+  });
 }

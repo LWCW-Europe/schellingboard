@@ -35,6 +35,7 @@ function rowToEvent(row: typeof schema.events.$inferSelect): Event {
       ? new Date(row.schedulingPhaseEnd)
       : undefined,
     maxSessionDuration: row.maxSessionDuration,
+    breakMinutes: row.breakMinutes,
     timezone: row.timezone,
     icon: row.icon ?? undefined,
   };
@@ -83,6 +84,7 @@ export class SqliteEventsRepository implements EventsRepository {
         schedulingPhaseStart: data.schedulingPhaseStart?.toISOString() ?? null,
         schedulingPhaseEnd: data.schedulingPhaseEnd?.toISOString() ?? null,
         maxSessionDuration: data.maxSessionDuration,
+        breakMinutes: data.breakMinutes,
         timezone: data.timezone,
         icon: data.icon ?? null,
       })
@@ -118,6 +120,7 @@ export class SqliteEventsRepository implements EventsRepository {
       set.schedulingPhaseEnd = patch.schedulingPhaseEnd?.toISOString() ?? null;
     if (patch.maxSessionDuration !== undefined)
       set.maxSessionDuration = patch.maxSessionDuration;
+    if (patch.breakMinutes !== undefined) set.breakMinutes = patch.breakMinutes;
     if (patch.timezone !== undefined) set.timezone = patch.timezone;
     if ("icon" in patch) set.icon = patch.icon ?? null;
 

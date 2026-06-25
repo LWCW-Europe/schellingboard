@@ -20,6 +20,7 @@ export type EventInput = {
   end: string;
   timezone: string;
   maxSessionDuration: string;
+  breakMinutes: string;
   icon?: string;
   proposalPhaseStart?: string;
   proposalPhaseEnd?: string;
@@ -57,6 +58,11 @@ function parseEventInput(input: EventInput): ParseResult {
     return { error: "Max session duration must be a positive number" };
   }
 
+  const breakMinutes = parseInt(input.breakMinutes, 10);
+  if (isNaN(breakMinutes) || breakMinutes < 0) {
+    return { error: "Break must be zero or a positive number" };
+  }
+
   return {
     data: {
       name,
@@ -66,6 +72,7 @@ function parseEventInput(input: EventInput): ParseResult {
       end,
       timezone,
       maxSessionDuration,
+      breakMinutes,
       icon: input.icon?.trim() || undefined,
       proposalPhaseStart: parseDate(input.proposalPhaseStart),
       proposalPhaseEnd: parseDate(input.proposalPhaseEnd),

@@ -23,7 +23,7 @@ import {
   inProposalPhase,
 } from "@/app/(site)/utils/events";
 import type { Event } from "@/db/repositories/interfaces";
-import { formatDuration, subtractBreakFromDuration } from "@/utils/utils";
+import { formatDuration, durationMinusBreak } from "@/utils/utils";
 
 import { VotingButtons } from "./voting-buttons";
 import { VoteChoice } from "@/app/(site)/votes";
@@ -513,7 +513,10 @@ export function ProposalTable({
                         <ClockIcon className="h-4 w-4 mr-1 text-gray-400 flex-shrink-0" />
                         <span className="text-sm text-gray-500 truncate">
                           {formatDuration(
-                            subtractBreakFromDuration(proposal.durationMinutes)
+                            durationMinusBreak(
+                              proposal.durationMinutes,
+                              event.breakMinutes
+                            )
                           )}
                         </span>
                       </>
@@ -670,7 +673,10 @@ export function ProposalTable({
                   <ClockIcon className="h-4 w-4 mr-1 text-gray-400" />
                   <span className="text-sm text-gray-500">
                     {formatDuration(
-                      subtractBreakFromDuration(proposal.durationMinutes)
+                      durationMinusBreak(
+                        proposal.durationMinutes,
+                        event.breakMinutes
+                      )
                     )}
                   </span>
                 </div>

@@ -43,6 +43,13 @@
       "when": 1782331084625,
       "tag": "0005_cascade_fks",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1782396063145,
+      "tag": "0006_ancient_ma_gnuci",
+      "breakpoints": true
     }
   ]
 }

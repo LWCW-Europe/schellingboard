@@ -70,6 +70,7 @@ export async function createEvent(opts?: {
     schedulingPhaseStart: opts?.schedulingPhaseStart ?? schedulingPhaseStart,
     schedulingPhaseEnd: opts?.schedulingPhaseEnd ?? schedulingPhaseEnd,
     maxSessionDuration: 120,
+    breakMinutes: 10,
     timezone: "UTC",
   });
 }

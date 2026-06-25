@@ -346,6 +346,7 @@ function seedTestData() {
     schedulingPhaseEnd: config.schedulingPhaseEnd.toISOString(),
     timezone: TZ,
     maxSessionDuration: 120,
+    breakMinutes: 10,
   }));
   db.insert(schema.events).values(eventRows).run();
   console.log(`  ✅ Created ${eventRows.length} events`);
