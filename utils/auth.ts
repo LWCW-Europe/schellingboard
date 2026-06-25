@@ -194,11 +194,17 @@ function cookieOptions(maxAge: number) {
   };
 }
 
+// Cookie attributes are spread flat onto the returned object — NOT nested under
+// an `options` key. Next's `cookies().set(obj)` reads cookie attributes
+// (maxAge, httpOnly, secure, sameSite, path) from the top level of `obj`; a
+// nested `options` key is silently ignored, which downgrades the cookie to a
+// session cookie with no HttpOnly/Secure. See tests/unit/auth.test.ts
+// ("emitted Set-Cookie header").
 export async function createAuthCookie() {
   return {
     name: AUTH_COOKIE_NAME,
     value: await signCookieValue(),
-    options: cookieOptions(COOKIE_MAX_AGE_SEC),
+    ...cookieOptions(COOKIE_MAX_AGE_SEC),
   };
 }
 
@@ -206,7 +212,7 @@ export function createLogoutCookie() {
   return {
     name: AUTH_COOKIE_NAME,
     value: "",
-    options: cookieOptions(0),
+    ...cookieOptions(0),
   };
 }
 
@@ -214,7 +220,7 @@ export async function createAdminAuthCookie() {
   return {
     name: ADMIN_COOKIE_NAME,
     value: await signCookieValue(ADMIN_SCOPE),
-    options: cookieOptions(COOKIE_MAX_AGE_SEC),
+    ...cookieOptions(COOKIE_MAX_AGE_SEC),
   };
 }
 
@@ -222,7 +228,7 @@ export function createAdminLogoutCookie() {
   return {
     name: ADMIN_COOKIE_NAME,
     value: "",
-    options: cookieOptions(0),
+    ...cookieOptions(0),
   };
 }
 
