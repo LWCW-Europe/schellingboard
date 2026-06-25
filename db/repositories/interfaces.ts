@@ -116,6 +116,12 @@ export interface LocationsRepository {
   listEventIds(id: string): Promise<string[]>;
   /** Replaces the location's event assignments. */
   setEventIds(id: string, eventIds: string[]): Promise<void>;
+  /** Returns the subset of `ids` that exist in the locations table. */
+  findExistingIds(ids: string[]): Promise<string[]>;
+  /** Atomically adds the location to the given events (idempotent). */
+  assignToEvent(eventId: string, locationIds: string[]): Promise<void>;
+  /** Atomically removes the location from the given events. */
+  removeFromEvent(eventId: string, locationIds: string[]): Promise<void>;
   /**
    * Moves the location one position up or down in the sort order.
    * Normalizes sortIndex values to consecutive integers as a side effect.
