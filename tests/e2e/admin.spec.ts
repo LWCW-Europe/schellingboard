@@ -510,6 +510,80 @@ test.describe("Admin UI guest assignment", () => {
   });
 });
 
+test.describe("Admin UI location assignment", () => {
+  test("can assign and remove locations from an event", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Create a throwaway event (seeded locations are linked to seeded events
+    // only, so a fresh event starts with none assigned)
+    const unique = Date.now();
+    const eventName = `E2E Locations ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const locations = page.getByRole("region", { name: "Locations" });
+    await expect(locations).toBeVisible();
+
+    // Seeded locations are shown; none assigned yet
+    const dataRows = locations
+      .getByRole("row")
+      .filter({ hasNot: page.locator("th") });
+    const count = await dataRows.count();
+    expect(count).toBeGreaterThan(0);
+    const firstRow = dataRows.first();
+    await expect(firstRow.getByRole("checkbox")).not.toBeChecked();
+
+    // Assign the first location
+    await firstRow.getByRole("checkbox").click();
+    await expect(firstRow.getByRole("checkbox")).toBeChecked();
+
+    // Navigate away and back — assignment must persist
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await expect(
+      page
+        .getByRole("region", { name: "Locations" })
+        .getByRole("checkbox", { checked: true })
+    ).toHaveCount(1);
+
+    // Filter: "Assigned" shows exactly 1 row; "Not assigned" hides it
+    const l2 = page.getByRole("region", { name: "Locations" });
+    await l2.getByRole("button", { name: "Assigned", exact: true }).click();
+    await expect(
+      l2.getByRole("row").filter({ hasNot: page.locator("th") })
+    ).toHaveCount(1);
+
+    await l2.getByRole("button", { name: "Not assigned", exact: true }).click();
+    await expect(
+      l2.getByRole("row").filter({ hasNot: page.locator("th") })
+    ).toHaveCount(count - 1);
+
+    // Switch back to All and remove the assignment
+    await l2.getByRole("button", { name: "All", exact: true }).click();
+    await l2.getByRole("checkbox", { checked: true }).click();
+    await expect(l2.getByRole("checkbox", { checked: true })).toHaveCount(0);
+
+    // Clean up
+    await page.getByRole("button", { name: "Delete event" }).click();
+    await page.getByLabel("Type the event name to confirm").fill(eventName);
+    await page.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
+  });
+});
+
 async function makeImage(width: number, height: number): Promise<Buffer> {
   return sharp({
     create: { width, height, channels: 3, background: { r: 90, g: 60, b: 30 } },

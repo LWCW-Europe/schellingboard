@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
@@ -123,6 +123,15 @@ export class SqliteLocationsRepository implements LocationsRepository {
       .map((r) => r.eventId);
   }
 
+  async listLocationIdsByEvent(eventId: string): Promise<string[]> {
+    return this.db
+      .select({ locationId: schema.eventLocations.locationId })
+      .from(schema.eventLocations)
+      .where(eq(schema.eventLocations.eventId, eventId))
+      .all()
+      .map((r) => r.locationId);
+  }
+
   async setEventIds(id: string, eventIds: string[]): Promise<void> {
     this.db.transaction((tx) => {
       tx.delete(schema.eventLocations)
@@ -134,6 +143,38 @@ export class SqliteLocationsRepository implements LocationsRepository {
           .run();
       }
     });
+  }
+
+  async findExistingIds(ids: string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    return this.db
+      .select({ id: schema.locations.id })
+      .from(schema.locations)
+      .where(inArray(schema.locations.id, ids))
+      .all()
+      .map((r) => r.id);
+  }
+
+  async assignToEvent(eventId: string, locationIds: string[]): Promise<void> {
+    if (locationIds.length === 0) return;
+    this.db
+      .insert(schema.eventLocations)
+      .values(locationIds.map((locationId) => ({ eventId, locationId })))
+      .onConflictDoNothing()
+      .run();
+  }
+
+  async removeFromEvent(eventId: string, locationIds: string[]): Promise<void> {
+    if (locationIds.length === 0) return;
+    this.db
+      .delete(schema.eventLocations)
+      .where(
+        and(
+          eq(schema.eventLocations.eventId, eventId),
+          inArray(schema.eventLocations.locationId, locationIds)
+        )
+      )
+      .run();
   }
 
   async move(id: string, direction: "up" | "down"): Promise<boolean> {

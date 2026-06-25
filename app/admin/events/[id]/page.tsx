@@ -7,6 +7,10 @@ import { EventDetailForm } from "./event-detail-form";
 import { EventPhasesForm } from "./event-phases-form";
 import { EventDaysManager, type SerializedDay } from "./event-days-manager";
 import { EventGuestsManager, type GuestRow } from "./event-guests-manager";
+import {
+  EventLocationsManager,
+  type LocationRow,
+} from "./event-locations-manager";
 
 export default async function AdminEventDetailPage({
   params,
@@ -29,6 +33,17 @@ export default async function AdminEventDetailPage({
     name: g.name,
     email: g.email,
     assigned: assignedGuestIds.has(g.id),
+  }));
+
+  const allLocations = await repos.locations.list();
+  const assignedLocationIds = new Set(
+    await repos.locations.listLocationIdsByEvent(id)
+  );
+  const locationRows: LocationRow[] = allLocations.map((l) => ({
+    id: l.id,
+    name: l.name,
+    capacity: l.capacity,
+    assigned: assignedLocationIds.has(l.id),
   }));
 
   const scheduledSessions = await repos.sessions.listScheduledByEvent(id);
@@ -62,6 +77,8 @@ export default async function AdminEventDetailPage({
       <EventDaysManager days={days} eventId={id} />
       <hr className="border-gray-200" />
       <EventGuestsManager guests={guestRows} eventId={id} />
+      <hr className="border-gray-200" />
+      <EventLocationsManager locations={locationRows} eventId={id} />
     </div>
   );
 }
