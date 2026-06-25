@@ -1,4 +1,4 @@
-import { resetDatabase } from "./reset-database";
+import { resetDatabase } from "@/scripts/seed-database";
 
 function globalSetup() {
   console.log("🚀 Setting up test environment...");
