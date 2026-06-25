@@ -22,7 +22,7 @@
     "next": "^16",
     "react": "^19",
     "react-dom": "^19",
-    "sharp": "^0.34.5"
+    "sharp": "^0.35.1"
   },
   "devDependencies": {
     "@clack/prompts": "^1.5.1",
