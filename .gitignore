@@ -55,3 +55,8 @@ data.test.db
 # Admin-uploaded files (location images)
 /uploads
 /uploads-test
+
+# Nix
+flake.nix
+flake.lock
+result*
