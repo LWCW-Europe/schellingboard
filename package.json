@@ -18,7 +18,7 @@
     "lodash": "^4.18.1",
     "luxon": "^3.7.2",
     "moment-timezone": "^0.6.2",
-    "nanoid": "^5.1.11",
+    "nanoid": "^5.1.14",
     "next": "^16",
     "react": "^19",
     "react-dom": "^19",
