@@ -1,12 +1,61 @@
 import { defineConfig, devices } from "@playwright/test";
+import { spawnSync } from "node:child_process";
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
+ * Pick a free TCP port so E2E runs never collide with `make dev` (port 3000)
+ * or with an E2E run in a different directory (workspace). Done synchronously
+ * via a short-lived helper process because this config module has no top-level
+ * await.  Override with E2E_PORT to point the tests at an already-running
+ * server.
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+function parsePort(raw: string): number {
+  if (!/^\d+$/.test(raw.trim())) {
+    throw new Error(`E2E_PORT must be a positive integer, got "${raw}"`);
+  }
+  const port = Number(raw.trim());
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`E2E_PORT must be between 1 and 65535, got "${raw}"`);
+  }
+  return port;
+}
+
+function findFreePort(): number {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "-e",
+      'const s=require("net").createServer();s.listen(0,()=>{process.stdout.write(String(s.address().port));s.close();});',
+    ],
+    { encoding: "utf8", timeout: 5000 }
+  );
+  if (result.error) {
+    throw new Error(`Failed to spawn port-finder: ${result.error.message}`, {
+      cause: result.error,
+    });
+  }
+  if (result.status !== 0) {
+    throw new Error(
+      `Port-finder exited with status ${result.status}` +
+        (result.stderr ? `\nstderr: ${result.stderr}` : "") +
+        (result.stdout ? `\nstdout: ${result.stdout}` : "")
+    );
+  }
+  const port = Number.parseInt(result.stdout.trim(), 10);
+  if (!Number.isInteger(port) || port <= 0) {
+    throw new Error(`Failed to determine a free port (got "${result.stdout}")`);
+  }
+  return port;
+}
+
+// This config module is re-evaluated in every Playwright worker process, so the
+// chosen port is frozen into E2E_PORT (inherited by workers) to keep baseURL and
+// the web server in agreement. E2E_PORT can also be set by hand to target an
+// already-running server.
+const port = process.env.E2E_PORT
+  ? parsePort(process.env.E2E_PORT)
+  : findFreePort();
+process.env.E2E_PORT = String(port);
+const baseURL = `http://localhost:${port}`;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -28,7 +77,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://localhost:3000",
+    baseURL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
@@ -76,8 +125,8 @@ export default defineConfig({
    * `next dev` is flaky: chunks are compiled on demand and parallel
    * workers can race, causing intermittent ChunkLoadErrors. */
   webServer: {
-    command: 'bun set-env.ts test "next build && next start"',
-    url: "http://localhost:3000",
+    command: `bun set-env.ts test "next build && next start -p ${port}"`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },
