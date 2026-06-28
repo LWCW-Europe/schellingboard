@@ -7,6 +7,7 @@ import {
   adminUpdateSessionAction,
   adminDeleteSessionAction,
 } from "@/app/actions/admin-sessions";
+import { adminRemoveRsvpAction } from "@/app/actions/admin-rsvps";
 import {
   PRIMARY_BUTTON,
   SECONDARY_BUTTON,
@@ -26,6 +27,7 @@ export type SessionRow = {
   hosts: { id: string; name: string }[];
   locations: { id: string; name: string }[];
   numRsvps: number;
+  rsvps: { guestId: string; name: string }[];
 };
 
 export type EventGuest = { id: string; name: string };
@@ -52,6 +54,91 @@ function flagLabels(session: SessionRow): string[] {
 // so append "Z" before sending to the server; empty means "not scheduled".
 function toIsoOrNull(value: string): string | null {
   return value.trim() === "" ? null : `${value}Z`;
+}
+
+function SessionRsvps({
+  session,
+  onError,
+}: {
+  session: SessionRow;
+  onError: (e: string | null) => void;
+}) {
+  const router = useRouter();
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  const remove = (guestId: string) => {
+    setPendingId(guestId);
+    startTransition(async () => {
+      try {
+        const result = await adminRemoveRsvpAction({
+          sessionId: session.id,
+          guestId,
+        });
+        if (!result.ok) {
+          onError(result.error);
+        } else {
+          onError(null);
+          router.refresh();
+        }
+      } catch {
+        onError("Request failed");
+      } finally {
+        setPendingId(null);
+        setConfirmingId(null);
+      }
+    });
+  };
+
+  return (
+    <details className="text-sm">
+      <summary className="cursor-pointer text-gray-600">
+        RSVPs ({session.rsvps.length})
+      </summary>
+      {session.rsvps.length === 0 ? (
+        <p className="mt-2 text-gray-500">No RSVPs.</p>
+      ) : (
+        <ul className="mt-2 space-y-1">
+          {session.rsvps.map((r) => (
+            <li
+              key={r.guestId}
+              className="flex items-center justify-between gap-3"
+            >
+              <span className="text-gray-700">{r.name}</span>
+              {confirmingId === r.guestId ? (
+                <span className="flex items-center gap-2">
+                  <span className="text-red-700">Remove?</span>
+                  <button
+                    onClick={() => remove(r.guestId)}
+                    disabled={pendingId === r.guestId}
+                    className="text-red-600 hover:underline"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setConfirmingId(null)}
+                    disabled={pendingId === r.guestId}
+                    className="text-gray-500 hover:underline"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmingId(r.guestId)}
+                  className="text-red-600 hover:underline"
+                  aria-label={`Remove RSVP ${r.name}`}
+                >
+                  Remove
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </details>
+  );
 }
 
 function SessionItem({
@@ -212,35 +299,38 @@ function SessionItem({
 
   if (!editMode) {
     return (
-      <li className="py-3 flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <p className="font-medium text-gray-900">{session.title}</p>
-          <p className="text-sm text-gray-500">
-            {timeLabel(session)} · {joinNames(session.locations)}
-          </p>
-          <p className="text-sm text-gray-500">
-            Hosts: {joinNames(session.hosts)} · {session.numRsvps} RSVPs
-            {flagLabels(session).length > 0
-              ? ` · ${flagLabels(session).join(", ")}`
-              : ""}
-          </p>
+      <li className="py-3 space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="font-medium text-gray-900">{session.title}</p>
+            <p className="text-sm text-gray-500">
+              {timeLabel(session)} · {joinNames(session.locations)}
+            </p>
+            <p className="text-sm text-gray-500">
+              Hosts: {joinNames(session.hosts)} · {session.numRsvps} RSVPs
+              {flagLabels(session).length > 0
+                ? ` · ${flagLabels(session).join(", ")}`
+                : ""}
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => setEditMode(true)}
+              className={SECONDARY_BUTTON}
+              aria-label={`Edit ${session.title}`}
+            >
+              Edit
+            </button>
+            <button
+              onClick={() => setDeleteMode(true)}
+              className={DANGER_BUTTON}
+              aria-label={`Delete ${session.title}`}
+            >
+              Delete
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <button
-            onClick={() => setEditMode(true)}
-            className={SECONDARY_BUTTON}
-            aria-label={`Edit ${session.title}`}
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => setDeleteMode(true)}
-            className={DANGER_BUTTON}
-            aria-label={`Delete ${session.title}`}
-          >
-            Delete
-          </button>
-        </div>
+        <SessionRsvps session={session} onError={onError} />
       </li>
     );
   }

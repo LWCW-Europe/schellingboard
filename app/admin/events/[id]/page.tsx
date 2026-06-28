@@ -75,8 +75,9 @@ export default async function AdminEventDetailPage({
     .filter((l) => l.assigned)
     .map((l) => ({ id: l.id, name: l.name }));
 
-  const sessionRows: SessionRow[] = (await repos.sessions.listByEvent(id)).map(
-    (s) => ({
+  const guestNameById = new Map(allGuests.map((g) => [g.id, g.name]));
+  const sessionRows: SessionRow[] = await Promise.all(
+    (await repos.sessions.listByEvent(id)).map(async (s) => ({
       id: s.id,
       title: s.title,
       description: s.description,
@@ -89,7 +90,11 @@ export default async function AdminEventDetailPage({
       hosts: s.hosts.map((h) => ({ id: h.id, name: h.name })),
       locations: s.locations.map((l) => ({ id: l.id, name: l.name })),
       numRsvps: s.numRsvps,
-    })
+      rsvps: (await repos.rsvps.listBySession(s.id)).map((r) => ({
+        guestId: r.guestId,
+        name: guestNameById.get(r.guestId) ?? "Unknown guest",
+      })),
+    }))
   );
   const scheduledSessions = await repos.sessions.listScheduledByEvent(id);
   const days: SerializedDay[] = (await repos.days.listByEvent(id)).map((d) => ({

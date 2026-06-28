@@ -821,6 +821,49 @@ test.describe("Admin UI sessions", () => {
       sessions.getByRole("listitem").filter({ hasText: title })
     ).toHaveCount(0);
   });
+
+  test("removes an RSVP from a session via standard confirm", async ({
+    page,
+  }) => {
+    // Create the RSVP to remove through the public UI first. Yuki Tanaka is
+    // guaranteed a clean "no prior RSVP" state on the keynote by the seed and
+    // is used by no other spec (Bob Test's keynote slot belongs to
+    // rsvp.spec.ts).
+    await loginAndGoto(page, "/Conference-Gamma");
+    await page.getByLabel("My name is:").click();
+    await page.keyboard.type("Yuki Tanaka");
+    await page.getByRole("option", { name: /Yuki Tanaka/i }).click();
+    await page
+      .getByRole("link", { name: /Opening Keynote/ })
+      .first()
+      .click();
+    const dialog = page.getByRole("dialog", { name: "Session details" });
+    await dialog.getByRole("button", { name: "RSVP", exact: true }).click();
+    await expect(dialog.getByRole("button", { name: "Un-RSVP" })).toBeVisible();
+
+    // Remove it again as admin
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Gamma" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const sessions = page.getByRole("region", { name: "Sessions" });
+    const row = sessions
+      .getByRole("listitem")
+      .filter({ hasText: "Opening Keynote - Conference Gamma" });
+    await expect(row).toBeVisible();
+
+    // Expand the RSVPs disclosure and remove Yuki Tanaka
+    await row.getByText(/^RSVPs \(/).click();
+    await expect(row.getByText("Yuki Tanaka")).toBeVisible();
+    await row.getByRole("button", { name: "Remove RSVP Yuki Tanaka" }).click();
+    await row.getByRole("button", { name: "Confirm" }).click();
+
+    await expect(row.getByText("Yuki Tanaka")).toHaveCount(0);
+  });
 });
 
 async function makeImage(width: number, height: number): Promise<Buffer> {
