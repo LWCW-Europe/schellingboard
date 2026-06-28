@@ -795,6 +795,34 @@ test.describe("Admin UI sessions", () => {
       sessions.getByRole("listitem").filter({ hasText: title })
     ).toHaveCount(0);
   });
+
+  test("removes an RSVP from a session via standard confirm", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    // "RSVP Moderation Demo" is a dedicated seeded session in Conference Alpha
+    // with one seeded RSVP (Alice Test), used only by this test.
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const sessions = page.getByRole("region", { name: "Sessions" });
+    const row = sessions
+      .getByRole("listitem")
+      .filter({ hasText: "RSVP Moderation Demo" });
+    await expect(row).toBeVisible();
+
+    // Expand the RSVPs disclosure and remove Alice Test
+    await row.getByText(/^RSVPs \(/).click();
+    await expect(row.getByText("Alice Test")).toBeVisible();
+    await row.getByRole("button", { name: "Remove RSVP Alice Test" }).click();
+    await row.getByRole("button", { name: "Confirm" }).click();
+
+    await expect(row.getByText("Alice Test")).toHaveCount(0);
+  });
 });
 
 async function makeImage(width: number, height: number): Promise<Buffer> {
