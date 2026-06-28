@@ -14,6 +14,7 @@ COPY . .
 # Pass via --build-arg APP_VERSION=$(git describe --tags --always --dirty)
 ARG APP_VERSION
 ENV APP_VERSION=$APP_VERSION
+ENV BUILD_STANDALONE=1
 RUN bun x next build && \
     bun build --target=node --external better-sqlite3 --external bindings \
         scripts/admin.ts --outfile=.next/standalone/scripts/admin.js && \

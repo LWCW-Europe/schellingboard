@@ -13,7 +13,10 @@ function getAppVersion() {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
+  // Standalone output is only used by the Docker production image
+  // (`node server.js`). `next start` can't serve it and warns, so we gate it
+  // behind an env var the Dockerfile sets and leave it off for local/e2e builds.
+  ...(process.env.BUILD_STANDALONE === "1" ? { output: "standalone" } : {}),
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb",
