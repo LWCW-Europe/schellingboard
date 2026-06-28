@@ -33,6 +33,19 @@ async function gotoLocations(page: Page) {
   await expect(page.getByRole("heading", { name: "Locations" })).toBeVisible();
 }
 
+// Event detail is split into tab sub-routes (Config · Guests · Proposals ·
+// Sessions). Call this after clicking an event's "Manage" link to open a tab.
+async function openEventTab(
+  page: Page,
+  tab: "Config" | "Guests" | "Proposals" | "Sessions"
+) {
+  const link = page
+    .getByRole("navigation", { name: "Event sections" })
+    .getByRole("link", { name: tab });
+  await link.click();
+  await expect(link).toHaveAttribute("aria-current", "page");
+}
+
 test.describe("Admin UI", () => {
   // Note: no site login here. The admin UI is independent of the normal
   // user UI and must be reachable with only the admin password.
@@ -206,6 +219,52 @@ test.describe("Admin UI events", () => {
     // Manage link navigates to the event detail page
     await row.getByRole("link", { name: "Manage" }).click();
     await expect(page).toHaveURL(/\/admin\/events\//);
+  });
+
+  test("event detail exposes tab sub-routes for each section", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    const unique = Date.now();
+    const eventName = `E2E Tabs ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    // Config is the default tab — basic info form is shown
+    await expect(page.getByRole("heading", { name: eventName })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Save changes" })
+    ).toBeVisible();
+
+    // Each section lives on its own sub-route, loading only its own slice
+    await openEventTab(page, "Guests");
+    await expect(page).toHaveURL(/\/guests$/);
+    await expect(page.getByRole("region", { name: "Guests" })).toBeVisible();
+
+    await openEventTab(page, "Proposals");
+    await expect(page).toHaveURL(/\/proposals$/);
+    await expect(page.getByRole("region", { name: "Proposals" })).toBeVisible();
+
+    await openEventTab(page, "Sessions");
+    await expect(page).toHaveURL(/\/sessions$/);
+    await expect(page.getByRole("region", { name: "Sessions" })).toBeVisible();
+
+    // Back to Config and clean up
+    await openEventTab(page, "Config");
+    await page.getByRole("button", { name: "Delete event" }).click();
+    await page.getByLabel("Type the event name to confirm").fill(eventName);
+    await page.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
   });
 
   test("shows validation error when end is before start", async ({ page }) => {
@@ -501,6 +560,7 @@ test.describe("Admin UI guest assignment", () => {
       .filter({ hasText: eventName })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Guests");
 
     const guests = page.getByRole("region", { name: "Guests" });
     await expect(guests).toBeVisible();
@@ -524,6 +584,7 @@ test.describe("Admin UI guest assignment", () => {
       .filter({ hasText: eventName })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Guests");
     await expect(
       page
         .getByRole("region", { name: "Guests" })
@@ -555,7 +616,8 @@ test.describe("Admin UI guest assignment", () => {
     await g2.getByRole("checkbox", { checked: true }).click();
     await expect(g2.getByRole("checkbox", { checked: true })).toHaveCount(0);
 
-    // Clean up
+    // Clean up — the delete control lives on the Config tab
+    await openEventTab(page, "Config");
     await page.getByRole("button", { name: "Delete event" }).click();
     await page.getByLabel("Type the event name to confirm").fill(eventName);
     await page.getByRole("button", { name: "Confirm delete" }).click();
@@ -660,6 +722,7 @@ test.describe("Admin UI proposals", () => {
       .filter({ hasText: "Conference Alpha" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Proposals");
 
     const proposals = page.getByRole("region", { name: "Proposals" });
     await expect(proposals).toBeVisible();
@@ -682,6 +745,7 @@ test.describe("Admin UI proposals", () => {
       .filter({ hasText: "Conference Alpha" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Proposals");
 
     const proposals = page.getByRole("region", { name: "Proposals" });
     // Use the seeded Panel proposal (not asserted by the list test) and revert
@@ -739,6 +803,7 @@ test.describe("Admin UI proposals", () => {
       .filter({ hasText: "Conference Alpha" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Proposals");
 
     const proposals = page.getByRole("region", { name: "Proposals" });
     const row = proposals.getByRole("listitem").filter({ hasText: title });
@@ -777,6 +842,7 @@ test.describe("Admin UI sessions", () => {
       .filter({ hasText: "Conference Gamma" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Sessions");
 
     const sessions = page.getByRole("region", { name: "Sessions" });
     await expect(sessions).toBeVisible();
@@ -798,6 +864,7 @@ test.describe("Admin UI sessions", () => {
       .filter({ hasText: "Conference Alpha" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Sessions");
 
     const sessions = page.getByRole("region", { name: "Sessions" });
     const original = "Opening Keynote - Conference Alpha";
@@ -839,6 +906,7 @@ test.describe("Admin UI sessions", () => {
       .filter({ hasText: "Conference Beta" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Sessions");
 
     const sessions = page.getByRole("region", { name: "Sessions" });
     const title = "Opening Keynote - Conference Beta";
@@ -885,6 +953,7 @@ test.describe("Admin UI sessions", () => {
       .filter({ hasText: "Conference Gamma" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Sessions");
 
     const sessions = page.getByRole("region", { name: "Sessions" });
     const row = sessions
