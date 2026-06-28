@@ -16,6 +16,11 @@ import {
   type ProposalRow,
   type EventGuest,
 } from "./event-proposals-manager";
+import {
+  EventSessionsManager,
+  type SessionRow,
+  type EventLocation,
+} from "./event-sessions-manager";
 
 export default async function AdminEventDetailPage({
   params,
@@ -66,6 +71,26 @@ export default async function AdminEventDetailPage({
     sessionCount: p.sessionIds.length,
   }));
 
+  const eventLocations: EventLocation[] = locationRows
+    .filter((l) => l.assigned)
+    .map((l) => ({ id: l.id, name: l.name }));
+
+  const sessionRows: SessionRow[] = (await repos.sessions.listByEvent(id)).map(
+    (s) => ({
+      id: s.id,
+      title: s.title,
+      description: s.description,
+      startTime: s.startTime ? s.startTime.toISOString() : null,
+      endTime: s.endTime ? s.endTime.toISOString() : null,
+      capacity: s.capacity,
+      attendeeScheduled: s.attendeeScheduled,
+      blocker: s.blocker,
+      closed: s.closed,
+      hosts: s.hosts.map((h) => ({ id: h.id, name: h.name })),
+      locations: s.locations.map((l) => ({ id: l.id, name: l.name })),
+      numRsvps: s.numRsvps,
+    })
+  );
   const scheduledSessions = await repos.sessions.listScheduledByEvent(id);
   const days: SerializedDay[] = (await repos.days.listByEvent(id)).map((d) => ({
     id: d.id,
@@ -103,6 +128,12 @@ export default async function AdminEventDetailPage({
       <EventProposalsManager
         proposals={proposalRows}
         eventGuests={eventGuests}
+      />
+      <hr className="border-gray-200" />
+      <EventSessionsManager
+        sessions={sessionRows}
+        eventGuests={eventGuests}
+        eventLocations={eventLocations}
       />
     </div>
   );
