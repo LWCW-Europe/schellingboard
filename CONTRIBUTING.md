@@ -62,23 +62,13 @@
 
 ### Admin UI
 
-A web admin UI is available at `/admin` for managing users and location. It requires `ADMIN_PASSWORD` (and `AUTH_SECRET`) to be set; without `ADMIN_PASSWORD` the admin routes are disabled and return a diagnostic message explaining how to enable them. It is fully separate from the normal user UI: it has its own layout and only requires the admin password (not `SITE_PASSWORD`). It will gradually replace the admin CLI ([#368](https://github.com/LWCW-Europe/schellingboard/issues/368)).
-
-### Admin CLI
-
-For records not yet covered by the admin UI, a terminal CLI is available for managing core records (events, guests, phase dates):
-
-```bash
-make dev-admin
-```
-
-This opens an interactive menu to create, edit, and delete events and guests, and to set event phase dates.
-
-To run against a different environment (e.g. production):
-
-```bash
-bun set-env.ts production tsx scripts/admin.ts
-```
+A web admin UI is available at `/admin` for managing all core records: events
+(basic info, phases, days), the global pools of users and locations, event↔guest
+and event↔location assignments, and moderation of proposals, sessions, and RSVPs.
+It requires `ADMIN_PASSWORD` (and `AUTH_SECRET`) to be set; without
+`ADMIN_PASSWORD` the admin routes are disabled and return a diagnostic message
+explaining how to enable them. It is fully separate from the normal user UI: it
+has its own layout and only requires the admin password (not `SITE_PASSWORD`).
 
 ## Environment Variables
 
