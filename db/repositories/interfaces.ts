@@ -81,10 +81,38 @@ export type Guest<PI extends GuestPrivateInfo | void = void> = {
 
 export type CompleteGuest = Guest<GuestPrivateInfo>;
 
+/** A guest paired with their email and whether they are assigned to a given event. */
+export type EventGuestRow = {
+  id: string;
+  name: string;
+  email: string;
+  assigned: boolean;
+};
+
+/** A page of guests plus the total count of rows matching the same filter. */
+export type EventGuestPage = {
+  rows: EventGuestRow[];
+  total: number;
+};
+
 export interface GuestsRepository {
   list(): Promise<Guest[]>;
   listFull(): Promise<CompleteGuest[]>;
   listByEvent(eventId: string): Promise<Guest[]>;
+  /**
+   * Server-side paginated + searchable guest list scoped to an event's
+   * assignment. `assigned` filters by membership (undefined = all); `query`
+   * matches name or email (case-insensitive substring). Ordered by name.
+   */
+  searchForEventAssignment(
+    eventId: string,
+    opts: {
+      query?: string;
+      assigned?: boolean;
+      limit: number;
+      offset: number;
+    }
+  ): Promise<EventGuestPage>;
   findById(id: string): Promise<CompleteGuest | undefined>;
   findByEmail(email: string): Promise<CompleteGuest | undefined>;
   create(data: Omit<CompleteGuest, "id">): Promise<CompleteGuest>;

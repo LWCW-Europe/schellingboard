@@ -1,8 +1,22 @@
-import { and, eq, inArray } from "drizzle-orm";
+import {
+  and,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  like,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
-import type { Guest, GuestsRepository, CompleteGuest } from "../interfaces";
+import type {
+  CompleteGuest,
+  EventGuestPage,
+  Guest,
+  GuestsRepository,
+} from "../interfaces";
 import { sanitizeGuest } from "@/utils/guests";
 
 type DB = BetterSQLite3Database<typeof schema>;
@@ -45,6 +59,71 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .all()
       .map((row) => row as Guest);
     return rows;
+  }
+
+  async searchForEventAssignment(
+    eventId: string,
+    opts: {
+      query?: string;
+      assigned?: boolean;
+      limit: number;
+      offset: number;
+    }
+  ): Promise<EventGuestPage> {
+    // A guest is "assigned" when the event-scoped left join matches a row.
+    const joinCondition = and(
+      eq(schema.guests.id, schema.eventGuests.guestId),
+      eq(schema.eventGuests.eventId, eventId)
+    );
+
+    const conditions = [];
+    if (opts.assigned === true) {
+      conditions.push(isNotNull(schema.eventGuests.guestId));
+    } else if (opts.assigned === false) {
+      conditions.push(isNull(schema.eventGuests.guestId));
+    }
+    if (opts.query) {
+      const pattern = `%${opts.query}%`;
+      conditions.push(
+        or(
+          like(schema.guests.name, pattern),
+          like(schema.guests.email, pattern)
+        )
+      );
+    }
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const totalRow = this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.guests)
+      .leftJoin(schema.eventGuests, joinCondition)
+      .where(where)
+      .get();
+
+    const rows = this.db
+      .select({
+        id: schema.guests.id,
+        name: schema.guests.name,
+        email: schema.guests.email,
+        assigned: sql<number>`(${schema.eventGuests.guestId} is not null)`,
+      })
+      .from(schema.guests)
+      .leftJoin(schema.eventGuests, joinCondition)
+      .where(where)
+      // id as tiebreaker: name is not unique, and without a deterministic
+      // order LIMIT/OFFSET pagination can duplicate or skip rows.
+      .orderBy(schema.guests.name, schema.guests.id)
+      .limit(opts.limit)
+      .offset(opts.offset)
+      .all()
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        email: r.email,
+        assigned: Boolean(r.assigned),
+      }));
+
+    return { rows, total: totalRow?.count ?? 0 };
   }
 
   async findById(id: string): Promise<CompleteGuest | undefined> {

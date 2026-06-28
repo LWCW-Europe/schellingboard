@@ -623,6 +623,50 @@ test.describe("Admin UI guest assignment", () => {
     await page.getByRole("button", { name: "Confirm delete" }).click();
     await expect(page).toHaveURL(/\/admin\/events$/);
   });
+
+  test("searches guests by name on the guests sub-route", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Conference Alpha has all three seeded guests assigned.
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Guests");
+
+    const guests = page.getByRole("region", { name: "Guests" });
+    const dataRows = () =>
+      guests
+        .getByRole("row")
+        .filter({ has: page.getByRole("checkbox", { name: /^Assign / }) });
+
+    // Server-side search narrows the result set; the URL carries the query.
+    await guests.getByRole("searchbox", { name: "Search" }).fill("Alice");
+    await guests.getByRole("button", { name: "Search" }).click();
+    await expect(page).toHaveURL(/[?&]q=Alice/);
+    await expect(dataRows()).toHaveCount(1);
+    await expect(dataRows().first()).toContainText("Alice Test");
+    await expect(guests.getByRole("cell", { name: "Bob Test" })).toHaveCount(0);
+
+    // A single page of results: pagination reports page 1 of 1.
+    await expect(guests.getByText("Page 1 of 1")).toBeVisible();
+    await expect(
+      guests.getByRole("button", { name: "Next page" })
+    ).toBeDisabled();
+
+    // Browser back drops the query — the search input must follow the URL
+    // (the table state is URL-driven), not keep showing the stale query.
+    await page.goBack();
+    await expect(page).not.toHaveURL(/[?&]q=/);
+    await expect(
+      guests.getByRole("cell", { name: "Bob Test", exact: true })
+    ).toBeVisible();
+    await expect(guests.getByRole("searchbox", { name: "Search" })).toHaveValue(
+      ""
+    );
+  });
 });
 
 test.describe("Admin UI location assignment", () => {
