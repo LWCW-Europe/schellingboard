@@ -6,6 +6,12 @@ import { Input } from "@/app/input";
 import type { Event } from "@/db/repositories/interfaces";
 import { createEventAction, type EventInput } from "@/app/actions/admin-events";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/admin/buttons";
+import dynamic from "next/dynamic";
+
+const ClientTimestamp = dynamic(
+  () => import("@/app/client-only/ClientTimestamp"),
+  { ssr: false }
+);
 
 const DEFAULT_FORM: EventInput = {
   name: "",
@@ -195,8 +201,8 @@ export function EventsManager({ events }: { events: Event[] }) {
                   {event.name}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {event.start.toLocaleDateString()} –{" "}
-                  {event.end.toLocaleDateString()}
+                  <ClientTimestamp timestamp={event.start} /> –{" "}
+                  <ClientTimestamp timestamp={event.end} />
                   {" · "}
                   {event.timezone}
                 </p>
