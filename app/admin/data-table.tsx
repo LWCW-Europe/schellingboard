@@ -11,6 +11,19 @@ export type Column<T> = {
 };
 
 /**
+ * Opt-in row selection for bulk actions. Selection state is owned by the caller
+ * (so it can drive a bulk action bar); the table only renders the checkboxes and
+ * reports toggles. `onToggleAllOnPage` receives the keys for the current page
+ * and whether they should all become selected.
+ */
+export type Selection<T> = {
+  selectedKeys: Set<string>;
+  onToggleRow: (key: string) => void;
+  onToggleAllOnPage: (pageKeys: string[], shouldSelectAll: boolean) => void;
+  rowLabel: (row: T) => string;
+};
+
+/**
  * Hook for components that drive a `DataTable` to update the URL search params
  * that back its server-side query. Passing `null` removes a param. Changing the
  * page is the caller's responsibility (pass `page`); any other change should
@@ -47,6 +60,8 @@ export function DataTable<T>({
   searchQuery,
   searchPlaceholder = "Search…",
   toolbar,
+  bulkBar,
+  selection,
   mobileCard,
   emptyMessage = "Nothing to show.",
 }: {
@@ -59,6 +74,8 @@ export function DataTable<T>({
   searchQuery: string;
   searchPlaceholder?: string;
   toolbar?: ReactNode;
+  bulkBar?: ReactNode;
+  selection?: Selection<T>;
   mobileCard: (row: T) => ReactNode;
   emptyMessage?: string;
 }) {
@@ -69,6 +86,18 @@ export function DataTable<T>({
     event.preventDefault();
     const value = new FormData(event.currentTarget).get("q");
     setParams({ q: typeof value === "string" ? value : null, page: null });
+  };
+
+  const pageKeys = rows.map(rowKey);
+  const allOnPageSelected =
+    pageKeys.length > 0 &&
+    pageKeys.every((k) => selection?.selectedKeys.has(k));
+  const someOnPageSelected = pageKeys.some((k) =>
+    selection?.selectedKeys.has(k)
+  );
+
+  const selectAllRef = (el: HTMLInputElement | null) => {
+    if (el) el.indeterminate = someOnPageSelected && !allOnPageSelected;
   };
 
   return (
@@ -93,6 +122,8 @@ export function DataTable<T>({
         {toolbar}
       </div>
 
+      {bulkBar}
+
       {rows.length === 0 ? (
         <p className="text-sm text-gray-500">{emptyMessage}</p>
       ) : (
@@ -101,6 +132,23 @@ export function DataTable<T>({
           <table className="hidden w-full text-sm sm:table">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-600">
+                {selection && (
+                  <th className="py-2 pr-4 font-medium">
+                    <input
+                      type="checkbox"
+                      ref={selectAllRef}
+                      checked={allOnPageSelected}
+                      aria-label="Select all"
+                      onChange={() =>
+                        selection.onToggleAllOnPage(
+                          pageKeys,
+                          !allOnPageSelected
+                        )
+                      }
+                      className="h-4 w-4 cursor-pointer"
+                    />
+                  </th>
+                )}
                 {columns.map((col, i) => (
                   <th
                     key={i}
@@ -114,6 +162,17 @@ export function DataTable<T>({
             <tbody>
               {rows.map((row) => (
                 <tr key={rowKey(row)} className="border-b border-gray-100">
+                  {selection && (
+                    <td className="py-2 pr-4">
+                      <input
+                        type="checkbox"
+                        checked={selection.selectedKeys.has(rowKey(row))}
+                        aria-label={`Select ${selection.rowLabel(row)}`}
+                        onChange={() => selection.onToggleRow(rowKey(row))}
+                        className="h-4 w-4 cursor-pointer"
+                      />
+                    </td>
+                  )}
                   {columns.map((col, i) => (
                     <td
                       key={i}
@@ -132,9 +191,18 @@ export function DataTable<T>({
             {rows.map((row) => (
               <li
                 key={rowKey(row)}
-                className="rounded-md border border-gray-200 p-3"
+                className="flex items-start gap-3 rounded-md border border-gray-200 p-3"
               >
-                {mobileCard(row)}
+                {selection && (
+                  <input
+                    type="checkbox"
+                    checked={selection.selectedKeys.has(rowKey(row))}
+                    aria-label={`Select ${selection.rowLabel(row)}`}
+                    onChange={() => selection.onToggleRow(rowKey(row))}
+                    className="mt-1 h-4 w-4 shrink-0 cursor-pointer"
+                  />
+                )}
+                <div className="min-w-0 flex-1">{mobileCard(row)}</div>
               </li>
             ))}
           </ul>

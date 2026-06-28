@@ -6,7 +6,12 @@ import {
   assignGuestsToEventAction,
   removeGuestsFromEventAction,
 } from "@/app/actions/admin-guest-events";
-import { DataTable, useTableParams, type Column } from "../../data-table";
+import {
+  DataTable,
+  useTableParams,
+  type Column,
+  type Selection,
+} from "../../data-table";
 
 export type GuestRow = {
   id: string;
@@ -44,8 +49,92 @@ export function EventGuestsManager({
   const { setParams } = useTableParams();
   // Tracks which guest IDs have a pending toggle so we can disable the checkbox.
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
+  // Rows selected for bulk assign/remove (persists across pages until applied).
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+
+  const toggleRow = (guestId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(guestId)) next.delete(guestId);
+      else next.add(guestId);
+      return next;
+    });
+  };
+
+  const toggleAllOnPage = (pageKeys: string[], shouldSelectAll: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const key of pageKeys) {
+        if (shouldSelectAll) next.add(key);
+        else next.delete(key);
+      }
+      return next;
+    });
+  };
+
+  const handleBulk = (assign: boolean) => {
+    const guestIds = [...selectedIds];
+    if (guestIds.length === 0) return;
+    setError(null);
+
+    startTransition(async () => {
+      const action = assign
+        ? assignGuestsToEventAction
+        : removeGuestsFromEventAction;
+      const result = await action({ eventId, guestIds });
+      if (!result.ok) {
+        setError(result.error);
+      } else {
+        setSelectedIds(new Set());
+        router.refresh();
+      }
+    });
+  };
+
+  const selection: Selection<GuestRow> = {
+    selectedKeys: selectedIds,
+    onToggleRow: toggleRow,
+    onToggleAllOnPage: toggleAllOnPage,
+    rowLabel: (g) => g.name,
+  };
+
+  const bulkBar =
+    selectedIds.size === 0 ? null : (
+      <div
+        role="region"
+        aria-label="Bulk actions"
+        className="flex flex-wrap items-center gap-3 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm"
+      >
+        <span className="font-medium text-gray-700">
+          {selectedIds.size} selected
+        </span>
+        <button
+          type="button"
+          onClick={() => handleBulk(true)}
+          disabled={isPending}
+          className="px-3 py-1 rounded-md border border-gray-900 bg-gray-900 text-white disabled:opacity-50 hover:bg-gray-700"
+        >
+          Assign selected
+        </button>
+        <button
+          type="button"
+          onClick={() => handleBulk(false)}
+          disabled={isPending}
+          className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+        >
+          Remove selected
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedIds(new Set())}
+          className="px-3 py-1 rounded-md text-gray-600 hover:text-gray-900"
+        >
+          Clear
+        </button>
+      </div>
+    );
 
   const handleToggle = (guestId: string, currentlyAssigned: boolean) => {
     setPendingIds((prev) => new Set([...prev, guestId]));
@@ -130,6 +219,8 @@ export function EventGuestsManager({
         searchQuery={query}
         searchPlaceholder="Search name or email…"
         toolbar={toolbar}
+        bulkBar={bulkBar}
+        selection={selection}
         emptyMessage="No users match."
         mobileCard={(g) => (
           <div className="flex items-start justify-between gap-3">
