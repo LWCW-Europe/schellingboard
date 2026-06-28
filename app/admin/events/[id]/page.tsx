@@ -110,7 +110,7 @@ export default async function AdminEventDetailPage({
   }));
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6">
+    <div className="w-full max-w-6xl mx-auto space-y-6">
       <div>
         <Link
           href="/admin/events"
@@ -120,9 +120,14 @@ export default async function AdminEventDetailPage({
         </Link>
       </div>
       <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
-      <EventDetailForm event={event} />
+      {/* Config forms stay in a readable column; the tables below go wide. */}
+      <div className="max-w-3xl">
+        <EventDetailForm event={event} />
+      </div>
       <hr className="border-gray-200" />
-      <EventPhasesForm event={event} />
+      <div className="max-w-3xl">
+        <EventPhasesForm event={event} />
+      </div>
       <hr className="border-gray-200" />
       <EventDaysManager days={days} eventId={id} />
       <hr className="border-gray-200" />

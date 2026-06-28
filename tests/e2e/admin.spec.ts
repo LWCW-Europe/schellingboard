@@ -12,9 +12,9 @@ async function adminLogin(page: Page) {
   ).toBeVisible();
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Access Admin" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Administration" })
-  ).toBeVisible();
+  // /admin redirects to the events list, which is the admin landing page.
+  await expect(page).toHaveURL(/\/admin\/events$/);
+  await expect(page.getByRole("heading", { name: "Events" })).toBeVisible();
 }
 
 async function gotoUsers(page: Page) {
@@ -63,20 +63,55 @@ test.describe("Admin UI", () => {
     ).toBeVisible();
   });
 
-  test("dashboard lists events and links to global sections", async ({
+  test("header title links back to the admin home", async ({ page }) => {
+    await adminLogin(page);
+
+    // Navigate away, then click the title to return home (→ events list).
+    await gotoUsers(page);
+    await page
+      .getByRole("link", { name: /Admin$/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
+    await expect(page.getByRole("heading", { name: "Events" })).toBeVisible();
+  });
+
+  test("collapses nav and logout into a hamburger on mobile", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.setViewportSize({ width: 375, height: 800 });
+
+    // On a narrow viewport the nav links and logout are behind the menu, so
+    // nothing wraps onto a second header row.
+    await expect(page.getByRole("link", { name: "Users" })).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: "Admin logout" })
+    ).toBeHidden();
+
+    // Opening the menu reveals the nav links and the logout button.
+    await page.getByRole("button", { name: "Open admin menu" }).click();
+    const nav = page.getByRole("navigation", { name: "Admin" });
+    await expect(nav.getByRole("link", { name: "Users" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Admin logout" })
+    ).toBeVisible();
+  });
+
+  test("redirects /admin to the events list and has no dashboard nav", async ({
     page,
   }) => {
     await adminLogin(page);
 
-    // Seeded events are listed on the dashboard
-    const eventsRegion = page.getByRole("region", { name: "Events" });
-    await expect(eventsRegion.getByText("Conference Alpha")).toBeVisible();
+    // /admin is no longer a dashboard; it redirects to the events list.
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/admin\/events$/);
+    await expect(page.getByText("Conference Alpha")).toBeVisible();
 
-    // The global section cards navigate to their dedicated pages
-    const globalRegion = page.getByRole("region", { name: "Global sections" });
-    await globalRegion.getByRole("link", { name: /Users/ }).click();
-    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
-
+    // The nav links straight to the sections; there is no "Dashboard" entry.
+    const nav = page.getByRole("navigation", { name: "Admin" });
+    await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveCount(0);
+    await gotoUsers(page);
     await gotoLocations(page);
   });
 
@@ -95,9 +130,10 @@ test.describe("Admin UI", () => {
     await page.getByLabel("Password").fill("definitely-wrong");
     await page.getByRole("button", { name: "Access Admin" }).click();
     await expect(page.getByText("Invalid password")).toBeVisible();
+    // Stays on the login page; the admin UI is not reached.
     await expect(
-      page.getByRole("heading", { name: "Administration" })
-    ).not.toBeVisible();
+      page.getByRole("heading", { name: "Admin Access" })
+    ).toBeVisible();
   });
 
   test("can create, edit, and delete a user", async ({ page }) => {
