@@ -567,12 +567,14 @@ test.describe("Admin UI guest assignment", () => {
 
     // Work with fixed seeded guests. Other tests running in parallel may
     // create or delete guests, so never assert on global row counts here.
+    // Each row has a "Select" checkbox (bulk) and an "Assign" checkbox (state).
     const aliceRow = guests.getByRole("row").filter({ hasText: "Alice Test" });
-    await expect(aliceRow.getByRole("checkbox")).not.toBeChecked();
+    const aliceAssign = aliceRow.getByRole("checkbox", { name: /^Assign / });
+    await expect(aliceAssign).not.toBeChecked();
 
     // Assign Alice — click and wait for server-driven state update
-    await aliceRow.getByRole("checkbox").click();
-    await expect(aliceRow.getByRole("checkbox")).toBeChecked();
+    await aliceAssign.click();
+    await expect(aliceAssign).toBeChecked();
 
     // Navigate away and back — assignment must persist. Soft navigation via
     // the back link avoids aborting the assignment action's revalidation
@@ -596,9 +598,7 @@ test.describe("Admin UI guest assignment", () => {
     // still shows other seeded guests
     const g2 = page.getByRole("region", { name: "Guests" });
     await g2.getByRole("button", { name: "Assigned", exact: true }).click();
-    await expect(
-      g2.getByRole("row").filter({ has: page.getByRole("checkbox") })
-    ).toHaveCount(1);
+    await expect(g2.getByRole("checkbox", { name: /^Assign / })).toHaveCount(1);
     await expect(
       g2.getByRole("row").filter({ hasText: "Alice Test" })
     ).toBeVisible();
@@ -622,6 +622,83 @@ test.describe("Admin UI guest assignment", () => {
     await page.getByLabel("Type the event name to confirm").fill(eventName);
     await page.getByRole("button", { name: "Confirm delete" }).click();
     await expect(page).toHaveURL(/\/admin\/events$/);
+  });
+
+  test("bulk assigns and removes selected guests", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Fresh event so all seeded guests start unassigned.
+    const unique = Date.now();
+    const eventName = `E2E Bulk Guests ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Guests");
+
+    const guests = page.getByRole("region", { name: "Guests" });
+    const dataRows = guests
+      .getByRole("row")
+      .filter({ has: page.getByRole("checkbox", { name: /^Assign / }) });
+    const count = await dataRows.count();
+    expect(count).toBeGreaterThan(1);
+
+    // Select every row on the page, then bulk-assign.
+    await guests.getByRole("checkbox", { name: "Select all" }).check();
+    await guests.getByRole("button", { name: "Assign selected" }).click();
+    await expect(
+      guests.getByRole("checkbox", { name: /^Assign /, checked: true })
+    ).toHaveCount(count);
+
+    // Select every row again and bulk-remove.
+    await guests.getByRole("checkbox", { name: "Select all" }).check();
+    await guests.getByRole("button", { name: "Remove selected" }).click();
+    await expect(
+      guests.getByRole("checkbox", { name: /^Assign /, checked: true })
+    ).toHaveCount(0);
+
+    // Clean up — the delete control lives on the Config tab.
+    await openEventTab(page, "Config");
+    await page.getByRole("button", { name: "Delete event" }).click();
+    await page.getByLabel("Type the event name to confirm").fill(eventName);
+    await page.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
+  });
+
+  test("shows an error and keeps the selection when a bulk action fails", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Guests");
+
+    const guests = page.getByRole("region", { name: "Guests" });
+    await guests.getByRole("checkbox", { name: "Select all" }).check();
+    const bulkBar = page.getByRole("region", { name: "Bulk actions" });
+    await expect(bulkBar).toBeVisible();
+
+    // Simulate a network failure for the bulk server action.
+    await page.route("**/*", (route) =>
+      route.request().method() === "POST" ? route.abort() : route.continue()
+    );
+
+    await guests.getByRole("button", { name: "Assign selected" }).click();
+    await expect(guests.getByText("Request failed")).toBeVisible();
+    // Selection is kept so the user can retry.
+    await expect(bulkBar).toBeVisible();
   });
 
   test("searches guests by name on the guests sub-route", async ({ page }) => {
