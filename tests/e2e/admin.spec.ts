@@ -536,7 +536,7 @@ test.describe("Admin UI location assignment", () => {
     // Seeded locations are shown; none assigned yet
     const dataRows = locations
       .getByRole("row")
-      .filter({ hasNot: page.locator("th") });
+      .filter({ has: page.getByRole("checkbox") });
     const count = await dataRows.count();
     expect(count).toBeGreaterThan(0);
     const firstRow = dataRows.first();
