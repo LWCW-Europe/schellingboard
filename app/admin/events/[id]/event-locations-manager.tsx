@@ -44,16 +44,21 @@ export function EventLocationsManager({
       const action = currentlyAssigned
         ? removeLocationsFromEventAction
         : assignLocationsToEventAction;
-      const result = await action({ eventId, locationIds: [locationId] });
-      setPendingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(locationId);
-        return next;
-      });
-      if (!result.ok) {
-        setError(result.error);
-      } else {
-        router.refresh();
+      try {
+        const result = await action({ eventId, locationIds: [locationId] });
+        if (!result.ok) {
+          setError(result.error);
+        } else {
+          router.refresh();
+        }
+      } catch {
+        setError("Request failed");
+      } finally {
+        setPendingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(locationId);
+          return next;
+        });
       }
     });
   };
