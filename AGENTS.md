@@ -41,3 +41,7 @@ Follow red → green → refactor strictly. **No skipping steps.**
 5. Refactor without touching the test.
 
 Exceptions (be very conservative): pure UI/styling-only changes; refactors where existing tests already give full coverage.
+
+# Misc
+
+When adding a link to session/proposal modal, see `modal-nav.ts`, there are gotchas (anchor: MnpjIo7Y).
