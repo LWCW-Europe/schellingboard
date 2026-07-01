@@ -75,6 +75,7 @@ export type Guest<PI extends GuestPrivateInfo | void = void> = {
   name: string;
   // Public: shown on the guest's profile to anyone who can view it.
   aboutMe?: string | null;
+  avatarUrl?: string | null;
   info: PI;
 };
 
@@ -95,7 +96,7 @@ export interface GuestsRepository {
   // Usage: a user updates their own profile (name and public aboutMe).
   updateProfile(
     id: string,
-    data: { name: string; aboutMe: string | null }
+    data: { name: string; aboutMe: string | null; avatarUrl: string | null }
   ): Promise<CompleteGuest | undefined>;
   /** Deletes the guest and all records referencing them (votes, RSVPs, host links, event assignments). */
   delete(id: string): Promise<void>;
@@ -293,4 +294,14 @@ export interface VotesRepository {
     proposalId: string,
     guestIds: string[]
   ): Promise<void>;
+}
+
+// ── Images ─────────────────────────────────────────────────────────────────────
+
+export interface ImageResourceRepository<Id> {
+  validate(
+    buffer: Buffer
+  ): Promise<{ buffer: Buffer; ext: string } | { error: string }>;
+  save(id: Id, buffer: Buffer, ext: string): Promise<string>;
+  delete(id: Id): Promise<void>;
 }

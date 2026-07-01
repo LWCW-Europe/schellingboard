@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, type SyntheticEvent } from "react";
+import {
+  useState,
+  type SyntheticEvent,
+  useRef,
+  useEffect,
+  useMemo,
+  ButtonHTMLAttributes,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -8,6 +15,8 @@ import { Input } from "@/app/input";
 import { updateProfileAction } from "@/app/actions/profile";
 import { Avatar } from "../avatar";
 import type { Guest } from "@/db/repositories/interfaces";
+import { resizeImage } from "@/utils/images-client";
+import clsx from "clsx";
 
 export function ProfileForm({ guest }: { guest: Guest }) {
   const router = useRouter();
@@ -15,6 +24,28 @@ export function ProfileForm({ guest }: { guest: Guest }) {
   const [aboutMe, setAboutMe] = useState(guest.aboutMe ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [avatar, setAvatar] = useState<File | null | undefined>();
+  const [isDragging, setIsDragging] = useState(false);
+  const canvas = useRef<HTMLCanvasElement | null>(null);
+
+  const avatarUrl = useMemo(
+    () => avatar && URL.createObjectURL(avatar),
+    [avatar]
+  );
+
+  useEffect(
+    () => () => {
+      if (avatarUrl) URL.revokeObjectURL(avatarUrl);
+    },
+    [avatarUrl]
+  );
+
+  const resize = async (file: File, maxSize: number) => {
+    return canvas.current
+      ? await resizeImage(canvas.current, file, maxSize)
+      : { blob: file };
+  };
 
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
@@ -26,6 +57,18 @@ export function ProfileForm({ guest }: { guest: Guest }) {
     formData.append("aboutMe", aboutMe);
 
     try {
+      if (avatar === null) {
+        formData.append("avatar", "");
+      } else if (avatar) {
+        const resized = await resize(avatar, 256);
+        if ("error" in resized) {
+          setError(resized.error);
+          return;
+        }
+
+        formData.append("avatar", resized.blob);
+      }
+
       const result = await updateProfileAction(formData);
       if (!result.ok) {
         setError(result.error);
@@ -41,6 +84,28 @@ export function ProfileForm({ guest }: { guest: Guest }) {
     }
   };
 
+  const avatarAreaController: ButtonHTMLAttributes<HTMLButtonElement> = useMemo(
+    () => ({
+      onDrop(e) {
+        e.preventDefault();
+        setAvatar(e.dataTransfer.files?.item(0) ?? null);
+        setIsDragging(false);
+      },
+      onDragOver: function (e) {
+        e.preventDefault();
+        setIsDragging(true);
+      },
+      onDragLeave(e) {
+        e.preventDefault();
+        setIsDragging(false);
+      },
+      onClick() {
+        fileInput.current?.click();
+      },
+    }),
+    [fileInput]
+  );
+
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4">
       <Link
@@ -51,12 +116,55 @@ export function ProfileForm({ guest }: { guest: Guest }) {
       </Link>
       <h1 className="text-2xl font-bold">Edit profile</h1>
 
+      <canvas ref={canvas} hidden />
+
       <form
         onSubmit={(e) => void handleSubmit(e)}
         className="flex flex-col gap-4"
       >
-        <div className="flex items-center gap-4">
-          <Avatar name={name} size="sm" />
+        <div className="flex items-center gap-4 cursor-pointer">
+          <button
+            className={clsx(
+              "flex items-center gap-4 cursor-pointer pe-4 border-solid border-e",
+              "hover:text-rose-500 active:text-rose-600 drop:boder-rose-400",
+              "transition-outline duration-200 ease-in-out outline-gray-500 outline-dashed outline-0",
+              isDragging
+                ? "cursor-grabbing outline-4 rounded-full border-transparent"
+                : "border-gray-500"
+            )}
+            type="button"
+            {...avatarAreaController}
+          >
+            <Avatar
+              name={name}
+              size="sm"
+              image={
+                avatarUrl === null
+                  ? undefined
+                  : avatarUrl
+                    ? avatarUrl
+                    : guest.avatarUrl
+                      ? guest.avatarUrl
+                      : undefined
+              }
+            />
+            <label htmlFor={`${guest.id}-image`}>Change profile picture</label>
+          </button>
+          <button
+            type="button"
+            className="text-rose-400 hover:text-rose-500 active:text-rose-600 cursor-pointer"
+            onClick={() => setAvatar(null)}
+          >
+            Reset
+          </button>
+          <input
+            id={`${guest.id}-image`}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            ref={fileInput}
+            hidden
+            onChange={(e) => setAvatar(e.target.files?.item(0) ?? null)}
+          />
         </div>
 
         <div className="flex flex-col gap-1">

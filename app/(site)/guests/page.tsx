@@ -34,7 +34,11 @@ export default async function GuestsPage() {
                 href={`/guests/${guest.id}`}
                 className="flex items-center gap-4 py-3 hover:bg-gray-50 rounded-md px-2"
               >
-                <Avatar name={guest.name} size="sm" />
+                <Avatar
+                  name={guest.name}
+                  size="sm"
+                  image={guest.avatarUrl ?? undefined}
+                />
                 <span className="font-medium text-gray-900">{guest.name}</span>
               </Link>
             </li>
