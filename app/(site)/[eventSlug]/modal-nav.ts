@@ -4,6 +4,8 @@ import type { MouseEvent } from "react";
 import type { useRouter } from "next/navigation";
 
 /*
+(anchor: MnpjIo7Y)
+
 When we click on a session in the schedule, the app shows a modal with the session details.
 Additionally, it pushes a new session-specific URL.
 The reason for pushing rather than replacing is so that browser back button dismiss the modal.
@@ -23,7 +25,6 @@ To summarize:
   navigation to set dismiss mode to "back".
 * When linking from a different page, use `<Link {...viewFooLinkFromElsewhere(...)}>`. There is no
   in-place open and no history entry of ours to pop, so it sets the dismiss mode to "replace".
-
 */
 
 export function viewSessionLinkFromOwner(
