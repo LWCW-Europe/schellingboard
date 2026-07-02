@@ -20,6 +20,7 @@
     "moment-timezone": "^0.6.2",
     "nanoid": "^5.1.16",
     "next": "^16",
+    "nodemailer": "^9.0.3",
     "react": "^19",
     "react-dom": "^19",
     "sharp": "^0.35.2"
@@ -32,6 +33,7 @@
     "@types/lodash": "^4.17.24",
     "@types/luxon": "^3.7.2",
     "@types/node": "^26",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@typescript-eslint/eslint-plugin": "^8.62.1",

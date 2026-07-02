@@ -14,6 +14,8 @@ services:
       DATABASE_URL: file:/data/data.db
       SITE_PASSWORD: ${SITE_PASSWORD:-}
       AUTH_SECRET: ${AUTH_SECRET:-}
+      SMTP_URL: ${SMTP_URL:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     logging:
       driver: json-file
       options:
@@ -33,6 +35,7 @@ services:
   # [1]: https://mailpit.axllent.org/
   # [2]: https://docs.docker.com/compose/how-tos/profiles/
   mailpit:
+    # If you update this pin, update it in .github/workflows/ci.yml too.
     image: axllent/mailpit@sha256:956d688cbd13dca36c72d8e94c34d6d1cdf4a005aa6aa4ff6edaaac56c34d8df
     profiles:
       - dev
