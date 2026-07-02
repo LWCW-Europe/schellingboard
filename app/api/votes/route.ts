@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepositories } from "@/db/container";
 
+export const dynamic = "force-dynamic";
+
+// Without an explicit no-store, browsers heuristically cache this response
+// and show stale votes after a reload.
+const NO_STORE = { headers: { "cache-control": "no-store" } };
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const user = searchParams.get("user");
@@ -9,7 +15,7 @@ export async function GET(request: NextRequest) {
   if (!user || !eventName) {
     return NextResponse.json(
       { error: "User and event parameters are required" },
-      { status: 400 }
+      { ...NO_STORE, status: 400 }
     );
   }
 
@@ -17,15 +23,18 @@ export async function GET(request: NextRequest) {
     const repos = getRepositories();
     const event = await repos.events.findByName(eventName);
     if (!event) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Event not found" },
+        { ...NO_STORE, status: 404 }
+      );
     }
     const votes = await repos.votes.listByGuestAndEvent(user, event.id);
-    return NextResponse.json(votes);
+    return NextResponse.json(votes, NO_STORE);
   } catch (error) {
     console.error("Error fetching votes:", error);
     return NextResponse.json(
       { error: "Failed to fetch votes" },
-      { status: 500 }
+      { ...NO_STORE, status: 500 }
     );
   }
 }
