@@ -46,13 +46,10 @@ SITE_PASSWORD=changeme AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d
 | `DATABASE_URL`  | No       | SQLite path (default: `file:/data/data.db`)                      |
 | `HOST_PORT`     | No       | Host port to bind (default: `3000`, compose only)                |
 
-### Admin CLI
+### Admin UI
 
-Events, guests, and locations are managed through an interactive CLI:
-
-```bash
-docker exec -it <container_name> scripts/admin.js
-```
+Events, guests, locations, and content moderation are managed through the web
+admin UI at `/admin`. Set `ADMIN_PASSWORD` (and `AUTH_SECRET`) to enable it.
 
 ## Event Phases
 

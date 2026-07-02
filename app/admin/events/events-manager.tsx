@@ -61,7 +61,7 @@ function AddEventForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 border border-gray-200 rounded-md p-4"
+      className="space-y-3 border border-gray-200 rounded-md p-4 max-w-2xl"
     >
       <h2 className="font-medium text-gray-900">New event</h2>
       <div className="flex flex-col gap-1">

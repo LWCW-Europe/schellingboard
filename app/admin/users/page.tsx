@@ -9,7 +9,7 @@ export default async function AdminUsersPage() {
   const guests = await repositories.guests.listFull();
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6">
+    <div className="w-full max-w-6xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Users</h1>
       <section aria-label="Users" className="space-y-4">
         <GuestsManager guests={guests} />
