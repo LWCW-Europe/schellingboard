@@ -37,7 +37,7 @@ function AddGuestForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col sm:flex-row gap-2 sm:items-end"
+      className="flex flex-col sm:flex-row gap-2 sm:items-end max-w-2xl"
     >
       <div className="flex flex-col gap-1 flex-1">
         <label htmlFor="new-user-name" className="text-sm text-gray-600">

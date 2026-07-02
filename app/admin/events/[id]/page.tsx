@@ -1,18 +1,16 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { getRepositories } from "@/db/container";
 import { sessionOverlapsWindow } from "@/utils/day-window";
 import { requireAdminPage } from "../../require-admin";
 import { EventDetailForm } from "./event-detail-form";
 import { EventPhasesForm } from "./event-phases-form";
 import { EventDaysManager, type SerializedDay } from "./event-days-manager";
-import { EventGuestsManager, type GuestRow } from "./event-guests-manager";
 import {
   EventLocationsManager,
   type LocationRow,
 } from "./event-locations-manager";
 
-export default async function AdminEventDetailPage({
+export default async function AdminEventConfigPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -23,17 +21,6 @@ export default async function AdminEventDetailPage({
   const repos = getRepositories();
   const event = await repos.events.findById(id);
   if (!event) notFound();
-
-  const allGuests = await repos.guests.listFull();
-  const assignedGuestIds = new Set(
-    (await repos.guests.listByEvent(id)).map((g) => g.id)
-  );
-  const guestRows: GuestRow[] = allGuests.map((g) => ({
-    id: g.id,
-    name: g.name,
-    email: g.info.email,
-    assigned: assignedGuestIds.has(g.id),
-  }));
 
   const allLocations = await repos.locations.list();
   const assignedLocationIds = new Set(
@@ -60,23 +47,17 @@ export default async function AdminEventDetailPage({
   }));
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6">
-      <div>
-        <Link
-          href="/admin/events"
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Events
-        </Link>
+    <div className="space-y-6">
+      {/* Config forms stay in a readable column; the tables below go wide. */}
+      <div className="max-w-3xl">
+        <EventDetailForm event={event} />
       </div>
-      <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
-      <EventDetailForm event={event} />
       <hr className="border-gray-200" />
-      <EventPhasesForm event={event} />
+      <div className="max-w-3xl">
+        <EventPhasesForm event={event} />
+      </div>
       <hr className="border-gray-200" />
       <EventDaysManager days={days} eventId={id} />
-      <hr className="border-gray-200" />
-      <EventGuestsManager guests={guestRows} eventId={id} />
       <hr className="border-gray-200" />
       <EventLocationsManager locations={locationRows} eventId={id} />
     </div>
