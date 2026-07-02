@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
@@ -32,17 +32,20 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
         schema.guests,
         eq(schema.proposalHosts.guestId, schema.guests.id)
       )
-      .all()
-      .filter((r) => ids.includes(r.proposalId));
+      .where(inArray(schema.proposalHosts.proposalId, ids))
+      .all();
 
     const voteRows = this.db
       .select({
         proposalId: schema.votes.proposalId,
-        choice: schema.votes.choice,
+        total: count(),
+        interested: sql<number>`sum(case when ${schema.votes.choice} = 'interested' then 1 else 0 end)`,
+        maybe: sql<number>`sum(case when ${schema.votes.choice} = 'maybe' then 1 else 0 end)`,
       })
       .from(schema.votes)
-      .all()
-      .filter((r) => ids.includes(r.proposalId));
+      .where(inArray(schema.votes.proposalId, ids))
+      .groupBy(schema.votes.proposalId)
+      .all();
 
     const sessionRows = this.db
       .select({
@@ -50,9 +53,13 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
         id: schema.sessions.id,
       })
       .from(schema.sessions)
-      .where(isNotNull(schema.sessions.proposalId))
-      .all()
-      .filter((r) => ids.includes(r.proposalId!));
+      .where(
+        and(
+          isNotNull(schema.sessions.proposalId),
+          inArray(schema.sessions.proposalId, ids)
+        )
+      )
+      .all();
 
     const hostsByProposal = new Map<string, ProposalHost[]>();
     for (const r of hostRows) {
@@ -66,15 +73,11 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
       { total: number; interested: number; maybe: number }
     >();
     for (const r of voteRows) {
-      const counts = voteCountsByProposal.get(r.proposalId) ?? {
-        total: 0,
-        interested: 0,
-        maybe: 0,
-      };
-      counts.total++;
-      if (r.choice === "interested") counts.interested++;
-      if (r.choice === "maybe") counts.maybe++;
-      voteCountsByProposal.set(r.proposalId, counts);
+      voteCountsByProposal.set(r.proposalId, {
+        total: r.total,
+        interested: r.interested,
+        maybe: r.maybe,
+      });
     }
 
     const sessionIdsByProposal = new Map<string, string[]>();
@@ -171,18 +174,19 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
         tx.delete(schema.proposalHosts)
           .where(eq(schema.proposalHosts.proposalId, id))
           .run();
-        for (const guestId of patch.hostIds) {
+        const uniqueHostIds = [...new Set(patch.hostIds)];
+        for (const guestId of uniqueHostIds) {
           tx.insert(schema.proposalHosts)
             .values({ proposalId: id, guestId })
             .run();
         }
         // Hosts can't vote for their own proposal; remove their votes.
-        if (patch.hostIds.length > 0) {
+        if (uniqueHostIds.length > 0) {
           tx.delete(schema.votes)
             .where(
               and(
                 eq(schema.votes.proposalId, id),
-                inArray(schema.votes.guestId, patch.hostIds)
+                inArray(schema.votes.guestId, uniqueHostIds)
               )
             )
             .run();
