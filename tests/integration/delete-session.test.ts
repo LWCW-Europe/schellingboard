@@ -57,7 +57,7 @@ describe("POST /api/delete-session", () => {
   beforeEach(() => resetTestDb());
 
   it("deleted session is absent from listByEvent", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const location = await createLocation();
     const day = await createDay(event.id);
@@ -72,7 +72,7 @@ describe("POST /api/delete-session", () => {
   });
 
   it("RSVPs for the deleted session are removed", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ name: "Host" });
     const attendee = await createGuest({ name: "Attendee" });
     const location = await createLocation();

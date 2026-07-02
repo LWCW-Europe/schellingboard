@@ -19,12 +19,10 @@ import { POST as addVote } from "@/app/api/add-vote/route";
 import { POST as addSession } from "@/app/api/add-session/route";
 import { createProposal } from "@/app/(site)/[eventSlug]/proposals/actions";
 
-// FINDING: the server does not enforce event phases at all — phase gating is
-// UI-only. Every test here asserts the *correct* behavior (rejection outside
-// the right phase) and is marked `.fails` because the server currently accepts
-// the request.  When server-side gating lands, these tests will start
-// "passing" and Vitest will flag them — remove `.fails` then. Do NOT rewrite
-// the assertions to match the current, broken behavior.
+// Server-side phase gating mirrors the UI: voting only during the voting
+// phase, session creation only during the scheduling phase, and proposal
+// creation during the proposal *and* voting phases (the UI's "Add Proposal"
+// button is disabled only once scheduling starts).
 
 function makeReq(url: string, payload: unknown): Request {
   return new Request(url, { method: "POST", body: JSON.stringify(payload) });
@@ -88,42 +86,41 @@ describe("server-side phase gating", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());
 
-  it.fails("rejects voting during the proposal phase", async () => {
+  it("rejects voting during the proposal phase", async () => {
     const { res, votes } = await voteOnProposalIn("proposal");
     expect(res.ok).toBe(false);
     expect(votes).toHaveLength(0);
   });
 
-  it.fails("rejects voting during the scheduling phase", async () => {
+  it("rejects voting during the scheduling phase", async () => {
     const { res, votes } = await voteOnProposalIn("scheduling");
     expect(res.ok).toBe(false);
     expect(votes).toHaveLength(0);
   });
 
-  it.fails("rejects session creation during the proposal phase", async () => {
+  it("rejects session creation during the proposal phase", async () => {
     const { res, sessions } = await addSessionIn("proposal");
     expect(res.ok).toBe(false);
     expect(sessions).toHaveLength(0);
   });
 
-  it.fails("rejects session creation during the voting phase", async () => {
+  it("rejects session creation during the voting phase", async () => {
     const { res, sessions } = await addSessionIn("voting");
     expect(res.ok).toBe(false);
     expect(sessions).toHaveLength(0);
   });
 
-  it.fails("rejects proposal creation during the voting phase", async () => {
+  // The UI allows adding proposals during the voting phase (only scheduling
+  // disables it), so the server accepts them too.
+  it("allows proposal creation during the voting phase", async () => {
     const { result, proposals } = await proposeIn("voting");
+    expect(result).toHaveProperty("success");
+    expect(proposals).toHaveLength(1);
+  });
+
+  it("rejects proposal creation during the scheduling phase", async () => {
+    const { result, proposals } = await proposeIn("scheduling");
     expect(result).toHaveProperty("error");
     expect(proposals).toHaveLength(0);
   });
-
-  it.fails(
-    "rejects proposal creation during the scheduling phase",
-    async () => {
-      const { result, proposals } = await proposeIn("scheduling");
-      expect(result).toHaveProperty("error");
-      expect(proposals).toHaveLength(0);
-    }
-  );
 });

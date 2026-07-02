@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getRepositories } from "@/db/container";
+import { inSchedPhase } from "@/app/(site)/utils/events";
 
 export async function createProposal(formData: FormData) {
   const eventId = formData.get("event") as string;
@@ -18,6 +19,13 @@ export async function createProposal(formData: FormData) {
 
   if (!eventId) {
     return { error: "Event is required" };
+  }
+
+  // Mirrors the UI: proposals may be added during the proposal and voting
+  // phases; once scheduling starts they are closed.
+  const event = await getRepositories().events.findById(eventId);
+  if (!event || inSchedPhase(event)) {
+    return { error: "The proposal phase is over" };
   }
 
   try {
