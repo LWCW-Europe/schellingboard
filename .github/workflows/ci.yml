@@ -87,8 +87,8 @@ jobs:
       - name: Install Dependencies
         run: bun install --frozen-lockfile
 
-      - name: Test
-        run: make test
+      - name: Test (with coverage thresholds)
+        run: make test-coverage
 
   test-e2e:
     runs-on: ubuntu-latest
