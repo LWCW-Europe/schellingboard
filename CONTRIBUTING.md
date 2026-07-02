@@ -138,6 +138,14 @@ See [ADR 0002](docs/adr/0002-testing-strategy.md) for the full rationale. Three 
 
 **E2E tests** (Playwright, `tests/e2e/`) — behavior that only manifests in a browser: routing, phase-dependent UI, modals, form interaction, mobile layout. Prefer fewer, high-confidence tests over broad coverage.
 
+### Test quality guardrails
+
+- A test that breaks on an internal rename without a user-visible behavior change is a bad test. Rewrite or delete it.
+- Never assert on call counts of internal helpers.
+- If making a test pass requires reaching into a private, the test is wrong.
+- Factories produce minimal entities; tests override only the fields they care about. If a test sets 12 fields, the factory is wrong.
+- No cross-test state. Each test builds what it needs.
+
 ### TDD workflow
 
 Every code change must follow red → green → refactor. **Do not skip or reorder steps.**
