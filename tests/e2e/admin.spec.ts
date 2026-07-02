@@ -206,13 +206,17 @@ test.describe("Admin UI events", () => {
     await expect(page.getByRole("heading", { name: original })).toBeVisible();
 
     // Rename and verify via fresh navigation (waits for "Saved!" to confirm the
-    // action completed before navigating away)
+    // action completed before navigating away). Use the back link (soft
+    // navigation), not page.goto: a hard navigation aborts the action's
+    // still-streaming revalidation response, which Firefox reports as an
+    // uncaught "TypeError: Error in input stream".
     const nameInput = page.getByLabel("Name *");
     await expect(nameInput).toHaveValue(original);
     await nameInput.fill(renamed);
     await page.getByRole("button", { name: "Save changes" }).click();
     await expect(page.getByText("Saved!")).toBeVisible();
-    await page.goto("/admin/events");
+    await page.getByRole("link", { name: "← Events" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
     await expect(
       page.getByRole("listitem").filter({ hasText: renamed })
     ).toBeVisible();
@@ -286,8 +290,13 @@ test.describe("Admin UI events", () => {
     await page.getByRole("button", { name: "Save phases" }).click();
     await expect(page.getByText("Saved!")).toBeVisible();
 
-    // Navigate away and back to confirm persistence
-    await page.goto("/admin/events");
+    // Navigate away and back to confirm persistence. Click the back link
+    // (soft navigation) instead of page.goto: a hard navigation right after
+    // the save aborts the server action's still-streaming revalidation
+    // response, which Firefox reports as an uncaught "TypeError: Error in
+    // input stream".
+    await page.getByRole("link", { name: "← Events" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
     await page
       .getByRole("listitem")
       .filter({ hasText: eventName })
@@ -469,8 +478,11 @@ test.describe("Admin UI guest assignment", () => {
     await aliceRow.getByRole("checkbox").click();
     await expect(aliceRow.getByRole("checkbox")).toBeChecked();
 
-    // Navigate away and back — assignment must persist
-    await page.goto("/admin/events");
+    // Navigate away and back — assignment must persist. Soft navigation via
+    // the back link avoids aborting the assignment action's revalidation
+    // stream (Firefox: "TypeError: Error in input stream").
+    await page.getByRole("link", { name: "← Events" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
     await page
       .getByRole("listitem")
       .filter({ hasText: eventName })
@@ -550,8 +562,11 @@ test.describe("Admin UI location assignment", () => {
     await mainHallRow.getByRole("checkbox").click();
     await expect(mainHallRow.getByRole("checkbox")).toBeChecked();
 
-    // Navigate away and back — assignment must persist
-    await page.goto("/admin/events");
+    // Navigate away and back — assignment must persist. Soft navigation via
+    // the back link avoids aborting the assignment action's revalidation
+    // stream (Firefox: "TypeError: Error in input stream").
+    await page.getByRole("link", { name: "← Events" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
     await page
       .getByRole("listitem")
       .filter({ hasText: eventName })
