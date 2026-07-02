@@ -92,7 +92,7 @@ format: install
 format-check: install
 	bun x prettier --check .
 
-precommit: format lint typecheck test test-e2e
+precommit: format lint typecheck test-coverage test-e2e
 
 clean:
 	rm -rf .next
