@@ -106,6 +106,85 @@ test("should navigate to quick voting and allow voting on proposals", async ({
   await expect(page).toHaveURL(/\/Conference-Beta\/proposals$/);
 });
 
+test("votes from two users persist independently across reloads", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Beta/proposals");
+
+  // Create a throwaway proposal hosted by Bob Test, before selecting a user
+  // (a selected user would be prefilled as host, and hosts get no voting
+  // buttons on their own proposals). The host matters: the quick-voting test
+  // in this file votes as Bob in a parallel worker, and quick voting never
+  // offers proposals the current user hosts, so no other test can add votes
+  // to this proposal.
+  const title = `E2E Vote Target ${Date.now()}`;
+  await page.getByRole("link", { name: /Add Proposal/i }).click();
+  await page.getByLabel("Title").fill(title);
+  await page.getByLabel("Host(s)").click();
+  await page.keyboard.type("Bob Test");
+  await page.getByRole("option", { name: /Bob Test/i }).click();
+  await page.keyboard.press("Escape");
+  await Promise.all([
+    page.waitForURL(/\/Conference-Beta\/proposals$/),
+    page.getByRole("button", { name: /Submit/i }).click(),
+  ]);
+
+  // Vote as Alice
+  await page.getByLabel("My name is:").click();
+  await page.getByRole("option", { name: /Alice Test/i }).click();
+
+  const row = page.getByRole("row", { name: new RegExp(title) });
+  await expect(row).toBeVisible();
+
+  // Vote "Interested". Voting updates optimistically, so wait for the server
+  // to confirm before reloading.
+  await Promise.all([
+    page.waitForResponse(
+      (res) => res.url().includes("/api/add-vote") && res.ok()
+    ),
+    row.getByRole("button", { name: "❤️" }).click(),
+  ]);
+
+  // The vote persists across a reload
+  await page.reload();
+  await expect(row).toBeVisible();
+  await expect(row.getByRole("button", { name: "❤️" })).toHaveClass(
+    /bg-blue-200/
+  );
+
+  // A second user votes on the same proposal with a different choice.
+  // (There is no visible aggregate tally during the voting phase, so the
+  // combined count is asserted per-user here; tally aggregation is covered
+  // by tests/integration/voting.test.ts.)
+  await page.getByLabel("My name is:").click();
+  await page.getByRole("option", { name: /Charlie Test/i }).click();
+  await expect(row.getByRole("button", { name: "❤️" })).not.toHaveClass(
+    /bg-blue-200/
+  );
+  await Promise.all([
+    page.waitForResponse(
+      (res) => res.url().includes("/api/add-vote") && res.ok()
+    ),
+    row.getByRole("button", { name: "⭐" }).click(),
+  ]);
+
+  // Each user still sees their own vote after a reload
+  await page.reload();
+  await expect(row).toBeVisible();
+  await expect(row.getByRole("button", { name: "⭐" })).toHaveClass(
+    /bg-blue-200/
+  );
+  await page.getByLabel("My name is:").click();
+  await page.getByRole("option", { name: /Alice Test/i }).click();
+  await expect(row.getByRole("button", { name: "❤️" })).toHaveClass(
+    /bg-blue-200/
+  );
+  await expect(row.getByRole("button", { name: "⭐" })).not.toHaveClass(
+    /bg-blue-200/
+  );
+});
+
 test("should show voting disabled state when not logged in as a user", async ({
   page,
 }) => {
