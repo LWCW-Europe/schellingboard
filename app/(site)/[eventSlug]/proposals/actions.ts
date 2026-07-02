@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getRepositories } from "@/db/container";
+import { inSchedPhase } from "@/app/(site)/utils/events";
 
 export async function createProposal(formData: FormData) {
   const eventId = formData.get("event") as string;
@@ -21,6 +22,13 @@ export async function createProposal(formData: FormData) {
   }
 
   try {
+    // Mirrors the UI: proposals may be added during the proposal and voting
+    // phases; once scheduling starts they are closed.
+    const event = await getRepositories().events.findById(eventId);
+    if (!event || inSchedPhase(event)) {
+      return { error: "The proposal phase is over" };
+    }
+
     await getRepositories().sessionProposals.create({
       eventId,
       title,
@@ -36,6 +44,11 @@ export async function createProposal(formData: FormData) {
   return { success: true };
 }
 
+// Unlike createProposal, this intentionally has no event/phase check: the
+// UI's canEdit() gates editing by ownership only (host or unclaimed
+// proposal), not by phase, so hosts can still fix up or withdraw their own
+// proposal after scheduling starts. Adding a phase gate here would make the
+// server reject an action the UI still offers.
 export async function updateProposal(id: string, formData: FormData) {
   const eventSlug = formData.get("eventSlug") as string;
   const title = formData.get("title") as string;
@@ -65,6 +78,8 @@ export async function updateProposal(id: string, formData: FormData) {
   return { success: true };
 }
 
+// Same reasoning as updateProposal: no phase gate, so a host can withdraw
+// their proposal in any phase, including scheduling.
 export async function deleteProposal(id: string, eventSlug: string) {
   try {
     await getRepositories().sessionProposals.delete(id);

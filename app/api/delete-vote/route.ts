@@ -1,4 +1,5 @@
 import { getRepositories } from "@/db/container";
+import { inVotingPhase } from "@/app/(site)/utils/events";
 
 export const dynamic = "force-dynamic";
 
@@ -8,8 +9,21 @@ export async function POST(req: Request) {
     proposalId: string;
   };
 
+  const repos = getRepositories();
+  const proposal = await repos.sessionProposals.findById(proposalId);
+  if (!proposal) {
+    return Response.json({ error: "Proposal not found" }, { status: 404 });
+  }
+  const event = await repos.events.findById(proposal.eventId);
+  if (!event || !inVotingPhase(event)) {
+    return Response.json(
+      { error: "Voting is only allowed during the voting phase" },
+      { status: 403 }
+    );
+  }
+
   try {
-    await getRepositories().votes.deleteByGuestAndProposal(guestId, proposalId);
+    await repos.votes.deleteByGuestAndProposal(guestId, proposalId);
     return Response.json({ success: true });
   } catch (err) {
     console.error(err);

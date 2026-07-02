@@ -1,4 +1,5 @@
 import { getRepositories } from "@/db/container";
+import { inSchedPhase } from "@/app/(site)/utils/events";
 
 type RSVPParams = {
   sessionId: string;
@@ -11,6 +12,27 @@ export const dynamic = "force-dynamic"; // defaults to auto
 export async function POST(req: Request) {
   const { sessionId, guestId, remove } = (await req.json()) as RSVPParams;
   const repos = getRepositories();
+
+  const session = await repos.sessions.findById(sessionId);
+  if (!session) {
+    return Response.json({ error: "Session not found" }, { status: 404 });
+  }
+
+  const event = await repos.events.findById(session.eventId);
+  const eventGuests = event ? await repos.guests.listByEvent(event.id) : [];
+  if (!eventGuests.some((g) => g.id === guestId)) {
+    return Response.json(
+      { error: "Guest is not part of this event" },
+      { status: 403 }
+    );
+  }
+
+  if (!event || !inSchedPhase(event)) {
+    return Response.json(
+      { error: "RSVPs can only be changed during the scheduling phase" },
+      { status: 403 }
+    );
+  }
 
   if (!remove) {
     try {

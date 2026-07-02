@@ -11,24 +11,20 @@ import {
   createLocation,
   createDay,
   createProposal as createProposalFixture,
+  createSession,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { VoteChoice } from "@/db/repositories/interfaces";
 import type { SessionParams } from "@/app/api/session-form-utils";
 import { POST as addVote } from "@/app/api/add-vote/route";
 import { POST as addSession } from "@/app/api/add-session/route";
+import { POST as toggleRsvp } from "@/app/api/toggle-rsvp/route";
 import { createProposal } from "@/app/(site)/[eventSlug]/proposals/actions";
 
-// FINDING: the server does not enforce event phases at all — phase gating is
-// UI-only. The `.fails` tests below assert the *correct* behavior (rejection
-// outside the right phase) and are marked `.fails` because the server
-// currently accepts the request. When server-side gating lands, these tests
-// will start "passing" and Vitest will flag them — remove `.fails` then. Do
-// NOT rewrite the assertions to match the current, broken behavior.
-//
-// The "allows ..." tests document the flip side: the request already
-// succeeds in the right phase today, and must keep succeeding once gating is
-// added.
+// Server-side phase gating mirrors the UI: voting only during the voting
+// phase, session creation only during the scheduling phase, and proposal
+// creation during the proposal *and* voting phases (the UI's "Add Proposal"
+// button is disabled only once scheduling starts).
 
 function makeReq(url: string, payload: unknown): Request {
   return new Request(url, { method: "POST", body: JSON.stringify(payload) });
@@ -88,49 +84,88 @@ async function proposeIn(phase: "proposal" | "voting" | "scheduling") {
   return { result, proposals };
 }
 
+async function toggleRsvpIn(
+  phase: "proposal" | "voting",
+  opts?: { remove?: boolean }
+) {
+  const event = await createEvent({ phase });
+  const guest = await createGuest();
+  const session = await createSession(event.id);
+  const repos = getRepositories();
+  await repos.guests.assignToEvent(event.id, [guest.id]);
+  if (opts?.remove) {
+    await repos.rsvps.create({ sessionId: session.id, guestId: guest.id });
+  }
+  const res = await toggleRsvp(
+    makeReq("http://test/api/toggle-rsvp", {
+      sessionId: session.id,
+      guestId: guest.id,
+      remove: opts?.remove,
+    })
+  );
+  const rsvps = await repos.rsvps.listBySession(session.id);
+  return { res, rsvps };
+}
+
 describe("server-side phase gating", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());
 
-  it.fails("rejects voting during the proposal phase", async () => {
+  it("rejects voting during the proposal phase", async () => {
     const { res, votes } = await voteOnProposalIn("proposal");
     expect(res.ok).toBe(false);
     expect(votes).toHaveLength(0);
   });
 
-  it.fails("rejects voting during the scheduling phase", async () => {
+  it("rejects voting during the scheduling phase", async () => {
     const { res, votes } = await voteOnProposalIn("scheduling");
     expect(res.ok).toBe(false);
     expect(votes).toHaveLength(0);
   });
 
-  it.fails("rejects session creation during the proposal phase", async () => {
+  it("rejects session creation during the proposal phase", async () => {
     const { res, sessions } = await addSessionIn("proposal");
     expect(res.ok).toBe(false);
     expect(sessions).toHaveLength(0);
   });
 
-  it.fails("rejects session creation during the voting phase", async () => {
+  it("rejects session creation during the voting phase", async () => {
     const { res, sessions } = await addSessionIn("voting");
     expect(res.ok).toBe(false);
     expect(sessions).toHaveLength(0);
   });
 
-  it.fails("rejects proposal creation during the voting phase", async () => {
+  it("rejects RSVP creation during the proposal phase", async () => {
+    const { res, rsvps } = await toggleRsvpIn("proposal");
+    expect(res.status).toBe(403);
+    expect(rsvps).toHaveLength(0);
+  });
+
+  it("rejects RSVP creation during the voting phase", async () => {
+    const { res, rsvps } = await toggleRsvpIn("voting");
+    expect(res.status).toBe(403);
+    expect(rsvps).toHaveLength(0);
+  });
+
+  it("rejects RSVP removal outside the scheduling phase", async () => {
+    const { res, rsvps } = await toggleRsvpIn("voting", { remove: true });
+    expect(res.status).toBe(403);
+    expect(rsvps).toHaveLength(1);
+  });
+
+  // The UI allows adding proposals during the voting phase (only scheduling
+  // disables it), so the server accepts them too.
+  it("allows proposal creation during the voting phase", async () => {
     const { result, proposals } = await proposeIn("voting");
+    expect(result).toHaveProperty("success");
+    expect(proposals).toHaveLength(1);
+  });
+
+  it("rejects proposal creation during the scheduling phase", async () => {
+    const { result, proposals } = await proposeIn("scheduling");
     expect(result).toHaveProperty("error");
     expect(proposals).toHaveLength(0);
   });
-
-  it.fails(
-    "rejects proposal creation during the scheduling phase",
-    async () => {
-      const { result, proposals } = await proposeIn("scheduling");
-      expect(result).toHaveProperty("error");
-      expect(proposals).toHaveLength(0);
-    }
-  );
-
   it("allows voting during the voting phase", async () => {
     const { res, votes } = await voteOnProposalIn("voting");
     expect(res.ok).toBe(true);
