@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent, createGuest, createSession } from "../helpers/factories";
+import { getRepositories } from "@/db/container";
 import type { Rsvp } from "@/db/repositories/interfaces";
 import { POST as toggleRsvp } from "@/app/api/toggle-rsvp/route";
 import { GET as getRsvps } from "@/app/api/rsvps/route";
@@ -30,6 +31,7 @@ describe("POST /api/toggle-rsvp", () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const session = await createSession(event.id);
+    await getRepositories().guests.assignToEvent(event.id, [guest.id]);
 
     const addRes = await toggleRsvp(
       makeToggleReq({ sessionId: session.id, guestId: guest.id })
@@ -55,6 +57,7 @@ describe("POST /api/toggle-rsvp", () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const session = await createSession(event.id);
+    await getRepositories().guests.assignToEvent(event.id, [guest.id]);
 
     const res = await toggleRsvp(
       makeToggleReq({ sessionId: session.id, guestId: guest.id, remove: true })
@@ -73,6 +76,7 @@ describe("POST /api/toggle-rsvp", () => {
       const event = await createEvent({ phase: "scheduling" });
       const guest = await createGuest();
       const session = await createSession(event.id);
+      await getRepositories().guests.assignToEvent(event.id, [guest.id]);
 
       for (let i = 0; i < 2; i++) {
         const res = await toggleRsvp(
@@ -85,6 +89,29 @@ describe("POST /api/toggle-rsvp", () => {
     }
   );
 
+  it("rejects toggling an RSVP for a nonexistent session", async () => {
+    const guest = await createGuest();
+
+    const res = await toggleRsvp(
+      makeToggleReq({ sessionId: "does-not-exist", guestId: guest.id })
+    );
+    expect(res.status).toBe(404);
+    expect(await rsvpsForGuest(guest.id)).toHaveLength(0);
+  });
+
+  it("rejects RSVPs from a guest who isn't assigned to the event", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest();
+    const session = await createSession(event.id);
+    // Deliberately not assigning the guest to the event.
+
+    const res = await toggleRsvp(
+      makeToggleReq({ sessionId: session.id, guestId: guest.id })
+    );
+    expect(res.status).toBe(403);
+    expect(await rsvpsForGuest(guest.id)).toHaveLength(0);
+  });
+
   it("GET /api/rsvps lists by guest or by session and rejects missing params", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const alice = await createGuest({ name: "Alice" });
@@ -93,6 +120,7 @@ describe("POST /api/toggle-rsvp", () => {
     const otherSession = await createSession(event.id, {
       title: "Other Session",
     });
+    await getRepositories().guests.assignToEvent(event.id, [alice.id, bob.id]);
 
     for (const guest of [alice, bob]) {
       await toggleRsvp(

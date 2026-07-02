@@ -1,4 +1,5 @@
 import { getRepositories } from "@/db/container";
+import { inSchedPhase } from "@/app/(site)/utils/events";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
@@ -19,6 +20,13 @@ export async function POST(req: Request) {
   if (prevSession === undefined) {
     const msg = `Cannot find session with ID ${params.id}`;
     return new Response(msg, { status: 404 });
+  }
+  const event = await repos.events.findById(prevSession.eventId);
+  if (!event || !inSchedPhase(event)) {
+    return new Response(
+      "Sessions can only be edited during the scheduling phase",
+      { status: 403 }
+    );
   }
   if (!prevSession.attendeeScheduled || prevSession.blocker) {
     return new Response("Cannot edit via web app", { status: 400 });

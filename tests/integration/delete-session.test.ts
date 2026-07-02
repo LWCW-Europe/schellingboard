@@ -57,7 +57,7 @@ describe("POST /api/delete-session", () => {
   beforeEach(() => resetTestDb());
 
   it("deleted session is absent from listByEvent", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const location = await createLocation();
     const day = await createDay(event.id);
@@ -71,8 +71,36 @@ describe("POST /api/delete-session", () => {
     expect(sessions).toHaveLength(0);
   });
 
+  it("rejects delete outside the scheduling phase", async () => {
+    const event = await createEvent({ phase: "voting" });
+    const guest = await createGuest();
+    const location = await createLocation();
+
+    // Create an editable (attendee-scheduled, non-blocker) session directly,
+    // bypassing add-session's phase gate.
+    const created = await getRepositories().sessions.create({
+      title: "Existing",
+      description: "",
+      closed: false,
+      hostIds: [guest.id],
+      locationIds: [location.id],
+      startTime: new Date(Date.now() + 60 * 60 * 1000),
+      endTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
+      capacity: 30,
+      attendeeScheduled: true,
+      blocker: false,
+      eventId: event.id,
+    });
+
+    const res = await POST(makeDeleteReq(created.id));
+    expect(res.status).toBe(403);
+
+    const still = await getRepositories().sessions.findById(created.id);
+    expect(still).toBeDefined();
+  });
+
   it("RSVPs for the deleted session are removed", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ name: "Host" });
     const attendee = await createGuest({ name: "Attendee" });
     const location = await createLocation();

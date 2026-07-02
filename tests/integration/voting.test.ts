@@ -148,6 +148,45 @@ describe("voting API", () => {
     expect(await votesFor(bob.id, "Vote Event")).toHaveLength(1);
   });
 
+  it("delete-vote is rejected outside the voting phase", async () => {
+    // Create the vote while voting is open...
+    const event = await createEvent({ name: "Vote Event", phase: "voting" });
+    const guest = await createGuest();
+    const proposal = await createProposal(event.id, []);
+    await addVote(
+      makeAddReq({
+        proposalId: proposal.id,
+        guestId: guest.id,
+        choice: VoteChoice.interested,
+      })
+    );
+
+    // ...then move the event into the scheduling phase so voting is over.
+    const now = new Date();
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    await getRepositories().events.update(event.id, {
+      votingPhaseStart: new Date(now.getTime() - 14 * DAY_MS),
+      votingPhaseEnd: new Date(now.getTime() - 7 * DAY_MS),
+      schedulingPhaseStart: new Date(now.getTime() - 7 * DAY_MS),
+      schedulingPhaseEnd: new Date(now.getTime() + 7 * DAY_MS),
+    });
+
+    const res = await deleteVote(
+      makeDeleteReq({ guestId: guest.id, proposalId: proposal.id })
+    );
+    expect(res.status).toBe(403);
+    // The vote must still be there.
+    expect(await votesFor(guest.id, "Vote Event")).toHaveLength(1);
+  });
+
+  it("delete-vote returns 404 for a missing proposal", async () => {
+    const guest = await createGuest();
+    const res = await deleteVote(
+      makeDeleteReq({ guestId: guest.id, proposalId: "does-not-exist" })
+    );
+    expect(res.status).toBe(404);
+  });
+
   it("GET /api/votes scopes votes to the given guest and event", async () => {
     const eventA = await createEvent({ name: "Event A", phase: "voting" });
     const eventB = await createEvent({ name: "Event B", phase: "voting" });
