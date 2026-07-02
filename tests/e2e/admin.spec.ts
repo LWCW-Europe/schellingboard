@@ -1,6 +1,7 @@
 import { Page } from "@playwright/test";
 import sharp from "sharp";
 import { test, expect } from "./helpers/fixtures";
+import { loginAndGoto } from "./helpers/auth";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
 
@@ -581,6 +582,246 @@ test.describe("Admin UI location assignment", () => {
     await page.getByLabel("Type the event name to confirm").fill(eventName);
     await page.getByRole("button", { name: "Confirm delete" }).click();
     await expect(page).toHaveURL(/\/admin\/events$/);
+  });
+});
+
+test.describe("Admin UI proposals", () => {
+  test("lists proposals with hosts on the event detail page", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Conference Alpha is seeded with proposals; open its detail page
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const proposals = page.getByRole("region", { name: "Proposals" });
+    await expect(proposals).toBeVisible();
+
+    // A known seeded, event-specific proposal with a known host
+    const row = proposals.getByRole("listitem").filter({
+      hasText: "Conference Alpha Lightning Talks: Community Showcase",
+    });
+    await expect(row).toBeVisible();
+    await expect(row).toContainText("Alice Test");
+  });
+
+  test("can edit a proposal's title and hosts on the event detail page", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const proposals = page.getByRole("region", { name: "Proposals" });
+    // Use the seeded Panel proposal (not asserted by the list test) and revert
+    // at the end so the shared seed data stays intact.
+    const original =
+      "Conference Alpha Panel: Industry Leaders Share Their Insights";
+    const unique = Date.now();
+    const edited = `Panel EDITED ${unique}`;
+
+    await proposals
+      .getByRole("listitem")
+      .filter({ hasText: original })
+      .getByRole("button", { name: /^Edit/ })
+      .click();
+
+    // Host checkboxes for the event's assigned guests are shown
+    await expect(proposals.getByLabel("Host Charlie Test")).toBeVisible();
+
+    await proposals.getByLabel("Title *").fill(edited);
+    await proposals.getByRole("button", { name: "Save", exact: true }).click();
+
+    // Server refreshes; the renamed proposal is shown
+    await expect(
+      proposals.getByRole("listitem").filter({ hasText: edited })
+    ).toBeVisible();
+
+    // Revert the title to keep the seed data clean for other tests
+    await proposals
+      .getByRole("listitem")
+      .filter({ hasText: edited })
+      .getByRole("button", { name: /^Edit/ })
+      .click();
+    await proposals.getByLabel("Title *").fill(original);
+    await proposals.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(
+      proposals.getByRole("listitem").filter({ hasText: original })
+    ).toBeVisible();
+  });
+
+  test("deletes a proposal via named confirm", async ({ page }) => {
+    // Create a fresh proposal so we never permanently delete seeded data
+    await loginAndGoto(page, "/Conference-Alpha/proposals/new");
+    const title = `E2E Delete Test ${Date.now()}`;
+    await page.getByLabel("Title").fill(title);
+    await Promise.all([
+      page.waitForURL(/\/Conference-Alpha\/proposals$/),
+      page.getByRole("button", { name: "Submit" }).click(),
+    ]);
+
+    // Switch to admin and delete the proposal we just created
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const proposals = page.getByRole("region", { name: "Proposals" });
+    const row = proposals.getByRole("listitem").filter({ hasText: title });
+    await expect(row).toBeVisible();
+
+    await row.getByRole("button", { name: /^Delete/ }).click();
+
+    // Named confirm: the button is gated on typing the exact title
+    const confirmBtn = proposals.getByRole("button", {
+      name: "Confirm delete",
+    });
+    await expect(confirmBtn).toBeDisabled();
+    await proposals
+      .getByLabel("Type the proposal title to confirm")
+      .fill(title);
+    await expect(confirmBtn).toBeEnabled();
+    await confirmBtn.click();
+
+    // The proposal is gone after the server refresh
+    await expect(
+      proposals.getByRole("listitem").filter({ hasText: title })
+    ).toHaveCount(0);
+  });
+});
+
+test.describe("Admin UI sessions", () => {
+  test("lists sessions with host, time and location on the event detail page", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Conference Gamma is seeded with an opening keynote (read-only assertion).
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Gamma" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const sessions = page.getByRole("region", { name: "Sessions" });
+    await expect(sessions).toBeVisible();
+
+    const row = sessions.getByRole("listitem").filter({
+      hasText: "Opening Keynote - Conference Gamma",
+    });
+    await expect(row).toBeVisible();
+    // Keynote is hosted by a seeded guest and placed in the first location
+    await expect(row).toContainText("Test");
+  });
+
+  test("can edit a session on the event detail page", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    // Conference Alpha's keynote is not asserted by other specs; edit + revert.
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const sessions = page.getByRole("region", { name: "Sessions" });
+    const original = "Opening Keynote - Conference Alpha";
+    const edited = `Keynote EDITED ${Date.now()}`;
+
+    await sessions
+      .getByRole("listitem")
+      .filter({ hasText: original })
+      .getByRole("button", { name: /^Edit/ })
+      .click();
+
+    await sessions.getByLabel("Title *").fill(edited);
+    await sessions.getByRole("button", { name: "Save", exact: true }).click();
+
+    await expect(
+      sessions.getByRole("listitem").filter({ hasText: edited })
+    ).toBeVisible();
+
+    // Revert to keep the shared seed data intact
+    await sessions
+      .getByRole("listitem")
+      .filter({ hasText: edited })
+      .getByRole("button", { name: /^Edit/ })
+      .click();
+    await sessions.getByLabel("Title *").fill(original);
+    await sessions.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(
+      sessions.getByRole("listitem").filter({ hasText: original })
+    ).toBeVisible();
+  });
+
+  test("deletes a session via named confirm", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    // Conference Beta's keynote is not referenced by other specs, so it is
+    // safe to permanently delete from the shared seed.
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Beta" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const sessions = page.getByRole("region", { name: "Sessions" });
+    const title = "Opening Keynote - Conference Beta";
+    const row = sessions.getByRole("listitem").filter({ hasText: title });
+    await expect(row).toBeVisible();
+
+    await row.getByRole("button", { name: /^Delete/ }).click();
+
+    const confirmBtn = sessions.getByRole("button", { name: "Confirm delete" });
+    await expect(confirmBtn).toBeDisabled();
+    await sessions.getByLabel("Type the session title to confirm").fill(title);
+    await expect(confirmBtn).toBeEnabled();
+    await confirmBtn.click();
+
+    await expect(
+      sessions.getByRole("listitem").filter({ hasText: title })
+    ).toHaveCount(0);
+  });
+
+  test("removes an RSVP from a session via standard confirm", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    // "RSVP Moderation Demo" is a dedicated seeded session in Conference Alpha
+    // with one seeded RSVP (Alice Test), used only by this test.
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    const sessions = page.getByRole("region", { name: "Sessions" });
+    const row = sessions
+      .getByRole("listitem")
+      .filter({ hasText: "RSVP Moderation Demo" });
+    await expect(row).toBeVisible();
+
+    // Expand the RSVPs disclosure and remove Alice Test
+    await row.getByText(/^RSVPs \(/).click();
+    await expect(row.getByText("Alice Test")).toBeVisible();
+    await row.getByRole("button", { name: "Remove RSVP Alice Test" }).click();
+    await row.getByRole("button", { name: "Confirm" }).click();
+
+    await expect(row.getByText("Alice Test")).toHaveCount(0);
   });
 });
 
