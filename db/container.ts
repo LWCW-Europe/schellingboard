@@ -71,6 +71,7 @@ export function getRepositories(): Repositories {
 }
 
 export function resetRepositories(): void {
+  _sqlite?.close();
   _sqlite = null;
   _repositories = null;
 }
@@ -82,8 +83,19 @@ export function serializeDb(): Buffer {
 }
 
 export function restoreDb(snapshot: Buffer): void {
-  _sqlite = new Database(snapshot);
-  // Enforce foreign keys on every connection (see getRepositories).
-  _sqlite.pragma("foreign_keys = ON");
-  _repositories = buildRepositories(_sqlite);
+  const conn = new Database(snapshot);
+  try {
+    // Enforce foreign keys on every connection (see getRepositories).
+    conn.pragma("foreign_keys = ON");
+    // Deserialization is lazy: force a read so a corrupt snapshot fails here,
+    // while the current connection is still intact.
+    conn.pragma("schema_version");
+    const repositories = buildRepositories(conn);
+    _sqlite?.close();
+    _sqlite = conn;
+    _repositories = repositories;
+  } catch (e) {
+    conn.close();
+    throw e;
+  }
 }

@@ -43,7 +43,7 @@ describe("POST /api/add-session", () => {
   beforeEach(() => resetTestDb());
 
   it("creates a session and returns success", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const location = await createLocation();
     const day = await createDay(event.id);
@@ -66,7 +66,7 @@ describe("POST /api/add-session", () => {
   });
 
   it("rejects overlap in same location; only the pre-existing session remains", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const location = await createLocation();
     const day = await createDay(event.id);
@@ -93,7 +93,7 @@ describe("POST /api/add-session", () => {
   });
 
   it("accepts overlap in different location; both sessions are listed", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const locA = await createLocation({ name: "Workshop Room" });
     const locB = await createLocation({ name: "Garden Terrace" });
@@ -113,7 +113,7 @@ describe("POST /api/add-session", () => {
   });
 
   it("rejects session with start time in the past", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const location = await createLocation();
     const pastDay = await createDay(event.id, {
@@ -128,7 +128,7 @@ describe("POST /api/add-session", () => {
   });
 
   it("rejects session with empty title", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const location = await createLocation();
     const day = await createDay(event.id);
@@ -140,7 +140,7 @@ describe("POST /api/add-session", () => {
   });
 
   it("rejects session with no hosts", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const location = await createLocation();
     const day = await createDay(event.id);
@@ -152,7 +152,7 @@ describe("POST /api/add-session", () => {
   });
 
   it("rejects session with missing location id", async () => {
-    const event = await createEvent();
+    const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();
     const location = await createLocation();
     const day = await createDay(event.id);
