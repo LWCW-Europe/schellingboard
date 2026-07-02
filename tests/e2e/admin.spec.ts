@@ -460,18 +460,14 @@ test.describe("Admin UI guest assignment", () => {
     const guests = page.getByRole("region", { name: "Guests" });
     await expect(guests).toBeVisible();
 
-    // Seeded guests are shown; none assigned yet
-    const dataRows = guests
-      .getByRole("row")
-      .filter({ hasNot: page.getByRole("columnheader") });
-    const count = await dataRows.count();
-    expect(count).toBeGreaterThan(0);
-    const firstRow = dataRows.first();
-    await expect(firstRow.getByRole("checkbox")).not.toBeChecked();
+    // Work with fixed seeded guests. Other tests running in parallel may
+    // create or delete guests, so never assert on global row counts here.
+    const aliceRow = guests.getByRole("row").filter({ hasText: "Alice Test" });
+    await expect(aliceRow.getByRole("checkbox")).not.toBeChecked();
 
-    // Assign the first guest — click and wait for server-driven state update
-    await firstRow.getByRole("checkbox").click();
-    await expect(firstRow.getByRole("checkbox")).toBeChecked();
+    // Assign Alice — click and wait for server-driven state update
+    await aliceRow.getByRole("checkbox").click();
+    await expect(aliceRow.getByRole("checkbox")).toBeChecked();
 
     // Navigate away and back — assignment must persist
     await page.goto("/admin/events");
@@ -486,17 +482,25 @@ test.describe("Admin UI guest assignment", () => {
         .getByRole("checkbox", { checked: true })
     ).toHaveCount(1);
 
-    // Filter: "Assigned" shows exactly 1 row; "Not assigned" hides it
+    // Filter: "Assigned" shows only Alice (assignments are event-scoped, so
+    // parallel tests cannot add rows here); "Not assigned" hides Alice but
+    // still shows other seeded guests
     const g2 = page.getByRole("region", { name: "Guests" });
     await g2.getByRole("button", { name: "Assigned", exact: true }).click();
     await expect(
-      g2.getByRole("row").filter({ hasNot: page.getByRole("columnheader") })
+      g2.getByRole("row").filter({ has: page.getByRole("checkbox") })
     ).toHaveCount(1);
+    await expect(
+      g2.getByRole("row").filter({ hasText: "Alice Test" })
+    ).toBeVisible();
 
     await g2.getByRole("button", { name: "Not assigned", exact: true }).click();
     await expect(
-      g2.getByRole("row").filter({ hasNot: page.getByRole("columnheader") })
-    ).toHaveCount(count - 1);
+      g2.getByRole("row").filter({ hasText: "Alice Test" })
+    ).toHaveCount(0);
+    await expect(
+      g2.getByRole("row").filter({ hasText: "Bob Test" })
+    ).toBeVisible();
 
     // Switch back to All and remove the assignment
     await g2.getByRole("button", { name: "All", exact: true }).click();
@@ -534,18 +538,17 @@ test.describe("Admin UI location assignment", () => {
     const locations = page.getByRole("region", { name: "Locations" });
     await expect(locations).toBeVisible();
 
-    // Seeded locations are shown; none assigned yet
-    const dataRows = locations
+    // Work with fixed seeded locations. The "Admin UI locations" tests create
+    // and delete locations concurrently in other workers, so never assert on
+    // global row counts here.
+    const mainHallRow = locations
       .getByRole("row")
-      .filter({ has: page.getByRole("checkbox") });
-    const count = await dataRows.count();
-    expect(count).toBeGreaterThan(0);
-    const firstRow = dataRows.first();
-    await expect(firstRow.getByRole("checkbox")).not.toBeChecked();
+      .filter({ hasText: "Main Hall" });
+    await expect(mainHallRow.getByRole("checkbox")).not.toBeChecked();
 
-    // Assign the first location
-    await firstRow.getByRole("checkbox").click();
-    await expect(firstRow.getByRole("checkbox")).toBeChecked();
+    // Assign Main Hall
+    await mainHallRow.getByRole("checkbox").click();
+    await expect(mainHallRow.getByRole("checkbox")).toBeChecked();
 
     // Navigate away and back — assignment must persist
     await page.goto("/admin/events");
@@ -560,17 +563,25 @@ test.describe("Admin UI location assignment", () => {
         .getByRole("checkbox", { checked: true })
     ).toHaveCount(1);
 
-    // Filter: "Assigned" shows exactly 1 row; "Not assigned" hides it
+    // Filter: "Assigned" shows only Main Hall (assignments are event-scoped,
+    // so parallel tests cannot add rows here); "Not assigned" hides Main Hall
+    // but still shows other seeded locations
     const l2 = page.getByRole("region", { name: "Locations" });
     await l2.getByRole("button", { name: "Assigned", exact: true }).click();
     await expect(
-      l2.getByRole("row").filter({ hasNot: page.locator("th") })
+      l2.getByRole("row").filter({ has: page.getByRole("checkbox") })
     ).toHaveCount(1);
+    await expect(
+      l2.getByRole("row").filter({ hasText: "Main Hall" })
+    ).toBeVisible();
 
     await l2.getByRole("button", { name: "Not assigned", exact: true }).click();
     await expect(
-      l2.getByRole("row").filter({ hasNot: page.locator("th") })
-    ).toHaveCount(count - 1);
+      l2.getByRole("row").filter({ hasText: "Main Hall" })
+    ).toHaveCount(0);
+    await expect(
+      l2.getByRole("row").filter({ hasText: "Workshop Room" })
+    ).toBeVisible();
 
     // Switch back to All and remove the assignment
     await l2.getByRole("button", { name: "All", exact: true }).click();
