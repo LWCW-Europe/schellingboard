@@ -36,6 +36,7 @@ export default async function SiteLayout({
       <NavBar
         navItems={multipleEvents ? navItems : []}
         showLogout={passwordProtected && isAuthenticated}
+        showGuestsLink={isAuthenticated}
       />
       <main
         className={clsx(

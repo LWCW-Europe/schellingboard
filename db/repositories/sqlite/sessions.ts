@@ -152,6 +152,31 @@ export class SqliteSessionsRepository implements SessionsRepository {
     return this.enrichSessions(rows);
   }
 
+  async listHostedByGuest(guestId: string): Promise<Session[]> {
+    const rows = this.db
+      .select({ session: schema.sessions })
+      .from(schema.sessions)
+      .innerJoin(
+        schema.sessionHosts,
+        eq(schema.sessionHosts.sessionId, schema.sessions.id)
+      )
+      .where(eq(schema.sessionHosts.guestId, guestId))
+      .all()
+      .map((r) => r.session);
+    return this.enrichSessions(rows);
+  }
+
+  async listRsvpdByGuest(guestId: string): Promise<Session[]> {
+    const rows = this.db
+      .select({ session: schema.sessions })
+      .from(schema.sessions)
+      .innerJoin(schema.rsvps, eq(schema.rsvps.sessionId, schema.sessions.id))
+      .where(eq(schema.rsvps.guestId, guestId))
+      .all()
+      .map((r) => r.session);
+    return this.enrichSessions(rows);
+  }
+
   async findById(id: string): Promise<Session | undefined> {
     const row = this.db
       .select()
