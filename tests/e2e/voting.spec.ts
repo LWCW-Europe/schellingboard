@@ -28,10 +28,6 @@ test("should allow voting on proposals with different choices", async ({
   // Verify the button shows active state (should have blue background)
   await expect(interestedButton).toHaveClass(/bg-blue-200/);
 
-  // When clicking fast it's possible to vote multiple times, so we wait
-  // as a workaround.
-  await page.waitForTimeout(1500);
-
   // Change vote to "Maybe" (⭐ emoji button)
   const maybeButton = proposalRow.getByRole("button", { name: "⭐" });
   await maybeButton.click();
@@ -39,10 +35,6 @@ test("should allow voting on proposals with different choices", async ({
   // Verify the maybe button is now active and interested is not
   await expect(maybeButton).toHaveClass(/bg-blue-200/);
   await expect(interestedButton).not.toHaveClass(/bg-blue-200/);
-
-  // When clicking fast it's possible to vote multiple times, so we wait
-  // as a workaround.
-  await page.waitForTimeout(1500);
 
   // Change vote to "Skip" (👋🏽 emoji button)
   const skipButton = proposalRow.getByRole("button", { name: "👋🏽" });
