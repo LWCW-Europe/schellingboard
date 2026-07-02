@@ -81,6 +81,48 @@ describe("voting API", () => {
     expect(votes[0].choice).toBe(VoteChoice.skip);
   });
 
+  it("database rejects duplicate votes for the same (guest, proposal)", async () => {
+    const event = await createEvent({ name: "Vote Event", phase: "voting" });
+    const guest = await createGuest();
+    const proposal = await createProposal(event.id, []);
+    const repos = getRepositories();
+
+    await repos.votes.create({
+      proposalId: proposal.id,
+      guestId: guest.id,
+      choice: VoteChoice.interested,
+    });
+    await expect(
+      repos.votes.create({
+        proposalId: proposal.id,
+        guestId: guest.id,
+        choice: VoteChoice.maybe,
+      })
+    ).rejects.toThrow(/unique/i);
+  });
+
+  it("upsert atomically replaces an existing vote", async () => {
+    const event = await createEvent({ name: "Vote Event", phase: "voting" });
+    const guest = await createGuest();
+    const proposal = await createProposal(event.id, []);
+    const repos = getRepositories();
+
+    await repos.votes.upsert({
+      proposalId: proposal.id,
+      guestId: guest.id,
+      choice: VoteChoice.interested,
+    });
+    await repos.votes.upsert({
+      proposalId: proposal.id,
+      guestId: guest.id,
+      choice: VoteChoice.maybe,
+    });
+
+    const votes = await votesFor(guest.id, "Vote Event");
+    expect(votes).toHaveLength(1);
+    expect(votes[0].choice).toBe(VoteChoice.maybe);
+  });
+
   it("delete-vote removes only the deleting guest's vote", async () => {
     const event = await createEvent({ name: "Vote Event", phase: "voting" });
     const alice = await createGuest({ name: "Alice" });

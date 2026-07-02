@@ -14,9 +14,9 @@ export async function POST(req: Request) {
   const { proposalId, guestId, choice } = (await req.json()) as VoteParams;
   const repos = getRepositories();
   try {
-    await repos.votes.deleteByGuestAndProposal(guestId, proposalId);
-    const vote = await repos.votes.create({ proposalId, guestId, choice });
-    console.log(vote.id);
+    // Atomic upsert: concurrent requests for the same (guest, proposal)
+    // cannot produce duplicate votes.
+    await repos.votes.upsert({ proposalId, guestId, choice });
   } catch (err) {
     console.error(err);
     return Response.error();
