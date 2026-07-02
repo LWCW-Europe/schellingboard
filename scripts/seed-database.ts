@@ -580,6 +580,30 @@ function seedTestData() {
     }
   });
 
+  // A dedicated, unscheduled session in Conference Alpha (proposal phase, so it
+  // never appears on a public schedule) with a single RSVP. Used by the admin
+  // RSVP-moderation E2E to remove an RSVP through the UI.
+  const rsvpDemoSessionId = nanoid();
+  sessionRows.push({
+    id: rsvpDemoSessionId,
+    title: "RSVP Moderation Demo",
+    description: "",
+    startTime: null,
+    endTime: null,
+    eventId: eventRows[0].id,
+    capacity: 10,
+    attendeeScheduled: false,
+    blocker: false,
+    closed: false,
+  });
+  const rsvpRows: (typeof schema.rsvps.$inferInsert)[] = [
+    {
+      id: nanoid(),
+      sessionId: rsvpDemoSessionId,
+      guestId: guestRows[0].id,
+    },
+  ];
+
   db.insert(schema.sessions).values(sessionRows).run();
   if (sessionHostRows.length > 0) {
     db.insert(schema.sessionHosts).values(sessionHostRows).run();
@@ -587,6 +611,7 @@ function seedTestData() {
   if (sessionLocationRows.length > 0) {
     db.insert(schema.sessionLocations).values(sessionLocationRows).run();
   }
+  db.insert(schema.rsvps).values(rsvpRows).run();
   console.log(
     `  ✅ Created ${sessionRows.length} sessions across ${eventRows.length} events`
   );

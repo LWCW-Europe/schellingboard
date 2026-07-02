@@ -18,7 +18,7 @@ export default async function AdminLocationsPage() {
   );
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-6">
+    <div className="w-full max-w-6xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Locations</h1>
       <section aria-label="Locations" className="space-y-4">
         <LocationsManager
