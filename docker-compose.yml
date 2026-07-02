@@ -20,5 +20,25 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  # Mailpit[1] is a service that receives email locally and shows it in a web
+  # UI. You probably only need to run it if you want to send email from a
+  # development app.
+  #
+  # We give it a profile[2] so that plain `docker compose up` doesn't start it.
+  # You can do either
+  #
+  #     docker compose --profile dev up  # starts `app` too
+  #     docker compose up mailpit        # only starts mailpit
+  #
+  # [1]: https://mailpit.axllent.org/
+  # [2]: https://docs.docker.com/compose/how-tos/profiles/
+  mailpit:
+    image: axllent/mailpit@sha256:956d688cbd13dca36c72d8e94c34d6d1cdf4a005aa6aa4ff6edaaac56c34d8df
+    profiles:
+      - dev
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # web UI
+
 volumes:
   data:
