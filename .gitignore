@@ -51,6 +51,7 @@ package-lock.json
 # Database
 data.db
 data.test.db
+data.*.db-journal
 
 # Admin-uploaded files (location images)
 /uploads
