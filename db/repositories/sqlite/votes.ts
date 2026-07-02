@@ -59,6 +59,26 @@ export class SqliteVotesRepository implements VotesRepository {
     return { id, ...data };
   }
 
+  async upsert(data: {
+    proposalId: string;
+    guestId: string;
+    choice: VoteChoice;
+  }): Promise<void> {
+    this.db
+      .insert(schema.votes)
+      .values({
+        id: nanoid(),
+        proposalId: data.proposalId,
+        guestId: data.guestId,
+        choice: data.choice,
+      })
+      .onConflictDoUpdate({
+        target: [schema.votes.proposalId, schema.votes.guestId],
+        set: { choice: data.choice },
+      })
+      .run();
+  }
+
   async deleteByGuestAndProposal(
     guestId: string,
     proposalId: string
