@@ -3,6 +3,7 @@ import {
   text,
   integer,
   primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
 export const guests = sqliteTable("guests", {
@@ -162,13 +163,19 @@ export const rsvps = sqliteTable("rsvps", {
     .references(() => guests.id, { onDelete: "cascade" }),
 });
 
-export const votes = sqliteTable("votes", {
-  id: text("id").primaryKey(),
-  proposalId: text("proposal_id")
-    .notNull()
-    .references(() => sessionProposals.id, { onDelete: "cascade" }),
-  guestId: text("guest_id")
-    .notNull()
-    .references(() => guests.id, { onDelete: "cascade" }),
-  choice: text("choice").notNull(),
-});
+export const votes = sqliteTable(
+  "votes",
+  {
+    id: text("id").primaryKey(),
+    proposalId: text("proposal_id")
+      .notNull()
+      .references(() => sessionProposals.id, { onDelete: "cascade" }),
+    guestId: text("guest_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+    choice: text("choice").notNull(),
+  },
+  (t) => [
+    uniqueIndex("votes_proposal_guest_unique").on(t.proposalId, t.guestId),
+  ]
+);

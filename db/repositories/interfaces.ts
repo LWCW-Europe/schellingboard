@@ -276,6 +276,11 @@ export interface VotesRepository {
     guestId: string;
     choice: VoteChoice;
   }): Promise<Vote>;
+  upsert(data: {
+    proposalId: string;
+    guestId: string;
+    choice: VoteChoice;
+  }): Promise<void>;
   deleteByGuestAndProposal(guestId: string, proposalId: string): Promise<void>;
   deleteByProposal(proposalId: string): Promise<void>;
   deleteByProposalAndGuests(
