@@ -1,5 +1,6 @@
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
+import sharp from "sharp";
 
 async function selectCurrentUser(page: import("@playwright/test").Page) {
   // The proposals page has a "My name is:" selector backed by a combobox.
@@ -9,37 +10,104 @@ async function selectCurrentUser(page: import("@playwright/test").Page) {
   await page.keyboard.press("Escape");
 }
 
-test("lists guests and edits the current user's profile", async ({ page }) => {
-  await login(page);
-  await page.goto("/Conference-Alpha/proposals");
+async function makeImage(width: number, height: number): Promise<Buffer> {
+  return sharp({
+    create: { width, height, channels: 3, background: { r: 90, g: 60, b: 30 } },
+  })
+    .png()
+    .toBuffer();
+}
 
-  // Identify as Alice, then reach the attendees page via the header link.
-  await selectCurrentUser(page);
-  await page.getByRole("link", { name: /Participants/i }).click();
-  await expect(page).toHaveURL(/\/guests$/);
+test.describe("Edit profile", () => {
+  test.describe.configure({ mode: "serial" });
 
-  // All guests are listed.
-  await expect(page.getByRole("link", { name: "Alice Test" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Bob Test" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Charlie Test" })).toBeVisible();
+  test("lists guests and edits the current user's profile", async ({
+    page,
+  }) => {
+    await login(page);
+    await page.goto("/Conference-Alpha/proposals");
 
-  // Edit profile always targets the current user (Alice).
-  await page.getByRole("link", { name: /Edit profile/i }).click();
-  await expect(page).toHaveURL(/\/guests\/edit$/);
-  await expect(
-    page.getByRole("heading", { name: /Edit profile/i })
-  ).toBeVisible();
+    // Identify as Alice, then reach the attendees page via the header link.
+    await selectCurrentUser(page);
+    await page.getByRole("link", { name: /Participants/i }).click();
+    await expect(page).toHaveURL(/\/guests$/);
 
-  const aboutMe = `Conference enthusiast ${Date.now()}`;
-  await page.getByLabel("About me").fill(aboutMe);
-  await page.getByRole("button", { name: /^Save$/ }).click();
+    // All guests are listed.
+    await expect(page.getByRole("link", { name: "Alice Test" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Bob Test" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Charlie Test" })
+    ).toBeVisible();
 
-  // Lands on Alice's profile with the new About me text.
-  await expect(page).toHaveURL(/\/guests\/[^/]+$/);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Alice Test" })
-  ).toBeVisible();
-  await expect(page.getByText(aboutMe)).toBeVisible();
+    // Edit profile always targets the current user (Alice).
+    await page.getByRole("link", { name: /Edit profile/i }).click();
+    await expect(page).toHaveURL(/\/guests\/edit$/);
+    await expect(
+      page.getByRole("heading", { name: /Edit profile/i })
+    ).toBeVisible();
+
+    const aboutMe = `Conference enthusiast ${Date.now()}`;
+    await page.getByLabel("About me").fill(aboutMe);
+    // hidden inputs aren't interactable through `getByLabel` in playwright
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "square.png",
+      mimeType: "image/png",
+      buffer: await makeImage(800, 800),
+    });
+    await page.getByRole("button", { name: /^Save$/ }).click();
+
+    // Lands on Alice's profile with the new About me text.
+    await expect(page).toHaveURL(/\/guests\/[^/]+$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Alice Test" })
+    ).toBeVisible();
+    await expect(page.getByText(aboutMe)).toBeVisible();
+    await expect(
+      page.getByAltText("Profile avatar of Alice Test")
+    ).toBeVisible();
+  });
+
+  test("avatar doesn't change on profile about me edit", async ({ page }) => {
+    await login(page);
+    await page.goto("/Conference-Alpha/proposals");
+
+    // Identify as Alice, then reach the attendees page via the header link.
+    await selectCurrentUser(page);
+    await page.getByRole("link", { name: /Participants/i }).click();
+
+    // Edit profile always targets the current user (Alice).
+    await page.getByRole("link", { name: /Edit profile/i }).click();
+
+    // Reset the avatar
+    const aboutMe = `Conference enthusiast ${Date.now()}`;
+    await page.getByLabel("About me").fill(aboutMe);
+    await page.getByRole("button", { name: /^Save$/ }).click();
+
+    await expect(
+      page.getByAltText("Profile avatar of Alice Test")
+    ).toBeVisible();
+  });
+
+  test("shows no image when the user avatar is reset", async ({ page }) => {
+    await login(page);
+    await page.goto("/Conference-Alpha/proposals");
+
+    // Identify as Alice, then reach the attendees page via the header link.
+    await selectCurrentUser(page);
+    await page.getByRole("link", { name: /Participants/i }).click();
+
+    // Edit profile always targets the current user (Alice).
+    await page.getByRole("link", { name: /Edit profile/i }).click();
+
+    // Reset the avatar
+    await page.getByRole("button", { name: /^Reset$/ }).click();
+    await page.getByRole("button", { name: /^Save$/ }).click();
+
+    await expect(
+      page.getByAltText("Profile avatar of Alice Test")
+    ).toBeHidden();
+    await expect(page.getByText(/^AT$/)).toBeVisible();
+  });
 });
 
 test("shows an error on the edit page when no user is selected", async ({

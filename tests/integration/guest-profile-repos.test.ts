@@ -21,18 +21,21 @@ describe("guest profile repositories", () => {
       const updated = await guests.updateProfile(guest.id, {
         name: "New Name",
         aboutMe: "I love unconferences.",
+        avatarUrl: "/media/uploads/avatar.png",
       });
 
       expect(updated).toMatchObject({
         id: guest.id,
         name: "New Name",
         aboutMe: "I love unconferences.",
+        avatarUrl: "/media/uploads/avatar.png",
         info: { email: "g@test.example" },
       });
       const fetched = await guests.findById(guest.id);
       expect(fetched).toMatchObject({
         name: "New Name",
         aboutMe: "I love unconferences.",
+        avatarUrl: "/media/uploads/avatar.png",
       });
     });
   });

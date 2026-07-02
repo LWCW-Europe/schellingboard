@@ -54,7 +54,7 @@ export default async function GuestProfilePage(props: {
       </div>
 
       <header className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Avatar name={guest.name} />
+        <Avatar name={guest.name} image={guest.avatarUrl ?? undefined} />
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">{guest.name}</h1>
           {isSessionHost && (
