@@ -40,7 +40,7 @@ test("should create a new session proposal, edit it, and add hosts", async ({
   // Submit
   await Promise.all([
     page.waitForURL(/\/Conference-Alpha\/proposals$/),
-    page.click('button[type="submit"]'),
+    page.getByRole("button", { name: /Submit/i }).click(),
   ]);
 
   // Assert new proposal appears in list (may need slight waiting for Airtable consistency)
@@ -58,18 +58,8 @@ test("should create a new session proposal, edit it, and add hosts", async ({
     page.getByRole("heading", { name: /Edit Session Proposal/i })
   ).toBeVisible();
 
-  // Find and click the hosts combobox to open it
-  // Look for the Host(s) section and find the main combobox button (not nested buttons)
-  const hostsSection = page
-    .locator("div")
-    .filter({ hasText: /^Host\(s\)/ })
-    .first();
-  const comboboxButton = hostsSection.getByRole("button").first(); // Get the first (main) button
-
-  // Click to open the combobox dropdown
-  await comboboxButton.click();
-
-  // Now the input should be focused and we can type directly
+  // Click the hosts combobox to open it (it opens on focus) and type directly
+  await page.getByLabel("Host(s)").click();
   await page.keyboard.type("Alice Test");
   await page.getByRole("option", { name: /Alice Test/i }).click();
 
@@ -89,6 +79,43 @@ test("should create a new session proposal, edit it, and add hosts", async ({
   await expect(updatedRow).toBeVisible();
   await expect(updatedRow).toContainText("Alice Test");
   await expect(updatedRow).toContainText("Bob Test");
+});
+
+test("should delete a proposal from its edit page", async ({ page }) => {
+  await login(page);
+  await page.goto("/Conference-Alpha/proposals");
+
+  // Create a throwaway proposal so seeded data stays untouched
+  const proposalTitle = `Playwright Delete Proposal ${Date.now()}`;
+  await page.getByRole("link", { name: /Add Proposal/i }).click();
+  await page.getByLabel("Title").fill(proposalTitle);
+  await Promise.all([
+    page.waitForURL(/\/Conference-Alpha\/proposals$/),
+    page.getByRole("button", { name: /Submit/i }).click(),
+  ]);
+  const row = page.getByRole("row", { name: new RegExp(proposalTitle) });
+  await expect(row).toBeVisible();
+
+  // Delete lives on the edit page and requires confirmation
+  await row.getByRole("button", { name: /Edit/i }).click();
+  await expect(
+    page.getByRole("heading", { name: /Edit Session Proposal/i })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.getByText("Delete session proposal?")).toBeVisible();
+  await Promise.all([
+    page.waitForURL(/\/Conference-Alpha\/proposals$/),
+    page.getByRole("button", { name: "Yes" }).click(),
+  ]);
+
+  // Gone from the list, also after a reload
+  await expect(
+    page.getByRole("row", { name: new RegExp(proposalTitle) })
+  ).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.getByRole("row", { name: new RegExp(proposalTitle) })
+  ).toHaveCount(0);
 });
 
 test("should open proposal detail page when clicking on a proposal", async ({
