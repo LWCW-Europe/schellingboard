@@ -159,11 +159,14 @@ export function SessionProposalForm(props: {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="font-medium">Host(s)</label>
+          <label className="font-medium" htmlFor="proposal-hosts">
+            Host(s)
+          </label>
           <p className="text-sm text-gray-500 mt-1">
             Leave empty if you would like someone to volunteer.
           </p>
           <SelectHosts
+            id="proposal-hosts"
             guests={guests}
             hosts={guests.filter((g) => hosts.some((h) => h === g.id))}
             setHosts={(nextHosts) => setHosts(nextHosts.map((h) => h.id))}
