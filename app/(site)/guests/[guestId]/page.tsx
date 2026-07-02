@@ -4,6 +4,12 @@ import { getRepositories } from "@/db/container";
 import { eventNameToSlug } from "@/utils/utils";
 import { sanitizeGuest } from "@/utils/guests";
 import { Avatar } from "../avatar";
+import { JSX, PropsWithChildren } from "react";
+import {
+  ProfileItem,
+  ProposalLink,
+  SessionLink,
+} from "@/app/(site)/guests/[guestId]/profile-link";
 
 export default async function GuestProfilePage(props: {
   params: Promise<{ guestId: string }>;
@@ -77,8 +83,9 @@ export default async function GuestProfilePage(props: {
         items={hostedSessions.map((s) => ({
           key: s.id,
           label: s.title,
-          href: `/${eventIdToSlug(s.eventId)}?viewSession=${s.id}`,
+          item: { eventSlug: eventIdToSlug(s.eventId), id: s.id },
         }))}
+        LinkType={SessionLink}
       />
 
       <ProfileList
@@ -86,8 +93,9 @@ export default async function GuestProfilePage(props: {
         items={proposals.map((p) => ({
           key: p.id,
           label: p.title,
-          href: `/${eventIdToSlug(p.eventId)}/proposals?viewProposal=${p.id}`,
+          item: { eventSlug: eventIdToSlug(p.eventId), id: p.id },
         }))}
+        LinkType={ProposalLink}
       />
 
       <ProfileList
@@ -95,8 +103,9 @@ export default async function GuestProfilePage(props: {
         items={rsvpdSessions.map((s) => ({
           key: s.id,
           label: s.title,
-          href: `/${eventIdToSlug(s.eventId)}?viewSession=${s.id}`,
+          item: { eventSlug: eventIdToSlug(s.eventId), id: s.id },
         }))}
+        LinkType={ProposalLink}
       />
     </div>
   );
@@ -105,9 +114,11 @@ export default async function GuestProfilePage(props: {
 function ProfileList({
   title,
   items,
+  LinkType,
 }: {
   title: string;
-  items: { key: string; label: string; href: string | undefined }[];
+  items: { key: string; label: string; item?: ProfileItem }[];
+  LinkType: (props: PropsWithChildren<ProfileItem>) => JSX.Element;
 }) {
   if (items.length === 0) return null;
   else
@@ -117,13 +128,8 @@ function ProfileList({
         <ul className="flex flex-col gap-1">
           {items.map((item) => (
             <li key={item.key}>
-              {item.href ? (
-                <Link
-                  href={item.href}
-                  className="text-rose-500 hover:text-rose-600 hover:underline"
-                >
-                  {item.label}
-                </Link>
+              {item.item ? (
+                <LinkType {...item.item}>{item.label}</LinkType>
               ) : (
                 <span className="text-gray-800">{item.label}</span>
               )}
