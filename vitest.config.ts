@@ -9,11 +9,14 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov", "html"],
+      exclude: ["tests/**"],
+      // Slightly below actual coverage (see `make test-coverage`) so real
+      // regressions fail while small refactors don't. Ratchet up over time.
       thresholds: {
-        statements: 60,
-        branches: 50,
-        functions: 50,
-        lines: 60,
+        statements: 85,
+        branches: 84,
+        functions: 80,
+        lines: 85,
       },
     },
   },
