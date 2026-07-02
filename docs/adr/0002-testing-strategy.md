@@ -63,11 +63,11 @@ table schema. Asserting on raw rows means a schema rename breaks the test
 even when user-visible behavior is unchanged — the failure mode this ADR
 is meant to avoid.
 
-The only things mocked are the Next.js boundary primitives that don't
-belong in a unit process: `redirect()` from `next/navigation` (recorded
-instead of thrown) and `revalidatePath()` from `next/cache` (no-op).
-Everything else — repos, schema, migrations, Drizzle, `better-sqlite3` —
-is the real production code path.
+The only things mocked are email sending, and the Next.js boundary primitives
+that don't belong in a unit process: `redirect()` from `next/navigation`
+(recorded instead of thrown) and `revalidatePath()` from `next/cache` (no-op).
+Everything else — repos, schema, migrations, Drizzle, `better-sqlite3` — is the
+real production code path.
 
 ### 3. End-to-end tests — Playwright, existing runner
 

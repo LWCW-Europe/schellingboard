@@ -8,6 +8,7 @@ import {
   createGuestAction,
   updateGuestAction,
   deleteGuestAction,
+  sendTestEmailAction,
 } from "../actions/admin-guests";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON, DANGER_BUTTON } from "./buttons";
 
@@ -82,6 +83,8 @@ function GuestRow({
   const [name, setName] = useState(guest.name);
   const [email, setEmail] = useState(guest.info.email);
   const [isPending, startTransition] = useTransition();
+  const [isSendingEmail, startEmailTransition] = useTransition();
+  const [emailSent, setEmailSent] = useState(false);
 
   const startEdit = () => {
     setName(guest.name);
@@ -107,6 +110,19 @@ function GuestRow({
     startTransition(async () => {
       const result = await deleteGuestAction({ id: guest.id });
       onError(result.ok ? null : result.error);
+    });
+  };
+
+  const handleSendTestEmail = () => {
+    setEmailSent(false);
+    startEmailTransition(async () => {
+      const result = await sendTestEmailAction({ id: guest.id });
+      if (!result.ok) {
+        onError(result.error);
+      } else {
+        onError(null);
+        setEmailSent(true);
+      }
     });
   };
 
@@ -185,6 +201,17 @@ function GuestRow({
         <div className="flex gap-2">
           <button onClick={startEdit} className={SECONDARY_BUTTON}>
             Edit
+          </button>
+          <button
+            onClick={handleSendTestEmail}
+            disabled={isSendingEmail}
+            className={SECONDARY_BUTTON}
+          >
+            {isSendingEmail
+              ? "Sending..."
+              : emailSent
+                ? "Sent!"
+                : "Send test email"}
           </button>
           <button
             onClick={() => {

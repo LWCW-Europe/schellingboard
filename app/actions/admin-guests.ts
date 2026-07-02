@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import { sendMail } from "@/utils/mailer";
 
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
 
@@ -76,5 +77,29 @@ export async function deleteGuestAction(input: {
 
   await guests.delete(input.id);
   revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+export async function sendTestEmailAction(input: {
+  id: string;
+}): Promise<AdminActionResult> {
+  if (!(await isAdminRequest())) return { ok: false, error: "Unauthorized" };
+
+  const { guests } = getRepositories();
+  const guest = await guests.findById(input.id);
+  if (!guest) return { ok: false, error: "User not found" };
+
+  try {
+    await sendMail({
+      to: guest.info.email,
+      subject: "Test email",
+      text: "test email",
+    });
+  } catch (err) {
+    console.error("Failed to send test email:", err);
+    const detail = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: `Failed to send test email: ${detail}` };
+  }
+
   return { ok: true };
 }

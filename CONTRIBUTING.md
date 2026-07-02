@@ -80,12 +80,14 @@ has its own layout and only requires the admin password (not `SITE_PASSWORD`).
 
 ### Optional
 
-| Variable         | Description                                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `SITE_PASSWORD`  | Enables site-wide password protection. Omit to disable.                                                                            |
-| `ADMIN_PASSWORD` | Enables the admin UI at `/admin`. Omit to disable (admin routes return a diagnostic message).                                      |
-| `AUTH_SECRET`    | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Use ≥32 random bytes.             |
-| `UPLOADS_DIR`    | Directory for admin-uploaded files (location images). Defaults to `./uploads`; in Docker it is `/data/uploads` so uploads persist. |
+| Variable         | Description                                                                                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SITE_PASSWORD`  | Enables site-wide password protection. Omit to disable.                                                                                                                                    |
+| `ADMIN_PASSWORD` | Enables the admin UI at `/admin`. Omit to disable (admin routes return a diagnostic message).                                                                                              |
+| `AUTH_SECRET`    | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Use ≥32 random bytes.                                                                     |
+| `UPLOADS_DIR`    | Directory for admin-uploaded files (location images). Defaults to `./uploads`; in Docker it is `/data/uploads` so uploads persist.                                                         |
+| `SMTP_URL`       | SMTP connection URL (e.g. `smtp://localhost:1025`) used to send email. Omit to disable email sending. Supports [nodemailer URL options](https://nodemailer.com/smtp/) as query parameters. |
+| `SMTP_FROM`      | Sender address for outgoing email (e.g. `SchellingBoard <noreply@example.org>`). Required when `SMTP_URL` is set.                                                                          |
 
 `NEXT_PUBLIC_` variables are exposed to the browser; all others are server-side only.
 
@@ -164,6 +166,8 @@ make test-e2e-headed     # Run E2E tests (headed, for local dev)
 ```
 
 **Warning**: E2E tests reset the test database before each run. Do not run against production data.
+
+By default, `make test` tests that we can successfully send email to a local [mailpit](https://mailpit.axllent.org/) (start it with `docker compose up mailpit`). You can skip that test by setting `MAILPIT_API_URL` to blank in `.env.test.local`.
 
 Install Playwright browsers before first use:
 
