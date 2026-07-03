@@ -64,6 +64,10 @@ function generateEventDates() {
   const today = new Date();
   const phaseDuration = 14;
   const middleOffset = 7;
+  // Lead time between the start of scheduling work and the event itself.
+  // The scheduling phase stays open through the whole live event, so
+  // schedulingPhaseEnd always equals the event's end date.
+  const schedulingLeadTime = 21;
 
   // Event 1: Currently in proposal phase
   const e1PropStart = new Date(today);
@@ -74,12 +78,11 @@ function generateEventDates() {
   const e1VoteEnd = new Date(e1VoteStart);
   e1VoteEnd.setDate(e1VoteStart.getDate() + phaseDuration);
   const e1SchedStart = new Date(e1VoteEnd);
-  const e1SchedEnd = new Date(e1SchedStart);
-  e1SchedEnd.setDate(e1SchedStart.getDate() + phaseDuration);
-  const e1Start = new Date(e1SchedEnd);
-  e1Start.setDate(e1SchedEnd.getDate() + 7);
-  const e1End = new Date(e1Start);
-  e1End.setDate(e1Start.getDate() + 2);
+  // Align the event with the seeded Day windows (09:00–18:00 Berlin) so the
+  // exclusive schedulingPhaseEnd doesn't cut off the last day early.
+  const e1Start = berlinTime(e1SchedStart, schedulingLeadTime, 9, 0);
+  const e1End = berlinTime(e1Start, 2, 18, 0);
+  const e1SchedEnd = new Date(e1End);
 
   // Event 2: Currently in voting phase
   const e2VoteStart = new Date(today);
@@ -90,28 +93,22 @@ function generateEventDates() {
   e2PropStart.setDate(e2VoteStart.getDate() - phaseDuration);
   const e2PropEnd = new Date(e2VoteStart);
   const e2SchedStart = new Date(e2VoteEnd);
-  const e2SchedEnd = new Date(e2SchedStart);
-  e2SchedEnd.setDate(e2SchedStart.getDate() + phaseDuration);
-  const e2Start = new Date(e2SchedEnd);
-  e2Start.setDate(e2SchedEnd.getDate() + 7);
-  const e2End = new Date(e2Start);
-  e2End.setDate(e2Start.getDate() + 2);
+  const e2Start = berlinTime(e2SchedStart, schedulingLeadTime, 9, 0);
+  const e2End = berlinTime(e2Start, 2, 18, 0);
+  const e2SchedEnd = new Date(e2End);
 
   // Event 3: Currently in scheduling phase
   const e3SchedStart = new Date(today);
   e3SchedStart.setDate(today.getDate() - middleOffset);
-  const e3SchedEnd = new Date(e3SchedStart);
-  e3SchedEnd.setDate(e3SchedStart.getDate() + phaseDuration);
   const e3VoteStart = new Date(e3SchedStart);
   e3VoteStart.setDate(e3SchedStart.getDate() - phaseDuration);
   const e3VoteEnd = new Date(e3SchedStart);
   const e3PropStart = new Date(e3VoteStart);
   e3PropStart.setDate(e3VoteStart.getDate() - phaseDuration);
   const e3PropEnd = new Date(e3VoteStart);
-  const e3Start = new Date(e3SchedEnd);
-  e3Start.setDate(e3SchedEnd.getDate() + 7);
-  const e3End = new Date(e3Start);
-  e3End.setDate(e3Start.getDate() + 2);
+  const e3Start = berlinTime(e3SchedStart, schedulingLeadTime, 9, 0);
+  const e3End = berlinTime(e3Start, 2, 18, 0);
+  const e3SchedEnd = new Date(e3End);
 
   return [
     {
