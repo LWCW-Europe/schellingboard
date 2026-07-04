@@ -66,19 +66,19 @@ lint-watch: install
 	watchexec -c -w app -w db -w utils -w tests "bun x eslint --fix ."
 
 test: install
-	bun x vitest run
+	bun set-env.ts test bun x vitest run
 
 test-unit: install
-	bun x vitest run tests/unit
+	bun set-env.ts test bun x vitest run tests/unit
 
 test-integration: install
-	bun x vitest run tests/integration
+	bun set-env.ts test bun x vitest run tests/integration
 
 test-watch: install
-	bun x vitest
+	bun set-env.ts test bun x vitest
 
 test-coverage: install
-	bun x vitest run --coverage
+	bun set-env.ts test bun x vitest run --coverage
 
 test-e2e: install-playwright
 	bun set-env.ts test bun x playwright test
