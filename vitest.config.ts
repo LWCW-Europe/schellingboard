@@ -6,6 +6,7 @@ export default defineConfig({
     include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
     environment: "node",
     pool: "forks",
+    silent: "passed-only",
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov", "html"],
