@@ -35,6 +35,11 @@ export interface DaysRepository {
 export type Event = {
   id: string;
   name: string;
+  /**
+   * URL segment for the event. Derived from the name at creation and stable
+   * afterwards (renames don't change it), so shared links keep working.
+   */
+  slug: string;
   description: string;
   website: string;
   start: Date;
@@ -55,16 +60,16 @@ export interface EventsRepository {
   list(): Promise<Event[]>;
   findById(id: string): Promise<Event | undefined>;
   findByName(name: string): Promise<Event | undefined>;
-  /**
-   * Finds the event whose slugified name matches the given slug. Returns
-   * undefined if no event matches or the slug is ambiguous (slugification is
-   * lossy, so multiple names can share a slug).
-   */
+  /** Finds the event with the given slug. Slugs are unique. */
   findBySlug(slug: string): Promise<Event | undefined>;
-  create(data: Omit<Event, "id">): Promise<Event>;
+  /**
+   * Creates the event with a slug derived from its name. Rejects when another
+   * event already has that slug (unique constraint).
+   */
+  create(data: Omit<Event, "id" | "slug">): Promise<Event>;
   update(
     id: string,
-    patch: Partial<Omit<Event, "id">>
+    patch: Partial<Omit<Event, "id" | "slug">>
   ): Promise<Event | undefined>;
   /** Deletes the event and all records referencing it (cascades via DB FK). */
   delete(id: string): Promise<void>;

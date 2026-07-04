@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
+import { eventNameToSlug } from "@/utils/utils";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import type { Event } from "@/db/repositories/interfaces";
 import type { AdminActionResult } from "./admin-guests";
@@ -36,7 +37,7 @@ function parseDate(value: string | undefined): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
-type ParsedEvent = Omit<Event, "id">;
+type ParsedEvent = Omit<Event, "id" | "slug">;
 type ParseResult = { data: ParsedEvent } | { error: string };
 
 function parseEventInput(input: EventInput): ParseResult {
@@ -84,6 +85,10 @@ function parseEventInput(input: EventInput): ParseResult {
   };
 }
 
+// Top-level route segments served by this app (see app/); an event slug
+// matching one of these would shadow or be shadowed by that route.
+const RESERVED_SLUGS = new Set(["admin", "api", "login", "media"]);
+
 export async function createEventAction(
   input: EventInput
 ): Promise<AdminActionResult> {
@@ -92,7 +97,42 @@ export async function createEventAction(
   const parsed = parseEventInput(input);
   if ("error" in parsed) return { ok: false, error: parsed.error };
 
-  await getRepositories().events.create(parsed.data);
+  const { events } = getRepositories();
+  const slug = eventNameToSlug(parsed.data.name);
+  if (!slug) {
+    return { ok: false, error: "Name must contain a letter or number" };
+  }
+  if (RESERVED_SLUGS.has(slug.toLowerCase())) {
+    return {
+      ok: false,
+      error: `"${slug}" is a reserved URL and cannot be used as an event name`,
+    };
+  }
+  const existing = await events.findBySlug(slug);
+  if (existing) {
+    return {
+      ok: false,
+      error: `An event with the URL "${slug}" already exists ("${existing.name}")`,
+    };
+  }
+
+  try {
+    await events.create(parsed.data);
+  } catch (e) {
+    // A concurrent create can win the race between the findBySlug check
+    // above and this insert; translate the constraint violation into the
+    // same friendly error instead of surfacing a 500.
+    if (
+      e instanceof Error &&
+      e.message.includes("UNIQUE constraint failed: events.slug")
+    ) {
+      return {
+        ok: false,
+        error: `An event with the URL "${slug}" already exists`,
+      };
+    }
+    throw e;
+  }
   revalidatePath("/admin");
   revalidatePath("/admin/events");
   return { ok: true };

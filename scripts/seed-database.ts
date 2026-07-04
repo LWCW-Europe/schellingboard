@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import { DateTime } from "luxon";
 import * as schema from "@/db/schema";
 import { resolveDbPath, runMigrations } from "@/db/migrate";
+import { eventNameToSlug } from "@/utils/utils";
 import { VoteChoice } from "@/db/repositories/interfaces";
 
 const TZ = "Europe/Berlin";
@@ -817,6 +818,7 @@ function seedTestData() {
   const eventRows = eventConfigs.map((config, index) => ({
     id: nanoid(),
     name: config.name,
+    slug: eventNameToSlug(config.name),
     description: config.description,
     icon: config.icon,
     website: `test-event-${index + 1}.example.com`,

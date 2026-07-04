@@ -107,6 +107,30 @@ describe("events repo", () => {
     });
   });
 
+  describe("slug", () => {
+    it("stores the slugified name on create", async () => {
+      const event = await createEvent({ name: "My-Event 2026" });
+      expect(event.slug).toBe("My-Event-2026");
+      const fetched = await getRepositories().events.findById(event.id);
+      expect(fetched?.slug).toBe("My-Event-2026");
+    });
+
+    it("rejects a second event whose name slugifies to the same slug", async () => {
+      await createEvent({ name: "My Event" });
+      await expect(createEvent({ name: "My-Event" })).rejects.toThrow(
+        /unique/i
+      );
+    });
+
+    it("keeps the slug when the event is renamed", async () => {
+      const event = await createEvent({ name: "Old Name" });
+      await getRepositories().events.update(event.id, { name: "New Name" });
+      const found = await getRepositories().events.findBySlug("Old-Name");
+      expect(found?.id).toBe(event.id);
+      expect(found?.name).toBe("New Name");
+    });
+  });
+
   describe("findBySlug", () => {
     it("finds an event by its slugified name", async () => {
       const event = await createEvent({ name: "Test Event" });
@@ -124,14 +148,6 @@ describe("events repo", () => {
       await createEvent({ name: "Test Event" });
       expect(
         await getRepositories().events.findBySlug("No-Such")
-      ).toBeUndefined();
-    });
-
-    it("returns undefined when two event names slugify to the same slug", async () => {
-      await createEvent({ name: "My Event" });
-      await createEvent({ name: "My-Event" });
-      expect(
-        await getRepositories().events.findBySlug("My-Event")
       ).toBeUndefined();
     });
   });
@@ -246,6 +262,21 @@ describe("event actions", () => {
       });
     });
 
+    it("rejects a duplicate event name", async () => {
+      await createEventAction(VALID_EVENT_INPUT);
+      const result = await createEventAction(VALID_EVENT_INPUT);
+      expect(!result.ok && result.error).toMatch(/already exists/i);
+    });
+
+    it("rejects a name that collides with an existing event's slug", async () => {
+      await createEventAction(VALID_EVENT_INPUT); // "Test Event"
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        name: "Test-Event",
+      });
+      expect(!result.ok && result.error).toMatch(/already exists/i);
+    });
+
     it("requires a name", async () => {
       const result = await createEventAction({
         ...VALID_EVENT_INPUT,
@@ -299,6 +330,61 @@ describe("event actions", () => {
         breakMinutes: "-5",
       });
       expect(!result.ok && result.error).toMatch(/break/i);
+    });
+
+    it("sanitizes unsafe characters out of the stored slug", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        name: "A/B Workshop",
+      });
+      expect(result.ok).toBe(true);
+      const event = await getRepositories().events.findBySlug("A-B-Workshop");
+      expect(event?.name).toBe("A/B Workshop");
+    });
+
+    it("rejects a name whose slug would collide with a reserved route", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        name: "admin",
+      });
+      expect(!result.ok && result.error).toMatch(/reserved/i);
+    });
+
+    it("rejects reserved routes case-insensitively", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        name: "API",
+      });
+      expect(!result.ok && result.error).toMatch(/reserved/i);
+    });
+
+    it("returns a friendly error when a concurrent create wins the slug race", async () => {
+      // Simulate a concurrent request inserting the same slug after this
+      // request's findBySlug pre-check passes but before its insert runs,
+      // so the loser hits the DB unique constraint instead of the pre-check.
+      const events = getRepositories().events;
+      const originalFindBySlug = events.findBySlug.bind(events);
+      const spy = vi
+        .spyOn(events, "findBySlug")
+        .mockImplementationOnce(async (slug) => {
+          const found = await originalFindBySlug(slug);
+          await createEvent({ name: VALID_EVENT_INPUT.name });
+          return found;
+        });
+      try {
+        const result = await createEventAction(VALID_EVENT_INPUT);
+        expect(!result.ok && result.error).toMatch(/already exists/i);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it("rejects a name with no URL-safe characters", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        name: "///",
+      });
+      expect(!result.ok && result.error).toMatch(/letter or number/i);
     });
   });
 

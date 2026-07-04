@@ -29,18 +29,27 @@ export const dateOnDay = (date: Date, day: Day) => {
 };
 
 /**
- * Slugification is lossy ("My-Event" and "My Event" share a slug), so it
- * cannot be reversed. To resolve a slug back to an event, use
- * `EventsRepository.findBySlug`, which matches by slugifying each name.
+ * Derives the URL slug for a new event from its name. Only used at event
+ * creation: the slug is stored on the event and stays stable across renames,
+ * so for anything else read `event.slug` / `EventsRepository.findBySlug`
+ * instead of re-deriving it (slugification is lossy and cannot be reversed).
+ *
+ * The slug must be safe as a single URL path segment (`/[eventSlug]`), so
+ * anything other than letters, numbers, and hyphens is replaced with a
+ * hyphen; runs are collapsed and edge hyphens trimmed. Can return "" when
+ * the name has no safe characters — callers must reject that.
  */
 export function eventNameToSlug(name: string): string {
-  return name.replace(/ /g, "-");
+  return name
+    .replace(/[^\p{L}\p{N}-]+/gu, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 /**
- * URL for fetching a guest's votes. Encodes both values: event slugs keep
- * every non-space character of the event name (see eventNameToSlug), so
- * reserved URL characters like "&" would otherwise corrupt the query string.
+ * URL for fetching a guest's votes. Encodes both values so reserved URL
+ * characters (e.g. in legacy slugs stored before sanitization, like "&")
+ * cannot corrupt the query string.
  */
 export function votesApiUrl(user: string, eventSlug: string): string {
   const params = new URLSearchParams({ user, event: eventSlug });

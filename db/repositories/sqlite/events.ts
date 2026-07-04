@@ -13,6 +13,7 @@ function rowToEvent(row: typeof schema.events.$inferSelect): Event {
   return {
     id: row.id,
     name: row.name,
+    slug: row.slug,
     description: row.description,
     website: row.website,
     start: new Date(row.start),
@@ -68,22 +69,23 @@ export class SqliteEventsRepository implements EventsRepository {
   }
 
   async findBySlug(slug: string): Promise<Event | undefined> {
-    // Slugification is lossy ("My-Event" and "My Event" share a slug), so the
-    // slug cannot be reversed; match by slugifying each name instead. If the
-    // slug is ambiguous (several names share it), treat it as unresolvable
-    // rather than silently picking an arbitrary event.
-    const events = await this.list();
-    const matches = events.filter((e) => eventNameToSlug(e.name) === slug);
-    return matches.length === 1 ? matches[0] : undefined;
+    const row = this.db
+      .select()
+      .from(schema.events)
+      .where(eq(schema.events.slug, slug))
+      .get();
+    return row ? rowToEvent(row) : undefined;
   }
 
-  async create(data: Omit<Event, "id">): Promise<Event> {
+  async create(data: Omit<Event, "id" | "slug">): Promise<Event> {
     const id = nanoid();
+    const slug = eventNameToSlug(data.name);
     this.db
       .insert(schema.events)
       .values({
         id,
         name: data.name,
+        slug,
         description: data.description,
         website: data.website,
         start: data.start.toISOString(),
@@ -100,12 +102,12 @@ export class SqliteEventsRepository implements EventsRepository {
         icon: data.icon ?? null,
       })
       .run();
-    return { id, ...data };
+    return { id, slug, ...data };
   }
 
   async update(
     id: string,
-    patch: Partial<Omit<Event, "id">>
+    patch: Partial<Omit<Event, "id" | "slug">>
   ): Promise<Event | undefined> {
     const existing = await this.findById(id);
     if (!existing) return undefined;

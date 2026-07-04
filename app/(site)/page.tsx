@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import SummaryPage from "./summary-page";
 import { getRepositories } from "@/db/container";
 import { redirect } from "next/navigation";
-import { eventNameToSlug } from "@/utils/utils";
 
 export default async function Home() {
   const repos = getRepositories();
@@ -14,7 +13,7 @@ export default async function Home() {
   if (sortedEvents.length > 1) {
     return <SummaryPage events={sortedEvents} />;
   } else if (sortedEvents.length === 1) {
-    const eventSlug = eventNameToSlug(sortedEvents[0].name);
+    const eventSlug = sortedEvents[0].slug;
     redirect(`/${eventSlug}`);
   } else {
     return <p>No events found.</p>;

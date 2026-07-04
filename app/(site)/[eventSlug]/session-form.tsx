@@ -14,7 +14,6 @@ import {
   convertParamDateTime,
   dateOnDay,
   getStartTimePlusBreak,
-  eventNameToSlug,
   formatDuration,
   durationMinusBreak,
   TIME_FORMAT,
@@ -276,9 +275,9 @@ export function SessionForm(props: {
     });
     if (res.ok) {
       const actionType = sessionID ? "updated" : "added";
-      await revalidateEvent(eventNameToSlug(eventName));
+      await revalidateEvent(event.slug);
       router.push(
-        `/${eventNameToSlug(eventName)}/add-session/confirmation?actionType=${actionType}`
+        `/${event.slug}/add-session/confirmation?actionType=${actionType}`
       );
       console.log(`Session ${actionType} successfully`);
     } else {
@@ -311,10 +310,8 @@ export function SessionForm(props: {
     });
     if (res.ok) {
       console.log("Session deleted successfully");
-      await revalidateEvent(eventNameToSlug(eventName));
-      router.push(
-        `/${eventNameToSlug(eventName)}/edit-session/deletion-confirmation`
-      );
+      await revalidateEvent(event.slug);
+      router.push(`/${event.slug}/edit-session/deletion-confirmation`);
     } else {
       let errorMessage = "Failed to delete session";
       try {
@@ -351,7 +348,7 @@ export function SessionForm(props: {
     <div className="flex flex-col gap-4">
       <Link
         className="bg-rose-400 text-white font-semibold py-2 px-4 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
-        href={`/${eventNameToSlug(eventName)}`}
+        href={`/${event.slug}`}
       >
         Back to schedule
       </Link>
@@ -493,10 +490,7 @@ export function SessionForm(props: {
         <p className="text-sm text-gray-600">
           This session was scheduled from a proposal. See it{" "}
           <Link
-            {...viewProposalLinkFromElsewhere(
-              eventNameToSlug(eventName),
-              session.proposalId
-            )}
+            {...viewProposalLinkFromElsewhere(event.slug, session.proposalId)}
             className="text-rose-500 underline hover:text-rose-600 transition-colors"
           >
             here

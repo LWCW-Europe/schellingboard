@@ -56,6 +56,21 @@ describe("eventNameToSlug", () => {
 
   it("keeps hyphens already in the name", () =>
     expect(eventNameToSlug("My-Event 2026")).toBe("My-Event-2026"));
+
+  it("replaces path separators so the slug stays a single URL segment", () =>
+    expect(eventNameToSlug("A/B Workshop")).toBe("A-B-Workshop"));
+
+  it("strips reserved URL characters", () =>
+    expect(eventNameToSlug("Foo?#Bar&Baz")).toBe("Foo-Bar-Baz"));
+
+  it("collapses runs of unsafe characters and trims edge hyphens", () =>
+    expect(eventNameToSlug(" /Foo -- Bar/ ")).toBe("Foo-Bar"));
+
+  it("keeps non-ASCII letters", () =>
+    expect(eventNameToSlug("Café Sessions")).toBe("Café-Sessions"));
+
+  it("returns an empty slug when nothing safe remains", () =>
+    expect(eventNameToSlug("///")).toBe(""));
 });
 
 // ── votesApiUrl ──────────────────────────────────────────────────────────────
@@ -67,8 +82,9 @@ describe("votesApiUrl", () => {
     ));
 
   it("encodes reserved URL characters so the slug survives query parsing", () => {
-    // "Food & Drinks" slugifies to "Food-&-Drinks"; unencoded, the server
-    // would parse event as "Food-" and drop "-Drinks" into a bogus param.
+    // Legacy slugs stored before sanitization can contain "&"; unencoded,
+    // the server would parse event as "Food-" and drop "-Drinks" into a
+    // bogus param.
     const url = votesApiUrl("guest1", "Food-&-Drinks");
     const params = new URL(url, "http://test").searchParams;
     expect(params.get("event")).toBe("Food-&-Drinks");

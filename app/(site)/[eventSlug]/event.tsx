@@ -14,7 +14,6 @@ import { useState, useContext } from "react";
 import { EventContext } from "../context";
 import { hasPhases } from "@/app/(site)/utils/events";
 import Link from "next/link";
-import { eventNameToSlug } from "@/utils/utils";
 import { SessionModal } from "./session-modal";
 
 export function EventDisplay() {
@@ -25,8 +24,6 @@ export function EventDisplay() {
   const [search, setSearch] = useState("");
 
   if (!event) return <div>No event data available</div>;
-
-  const eventSlug = eventNameToSlug(event.name);
 
   const daysForEvent = days.filter((day) => day.eventId === event.id);
   const locationsForEvent = locations;
@@ -69,7 +66,7 @@ export function EventDisplay() {
         {hasPhases(event) && (
           <div className="mb-5">
             <Link
-              href={`/${eventNameToSlug(event.name)}/proposals`}
+              href={`/${event.slug}/proposals`}
               className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 max-w-fit`}
             >
               <ClipboardDocumentListIcon className="h-4 w-4" />
@@ -103,7 +100,6 @@ export function EventDisplay() {
               day={day}
               locations={locationsForEvent}
               guests={guests}
-              eventName={event.name}
             />
           ))}
         </div>
@@ -116,14 +112,14 @@ export function EventDisplay() {
                 search={search}
                 locations={locationsForEvent}
                 rsvps={view === "rsvp" ? rsvps : []}
-                eventSlug={eventSlug}
+                eventSlug={event.slug}
               />
             </div>
           ))}
         </div>
       )}
       {viewSession && (
-        <SessionModal sessionId={viewSession} eventSlug={eventSlug} />
+        <SessionModal sessionId={viewSession} eventSlug={event.slug} />
       )}
     </div>
   );

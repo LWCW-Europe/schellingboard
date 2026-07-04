@@ -14,24 +14,31 @@ export const guests = sqliteTable("guests", {
   avatarUrl: text("avatar_url"),
 });
 
-export const events = sqliteTable("events", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull().default(""),
-  website: text("website").notNull().default(""),
-  start: text("start").notNull(),
-  end: text("end").notNull(),
-  proposalPhaseStart: text("proposal_phase_start"),
-  proposalPhaseEnd: text("proposal_phase_end"),
-  votingPhaseStart: text("voting_phase_start"),
-  votingPhaseEnd: text("voting_phase_end"),
-  schedulingPhaseStart: text("scheduling_phase_start"),
-  schedulingPhaseEnd: text("scheduling_phase_end"),
-  maxSessionDuration: integer("max_session_duration").notNull().default(120),
-  breakMinutes: integer("break_minutes").notNull().default(10),
-  timezone: text("timezone").notNull().default("UTC"),
-  icon: text("icon"),
-});
+export const events = sqliteTable(
+  "events",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    // Set from the name at creation and stable afterwards, so URLs survive
+    // renames. Unique: two events must never resolve to the same URL.
+    slug: text("slug").notNull(),
+    description: text("description").notNull().default(""),
+    website: text("website").notNull().default(""),
+    start: text("start").notNull(),
+    end: text("end").notNull(),
+    proposalPhaseStart: text("proposal_phase_start"),
+    proposalPhaseEnd: text("proposal_phase_end"),
+    votingPhaseStart: text("voting_phase_start"),
+    votingPhaseEnd: text("voting_phase_end"),
+    schedulingPhaseStart: text("scheduling_phase_start"),
+    schedulingPhaseEnd: text("scheduling_phase_end"),
+    maxSessionDuration: integer("max_session_duration").notNull().default(120),
+    breakMinutes: integer("break_minutes").notNull().default(10),
+    timezone: text("timezone").notNull().default("UTC"),
+    icon: text("icon"),
+  },
+  (table) => [uniqueIndex("events_slug_unique").on(table.slug)]
+);
 
 export const eventGuests = sqliteTable(
   "event_guests",

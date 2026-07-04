@@ -11,24 +11,19 @@ import { useContext, useState } from "react";
 import { CurrentUserModal, ConfirmationModal } from "../modals";
 import { UserContext, EventContext, useBreakMinutes } from "../context";
 import { sessionsOverlap } from "../session_utils";
-import {
-  eventNameToSlug,
-  getStartTimePlusBreak,
-  TIME_FORMAT,
-} from "@/utils/utils";
+import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
 import { LockIcon } from "../lock-icon";
 import { viewSessionLinkFromOwner } from "./modal-nav";
 
 export function SessionBlock(props: {
-  eventName: string;
   session: Session;
   location: Location;
   day: DayWithSessions;
   guests: Guest[];
 }) {
-  const { eventName, session, location, day, guests } = props;
-  const eventSlug = eventNameToSlug(eventName);
+  const { session, location, day, guests } = props;
   const { rsvpdForSession, event } = useContext(EventContext);
+  const eventSlug = event?.slug ?? "";
   const timezone = event?.timezone ?? "UTC";
   const { user } = useContext(UserContext);
   const rsvpd = rsvpdForSession(session.id + (user ? "" : ""));
