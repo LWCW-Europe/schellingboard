@@ -162,15 +162,19 @@ export const sessionLocations = sqliteTable(
   (t) => [primaryKey({ columns: [t.sessionId, t.locationId] })]
 );
 
-export const rsvps = sqliteTable("rsvps", {
-  id: text("id").primaryKey(),
-  sessionId: text("session_id")
-    .notNull()
-    .references(() => sessions.id, { onDelete: "cascade" }),
-  guestId: text("guest_id")
-    .notNull()
-    .references(() => guests.id, { onDelete: "cascade" }),
-});
+export const rsvps = sqliteTable(
+  "rsvps",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => sessions.id, { onDelete: "cascade" }),
+    guestId: text("guest_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+  },
+  (t) => [uniqueIndex("rsvps_session_guest_unique").on(t.sessionId, t.guestId)]
+);
 
 export const votes = sqliteTable(
   "votes",
