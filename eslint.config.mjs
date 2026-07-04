@@ -16,7 +16,7 @@ function dropTsPlugin(configs) {
 
 export default tseslint.config(
   {
-    ignores: ["tailwind.config.ts", ".next/**", "**/*.mjs"],
+    ignores: ["tailwind.config.ts", ".next/**", "**/*.mjs", ".jj/**"],
   },
   ...dropTsPlugin(coreWebVitals),
   ...dropTsPlugin(nextTypescript),
