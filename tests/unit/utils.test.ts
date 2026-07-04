@@ -3,11 +3,11 @@ import {
   durationMinusBreak,
   formatDuration,
   eventNameToSlug,
-  eventSlugToName,
   dateOnDay,
   getPercentThroughDay,
   getNumHalfHours,
   getStartTimePlusBreak,
+  votesApiUrl,
 } from "@/utils/utils";
 import type { Day, Session } from "@/db/repositories/interfaces";
 
@@ -45,7 +45,7 @@ describe("formatDuration", () => {
     expect(formatDuration(120, true)).toBe("2 hours"));
 });
 
-// ── eventNameToSlug / eventSlugToName ────────────────────────────────────────
+// ── eventNameToSlug ──────────────────────────────────────────────────────────
 
 describe("eventNameToSlug", () => {
   it("replaces spaces with hyphens", () =>
@@ -53,20 +53,26 @@ describe("eventNameToSlug", () => {
 
   it("multiple spaces", () =>
     expect(eventNameToSlug("Foo Bar Baz")).toBe("Foo-Bar-Baz"));
+
+  it("keeps hyphens already in the name", () =>
+    expect(eventNameToSlug("My-Event 2026")).toBe("My-Event-2026"));
 });
 
-describe("eventSlugToName", () => {
-  it("replaces hyphens with spaces", () =>
-    expect(eventSlugToName("My-Event")).toBe("My Event"));
+// ── votesApiUrl ──────────────────────────────────────────────────────────────
 
-  it("round-trips simple names", () => {
-    const name = "Conference Alpha";
-    expect(eventSlugToName(eventNameToSlug(name))).toBe(name);
-  });
+describe("votesApiUrl", () => {
+  it("builds the votes query for plain values", () =>
+    expect(votesApiUrl("guest1", "My-Event")).toBe(
+      "/api/votes?user=guest1&event=My-Event"
+    ));
 
-  it("documents lossy behavior: hyphen in original name becomes space", () => {
-    // "My-Event" as a name slugifies to "My-Event", which reads back as "My Event"
-    expect(eventSlugToName(eventNameToSlug("My-Event"))).toBe("My Event");
+  it("encodes reserved URL characters so the slug survives query parsing", () => {
+    // "Food & Drinks" slugifies to "Food-&-Drinks"; unencoded, the server
+    // would parse event as "Food-" and drop "-Drinks" into a bogus param.
+    const url = votesApiUrl("guest1", "Food-&-Drinks");
+    const params = new URL(url, "http://test").searchParams;
+    expect(params.get("event")).toBe("Food-&-Drinks");
+    expect(params.get("user")).toBe("guest1");
   });
 });
 

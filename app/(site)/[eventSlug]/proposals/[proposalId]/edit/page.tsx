@@ -1,5 +1,4 @@
 import { getRepositories } from "@/db/container";
-import { eventSlugToName } from "@/utils/utils";
 import { SessionProposalForm } from "@/app/(site)/[eventSlug]/session-proposal-form";
 import { notFound } from "next/navigation";
 
@@ -10,9 +9,8 @@ export default async function EditProposalPage({
 }) {
   const { eventSlug, proposalId } = await params;
 
-  const eventName = eventSlugToName(eventSlug);
   const repos = getRepositories();
-  const event = await repos.events.findByName(eventName);
+  const event = await repos.events.findBySlug(eventSlug);
 
   if (!event) {
     return <div>Event not found</div>;

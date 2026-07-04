@@ -55,6 +55,12 @@ export interface EventsRepository {
   list(): Promise<Event[]>;
   findById(id: string): Promise<Event | undefined>;
   findByName(name: string): Promise<Event | undefined>;
+  /**
+   * Finds the event whose slugified name matches the given slug. Returns
+   * undefined if no event matches or the slug is ambiguous (slugification is
+   * lossy, so multiple names can share a slug).
+   */
+  findBySlug(slug: string): Promise<Event | undefined>;
   create(data: Omit<Event, "id">): Promise<Event>;
   update(
     id: string,

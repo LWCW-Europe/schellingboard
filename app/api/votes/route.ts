@@ -10,9 +10,9 @@ const NO_STORE = { headers: { "cache-control": "no-store" } };
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const user = searchParams.get("user");
-  const eventName = searchParams.get("event");
+  const eventSlug = searchParams.get("event");
 
-  if (!user || !eventName) {
+  if (!user || !eventSlug) {
     return NextResponse.json(
       { error: "User and event parameters are required" },
       { ...NO_STORE, status: 400 }
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const repos = getRepositories();
-    const event = await repos.events.findByName(eventName);
+    const event = await repos.events.findBySlug(eventSlug);
     if (!event) {
       return NextResponse.json(
         { error: "Event not found" },

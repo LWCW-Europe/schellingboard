@@ -107,6 +107,35 @@ describe("events repo", () => {
     });
   });
 
+  describe("findBySlug", () => {
+    it("finds an event by its slugified name", async () => {
+      const event = await createEvent({ name: "Test Event" });
+      const found = await getRepositories().events.findBySlug("Test-Event");
+      expect(found?.id).toBe(event.id);
+    });
+
+    it("finds an event whose name contains hyphens", async () => {
+      const event = await createEvent({ name: "My-Event 2026" });
+      const found = await getRepositories().events.findBySlug("My-Event-2026");
+      expect(found?.id).toBe(event.id);
+    });
+
+    it("returns undefined for an unknown slug", async () => {
+      await createEvent({ name: "Test Event" });
+      expect(
+        await getRepositories().events.findBySlug("No-Such")
+      ).toBeUndefined();
+    });
+
+    it("returns undefined when two event names slugify to the same slug", async () => {
+      await createEvent({ name: "My Event" });
+      await createEvent({ name: "My-Event" });
+      expect(
+        await getRepositories().events.findBySlug("My-Event")
+      ).toBeUndefined();
+    });
+  });
+
   describe("delete", () => {
     it("deletes the event", async () => {
       const event = await createEvent();

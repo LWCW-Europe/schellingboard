@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
+import { eventNameToSlug } from "@/utils/utils";
 import type { Event, EventsRepository } from "../interfaces";
 
 type EventRow = typeof schema.events.$inferInsert;
@@ -64,6 +65,16 @@ export class SqliteEventsRepository implements EventsRepository {
       .where(eq(schema.events.name, name))
       .get();
     return row ? rowToEvent(row) : undefined;
+  }
+
+  async findBySlug(slug: string): Promise<Event | undefined> {
+    // Slugification is lossy ("My-Event" and "My Event" share a slug), so the
+    // slug cannot be reversed; match by slugifying each name instead. If the
+    // slug is ambiguous (several names share it), treat it as unresolvable
+    // rather than silently picking an arbitrary event.
+    const events = await this.list();
+    const matches = events.filter((e) => eventNameToSlug(e.name) === slug);
+    return matches.length === 1 ? matches[0] : undefined;
   }
 
   async create(data: Omit<Event, "id">): Promise<Event> {

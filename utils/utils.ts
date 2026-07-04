@@ -28,12 +28,23 @@ export const dateOnDay = (date: Date, day: Day) => {
   );
 };
 
+/**
+ * Slugification is lossy ("My-Event" and "My Event" share a slug), so it
+ * cannot be reversed. To resolve a slug back to an event, use
+ * `EventsRepository.findBySlug`, which matches by slugifying each name.
+ */
 export function eventNameToSlug(name: string): string {
   return name.replace(/ /g, "-");
 }
 
-export function eventSlugToName(slug: string): string {
-  return slug.replace(/-/g, " ");
+/**
+ * URL for fetching a guest's votes. Encodes both values: event slugs keep
+ * every non-space character of the event name (see eventNameToSlug), so
+ * reserved URL characters like "&" would otherwise corrupt the query string.
+ */
+export function votesApiUrl(user: string, eventSlug: string): string {
+  const params = new URLSearchParams({ user, event: eventSlug });
+  return `/api/votes?${params.toString()}`;
 }
 
 /**

@@ -16,7 +16,7 @@ import type {
   Rsvp,
 } from "@/db/repositories/interfaces";
 import { Vote, voteChoiceToEmoji } from "@/app/(site)/votes";
-import { DEFAULT_BREAK_MINUTES } from "@/utils/utils";
+import { DEFAULT_BREAK_MINUTES, votesApiUrl } from "@/utils/utils";
 
 export type DayWithSessions = Day & { sessions: Session[] };
 
@@ -302,9 +302,6 @@ export function VotesProvider({
   const [votes, setVotes] = useState<Vote[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Convert eventSlug to eventName (simple conversion for now)
-  const eventName = eventSlug.replace(/-/g, " ");
-
   useEffect(() => {
     const fetchVotes = async () => {
       if (!user) {
@@ -314,9 +311,7 @@ export function VotesProvider({
 
       setIsLoading(true);
       try {
-        const response = await fetch(
-          `/api/votes?user=${user}&event=${eventName}`
-        );
+        const response = await fetch(votesApiUrl(user, eventSlug));
         if (response.ok) {
           const fetchedVotes = (await response.json()) as Vote[];
           setVotes((prev) => {
@@ -343,7 +338,7 @@ export function VotesProvider({
     };
 
     void fetchVotes();
-  }, [user, eventName]);
+  }, [user, eventSlug]);
 
   const addVote = (vote: Vote) => {
     setVotes((prev) => {
