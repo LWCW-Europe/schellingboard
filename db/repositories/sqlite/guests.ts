@@ -86,6 +86,16 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return { id, ...data };
   }
 
+  async findExistingIds(ids: string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    return this.db
+      .select({ id: schema.guests.id })
+      .from(schema.guests)
+      .where(inArray(schema.guests.id, ids))
+      .all()
+      .map((r) => r.id);
+  }
+
   async assignToEvent(eventId: string, guestIds: string[]): Promise<void> {
     if (guestIds.length === 0) return;
     this.db

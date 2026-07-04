@@ -91,6 +91,7 @@ export interface GuestsRepository {
   ): Promise<CompleteGuest | undefined>;
   /** Deletes the guest and all records referencing them (votes, RSVPs, host links, event assignments). */
   delete(id: string): Promise<void>;
+  findExistingIds(ids: string[]): Promise<string[]>;
   assignToEvent(eventId: string, guestIds: string[]): Promise<void>;
   removeFromEvent(eventId: string, guestIds: string[]): Promise<void>;
 }

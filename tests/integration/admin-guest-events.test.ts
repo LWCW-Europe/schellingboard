@@ -158,6 +158,20 @@ describe("assignGuestsToEventAction", () => {
     });
     expect(!result.ok && result.error).toBe("Guest not found");
   });
+
+  it("accepts duplicate guest ids", async () => {
+    const event = await createEvent();
+    const g1 = await createGuest();
+
+    const result = await assignGuestsToEventAction({
+      eventId: event.id,
+      guestIds: [g1.id, g1.id],
+    });
+    expect(result.ok).toBe(true);
+
+    const assigned = await getRepositories().guests.listByEvent(event.id);
+    expect(assigned.map((g) => g.id)).toEqual([g1.id]);
+  });
 });
 
 describe("removeGuestsFromEventAction", () => {
