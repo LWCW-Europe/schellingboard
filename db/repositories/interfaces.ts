@@ -329,9 +329,24 @@ export type SessionProposalUpdateInput = {
   durationMinutes?: number | null;
 };
 
+/** A page of proposals plus the total count of rows matching the same filter. */
+export type SessionProposalPage = {
+  rows: SessionProposal[];
+  total: number;
+};
+
 export interface SessionProposalsRepository {
   listByEvent(eventId: string): Promise<SessionProposal[]>;
   listByHost(guestId: string): Promise<SessionProposal[]>;
+  /**
+   * Server-side paginated + searchable proposal list for an event. `query`
+   * matches the title or a host name (case-insensitive substring). Ordered by
+   * title.
+   */
+  searchByEvent(
+    eventId: string,
+    opts: { query?: string; limit: number; offset: number }
+  ): Promise<SessionProposalPage>;
   findById(id: string): Promise<SessionProposal | undefined>;
   create(data: SessionProposalCreateInput): Promise<SessionProposal>;
   update(

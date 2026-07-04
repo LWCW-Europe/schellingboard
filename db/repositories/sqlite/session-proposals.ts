@@ -1,4 +1,14 @@
-import { and, count, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  like,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
@@ -6,6 +16,7 @@ import type {
   ProposalHost,
   SessionProposal,
   SessionProposalCreateInput,
+  SessionProposalPage,
   SessionProposalUpdateInput,
   SessionProposalsRepository,
 } from "../interfaces";
@@ -130,6 +141,55 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
       .all()
       .map((r) => r.proposal);
     return this.enrichProposals(rows);
+  }
+
+  async searchByEvent(
+    eventId: string,
+    opts: { query?: string; limit: number; offset: number }
+  ): Promise<SessionProposalPage> {
+    const conditions = [eq(schema.sessionProposals.eventId, eventId)];
+    if (opts.query) {
+      const pattern = `%${opts.query}%`;
+      // Match the title or any host's name.
+      const hostMatch = exists(
+        this.db
+          .select({ one: sql`1` })
+          .from(schema.proposalHosts)
+          .innerJoin(
+            schema.guests,
+            eq(schema.proposalHosts.guestId, schema.guests.id)
+          )
+          .where(
+            and(
+              eq(schema.proposalHosts.proposalId, schema.sessionProposals.id),
+              like(schema.guests.name, pattern)
+            )
+          )
+      );
+      conditions.push(
+        or(like(schema.sessionProposals.title, pattern), hostMatch)!
+      );
+    }
+    const where = and(...conditions);
+
+    const totalRow = this.db
+      .select({ count: count() })
+      .from(schema.sessionProposals)
+      .where(where)
+      .get();
+
+    const rows = this.db
+      .select()
+      .from(schema.sessionProposals)
+      .where(where)
+      // id as tiebreaker: title is not unique, and without a deterministic
+      // order LIMIT/OFFSET pagination can duplicate or skip rows.
+      .orderBy(schema.sessionProposals.title, schema.sessionProposals.id)
+      .limit(opts.limit)
+      .offset(opts.offset)
+      .all();
+
+    return { rows: this.enrichProposals(rows), total: totalRow?.count ?? 0 };
   }
 
   async findById(id: string): Promise<SessionProposal | undefined> {

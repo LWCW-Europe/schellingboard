@@ -900,6 +900,51 @@ test.describe("Admin UI proposals", () => {
     });
     await expect(row).toBeVisible();
     await expect(row).toContainText("Alice Test");
+
+    // Server-side search: a title substring narrows to one row and the URL
+    // carries the query.
+    await proposals
+      .getByRole("searchbox", { name: "Search" })
+      .fill("Community Showcase");
+    await proposals.getByRole("button", { name: "Search" }).click();
+    await expect(page).toHaveURL(/[?&]q=/);
+    await expect(proposals.getByRole("listitem")).toHaveCount(1);
+    await expect(row).toBeVisible();
+
+    // Searching a host name matches their proposals and hides others.
+    await proposals
+      .getByRole("searchbox", { name: "Search" })
+      .fill("Alice Test");
+    await proposals.getByRole("button", { name: "Search" }).click();
+    await expect(row).toBeVisible();
+    await expect(
+      proposals
+        .getByRole("listitem")
+        .filter({ hasText: "Networking & Coffee Chat" })
+    ).toHaveCount(0);
+  });
+
+  test("redirects to the last valid page when a stale page param is out of range", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Proposals");
+
+    const proposals = page.getByRole("region", { name: "Proposals" });
+    await expect(proposals).toBeVisible();
+
+    // Simulate a stale bookmarked link pointing past the last page: the
+    // server should redirect back to a valid page instead of rendering an
+    // empty list.
+    await page.goto(`${page.url()}?page=999`);
+    await expect(page).not.toHaveURL(/[?&]page=999/);
+    await expect(proposals.getByRole("listitem").first()).toBeVisible();
   });
 
   test("can edit a proposal's title and hosts on the event detail page", async ({

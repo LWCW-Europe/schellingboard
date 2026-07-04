@@ -12,6 +12,7 @@ import {
   SECONDARY_BUTTON,
   DANGER_BUTTON,
 } from "@/app/admin/buttons";
+import { DataTable } from "../../data-table";
 
 export type ProposalRow = {
   id: string;
@@ -131,7 +132,7 @@ function ProposalItem({
           } will be kept (unlinked from this proposal).`
         : "";
     return (
-      <li className="py-3 space-y-2">
+      <div className="space-y-2">
         <p className="font-medium text-gray-900">{proposal.title}</p>
         <p className="text-sm text-red-700">
           This will permanently delete the proposal, its {proposal.votesCount}{" "}
@@ -175,13 +176,13 @@ function ProposalItem({
             Cancel
           </button>
         </div>
-      </li>
+      </div>
     );
   }
 
   if (!editMode) {
     return (
-      <li className="py-3 flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="font-medium text-gray-900">{proposal.title}</p>
           <p className="text-sm text-gray-500">
@@ -208,113 +209,119 @@ function ProposalItem({
             Delete
           </button>
         </div>
-      </li>
+      </div>
     );
   }
 
   return (
-    <li className="py-3">
-      <form onSubmit={handleSave} className="space-y-3">
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={`prop-title-${proposal.id}`}
-            className="text-sm text-gray-600"
-          >
-            Title *
-          </label>
-          <Input
-            id={`prop-title-${proposal.id}`}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            className="w-full h-10"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={`prop-desc-${proposal.id}`}
-            className="text-sm text-gray-600"
-          >
-            Description
-          </label>
-          <textarea
-            id={`prop-desc-${proposal.id}`}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={`prop-duration-${proposal.id}`}
-            className="text-sm text-gray-600"
-          >
-            Duration (minutes) — leave empty for undecided
-          </label>
-          <Input
-            id={`prop-duration-${proposal.id}`}
-            type="number"
-            min="0"
-            step="5"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            className="w-full h-10"
-          />
-        </div>
-        <fieldset className="flex flex-col gap-1">
-          <legend className="text-sm text-gray-600">Hosts</legend>
-          {candidates.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              No guests assigned to this event yet.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-1">
-              {candidates.map((g) => (
-                <label
-                  key={g.id}
-                  className="flex items-center gap-2 text-sm text-gray-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={hostIds.includes(g.id)}
-                    onChange={() => toggleHost(g.id)}
-                    aria-label={`Host ${g.name}`}
-                    className="h-4 w-4 cursor-pointer"
-                  />
-                  {g.name}
-                </label>
-              ))}
-            </div>
-          )}
-        </fieldset>
-        <div className="flex gap-2">
-          <button type="submit" disabled={isSaving} className={PRIMARY_BUTTON}>
-            {isSaving ? "Saving..." : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              reset();
-              setEditMode(false);
-              onError(null);
-            }}
-            disabled={isSaving}
-            className={SECONDARY_BUTTON}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </li>
+    <form onSubmit={handleSave} className="space-y-3">
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`prop-title-${proposal.id}`}
+          className="text-sm text-gray-600"
+        >
+          Title *
+        </label>
+        <Input
+          id={`prop-title-${proposal.id}`}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          className="w-full h-10"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`prop-desc-${proposal.id}`}
+          className="text-sm text-gray-600"
+        >
+          Description
+        </label>
+        <textarea
+          id={`prop-desc-${proposal.id}`}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`prop-duration-${proposal.id}`}
+          className="text-sm text-gray-600"
+        >
+          Duration (minutes) — leave empty for undecided
+        </label>
+        <Input
+          id={`prop-duration-${proposal.id}`}
+          type="number"
+          min="0"
+          step="5"
+          value={duration}
+          onChange={(e) => setDuration(e.target.value)}
+          className="w-full h-10"
+        />
+      </div>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="text-sm text-gray-600">Hosts</legend>
+        {candidates.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No guests assigned to this event yet.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {candidates.map((g) => (
+              <label
+                key={g.id}
+                className="flex items-center gap-2 text-sm text-gray-700"
+              >
+                <input
+                  type="checkbox"
+                  checked={hostIds.includes(g.id)}
+                  onChange={() => toggleHost(g.id)}
+                  aria-label={`Host ${g.name}`}
+                  className="h-4 w-4 cursor-pointer"
+                />
+                {g.name}
+              </label>
+            ))}
+          </div>
+        )}
+      </fieldset>
+      <div className="flex gap-2">
+        <button type="submit" disabled={isSaving} className={PRIMARY_BUTTON}>
+          {isSaving ? "Saving..." : "Save"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            reset();
+            setEditMode(false);
+            onError(null);
+          }}
+          disabled={isSaving}
+          className={SECONDARY_BUTTON}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
 
 export function EventProposalsManager({
   proposals,
   eventGuests,
+  total,
+  page,
+  pageSize,
+  query,
 }: {
   proposals: ProposalRow[];
   eventGuests: EventGuest[];
+  total: number;
+  page: number;
+  pageSize: number;
+  query: string;
 }) {
   const [error, setError] = useState<string | null>(null);
 
@@ -323,20 +330,23 @@ export function EventProposalsManager({
       <h2 className="text-lg font-semibold text-gray-900">Proposals</h2>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {proposals.length === 0 ? (
-        <p className="text-sm text-gray-500">No proposals yet.</p>
-      ) : (
-        <ul className="divide-y divide-gray-200 border-t border-b border-gray-200">
-          {proposals.map((p) => (
-            <ProposalItem
-              key={p.id}
-              proposal={p}
-              eventGuests={eventGuests}
-              onError={setError}
-            />
-          ))}
-        </ul>
-      )}
+      <DataTable
+        rows={proposals}
+        rowKey={(p) => p.id}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        searchQuery={query}
+        searchPlaceholder="Search title or host…"
+        emptyMessage="No proposals match."
+        listItem={(p) => (
+          <ProposalItem
+            proposal={p}
+            eventGuests={eventGuests}
+            onError={setError}
+          />
+        )}
+      />
     </section>
   );
 }
