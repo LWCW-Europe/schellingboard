@@ -10,6 +10,7 @@ export function EventTabs({ eventId }: { eventId: string }) {
   const tabs: { href: string; label: string }[] = [
     { href: base, label: "Config" },
     { href: `${base}/guests`, label: "Guests" },
+    { href: `${base}/locations`, label: "Locations" },
     { href: `${base}/proposals`, label: "Proposals" },
     { href: `${base}/sessions`, label: "Sessions" },
   ];

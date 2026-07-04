@@ -7,6 +7,7 @@ import {
   removeGuestsFromEventAction,
 } from "@/app/actions/admin-guest-events";
 import {
+  BulkActionsBar,
   DataTable,
   useTableParams,
   type Column,
@@ -104,41 +105,15 @@ export function EventGuestsManager({
     rowLabel: (g) => g.name,
   };
 
-  const bulkBar =
-    selectedIds.size === 0 ? null : (
-      <div
-        role="region"
-        aria-label="Bulk actions"
-        className="flex flex-wrap items-center gap-3 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm"
-      >
-        <span className="font-medium text-gray-700">
-          {selectedIds.size} selected
-        </span>
-        <button
-          type="button"
-          onClick={() => handleBulk(true)}
-          disabled={isPending}
-          className="px-3 py-1 rounded-md border border-gray-900 bg-gray-900 text-white disabled:opacity-50 hover:bg-gray-700"
-        >
-          Assign selected
-        </button>
-        <button
-          type="button"
-          onClick={() => handleBulk(false)}
-          disabled={isPending}
-          className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50"
-        >
-          Remove selected
-        </button>
-        <button
-          type="button"
-          onClick={() => setSelectedIds(new Set())}
-          className="px-3 py-1 rounded-md text-gray-600 hover:text-gray-900"
-        >
-          Clear
-        </button>
-      </div>
-    );
+  const bulkBar = (
+    <BulkActionsBar
+      selectedCount={selectedIds.size}
+      isPending={isPending}
+      onAssign={() => handleBulk(true)}
+      onRemove={() => handleBulk(false)}
+      onClear={() => setSelectedIds(new Set())}
+    />
+  );
 
   const handleToggle = (guestId: string, currentlyAssigned: boolean) => {
     setPendingIds((prev) => new Set([...prev, guestId]));

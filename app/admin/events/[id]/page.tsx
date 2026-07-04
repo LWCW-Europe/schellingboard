@@ -5,10 +5,6 @@ import { requireAdminPage } from "../../require-admin";
 import { EventDetailForm } from "./event-detail-form";
 import { EventPhasesForm } from "./event-phases-form";
 import { EventDaysManager, type SerializedDay } from "./event-days-manager";
-import {
-  EventLocationsManager,
-  type LocationRow,
-} from "./event-locations-manager";
 
 export default async function AdminEventConfigPage({
   params,
@@ -21,17 +17,6 @@ export default async function AdminEventConfigPage({
   const repos = getRepositories();
   const event = await repos.events.findById(id);
   if (!event) notFound();
-
-  const allLocations = await repos.locations.list();
-  const assignedLocationIds = new Set(
-    await repos.locations.listLocationIdsByEvent(id)
-  );
-  const locationRows: LocationRow[] = allLocations.map((l) => ({
-    id: l.id,
-    name: l.name,
-    capacity: l.capacity,
-    assigned: assignedLocationIds.has(l.id),
-  }));
 
   const scheduledSessions = await repos.sessions.listScheduledByEvent(id);
   const days: SerializedDay[] = (await repos.days.listByEvent(id)).map((d) => ({
@@ -58,8 +43,6 @@ export default async function AdminEventConfigPage({
       </div>
       <hr className="border-gray-200" />
       <EventDaysManager days={days} eventId={id} />
-      <hr className="border-gray-200" />
-      <EventLocationsManager locations={locationRows} eventId={id} />
     </div>
   );
 }

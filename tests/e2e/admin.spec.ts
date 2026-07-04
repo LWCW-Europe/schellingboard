@@ -33,11 +33,12 @@ async function gotoLocations(page: Page) {
   await expect(page.getByRole("heading", { name: "Locations" })).toBeVisible();
 }
 
-// Event detail is split into tab sub-routes (Config · Guests · Proposals ·
-// Sessions). Call this after clicking an event's "Manage" link to open a tab.
+// Event detail is split into tab sub-routes (Config · Guests · Locations ·
+// Proposals · Sessions). Call this after clicking an event's "Manage" link to
+// open a tab.
 async function openEventTab(
   page: Page,
-  tab: "Config" | "Guests" | "Proposals" | "Sessions"
+  tab: "Config" | "Guests" | "Locations" | "Proposals" | "Sessions"
 ) {
   const link = page
     .getByRole("navigation", { name: "Event sections" })
@@ -250,6 +251,10 @@ test.describe("Admin UI events", () => {
     await openEventTab(page, "Guests");
     await expect(page).toHaveURL(/\/guests$/);
     await expect(page.getByRole("region", { name: "Guests" })).toBeVisible();
+
+    await openEventTab(page, "Locations");
+    await expect(page).toHaveURL(/\/locations$/);
+    await expect(page.getByRole("region", { name: "Locations" })).toBeVisible();
 
     await openEventTab(page, "Proposals");
     await expect(page).toHaveURL(/\/proposals$/);
@@ -770,6 +775,7 @@ test.describe("Admin UI locations", () => {
         .filter({ hasText: eventName })
         .getByRole("link", { name: "Manage" })
         .click();
+      await openEventTab(page, "Locations");
 
       const locations = page.getByRole("region", { name: "Locations" });
       await expect(locations).toBeVisible();
@@ -780,11 +786,15 @@ test.describe("Admin UI locations", () => {
       const mainHallRow = locations
         .getByRole("row")
         .filter({ hasText: "Main Hall" });
-      await expect(mainHallRow.getByRole("checkbox")).not.toBeChecked();
+      // Each row has a "Select" checkbox (bulk) and an "Assign" checkbox (state).
+      const mainHallAssign = mainHallRow.getByRole("checkbox", {
+        name: /^Assign /,
+      });
+      await expect(mainHallAssign).not.toBeChecked();
 
-      // Assign Main Hall
-      await mainHallRow.getByRole("checkbox").click();
-      await expect(mainHallRow.getByRole("checkbox")).toBeChecked();
+      // Assign Main Hall — click and wait for server-driven update
+      await mainHallAssign.click();
+      await expect(mainHallAssign).toBeChecked();
 
       // Navigate away and back — assignment must persist. Soft navigation via
       // the back link avoids aborting the assignment action's revalidation
@@ -796,6 +806,7 @@ test.describe("Admin UI locations", () => {
         .filter({ hasText: eventName })
         .getByRole("link", { name: "Manage" })
         .click();
+      await openEventTab(page, "Locations");
       await expect(
         page
           .getByRole("region", { name: "Locations" })
@@ -808,7 +819,7 @@ test.describe("Admin UI locations", () => {
       const l2 = page.getByRole("region", { name: "Locations" });
       await l2.getByRole("button", { name: "Assigned", exact: true }).click();
       await expect(
-        l2.getByRole("row").filter({ has: page.getByRole("checkbox") })
+        l2.getByRole("row").filter({ hasNot: page.getByRole("columnheader") })
       ).toHaveCount(1);
       await expect(
         l2.getByRole("row").filter({ hasText: "Main Hall" })
@@ -826,10 +837,37 @@ test.describe("Admin UI locations", () => {
 
       // Switch back to All and remove the assignment
       await l2.getByRole("button", { name: "All", exact: true }).click();
-      await l2.getByRole("checkbox", { checked: true }).click();
-      await expect(l2.getByRole("checkbox", { checked: true })).toHaveCount(0);
+      await l2
+        .getByRole("checkbox", { name: /^Assign /, checked: true })
+        .click();
+      await expect(
+        l2.getByRole("checkbox", { name: /^Assign /, checked: true })
+      ).toHaveCount(0);
 
-      // Clean up
+      // Bulk: select all rows on the page, assign, then remove. Assert on fixed
+      // seeded locations, not row counts (parallel tests create/delete rows).
+      // Starting a selection must not shift the table (the bulk bar reserves
+      // its space), or the checkbox moves away from under the pointer.
+      const selectAll = l2.getByRole("checkbox", { name: "Select all" });
+      const boxBeforeSelect = await selectAll.boundingBox();
+      await selectAll.check();
+      expect(await selectAll.boundingBox()).toEqual(boxBeforeSelect);
+      await l2.getByRole("button", { name: "Assign selected" }).click();
+      await expect(
+        l2.getByRole("checkbox", { name: "Assign Main Hall" })
+      ).toBeChecked();
+      await expect(
+        l2.getByRole("checkbox", { name: "Assign Workshop Room" })
+      ).toBeChecked();
+
+      await l2.getByRole("checkbox", { name: "Select all" }).check();
+      await l2.getByRole("button", { name: "Remove selected" }).click();
+      await expect(
+        l2.getByRole("checkbox", { name: /^Assign /, checked: true })
+      ).toHaveCount(0);
+
+      // Clean up — the delete control lives on the Config tab
+      await openEventTab(page, "Config");
       await page.getByRole("button", { name: "Delete event" }).click();
       await page.getByLabel("Type the event name to confirm").fill(eventName);
       await page.getByRole("button", { name: "Confirm delete" }).click();

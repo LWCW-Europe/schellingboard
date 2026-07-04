@@ -50,6 +50,62 @@ export function useTableParams() {
   return { searchParams, setParams };
 }
 
+/**
+ * Assign/remove/clear bar for a table selection. Rendered even while nothing
+ * is selected — hidden but keeping its space — so starting a selection doesn't
+ * shift the table under the user's pointer.
+ */
+export function BulkActionsBar({
+  selectedCount,
+  isPending,
+  onAssign,
+  onRemove,
+  onClear,
+}: {
+  selectedCount: number;
+  isPending: boolean;
+  onAssign: () => void;
+  onRemove: () => void;
+  onClear: () => void;
+}) {
+  return (
+    <div
+      role="region"
+      aria-label="Bulk actions"
+      className={`flex flex-wrap items-center gap-3 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm ${
+        selectedCount === 0 ? "invisible" : ""
+      }`}
+    >
+      <span className="font-medium text-gray-700">
+        {selectedCount} selected
+      </span>
+      <button
+        type="button"
+        onClick={onAssign}
+        disabled={isPending}
+        className="px-3 py-1 rounded-md border border-gray-900 bg-gray-900 text-white disabled:opacity-50 hover:bg-gray-700"
+      >
+        Assign selected
+      </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={isPending}
+        className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+      >
+        Remove selected
+      </button>
+      <button
+        type="button"
+        onClick={onClear}
+        className="px-3 py-1 rounded-md text-gray-600 hover:text-gray-900"
+      >
+        Clear
+      </button>
+    </div>
+  );
+}
+
 export function DataTable<T>({
   rows,
   columns,

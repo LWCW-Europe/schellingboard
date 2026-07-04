@@ -160,9 +160,37 @@ export type Location = {
   areaDescription?: string;
 };
 
+/** A location paired with whether it is assigned to a given event. */
+export type EventLocationRow = {
+  id: string;
+  name: string;
+  capacity: number;
+  assigned: boolean;
+};
+
+/** A page of locations plus the total count of rows matching the same filter. */
+export type EventLocationPage = {
+  rows: EventLocationRow[];
+  total: number;
+};
+
 export interface LocationsRepository {
   /** All locations (including hidden), ordered by sortIndex. */
   list(): Promise<Location[]>;
+  /**
+   * Server-side paginated + searchable location list scoped to an event's
+   * assignment. `assigned` filters by membership (undefined = all); `query`
+   * matches the name (case-insensitive substring). Ordered by name.
+   */
+  searchForEventAssignment(
+    eventId: string,
+    opts: {
+      query?: string;
+      assigned?: boolean;
+      limit: number;
+      offset: number;
+    }
+  ): Promise<EventLocationPage>;
   listVisible(): Promise<Location[]>;
   listBookable(): Promise<Location[]>;
   findById(id: string): Promise<Location | undefined>;
