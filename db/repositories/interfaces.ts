@@ -264,6 +264,12 @@ export type SessionUpdateInput = Partial<
   locationIds?: string[];
 };
 
+/** A page of sessions plus the total count of rows matching the same filter. */
+export type SessionPage = {
+  rows: Session[];
+  total: number;
+};
+
 export interface SessionsRepository {
   list(): Promise<Session[]>;
   listScheduled(): Promise<Session[]>;
@@ -271,6 +277,15 @@ export interface SessionsRepository {
   listScheduledByEvent(eventId: string): Promise<Session[]>;
   listHostedByGuest(guestId: string): Promise<Session[]>;
   listRsvpdByGuest(guestId: string): Promise<Session[]>;
+  /**
+   * Server-side paginated + searchable session list for an event. `query`
+   * matches the title or a host name (case-insensitive substring). Ordered by
+   * title.
+   */
+  searchByEvent(
+    eventId: string,
+    opts: { query?: string; limit: number; offset: number }
+  ): Promise<SessionPage>;
   findById(id: string): Promise<Session | undefined>;
   create(data: SessionCreateInput): Promise<Session>;
   update(id: string, patch: SessionUpdateInput): Promise<Session>;

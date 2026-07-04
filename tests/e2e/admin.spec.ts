@@ -1065,6 +1065,49 @@ test.describe("Admin UI sessions", () => {
     await expect(row).toBeVisible();
     // Keynote is hosted by a seeded guest and placed in the first location
     await expect(row).toContainText("Test");
+
+    // Server-side search: a title substring narrows to one row and the URL
+    // carries the query.
+    await sessions
+      .getByRole("searchbox", { name: "Search" })
+      .fill("Opening Keynote");
+    await sessions.getByRole("button", { name: "Search" }).click();
+    await expect(page).toHaveURL(/[?&]q=/);
+    await expect(sessions.getByRole("listitem")).toHaveCount(1);
+    await expect(row).toBeVisible();
+
+    // Searching a host name matches their sessions and hides others.
+    await sessions
+      .getByRole("searchbox", { name: "Search" })
+      .fill("Charlie Test");
+    await sessions.getByRole("button", { name: "Search" }).click();
+    await expect(row).toBeVisible();
+    await expect(
+      sessions.getByRole("listitem").filter({ hasText: "Lunch Break" })
+    ).toHaveCount(0);
+  });
+
+  test("redirects to the last valid page when a stale page param is out of range", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Gamma" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Sessions");
+
+    const sessions = page.getByRole("region", { name: "Sessions" });
+    await expect(sessions).toBeVisible();
+
+    // Simulate a stale bookmarked link pointing past the last page: the
+    // server should redirect back to a valid page instead of rendering an
+    // empty list.
+    await page.goto(`${page.url()}?page=999`);
+    await expect(page).not.toHaveURL(/[?&]page=999/);
+    await expect(sessions.getByRole("listitem").first()).toBeVisible();
   });
 
   test("can edit a session on the event detail page", async ({ page }) => {

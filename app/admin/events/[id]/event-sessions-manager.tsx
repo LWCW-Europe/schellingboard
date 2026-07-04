@@ -13,6 +13,7 @@ import {
   SECONDARY_BUTTON,
   DANGER_BUTTON,
 } from "@/app/admin/buttons";
+import { DataTable } from "../../data-table";
 
 export type SessionRow = {
   id: string;
@@ -251,7 +252,7 @@ function SessionItem({
 
   if (deleteMode) {
     return (
-      <li className="py-3 space-y-2">
+      <div className="space-y-2">
         <p className="font-medium text-gray-900">{session.title}</p>
         <p className="text-sm text-red-700">
           This will permanently delete the session and its {session.numRsvps}{" "}
@@ -293,13 +294,13 @@ function SessionItem({
             Cancel
           </button>
         </div>
-      </li>
+      </div>
     );
   }
 
   if (!editMode) {
     return (
-      <li className="py-3 space-y-3">
+      <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <p className="font-medium text-gray-900">{session.title}</p>
@@ -331,187 +332,185 @@ function SessionItem({
           </div>
         </div>
         <SessionRsvps session={session} onError={onError} />
-      </li>
+      </div>
     );
   }
 
   return (
-    <li className="py-3">
-      <form onSubmit={handleSave} className="space-y-3">
+    <form onSubmit={handleSave} className="space-y-3">
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`sess-title-${session.id}`}
+          className="text-sm text-gray-600"
+        >
+          Title *
+        </label>
+        <Input
+          id={`sess-title-${session.id}`}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          className="w-full h-10"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`sess-desc-${session.id}`}
+          className="text-sm text-gray-600"
+        >
+          Description
+        </label>
+        <textarea
+          id={`sess-desc-${session.id}`}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
+        />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <label
-            htmlFor={`sess-title-${session.id}`}
+            htmlFor={`sess-start-${session.id}`}
             className="text-sm text-gray-600"
           >
-            Title *
+            Start (UTC) — leave empty if not scheduled
           </label>
           <Input
-            id={`sess-title-${session.id}`}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
+            id={`sess-start-${session.id}`}
+            type="datetime-local"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
             className="w-full h-10"
           />
         </div>
         <div className="flex flex-col gap-1">
           <label
-            htmlFor={`sess-desc-${session.id}`}
+            htmlFor={`sess-end-${session.id}`}
             className="text-sm text-gray-600"
           >
-            Description
-          </label>
-          <textarea
-            id={`sess-desc-${session.id}`}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor={`sess-start-${session.id}`}
-              className="text-sm text-gray-600"
-            >
-              Start (UTC) — leave empty if not scheduled
-            </label>
-            <Input
-              id={`sess-start-${session.id}`}
-              type="datetime-local"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full h-10"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor={`sess-end-${session.id}`}
-              className="text-sm text-gray-600"
-            >
-              End (UTC)
-            </label>
-            <Input
-              id={`sess-end-${session.id}`}
-              type="datetime-local"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full h-10"
-            />
-          </div>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={`sess-capacity-${session.id}`}
-            className="text-sm text-gray-600"
-          >
-            Capacity
+            End (UTC)
           </label>
           <Input
-            id={`sess-capacity-${session.id}`}
-            type="number"
-            min="0"
-            value={capacity}
-            onChange={(e) => setCapacity(e.target.value)}
+            id={`sess-end-${session.id}`}
+            type="datetime-local"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
             className="w-full h-10"
           />
         </div>
-        <fieldset className="flex flex-col gap-1">
-          <legend className="text-sm text-gray-600">Flags</legend>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={blocker}
-              onChange={(e) => setBlocker(e.target.checked)}
-              className="h-4 w-4 cursor-pointer"
-            />
-            Blocker
-          </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={closed}
-              onChange={(e) => setClosed(e.target.checked)}
-              className="h-4 w-4 cursor-pointer"
-            />
-            Closed
-          </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={attendeeScheduled}
-              onChange={(e) => setAttendeeScheduled(e.target.checked)}
-              className="h-4 w-4 cursor-pointer"
-            />
-            Attendee-scheduled
-          </label>
-        </fieldset>
-        <fieldset className="flex flex-col gap-1">
-          <legend className="text-sm text-gray-600">Hosts</legend>
-          {hostCandidates.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              No guests assigned to this event yet.
-            </p>
-          ) : (
-            hostCandidates.map((g) => (
-              <label
-                key={g.id}
-                className="flex items-center gap-2 text-sm text-gray-700"
-              >
-                <input
-                  type="checkbox"
-                  checked={hostIds.includes(g.id)}
-                  onChange={() => toggle(setHostIds, g.id)}
-                  aria-label={`Host ${g.name}`}
-                  className="h-4 w-4 cursor-pointer"
-                />
-                {g.name}
-              </label>
-            ))
-          )}
-        </fieldset>
-        <fieldset className="flex flex-col gap-1">
-          <legend className="text-sm text-gray-600">Locations</legend>
-          {locationCandidates.length === 0 ? (
-            <p className="text-sm text-gray-500">
-              No locations assigned to this event yet.
-            </p>
-          ) : (
-            locationCandidates.map((l) => (
-              <label
-                key={l.id}
-                className="flex items-center gap-2 text-sm text-gray-700"
-              >
-                <input
-                  type="checkbox"
-                  checked={locationIds.includes(l.id)}
-                  onChange={() => toggle(setLocationIds, l.id)}
-                  aria-label={`Location ${l.name}`}
-                  className="h-4 w-4 cursor-pointer"
-                />
-                {l.name}
-              </label>
-            ))
-          )}
-        </fieldset>
-        <div className="flex gap-2">
-          <button type="submit" disabled={isSaving} className={PRIMARY_BUTTON}>
-            {isSaving ? "Saving..." : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              reset();
-              setEditMode(false);
-              onError(null);
-            }}
-            disabled={isSaving}
-            className={SECONDARY_BUTTON}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </li>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`sess-capacity-${session.id}`}
+          className="text-sm text-gray-600"
+        >
+          Capacity
+        </label>
+        <Input
+          id={`sess-capacity-${session.id}`}
+          type="number"
+          min="0"
+          value={capacity}
+          onChange={(e) => setCapacity(e.target.value)}
+          className="w-full h-10"
+        />
+      </div>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="text-sm text-gray-600">Flags</legend>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={blocker}
+            onChange={(e) => setBlocker(e.target.checked)}
+            className="h-4 w-4 cursor-pointer"
+          />
+          Blocker
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={closed}
+            onChange={(e) => setClosed(e.target.checked)}
+            className="h-4 w-4 cursor-pointer"
+          />
+          Closed
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={attendeeScheduled}
+            onChange={(e) => setAttendeeScheduled(e.target.checked)}
+            className="h-4 w-4 cursor-pointer"
+          />
+          Attendee-scheduled
+        </label>
+      </fieldset>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="text-sm text-gray-600">Hosts</legend>
+        {hostCandidates.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No guests assigned to this event yet.
+          </p>
+        ) : (
+          hostCandidates.map((g) => (
+            <label
+              key={g.id}
+              className="flex items-center gap-2 text-sm text-gray-700"
+            >
+              <input
+                type="checkbox"
+                checked={hostIds.includes(g.id)}
+                onChange={() => toggle(setHostIds, g.id)}
+                aria-label={`Host ${g.name}`}
+                className="h-4 w-4 cursor-pointer"
+              />
+              {g.name}
+            </label>
+          ))
+        )}
+      </fieldset>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="text-sm text-gray-600">Locations</legend>
+        {locationCandidates.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No locations assigned to this event yet.
+          </p>
+        ) : (
+          locationCandidates.map((l) => (
+            <label
+              key={l.id}
+              className="flex items-center gap-2 text-sm text-gray-700"
+            >
+              <input
+                type="checkbox"
+                checked={locationIds.includes(l.id)}
+                onChange={() => toggle(setLocationIds, l.id)}
+                aria-label={`Location ${l.name}`}
+                className="h-4 w-4 cursor-pointer"
+              />
+              {l.name}
+            </label>
+          ))
+        )}
+      </fieldset>
+      <div className="flex gap-2">
+        <button type="submit" disabled={isSaving} className={PRIMARY_BUTTON}>
+          {isSaving ? "Saving..." : "Save"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            reset();
+            setEditMode(false);
+            onError(null);
+          }}
+          disabled={isSaving}
+          className={SECONDARY_BUTTON}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -519,10 +518,18 @@ export function EventSessionsManager({
   sessions,
   eventGuests,
   eventLocations,
+  total,
+  page,
+  pageSize,
+  query,
 }: {
   sessions: SessionRow[];
   eventGuests: EventGuest[];
   eventLocations: EventLocation[];
+  total: number;
+  page: number;
+  pageSize: number;
+  query: string;
 }) {
   const [error, setError] = useState<string | null>(null);
 
@@ -532,21 +539,24 @@ export function EventSessionsManager({
       <p className="text-sm text-gray-500">All times are UTC.</p>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {sessions.length === 0 ? (
-        <p className="text-sm text-gray-500">No sessions yet.</p>
-      ) : (
-        <ul className="divide-y divide-gray-200 border-t border-b border-gray-200">
-          {sessions.map((s) => (
-            <SessionItem
-              key={s.id}
-              session={s}
-              eventGuests={eventGuests}
-              eventLocations={eventLocations}
-              onError={setError}
-            />
-          ))}
-        </ul>
-      )}
+      <DataTable
+        rows={sessions}
+        rowKey={(s) => s.id}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        searchQuery={query}
+        searchPlaceholder="Search title or host…"
+        emptyMessage="No sessions match."
+        listItem={(s) => (
+          <SessionItem
+            session={s}
+            eventGuests={eventGuests}
+            eventLocations={eventLocations}
+            onError={setError}
+          />
+        )}
+      />
     </section>
   );
 }

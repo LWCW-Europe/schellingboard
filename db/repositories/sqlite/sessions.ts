@@ -1,4 +1,14 @@
-import { and, count, eq, isNotNull } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  like,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
@@ -7,6 +17,7 @@ import type {
   SessionCreateInput,
   SessionHost,
   SessionLocation,
+  SessionPage,
   SessionsRepository,
   SessionUpdateInput,
 } from "../interfaces";
@@ -57,8 +68,8 @@ export class SqliteSessionsRepository implements SessionsRepository {
         schema.guests,
         eq(schema.sessionHosts.guestId, schema.guests.id)
       )
-      .all()
-      .filter((r) => ids.includes(r.sessionId));
+      .where(inArray(schema.sessionHosts.sessionId, ids))
+      .all();
 
     const locationRows = this.db
       .select({
@@ -72,15 +83,15 @@ export class SqliteSessionsRepository implements SessionsRepository {
         schema.locations,
         eq(schema.sessionLocations.locationId, schema.locations.id)
       )
-      .all()
-      .filter((r) => ids.includes(r.sessionId));
+      .where(inArray(schema.sessionLocations.sessionId, ids))
+      .all();
 
     const rsvpRows = this.db
       .select({ sessionId: schema.rsvps.sessionId, cnt: count() })
       .from(schema.rsvps)
+      .where(inArray(schema.rsvps.sessionId, ids))
       .groupBy(schema.rsvps.sessionId)
-      .all()
-      .filter((r) => ids.includes(r.sessionId));
+      .all();
 
     const hostsBySession = new Map<string, SessionHost[]>();
     for (const r of hostRows) {
@@ -175,6 +186,53 @@ export class SqliteSessionsRepository implements SessionsRepository {
       .all()
       .map((r) => r.session);
     return this.enrichSessions(rows);
+  }
+
+  async searchByEvent(
+    eventId: string,
+    opts: { query?: string; limit: number; offset: number }
+  ): Promise<SessionPage> {
+    const conditions = [eq(schema.sessions.eventId, eventId)];
+    if (opts.query) {
+      const pattern = `%${opts.query}%`;
+      // Match the title or any host's name.
+      const hostMatch = exists(
+        this.db
+          .select({ one: sql`1` })
+          .from(schema.sessionHosts)
+          .innerJoin(
+            schema.guests,
+            eq(schema.sessionHosts.guestId, schema.guests.id)
+          )
+          .where(
+            and(
+              eq(schema.sessionHosts.sessionId, schema.sessions.id),
+              like(schema.guests.name, pattern)
+            )
+          )
+      );
+      conditions.push(or(like(schema.sessions.title, pattern), hostMatch)!);
+    }
+    const where = and(...conditions);
+
+    const totalRow = this.db
+      .select({ count: count() })
+      .from(schema.sessions)
+      .where(where)
+      .get();
+
+    const rows = this.db
+      .select()
+      .from(schema.sessions)
+      .where(where)
+      // id as tiebreaker: title is not unique, and without a deterministic
+      // order LIMIT/OFFSET pagination can duplicate or skip rows.
+      .orderBy(schema.sessions.title, schema.sessions.id)
+      .limit(opts.limit)
+      .offset(opts.offset)
+      .all();
+
+    return { rows: this.enrichSessions(rows), total: totalRow?.count ?? 0 };
   }
 
   async findById(id: string): Promise<Session | undefined> {
