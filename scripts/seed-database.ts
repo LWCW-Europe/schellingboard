@@ -495,6 +495,213 @@ const sessionTemplates = [
   },
 ];
 
+// Conference Gamma (scheduling phase) gets a realistic, mostly filled grid:
+// most sessions are scheduled from its seeded proposals (matched by title),
+// plus organizer/attendee extras. Times are Berlin clock times on event day
+// 0-2. Keep the slots that tests/e2e/scheduling.spec.ts relies on free:
+//   day 0: Main Hall 16:00 and Garden Terrace 09:00 (asserted free),
+//   day 2: Workshop Room from 15:00 and Garden Terrace from 16:00
+//          (used by tests to create sessions).
+// rsvp.spec.ts RSVPs Bob Test to the Opening Keynote, so nothing may run in
+// parallel to it and Bob gets no seeded RSVP there (see RSVP seeding).
+interface GammaSessionConfig {
+  title: string; // for fromProposal sessions: must equal a seeded Gamma proposal title
+  fromProposal: boolean;
+  description?: string; // only used when fromProposal is false
+  day: number; // event day 0-2
+  start: [hour: number, minute: number];
+  end: [hour: number, minute: number];
+  location: number; // index into locationRows: 0 Main Hall, 1 Workshop Room, 2 Garden Terrace
+  hostNames: string[];
+  capacity: number;
+  closed?: boolean;
+  attendeeScheduled?: boolean; // default true (host-scheduled during the phase)
+}
+
+const gammaSessionConfigs: GammaSessionConfig[] = [
+  // Day 1
+  {
+    title: "The Future of AI: Transforming Industries Through Machine Learning",
+    fromProposal: true,
+    day: 0,
+    start: [11, 0],
+    end: [12, 0],
+    location: 0,
+    hostNames: ["Yuki Tanaka"],
+    capacity: 100,
+  },
+  {
+    title: "Workshop: Hands-on Docker and Kubernetes",
+    fromProposal: true,
+    day: 0,
+    start: [11, 0],
+    end: [12, 30],
+    location: 1,
+    hostNames: ["Sofía Martínez"],
+    capacity: 30,
+    closed: true, // hands-on workshop, no late arrivals
+  },
+  {
+    title: "Design Systems: Creating Consistency at Scale",
+    fromProposal: true,
+    day: 0,
+    start: [14, 0],
+    end: [15, 0],
+    location: 0,
+    hostNames: ["Isabella Rossi"],
+    capacity: 100,
+  },
+  {
+    title: "Open Source Sustainability: Funding and Community Building",
+    fromProposal: true,
+    day: 0,
+    start: [14, 0],
+    end: [15, 30],
+    location: 2,
+    hostNames: ["Tereza Nováková"],
+    capacity: 25,
+  },
+  {
+    title: "API Design: RESTful vs GraphQL vs gRPC",
+    fromProposal: true,
+    day: 0,
+    start: [15, 30],
+    end: [16, 30],
+    location: 1,
+    hostNames: ["Arjun Nair"],
+    capacity: 30,
+  },
+  // Day 2
+  {
+    title: "Building Scalable Web Applications with Modern React",
+    fromProposal: true,
+    day: 1,
+    start: [9, 0],
+    end: [10, 0],
+    location: 0,
+    hostNames: ["Charlie Test"],
+    capacity: 100,
+  },
+  {
+    title:
+      "The Psychology of User Experience: Understanding Human-Computer Interaction",
+    fromProposal: true,
+    day: 1,
+    start: [10, 0],
+    end: [11, 30],
+    location: 2,
+    hostNames: ["Aisha Diallo"],
+    capacity: 25,
+  },
+  {
+    title: "Performance Optimization: Making Your Apps Lightning Fast",
+    fromProposal: true,
+    day: 1,
+    start: [10, 30],
+    end: [12, 0],
+    location: 1,
+    hostNames: ["Olga Petrova"],
+    capacity: 30,
+  },
+  {
+    title: "Machine Learning Ethics: Bias, Fairness, and Accountability",
+    fromProposal: true,
+    day: 1,
+    start: [14, 0],
+    end: [15, 0],
+    location: 0,
+    hostNames: ["Priya Sharma"],
+    capacity: 100,
+  },
+  {
+    title: "Sustainable Software Development: Green Coding Practices",
+    fromProposal: true,
+    day: 1,
+    start: [14, 0],
+    end: [15, 0],
+    location: 2,
+    hostNames: ["Carlos Silva"],
+    capacity: 25,
+  },
+  {
+    title: "Building Inclusive Tech Teams: Beyond Diversity Hiring",
+    fromProposal: true,
+    day: 1,
+    start: [16, 0],
+    end: [17, 0],
+    location: 0,
+    hostNames: ["Bob Test", "Rafael Souza"],
+    capacity: 100,
+  },
+  {
+    title: "Hallway Track: CRDT Show & Tell",
+    fromProposal: false,
+    description:
+      "Impromptu session: I'll demo a small real-time collaborative editor built on CRDTs and we can poke at the edge cases together. Bring your laptop if you want to pair on it.\n\nAdded straight to the schedule because the hallway conversation got out of hand — that's what open scheduling is for!",
+    day: 1,
+    start: [16, 0],
+    end: [16, 30],
+    location: 2,
+    hostNames: ["Min-jun Kim"],
+    capacity: 15,
+  },
+  // Day 3
+  {
+    title: "Microservices Architecture: Lessons from the Trenches",
+    fromProposal: true,
+    day: 2,
+    start: [9, 0],
+    end: [10, 0],
+    location: 0,
+    hostNames: ["Mohammed El-Sayed"],
+    capacity: 100,
+  },
+  {
+    title: "Blockchain Beyond Cryptocurrency: Practical Applications",
+    fromProposal: true,
+    day: 2,
+    start: [10, 0],
+    end: [11, 0],
+    location: 1,
+    hostNames: ["Kwame Mensah"],
+    capacity: 30,
+  },
+  {
+    title: "DevOps Culture: Breaking Down Silos",
+    fromProposal: true,
+    day: 2,
+    start: [10, 30],
+    end: [11, 30],
+    location: 2,
+    hostNames: ["Diego Fernández"],
+    capacity: 25,
+  },
+  {
+    title:
+      "Cybersecurity in the Age of Remote Work: Protecting Your Digital Assets",
+    fromProposal: true,
+    day: 2,
+    start: [14, 0],
+    end: [15, 0],
+    location: 0,
+    hostNames: ["Fatima Al-Farsi"],
+    capacity: 100,
+  },
+  {
+    title: "Closing Session & Farewell",
+    fromProposal: false,
+    description:
+      "Wrap-up of Conference Gamma: community announcements, a look back at the highlights of the last three days, thank-yous to volunteers and speakers, and a preview of next year's edition. We close with a group photo in front of the Main Hall.",
+    day: 2,
+    start: [16, 0],
+    end: [17, 0],
+    location: 0,
+    hostNames: ["Charlie Test"],
+    capacity: 100,
+    attendeeScheduled: false, // organizer-planned, like the keynote
+  },
+];
+
 function clearAll() {
   console.log("🧹 Clearing all tables...");
   const db = openDb();
@@ -555,6 +762,12 @@ function seedTestData() {
   console.log(
     `  ✅ Created ${guestRows.length} guests (${avatarCount} with avatars)`
   );
+
+  const guestIdByName = (name: string): string => {
+    const guest = guestRows.find((g) => g.name === name);
+    if (!guest) throw new Error(`Unknown seed guest: ${name}`);
+    return guest.id;
+  };
 
   // Locations
   console.log("  📍 Creating test locations...");
@@ -660,7 +873,9 @@ function seedTestData() {
 
   eventRows.forEach((ev, eventIndex) => {
     const eventName = eventConfigs[eventIndex].name;
-    const numProposals = 8 + eventIndex * 2; // 8, 10, 12
+    // Later phases have accumulated more proposals; Gamma (scheduling) gets
+    // all templates so gammaSessionConfigs can schedule any of them.
+    const numProposals = [8, 10, sessionTemplates.length][eventIndex];
 
     for (let i = 0; i < numProposals; i++) {
       const template = sessionTemplates[i % sessionTemplates.length];
@@ -738,6 +953,34 @@ function seedTestData() {
     });
   });
 
+  // Conference Gamma is mid-scheduling: most of its proposals get scheduled
+  // as sessions below (gammaSessionConfigs). Align each scheduled proposal's
+  // hosts and duration with its session so the data stays consistent — and so
+  // the vote seeding below skips the real hosts.
+  const gammaEvent = eventRows[2];
+  for (const cfg of gammaSessionConfigs) {
+    if (!cfg.fromProposal) continue;
+    const proposal = proposalRows.find(
+      (p) => p.eventId === gammaEvent.id && p.title === cfg.title
+    );
+    if (!proposal) {
+      throw new Error(`No seeded Gamma proposal titled "${cfg.title}"`);
+    }
+    for (let i = proposalHostRows.length - 1; i >= 0; i--) {
+      if (proposalHostRows[i].proposalId === proposal.id) {
+        proposalHostRows.splice(i, 1);
+      }
+    }
+    proposalHostRows.push(
+      ...cfg.hostNames.map((name) => ({
+        proposalId: proposal.id,
+        guestId: guestIdByName(name),
+      }))
+    );
+    proposal.durationMinutes =
+      cfg.end[0] * 60 + cfg.end[1] - (cfg.start[0] * 60 + cfg.start[1]);
+  }
+
   db.insert(schema.sessionProposals).values(proposalRows).run();
   if (proposalHostRows.length > 0) {
     db.insert(schema.proposalHosts).values(proposalHostRows).run();
@@ -809,7 +1052,8 @@ function seedTestData() {
   }
   console.log(`  ✅ Created ${voteRows.length} votes`);
 
-  // Sessions (one keynote + lunch blockers per event)
+  // Sessions: one keynote + lunch blockers per event, plus a filled-out
+  // schedule for Conference Gamma (scheduling phase).
   console.log("  🎯 Creating test sessions...");
   const sessionRows: (typeof schema.sessions.$inferInsert)[] = [];
   const sessionHostRows: (typeof schema.sessionHosts.$inferInsert)[] = [];
@@ -828,7 +1072,7 @@ function seedTestData() {
       startTime: berlinTime(config.start, 0, 9, 0).toISOString(),
       endTime: berlinTime(config.start, 0, 10, 30).toISOString(),
       eventId: ev.id,
-      capacity: 0,
+      capacity: locationRows[0].capacity,
       attendeeScheduled: false,
       blocker: false,
       closed: false,
@@ -863,6 +1107,41 @@ function seedTestData() {
     }
   });
 
+  // Conference Gamma's scheduled sessions (see gammaSessionConfigs)
+  const gammaConfig = eventConfigs[2];
+  for (const cfg of gammaSessionConfigs) {
+    const proposal = cfg.fromProposal
+      ? proposalRows.find(
+          (p) => p.eventId === gammaEvent.id && p.title === cfg.title
+        )
+      : undefined;
+    const sessionId = nanoid();
+    sessionRows.push({
+      id: sessionId,
+      title: cfg.title,
+      description: proposal?.description ?? cfg.description ?? "",
+      startTime: berlinTime(
+        gammaConfig.start,
+        cfg.day,
+        ...cfg.start
+      ).toISOString(),
+      endTime: berlinTime(gammaConfig.start, cfg.day, ...cfg.end).toISOString(),
+      eventId: gammaEvent.id,
+      capacity: cfg.capacity,
+      attendeeScheduled: cfg.attendeeScheduled ?? true,
+      blocker: false,
+      closed: cfg.closed ?? false,
+      proposalId: proposal?.id ?? null,
+    });
+    for (const name of cfg.hostNames) {
+      sessionHostRows.push({ sessionId, guestId: guestIdByName(name) });
+    }
+    sessionLocationRows.push({
+      sessionId,
+      locationId: locationRows[cfg.location].id,
+    });
+  }
+
   db.insert(schema.sessions).values(sessionRows).run();
   if (sessionHostRows.length > 0) {
     db.insert(schema.sessionHosts).values(sessionHostRows).run();
@@ -873,6 +1152,50 @@ function seedTestData() {
   console.log(
     `  ✅ Created ${sessionRows.length} sessions across ${eventRows.length} events`
   );
+
+  // RSVPs (Conference Gamma only — the server rejects RSVP changes outside
+  // the scheduling phase). Guests skip sessions they host and sessions
+  // overlapping one they already RSVP'd to. Bob Test never RSVPs the Opening
+  // Keynote: rsvp.spec.ts uses it as his clean "no prior RSVP" target.
+  console.log("  🙋 Creating test RSVPs...");
+  type SessionRow = (typeof sessionRows)[number];
+  const overlaps = (a: SessionRow, b: SessionRow) =>
+    a.startTime! < b.endTime! && b.startTime! < a.endTime!;
+  const rsvpRows: (typeof schema.rsvps.$inferInsert)[] = [];
+  const rsvpTargets = sessionRows
+    .filter((s) => s.eventId === gammaEvent.id && !s.blocker)
+    .sort((a, b) => a.startTime!.localeCompare(b.startTime!));
+  const rsvpCountBySession = new Map<string, number>();
+  for (const guest of guestRows) {
+    // Hosted sessions make the guest busy for that slot
+    const busy = rsvpTargets.filter((s) =>
+      sessionHostRows.some(
+        (sh) => sh.sessionId === s.id && sh.guestId === guest.id
+      )
+    );
+    for (const session of rsvpTargets) {
+      const isKeynote = session.title.startsWith("Opening Keynote");
+      if (isKeynote && guest.name === "Bob Test") continue;
+      if (busy.some((b) => b.id === session.id || overlaps(b, session))) {
+        continue;
+      }
+      const count = rsvpCountBySession.get(session.id) ?? 0;
+      if (count >= session.capacity!) continue;
+      if (seededRandom() < (isKeynote ? 0.6 : 0.3)) {
+        rsvpRows.push({
+          id: nanoid(),
+          sessionId: session.id,
+          guestId: guest.id,
+        });
+        rsvpCountBySession.set(session.id, count + 1);
+        busy.push(session);
+      }
+    }
+  }
+  if (rsvpRows.length > 0) {
+    db.insert(schema.rsvps).values(rsvpRows).run();
+  }
+  console.log(`  ✅ Created ${rsvpRows.length} RSVPs`);
 
   console.log("✅ Test data seeded successfully");
 }
