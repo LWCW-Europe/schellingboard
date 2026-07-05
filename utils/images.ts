@@ -27,7 +27,12 @@ export abstract class BaseImageResourceRepository<
   abstract readonly directory: string;
 
   get dirPath() {
-    return path.join(process.env.UPLOADS_DIR ?? "./uploads", this.directory);
+    // turbopackIgnore: paths point at a runtime uploads volume, not build
+    // assets; without it Turbopack traces the whole project into the bundle.
+    return path.join(
+      /*turbopackIgnore: true*/ process.env.UPLOADS_DIR ?? "./uploads",
+      this.directory
+    );
   }
 
   protected abstract getEndpoint(filename: string): string;
@@ -97,7 +102,11 @@ export abstract class BaseImageResourceRepository<
     await Promise.all(
       entries
         .filter((name) => name.startsWith(`${id}.`))
-        .map((name) => fs.unlink(path.join(dir, name)).catch(() => {}))
+        .map((name) =>
+          fs
+            .unlink(path.join(/*turbopackIgnore: true*/ dir, name))
+            .catch(() => {})
+        )
     );
   }
 
@@ -110,7 +119,10 @@ export abstract class BaseImageResourceRepository<
     await fs.mkdir(dir, { recursive: true });
     await this.delete(id);
     const filename = `${id}.${ext}`;
-    await fs.writeFile(path.join(dir, filename), buffer);
+    await fs.writeFile(
+      path.join(/*turbopackIgnore: true*/ dir, filename),
+      buffer
+    );
     return `${this.getEndpoint(filename)}?v=${Date.now()}`;
   }
 
@@ -123,7 +135,7 @@ export abstract class BaseImageResourceRepository<
   ): Promise<{ data: Buffer; contentType: string } | undefined> {
     if (!SAFE_FILENAME.test(filename)) return undefined;
 
-    filename = path.join(this.dirPath, filename);
+    filename = path.join(/*turbopackIgnore: true*/ this.dirPath, filename);
     try {
       const data = await fs.readFile(filename);
       const ext = filename.split(".").pop()!;
