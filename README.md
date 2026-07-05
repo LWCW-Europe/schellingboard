@@ -17,6 +17,8 @@ This is a public open-source fork of [rachelweinberg12/scheduling-app](https://g
 
 ![Scheduling board](docs/screenshot-schedule.png)
 
+More screenshots at [schellingboard.org](https://schellingboard.org).
+
 ## Deployment
 
 The recommended way to self-host SchellingBoard is via Docker.
