@@ -156,6 +156,265 @@ function generateEventDates() {
   ];
 }
 
+// Committed CC0 avatar images (see scripts/seed-assets/avatars/README.md);
+// copied into UPLOADS_DIR at seed time like real uploads.
+const seedAvatarsDir = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "seed-assets/avatars"
+);
+
+function uploadedAvatarsDir(): string {
+  return path.join(process.env.UPLOADS_DIR ?? "./uploads", "avatars");
+}
+
+interface GuestConfig {
+  name: string;
+  email: string;
+  aboutMe?: string;
+  avatar?: number; // index into scripts/seed-assets/avatars/avatar-NN.webp
+}
+
+// 40 guests: the 3 e2e fixture guests must stay first (proposal host
+// assignment is index-based); 35 have a filled-in profile, 20 of those an
+// avatar, 5 stay default (no aboutMe/avatar) as examples of new guests.
+const guestConfigs: GuestConfig[] = [
+  {
+    name: "Alice Test",
+    email: "alice@test.com",
+    aboutMe:
+      "Frontend developer from Osaka. I love talking about accessibility and design systems — find me at the coffee machine.",
+    avatar: 1,
+  },
+  {
+    name: "Bob Test",
+    email: "bob@test.com",
+    aboutMe:
+      "Product manager and community organizer from Lagos. I run a local meetup on inclusive product design and I'm always looking for speakers.",
+    avatar: 2,
+  },
+  {
+    name: "Charlie Test",
+    email: "charlie@test.com",
+    aboutMe:
+      "Data engineer from Guadalajara. Ask me about stream processing, or better yet, about my sourdough starter.",
+    avatar: 16,
+  },
+  { name: "Yuki Tanaka", email: "yuki.tanaka@example.com" },
+  { name: "Amara Okafor", email: "amara.okafor@example.com" },
+  { name: "Sofía Martínez", email: "sofia.martinez@example.com" },
+  {
+    name: "Wei Chen",
+    email: "wei.chen@example.com",
+    aboutMe:
+      "Platform engineer focused on developer experience. Previously built CI tooling at a fintech startup in Shanghai.",
+    avatar: 4,
+  },
+  {
+    name: "Priya Sharma",
+    email: "priya.sharma@example.com",
+    aboutMe:
+      "ML researcher from Bengaluru working on fairness in recommendation systems.\n\nFirst time at this conference — say hi if you see me wandering around looking lost!",
+    avatar: 17,
+  },
+  {
+    name: "Lars Eriksson",
+    email: "lars.eriksson@example.com",
+    aboutMe:
+      "Backend developer from Gothenburg. Rust enthusiast, reluctant Kubernetes operator, enthusiastic sauna advocate.",
+    avatar: 6,
+  },
+  {
+    name: "Fatima Al-Farsi",
+    email: "fatima.alfarsi@example.com",
+    aboutMe:
+      "Security engineer from Muscat. I break things professionally and fix them as a hobby. Happy to chat about threat modeling for small teams.",
+    avatar: 7,
+  },
+  {
+    name: "Kwame Mensah",
+    email: "kwame.mensah@example.com",
+    aboutMe:
+      "Founder of a small agritech company in Accra. Interested in offline-first apps and building for low-bandwidth environments.",
+    avatar: 8,
+  },
+  {
+    name: "Hiroshi Yamamoto",
+    email: "hiroshi.yamamoto@example.com",
+    aboutMe:
+      "Embedded systems engineer. I make LEDs blink for a living and I'm not ashamed of it.",
+    avatar: 9,
+  },
+  {
+    name: "Aisha Diallo",
+    email: "aisha.diallo@example.com",
+    aboutMe:
+      "UX researcher from Dakar, currently based in Berlin. I care deeply about research ethics and multilingual interfaces.",
+    avatar: 10,
+  },
+  {
+    name: "Diego Fernández",
+    email: "diego.fernandez@example.com",
+    aboutMe:
+      "Site reliability engineer from Buenos Aires. On-call survivor, incident retrospective enthusiast, tango dancer on weekends.",
+    avatar: 11,
+  },
+  {
+    name: "Mei-Ling Wu",
+    email: "meiling.wu@example.com",
+    aboutMe:
+      "Technical writer from Taipei. I turn engineering mumbling into documentation people actually read.",
+    avatar: 12,
+  },
+  {
+    name: "Olga Petrova",
+    email: "olga.petrova@example.com",
+    aboutMe:
+      "Database internals nerd. If your query is slow I want to hear about it in excruciating detail.",
+    avatar: 13,
+  },
+  {
+    name: "Jean-Pierre Dubois",
+    email: "jeanpierre.dubois@example.com",
+    aboutMe:
+      "Engineering manager from Lyon. Interested in sustainable pace, team topologies, and where to find decent cheese near the venue.",
+    avatar: 14,
+  },
+  {
+    name: "Thabo Ndlovu",
+    email: "thabo.ndlovu@example.com",
+    aboutMe:
+      "Full-stack developer from Johannesburg working in civic tech. Building tools that help people navigate public services.",
+    avatar: 15,
+  },
+  {
+    name: "Anna Kowalska",
+    email: "anna.kowalska@example.com",
+    aboutMe:
+      "QA engineer from Kraków. I find the bugs you swore were impossible. Also: board game collector, 200+ and counting.",
+    avatar: 3,
+  },
+  {
+    name: "Mohammed El-Sayed",
+    email: "mohammed.elsayed@example.com",
+    aboutMe:
+      "Cloud architect from Cairo. Recovering microservices maximalist — ask me about the monolith we happily went back to.",
+    avatar: 5,
+  },
+  {
+    name: "Isabella Rossi",
+    email: "isabella.rossi@example.com",
+    aboutMe:
+      "Design lead from Milan. I bridge the gap between Figma and production, one design token at a time.",
+    avatar: 18,
+  },
+  {
+    name: "Min-jun Kim",
+    email: "minjun.kim@example.com",
+    aboutMe:
+      "Game developer from Seoul, moonlighting in web tech. Fascinated by real-time collaboration and CRDTs.",
+    avatar: 19,
+  },
+  {
+    name: "Carlos Silva",
+    email: "carlos.silva@example.com",
+    aboutMe:
+      "DevOps engineer from Porto. I automate myself out of a job roughly once a year and somehow still have one.",
+    avatar: 20,
+  },
+  {
+    name: "Nadia Haddad",
+    email: "nadia.haddad@example.com",
+    aboutMe:
+      "Mobile developer from Beirut. Flutter by day, native by necessity. Organizer of a local women-in-tech mentoring circle.",
+  },
+  {
+    name: "Freya Nielsen",
+    email: "freya.nielsen@example.com",
+    aboutMe:
+      "Accessibility consultant from Copenhagen. Screen reader power user. I will happily audit your conference talk slides.",
+  },
+  {
+    name: "Arjun Nair",
+    email: "arjun.nair@example.com",
+    aboutMe:
+      "Distributed systems engineer from Kochi. Currently obsessed with consensus protocols and filter coffee, in that order.",
+  },
+  {
+    name: "Elif Yılmaz",
+    email: "elif.yilmaz@example.com",
+    aboutMe:
+      "Computer science student from Istanbul, here on a scholarship ticket. Excited about everything, please recommend me sessions!",
+  },
+  {
+    name: "Samuel Adeyemi",
+    email: "samuel.adeyemi@example.com",
+    aboutMe:
+      "Backend engineer from Ibadan working on payment infrastructure across West Africa.",
+  },
+  {
+    name: "Linh Nguyen",
+    email: "linh.nguyen@example.com",
+    aboutMe:
+      "Freelance web developer from Ho Chi Minh City. Jamstack fan, static site generator connoisseur, occasional conference speaker.",
+  },
+  {
+    name: "Marta Horvat",
+    email: "marta.horvat@example.com",
+    aboutMe:
+      "Agile coach from Zagreb. Yes, we can talk about whether estimates are worth it. No, we won't agree.",
+  },
+  {
+    name: "Dmitri Volkov",
+    email: "dmitri.volkov@example.com",
+    aboutMe:
+      "Compiler engineer. I read language specs for fun and I'm told this is concerning.",
+  },
+  {
+    name: "Chiara Bianchi",
+    email: "chiara.bianchi@example.com",
+    aboutMe:
+      "Data scientist from Bologna working in public health. Interested in reproducible research and open data.",
+  },
+  {
+    name: "Zanele Khumalo",
+    email: "zanele.khumalo@example.com",
+    aboutMe:
+      "Frontend developer from Durban. CSS is my love language. Currently deep-diving into container queries.",
+  },
+  {
+    name: "Rafael Souza",
+    email: "rafael.souza@example.com",
+    aboutMe:
+      "Engineering lead from São Paulo. I care about mentoring junior devs and building teams where questions are welcome.",
+  },
+  {
+    name: "Hana Kobayashi",
+    email: "hana.kobayashi@example.com",
+    aboutMe:
+      "Developer advocate based in Kyoto. I write tutorials, give talks, and collect conference stickers competitively.",
+  },
+  {
+    name: "Tereza Nováková",
+    email: "tereza.novakova@example.com",
+    aboutMe:
+      "Open source maintainer from Prague. Ask me about sustainable maintainership — or just send help, either works.",
+  },
+  {
+    name: "Ahmad Karimi",
+    email: "ahmad.karimi@example.com",
+    aboutMe:
+      "Software engineer from Tehran, now in Amsterdam. Working on developer tooling and learning Dutch, slowly.",
+  },
+  {
+    name: "Maria Papadopoulou",
+    email: "maria.papadopoulou@example.com",
+    aboutMe:
+      "Tech lead from Thessaloniki. Legacy code whisperer. Strong opinions on testing, loosely held on everything else.",
+  },
+  { name: "Mateo Quispe", email: "mateo.quispe@example.com" },
+  { name: "Leilani Kahale", email: "leilani.kahale@example.com" },
+];
+
 const sessionTemplates = [
   {
     title: "Building Scalable Web Applications with Modern React",
@@ -252,6 +511,9 @@ function clearAll() {
   db.delete(schema.events).run();
   db.delete(schema.locations).run();
   db.delete(schema.guests).run();
+  // Avatar files belong to the guest rows just deleted; remove them too so
+  // repeated seeding doesn't accumulate orphaned uploads.
+  fs.rmSync(uploadedAvatarsDir(), { recursive: true, force: true });
   console.log("  ✅ All tables cleared");
 }
 
@@ -265,13 +527,34 @@ function seedTestData() {
 
   // Guests
   console.log("  📝 Creating test guests...");
-  const guestRows = [
-    { id: nanoid(), name: "Alice Test", email: "alice@test.com" },
-    { id: nanoid(), name: "Bob Test", email: "bob@test.com" },
-    { id: nanoid(), name: "Charlie Test", email: "charlie@test.com" },
-  ];
+  fs.mkdirSync(uploadedAvatarsDir(), { recursive: true });
+  const guestRows = guestConfigs.map((config) => {
+    const id = nanoid();
+    let avatarUrl: string | null = null;
+    if (config.avatar !== undefined) {
+      const filename = `${id}.webp`;
+      fs.copyFileSync(
+        path.join(
+          seedAvatarsDir,
+          `avatar-${String(config.avatar).padStart(2, "0")}.webp`
+        ),
+        path.join(uploadedAvatarsDir(), filename)
+      );
+      avatarUrl = `/media/avatars/${filename}?v=${Date.now()}`;
+    }
+    return {
+      id,
+      name: config.name,
+      email: config.email,
+      aboutMe: config.aboutMe ?? null,
+      avatarUrl,
+    };
+  });
   db.insert(schema.guests).values(guestRows).run();
-  console.log(`  ✅ Created ${guestRows.length} guests`);
+  const avatarCount = guestRows.filter((g) => g.avatarUrl).length;
+  console.log(
+    `  ✅ Created ${guestRows.length} guests (${avatarCount} with avatars)`
+  );
 
   // Locations
   console.log("  📍 Creating test locations...");
