@@ -14,22 +14,23 @@ if (!mode || command.length === 0) {
   process.exit(1);
 }
 
-const envFileLocal = path.resolve(__dirname, `.env.${mode}.local`);
-const envFileShared = path.resolve(__dirname, `.env.${mode}`);
-const envFile = fs.existsSync(envFileLocal)
-  ? envFileLocal
-  : fs.existsSync(envFileShared)
-    ? envFileShared
-    : null;
+// The .local file is an overlay: dotenv never overwrites variables that are
+// already set, so loading the .local file first makes its values win, with
+// the shared file filling in the rest. Variables already present in the
+// actual environment beat both.
+const envFiles = [
+  path.resolve(__dirname, `.env.${mode}.local`),
+  path.resolve(__dirname, `.env.${mode}`),
+].filter((file) => fs.existsSync(file));
 
-if (!envFile) {
+if (envFiles.length === 0) {
   console.warn(
     `Warning: no env file found for mode "${mode}" — proceeding with empty env`
   );
 } else {
-  const dotenvResult = dotenv.config({ path: envFile });
+  const dotenvResult = dotenv.config({ path: envFiles });
   if (dotenvResult.error) {
-    console.error(`Failed to load ${envFile}`);
+    console.error(`Failed to load ${envFiles.join(", ")}`);
     console.error(dotenvResult.error);
     process.exit(1);
   }
