@@ -11,6 +11,7 @@ import {
   sendTestEmailAction,
 } from "../actions/admin-guests";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON, DANGER_BUTTON } from "./buttons";
+import { DataTable } from "./data-table";
 
 function AddGuestForm({
   onError,
@@ -128,53 +129,47 @@ function GuestRow({
 
   if (mode === "edit") {
     return (
-      <li className="py-3">
-        <form
-          onSubmit={handleSave}
-          className="flex flex-col sm:flex-row gap-2 sm:items-center"
-        >
-          <Input
-            aria-label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="flex-1 h-10"
-          />
-          <Input
-            aria-label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="flex-1 h-10"
-          />
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={isPending}
-              className={PRIMARY_BUTTON}
-            >
-              {isPending ? "Saving..." : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onError(null);
-                setMode("view");
-              }}
-              disabled={isPending}
-              className={SECONDARY_BUTTON}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </li>
+      <form
+        onSubmit={handleSave}
+        className="flex flex-col sm:flex-row gap-2 sm:items-center"
+      >
+        <Input
+          aria-label="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="flex-1 h-10"
+        />
+        <Input
+          aria-label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="flex-1 h-10"
+        />
+        <div className="flex gap-2">
+          <button type="submit" disabled={isPending} className={PRIMARY_BUTTON}>
+            {isPending ? "Saving..." : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onError(null);
+              setMode("view");
+            }}
+            disabled={isPending}
+            className={SECONDARY_BUTTON}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     );
   }
 
   return (
-    <li className="py-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+    <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
       <div className="flex-1 min-w-0">
         <p className="font-medium text-gray-900 truncate">{guest.name}</p>
         <p className="text-sm text-gray-500 truncate">{guest.info.email}</p>
@@ -227,11 +222,23 @@ function GuestRow({
           </button>
         </div>
       )}
-    </li>
+    </div>
   );
 }
 
-export function GuestsManager({ guests }: { guests: CompleteGuest[] }) {
+export function GuestsManager({
+  guests,
+  total,
+  page,
+  pageSize,
+  query,
+}: {
+  guests: CompleteGuest[];
+  total: number;
+  page: number;
+  pageSize: number;
+  query: string;
+}) {
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -244,15 +251,17 @@ export function GuestsManager({ guests }: { guests: CompleteGuest[] }) {
 
       <AddGuestForm onError={setError} />
 
-      {guests.length === 0 ? (
-        <p className="text-sm text-gray-500">No users yet.</p>
-      ) : (
-        <ul className="divide-y divide-gray-200 border-t border-b border-gray-200">
-          {guests.map((guest) => (
-            <GuestRow key={guest.id} guest={guest} onError={setError} />
-          ))}
-        </ul>
-      )}
+      <DataTable
+        rows={guests}
+        rowKey={(g) => g.id}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        searchQuery={query}
+        searchPlaceholder="Search name or email…"
+        emptyMessage="No users match."
+        listItem={(guest) => <GuestRow guest={guest} onError={setError} />}
+      />
     </div>
   );
 }

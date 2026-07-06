@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
@@ -6,6 +6,7 @@ import type {
   CompleteGuest,
   EventGuestPage,
   Guest,
+  GuestPage,
   GuestsRepository,
 } from "../interfaces";
 import { sanitizeGuest } from "@/utils/guests";
@@ -56,6 +57,41 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .all()
       .map((row) => row as Guest);
     return rows;
+  }
+
+  async search(opts: {
+    query?: string;
+    limit: number;
+    offset: number;
+  }): Promise<GuestPage> {
+    let where = undefined;
+    if (opts.query) {
+      const pattern = `%${escapeLike(opts.query)}%`;
+      where = or(
+        sql`${schema.guests.name} like ${pattern} escape '\\'`,
+        sql`${schema.guests.email} like ${pattern} escape '\\'`
+      );
+    }
+
+    const totalRow = this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.guests)
+      .where(where)
+      .get();
+
+    const rows = this.db
+      .select()
+      .from(schema.guests)
+      .where(where)
+      // id as tiebreaker: name is not unique, and without a deterministic
+      // order LIMIT/OFFSET pagination can duplicate or skip rows.
+      .orderBy(schema.guests.name, schema.guests.id)
+      .limit(opts.limit)
+      .offset(opts.offset)
+      .all()
+      .map(rowToGuest);
+
+    return { rows, total: totalRow?.count ?? 0 };
   }
 
   async searchForEventAssignment(

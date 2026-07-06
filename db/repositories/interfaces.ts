@@ -106,11 +106,27 @@ export type EventGuestPage = {
   total: number;
 };
 
+/** A page of complete guests plus the total count matching the same filter. */
+export type GuestPage = {
+  rows: CompleteGuest[];
+  total: number;
+};
+
 export interface GuestsRepository {
   list(): Promise<Guest[]>;
   /** Every user with their private info (email). For admin export/lookup. */
   listFull(): Promise<CompleteGuest[]>;
   listByEvent(eventId: string): Promise<Guest[]>;
+  /**
+   * Server-side paginated + searchable global user list. `query` matches name
+   * or email (case-insensitive substring, LIKE metacharacters matched
+   * literally). Ordered by name with id tiebreaker.
+   */
+  search(opts: {
+    query?: string;
+    limit: number;
+    offset: number;
+  }): Promise<GuestPage>;
   /**
    * Server-side paginated + searchable guest list scoped to an event's
    * assignment. `assigned` filters by membership (undefined = all); `query`

@@ -156,7 +156,10 @@ export function DataTable<T>({
   const onSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = new FormData(event.currentTarget).get("q");
-    setParams({ q: typeof value === "string" ? value : null, page: null });
+    // Server pages trim the query, so a whitespace-only value means "no
+    // search" — keep it out of the URL to match what the server renders.
+    const query = typeof value === "string" ? value.trim() : "";
+    setParams({ q: query || null, page: null });
   };
 
   const pageKeys = rows.map(rowKey);

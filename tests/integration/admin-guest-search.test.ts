@@ -4,6 +4,61 @@ import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent, createGuest } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 
+describe("guests.search", () => {
+  beforeAll(() => setupTestDb());
+  beforeEach(() => resetTestDb());
+
+  it("searches name and email case-insensitively by substring", async () => {
+    await createGuest({ name: "Alice Smith", email: "alice@test.example" });
+    await createGuest({ name: "Bob Jones", email: "bob@corp.example" });
+    const repos = getRepositories();
+
+    const byName = await repos.guests.search({
+      query: "smith",
+      limit: 50,
+      offset: 0,
+    });
+    expect(byName.total).toBe(1);
+    expect(byName.rows.map((r) => r.name)).toEqual(["Alice Smith"]);
+
+    const byEmail = await repos.guests.search({
+      query: "CORP",
+      limit: 50,
+      offset: 0,
+    });
+    expect(byEmail.rows.map((r) => r.name)).toEqual(["Bob Jones"]);
+    expect(byEmail.rows[0].info.email).toBe("bob@corp.example");
+  });
+
+  it("matches LIKE metacharacters literally", async () => {
+    await createGuest({ name: "a_b", email: "underscore@test.example" });
+    await createGuest({ name: "axb", email: "plain@test.example" });
+    const repos = getRepositories();
+
+    const { rows } = await repos.guests.search({
+      query: "a_b",
+      limit: 50,
+      offset: 0,
+    });
+    expect(rows.map((r) => r.name)).toEqual(["a_b"]);
+  });
+
+  it("paginates by name via limit/offset while reporting the full total", async () => {
+    for (const name of ["E", "C", "A", "D", "B"]) {
+      await createGuest({ name, email: `${name}@test.example` });
+    }
+    const repos = getRepositories();
+
+    const firstPage = await repos.guests.search({ limit: 2, offset: 0 });
+    expect(firstPage.total).toBe(5);
+    expect(firstPage.rows.map((r) => r.name)).toEqual(["A", "B"]);
+
+    const secondPage = await repos.guests.search({ limit: 2, offset: 2 });
+    expect(secondPage.total).toBe(5);
+    expect(secondPage.rows.map((r) => r.name)).toEqual(["C", "D"]);
+  });
+});
+
 describe("guests.searchForEventAssignment", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());

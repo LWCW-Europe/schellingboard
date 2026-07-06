@@ -189,6 +189,44 @@ test.describe("Admin UI", () => {
       page.getByRole("listitem").filter({ hasText: email })
     ).toHaveCount(0);
   });
+
+  test("searches and paginates users", async ({ page }) => {
+    await adminLogin(page);
+    await gotoUsers(page);
+
+    const users = page.getByRole("region", { name: "Users" });
+    const userItem = (name: string) =>
+      users.getByRole("listitem").filter({ hasText: name });
+
+    // The 40 seeded guests span two pages of 25, ordered by name.
+    await expect(users.getByText(/Page 1 of \d+/)).toBeVisible();
+    await expect(userItem("Alice Test")).toBeVisible();
+    await users.getByRole("button", { name: "Next page" }).click();
+    await expect(users.getByText(/Page 2 of \d+/)).toBeVisible();
+    await expect(userItem("Alice Test")).toHaveCount(0);
+
+    // Server-side search by name narrows the list and resets to page 1; the
+    // URL carries the query.
+    await users.getByRole("searchbox", { name: "Search" }).fill("Alice");
+    await users.getByRole("button", { name: "Search" }).click();
+    await expect(page).toHaveURL(/[?&]q=Alice/);
+    await expect(userItem("Alice Test")).toBeVisible();
+    await expect(userItem("Bob Test")).toHaveCount(0);
+    await expect(users.getByText("Page 1 of 1")).toBeVisible();
+
+    // Search also matches emails.
+    await users.getByRole("searchbox", { name: "Search" }).fill("bob@test.com");
+    await users.getByRole("button", { name: "Search" }).click();
+    await expect(userItem("Bob Test")).toBeVisible();
+    await expect(userItem("Alice Test")).toHaveCount(0);
+
+    // A whitespace-only query means "no search": the URL must not keep a
+    // stale q param while the list renders unfiltered.
+    await users.getByRole("searchbox", { name: "Search" }).fill("   ");
+    await users.getByRole("button", { name: "Search" }).click();
+    await expect(userItem("Alice Test")).toBeVisible();
+    await expect(page).not.toHaveURL(/[?&]q=/);
+  });
 });
 
 test.describe("Admin UI events", () => {
