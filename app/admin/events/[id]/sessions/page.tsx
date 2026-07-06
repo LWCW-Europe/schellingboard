@@ -36,26 +36,32 @@ export default async function AdminEventSessionsPage({
     .filter((l) => assignedLocationIds.has(l.id))
     .map((l) => ({ id: l.id, name: l.name }));
 
-  const sessionRows: SessionRow[] = await Promise.all(
-    (await repos.sessions.listByEvent(id)).map(async (s) => ({
-      id: s.id,
-      title: s.title,
-      description: s.description,
-      startTime: s.startTime ? s.startTime.toISOString() : null,
-      endTime: s.endTime ? s.endTime.toISOString() : null,
-      capacity: s.capacity,
-      attendeeScheduled: s.attendeeScheduled,
-      blocker: s.blocker,
-      closed: s.closed,
-      hosts: s.hosts.map((h) => ({ id: h.id, name: h.name })),
-      locations: s.locations.map((l) => ({ id: l.id, name: l.name })),
-      numRsvps: s.numRsvps,
-      rsvps: (await repos.rsvps.listBySession(s.id)).map((r) => ({
-        guestId: r.guestId,
-        name: guestNameById.get(r.guestId) ?? "Unknown guest",
-      })),
-    }))
-  );
+  const sessions = await repos.sessions.listByEvent(id);
+  const rsvpsBySession = new Map<string, { guestId: string; name: string }[]>();
+  for (const r of await repos.rsvps.listBySessions(sessions.map((s) => s.id))) {
+    let list = rsvpsBySession.get(r.sessionId);
+    if (!list) rsvpsBySession.set(r.sessionId, (list = []));
+    list.push({
+      guestId: r.guestId,
+      name: guestNameById.get(r.guestId) ?? "Unknown guest",
+    });
+  }
+
+  const sessionRows: SessionRow[] = sessions.map((s) => ({
+    id: s.id,
+    title: s.title,
+    description: s.description,
+    startTime: s.startTime ? s.startTime.toISOString() : null,
+    endTime: s.endTime ? s.endTime.toISOString() : null,
+    capacity: s.capacity,
+    attendeeScheduled: s.attendeeScheduled,
+    blocker: s.blocker,
+    closed: s.closed,
+    hosts: s.hosts.map((h) => ({ id: h.id, name: h.name })),
+    locations: s.locations.map((l) => ({ id: l.id, name: l.name })),
+    numRsvps: s.numRsvps,
+    rsvps: rsvpsBySession.get(s.id) ?? [],
+  }));
 
   return (
     <EventSessionsManager

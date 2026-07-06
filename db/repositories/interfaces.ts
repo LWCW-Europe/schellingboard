@@ -248,6 +248,7 @@ export type Rsvp = {
 export interface RsvpsRepository {
   listByGuest(guestId: string): Promise<Rsvp[]>;
   listBySession(sessionId: string): Promise<Rsvp[]>;
+  listBySessions(sessionIds: string[]): Promise<Rsvp[]>;
   create(data: { sessionId: string; guestId: string }): Promise<Rsvp>;
   deleteBySessionAndGuest(sessionId: string, guestId: string): Promise<void>;
   deleteBySessionAndGuests(

@@ -31,6 +31,16 @@ export class SqliteRsvpsRepository implements RsvpsRepository {
       .map(rowToRsvp);
   }
 
+  async listBySessions(sessionIds: string[]): Promise<Rsvp[]> {
+    if (sessionIds.length === 0) return [];
+    return this.db
+      .select()
+      .from(schema.rsvps)
+      .where(inArray(schema.rsvps.sessionId, sessionIds))
+      .all()
+      .map(rowToRsvp);
+  }
+
   async create(data: { sessionId: string; guestId: string }): Promise<Rsvp> {
     const id = nanoid();
     this.db
