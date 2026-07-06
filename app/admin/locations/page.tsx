@@ -7,15 +7,17 @@ export default async function AdminLocationsPage() {
 
   const repositories = getRepositories();
   const events = await repositories.events.list();
-  const locations: AdminLocation[] = await Promise.all(
-    (await repositories.locations.list()).map(async (location) => ({
-      location,
-      eventIds: await repositories.locations.listEventIds(location.id),
-      sessionLinkCount: await repositories.locations.countSessionLinks(
-        location.id
-      ),
-    }))
-  );
+  const allLocations = await repositories.locations.list();
+  const locationIds = allLocations.map((l) => l.id);
+  const eventIdsByLocation =
+    await repositories.locations.listEventIdsByLocations(locationIds);
+  const sessionLinkCounts =
+    await repositories.locations.countSessionLinksByLocations(locationIds);
+  const locations: AdminLocation[] = allLocations.map((location) => ({
+    location,
+    eventIds: eventIdsByLocation.get(location.id) ?? [],
+    sessionLinkCount: sessionLinkCounts.get(location.id) ?? 0,
+  }));
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">

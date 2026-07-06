@@ -200,8 +200,18 @@ export interface LocationsRepository {
   delete(id: string): Promise<void>;
   /** Number of sessions linked to this location. */
   countSessionLinks(id: string): Promise<number>;
+  /**
+   * Session-link counts for many locations in one query. Every requested id
+   * is present in the result; locations without links map to 0.
+   */
+  countSessionLinksByLocations(ids: string[]): Promise<Map<string, number>>;
   /** IDs of events this location is assigned to. */
   listEventIds(id: string): Promise<string[]>;
+  /**
+   * Event IDs for many locations in one query. Every requested id is present
+   * in the result; locations without assignments map to [].
+   */
+  listEventIdsByLocations(ids: string[]): Promise<Map<string, string[]>>;
   /** IDs of locations assigned to the given event. */
   listLocationIdsByEvent(eventId: string): Promise<string[]>;
   /** Replaces the location's event assignments. */
@@ -303,6 +313,11 @@ export type Rsvp = {
 export interface RsvpsRepository {
   listByGuest(guestId: string): Promise<Rsvp[]>;
   listBySession(sessionId: string): Promise<Rsvp[]>;
+  /**
+   * RSVPs for many sessions in one query. Every requested id is present in
+   * the result; sessions without RSVPs map to [].
+   */
+  listBySessions(sessionIds: string[]): Promise<Map<string, Rsvp[]>>;
   create(data: { sessionId: string; guestId: string }): Promise<Rsvp>;
   deleteBySessionAndGuest(sessionId: string, guestId: string): Promise<void>;
   deleteBySessionAndGuests(

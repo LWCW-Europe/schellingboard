@@ -186,6 +186,24 @@ export class SqliteLocationsRepository implements LocationsRepository {
     return row?.count ?? 0;
   }
 
+  async countSessionLinksByLocations(
+    ids: string[]
+  ): Promise<Map<string, number>> {
+    const result = new Map<string, number>(ids.map((id) => [id, 0]));
+    if (ids.length === 0) return result;
+    const rows = this.db
+      .select({
+        locationId: schema.sessionLocations.locationId,
+        count: sql<number>`count(*)`,
+      })
+      .from(schema.sessionLocations)
+      .where(inArray(schema.sessionLocations.locationId, ids))
+      .groupBy(schema.sessionLocations.locationId)
+      .all();
+    for (const row of rows) result.set(row.locationId, row.count);
+    return result;
+  }
+
   async listEventIds(id: string): Promise<string[]> {
     return this.db
       .select({ eventId: schema.eventLocations.eventId })
@@ -193,6 +211,21 @@ export class SqliteLocationsRepository implements LocationsRepository {
       .where(eq(schema.eventLocations.locationId, id))
       .all()
       .map((r) => r.eventId);
+  }
+
+  async listEventIdsByLocations(ids: string[]): Promise<Map<string, string[]>> {
+    const result = new Map<string, string[]>(ids.map((id) => [id, []]));
+    if (ids.length === 0) return result;
+    const rows = this.db
+      .select({
+        locationId: schema.eventLocations.locationId,
+        eventId: schema.eventLocations.eventId,
+      })
+      .from(schema.eventLocations)
+      .where(inArray(schema.eventLocations.locationId, ids))
+      .all();
+    for (const row of rows) result.get(row.locationId)?.push(row.eventId);
+    return result;
   }
 
   async listLocationIdsByEvent(eventId: string): Promise<string[]> {

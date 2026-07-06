@@ -65,26 +65,27 @@ export default async function AdminEventSessionsPage({
   });
   if (redirectTarget) redirect(redirectTarget);
 
-  const sessionRows: SessionRow[] = await Promise.all(
-    rows.map(async (s) => ({
-      id: s.id,
-      title: s.title,
-      description: s.description,
-      startTime: s.startTime ? s.startTime.toISOString() : null,
-      endTime: s.endTime ? s.endTime.toISOString() : null,
-      capacity: s.capacity,
-      attendeeScheduled: s.attendeeScheduled,
-      blocker: s.blocker,
-      closed: s.closed,
-      hosts: s.hosts.map((h) => ({ id: h.id, name: h.name })),
-      locations: s.locations.map((l) => ({ id: l.id, name: l.name })),
-      numRsvps: s.numRsvps,
-      rsvps: (await repos.rsvps.listBySession(s.id)).map((r) => ({
-        guestId: r.guestId,
-        name: guestNameById.get(r.guestId) ?? "Unknown guest",
-      })),
-    }))
+  const rsvpsBySession = await repos.rsvps.listBySessions(
+    rows.map((s) => s.id)
   );
+  const sessionRows: SessionRow[] = rows.map((s) => ({
+    id: s.id,
+    title: s.title,
+    description: s.description,
+    startTime: s.startTime ? s.startTime.toISOString() : null,
+    endTime: s.endTime ? s.endTime.toISOString() : null,
+    capacity: s.capacity,
+    attendeeScheduled: s.attendeeScheduled,
+    blocker: s.blocker,
+    closed: s.closed,
+    hosts: s.hosts.map((h) => ({ id: h.id, name: h.name })),
+    locations: s.locations.map((l) => ({ id: l.id, name: l.name })),
+    numRsvps: s.numRsvps,
+    rsvps: (rsvpsBySession.get(s.id) ?? []).map((r) => ({
+      guestId: r.guestId,
+      name: guestNameById.get(r.guestId) ?? "Unknown guest",
+    })),
+  }));
 
   return (
     <EventSessionsManager
