@@ -37,6 +37,7 @@ import {
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { createAdminAuthCookie } from "@/utils/auth";
+import { testEmail } from "@/emails/test-email";
 import { sendMail } from "@/utils/mailer";
 import { VoteChoice } from "@/db/repositories/interfaces";
 import {
@@ -281,13 +282,19 @@ describe("admin guest actions", () => {
 
   describe("sendTestEmailAction", () => {
     it("sends a test email to the guest's address", async () => {
-      const guest = await createGuest({ email: "guest@test.example" });
+      const guest = await createGuest({
+        name: "Ada Lovelace",
+        email: "guest@test.example",
+      });
       const result = await sendTestEmailAction({ id: guest.id });
       expect(result).toEqual({ ok: true });
-      expect(sendMail).toHaveBeenCalledWith({
+      expect(sendMail).toHaveBeenCalledOnce();
+
+      // We don't test anything about the email's content, but we do test that
+      // we sent to the correct address and filled in the correct name.
+      expect(vi.mocked(sendMail).mock.calls[0][0]).toEqual({
         to: "guest@test.example",
-        subject: "Test email",
-        text: "test email",
+        ...testEmail({ name: "Ada Lovelace" }),
       });
     });
 

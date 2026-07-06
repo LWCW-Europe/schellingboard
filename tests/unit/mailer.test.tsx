@@ -19,7 +19,11 @@ import {
 const MESSAGE = {
   to: "guest@test.example",
   subject: "Test email",
-  text: "test email",
+  body: (
+    <p>
+      test <strong>email</strong>
+    </p>
+  ),
 };
 
 describe("smtpTransportConfig", () => {
@@ -229,7 +233,7 @@ describe("mailer", () => {
       expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
       expect(transportSendMail).toHaveBeenCalledTimes(2);
       expect(transportSendMail).toHaveBeenCalledWith(
-        expect.objectContaining(MESSAGE)
+        expect.objectContaining({ to: MESSAGE.to, subject: MESSAGE.subject })
       );
     });
 
@@ -240,6 +244,50 @@ describe("mailer", () => {
       await sendMail(MESSAGE);
       expect(transportSendMail).toHaveBeenCalledWith(
         expect.objectContaining({ from: "Events Team <events@test.example>" })
+      );
+    });
+
+    it("renders the body to html along with a text version converted from it", async () => {
+      initMailer();
+      await sendMail(MESSAGE);
+      const message = transportSendMail.mock.calls[0][0] as {
+        html: string;
+        text: string;
+      };
+      expect(message.html).toContain("<p>test <strong>email</strong></p>");
+      expect(message.text).toBe("test **email**");
+    });
+
+    it("converts structure like headings and lists to markdown for the text part", async () => {
+      initMailer();
+      await sendMail({
+        to: "guest@test.example",
+        subject: "Markdown conversion test",
+        body: (
+          <>
+            <h1>Test email</h1>
+            <p>
+              This is a <strong>test</strong> with a{" "}
+              <a href="/test.html">link</a>
+            </p>
+            <ul>
+              <li>first item</li>
+              <li>second item</li>
+            </ul>
+          </>
+        ),
+      });
+      const message = transportSendMail.mock.calls[0][0] as { text: string };
+      expect(message.text).toBe(
+        [
+          "Test email",
+          "==========",
+          "",
+          "This is a **test** with a [link](/test.html)",
+          "",
+          "*   first item",
+          "*   second item",
+        ].join("\n")
       );
     });
   });

@@ -8,6 +8,7 @@
     "@headlessui/react": "^2.2.10",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.4.0",
+    "@react-email/render": "^2.0.10",
     "@tailwindcss/forms": "^0.5.11",
     "better-sqlite3": "^12.11.1",
     "clsx": "^2.1.1",
@@ -25,8 +26,9 @@
     "react": "^19",
     "react-dom": "^19",
     "react-hook-form": "^7.80.0",
-    "zod": "^4.4.3",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "turndown": "^7.2.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -39,6 +41,7 @@
     "@types/nodemailer": "^8.0.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/turndown": "^5.0.6",
     "@typescript-eslint/eslint-plugin": "^8.62.1",
     "@typescript-eslint/parser": "^8.62.1",
     "@vitest/coverage-v8": "^4",

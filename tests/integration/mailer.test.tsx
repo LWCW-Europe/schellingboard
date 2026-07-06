@@ -52,7 +52,12 @@ describe.skipIf(!MAILPIT_API_URL)("sendMail via mailpit", () => {
     await sendMail({
       to: "recipient@test.example",
       subject,
-      text: "test email body",
+      body: (
+        <>
+          <p>test body line 1</p>
+          <p>line 2</p>
+        </>
+      ),
     });
 
     // The SMTP transaction is complete, but allow mailpit a moment to index.
@@ -73,7 +78,14 @@ describe.skipIf(!MAILPIT_API_URL)("sendMail via mailpit", () => {
 
     const message = (await mailpitGet(`/api/v1/message/${summary.ID}`)) as {
       Text: string;
+      HTML: string;
     };
-    expect(message.Text.trim()).toBe("test email body");
+
+    // Check that both the html and the derived text parts arrive. This assumes
+    // the HTML isn't formatted too much. For text, note that SMTP encodes
+    // newlines as \r\n.
+    expect(message.HTML).toContain("<p>test body line 1</p>");
+    expect(message.HTML).toContain("<p>line 2</p>");
+    expect(message.Text.trim()).toBe("test body line 1\r\n\r\nline 2");
   });
 });

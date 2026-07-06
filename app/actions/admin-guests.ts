@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import { sendMail } from "@/utils/mailer";
+import { testEmail } from "@/emails/test-email";
 
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
 
@@ -92,8 +93,7 @@ export async function sendTestEmailAction(input: {
   try {
     await sendMail({
       to: guest.info.email,
-      subject: "Test email",
-      text: "test email",
+      ...testEmail({ name: guest.name }),
     });
   } catch (err) {
     console.error("Failed to send test email:", err);
