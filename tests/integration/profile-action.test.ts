@@ -34,12 +34,6 @@ import path from "path";
 import os from "os";
 import sharp from "sharp";
 
-function form(fields: Record<string, string | Blob>): FormData {
-  const fd = new FormData();
-  for (const [k, v] of Object.entries(fields)) fd.append(k, v);
-  return fd;
-}
-
 let uploadsDir: string;
 
 describe("updateProfileAction", () => {
@@ -60,9 +54,10 @@ describe("updateProfileAction", () => {
   it("updates name and aboutMe for the current user", async () => {
     const guest = await createGuest({ name: "Old" });
     cookieJar.set("user", guest.id);
-    const result = await updateProfileAction(
-      form({ name: "New Name", aboutMe: "Hello there" })
-    );
+    const result = await updateProfileAction({
+      name: "New Name",
+      aboutMe: "Hello there",
+    });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
     expect(updated).toMatchObject({ name: "New Name", aboutMe: "Hello there" });
@@ -71,13 +66,11 @@ describe("updateProfileAction", () => {
   it("updates name, aboutMe and avatar for the current user", async () => {
     const guest = await createGuest({ name: "Old" });
     cookieJar.set("user", guest.id);
-    const result = await updateProfileAction(
-      form({
-        name: "New Name",
-        aboutMe: "Hello there",
-        avatar: await createImageFile(256, 256, "avatar.png"),
-      })
-    );
+    const result = await updateProfileAction({
+      name: "New Name",
+      aboutMe: "Hello there",
+      avatar: await createImageFile(256, 256, "avatar.png"),
+    });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
     expect(updated).toMatchObject({
@@ -94,13 +87,11 @@ describe("updateProfileAction", () => {
   it("resizes avatar to 256 and keeps extension", async () => {
     const guest = await createGuest({ name: "Old" });
     cookieJar.set("user", guest.id);
-    const result = await updateProfileAction(
-      form({
-        name: "New Name",
-        aboutMe: "Hello there",
-        avatar: await createImageFile(512, 512, "avatar.png"),
-      })
-    );
+    const result = await updateProfileAction({
+      name: "New Name",
+      aboutMe: "Hello there",
+      avatar: await createImageFile(512, 512, "avatar.png"),
+    });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
     const imagePath = path.join(uploadsDir, "avatars", `${updated?.id}.png`);
@@ -116,13 +107,11 @@ describe("updateProfileAction", () => {
   it("rejects images smaller than 256x256", async () => {
     const guest = await createGuest({ name: "Old" });
     cookieJar.set("user", guest.id);
-    const result = await updateProfileAction(
-      form({
-        name: "New Name",
-        aboutMe: "Hello there",
-        avatar: await createImageFile(128, 128, "avatar.png"),
-      })
-    );
+    const result = await updateProfileAction({
+      name: "New Name",
+      aboutMe: "Hello there",
+      avatar: await createImageFile(128, 128, "avatar.png"),
+    });
     expect(result).toMatchObject({ ok: false });
   });
 });

@@ -1,3 +1,5 @@
+import "client-only";
+
 function drawCover(
   ctx: CanvasRenderingContext2D,
   image: CanvasImageSource,
@@ -27,7 +29,7 @@ function drawCover(
   ctx.drawImage(image, sx, sy, sw, sh, 0, 0, destWidth, destHeight);
 }
 
-function toBlob(canvas: HTMLCanvasElement, file: File) {
+function toBlob(canvas: HTMLCanvasElement, file: Blob) {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
@@ -50,7 +52,7 @@ function toBlob(canvas: HTMLCanvasElement, file: File) {
 
 export async function resizeImage(
   canvas: HTMLCanvasElement,
-  file: File,
+  file: Blob,
   maxSize: number
 ): Promise<{ blob: Blob } | { error: string }> {
   const bitmap = await createImageBitmap(file);
