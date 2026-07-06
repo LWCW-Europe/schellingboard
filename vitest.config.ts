@@ -3,7 +3,10 @@ import path from "path";
 
 export default defineConfig({
   test: {
-    include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
+    include: [
+      "tests/unit/**/*.test.{ts,tsx}",
+      "tests/integration/**/*.test.{ts,tsx}",
+    ],
     environment: "node",
     pool: "forks",
     silent: "passed-only",

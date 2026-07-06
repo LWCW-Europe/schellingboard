@@ -1,5 +1,10 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
+import TurndownService from "turndown";
+import { render } from "@react-email/render";
+import type { ReactElement } from "react";
+
+const turndown = new TurndownService();
 
 type Mailer = { transport: Transporter; from: string };
 
@@ -134,12 +139,15 @@ function getMailer(): Mailer | null {
 // Send an email. Requires `initMailer` to have been called first. If email
 // sending is disabled, logs a warning, with no way for the caller to tell.
 //
-// Currently doesn't give access to most nodemailer message options, notably
-// including html email.
+// The body is given as a React element (see `emails/`) so that interpolated
+// values are escaped by React rather than concatenated into markup. It is
+// rendered to html, and a plain-text version (markdown) is derived from that
+// and sent alongside. Links must be absolute; relative links are passed
+// through as-is, which mail clients can't resolve.
 export async function sendMail(options: {
   to: string;
   subject: string;
-  text: string;
+  body: ReactElement;
 }): Promise<void> {
   const mailer = getMailer();
   if (!mailer) {
@@ -148,10 +156,12 @@ export async function sendMail(options: {
     return;
   }
   const { transport, from } = mailer;
+  const html = await render(options.body, { pretty: true });
   await transport.sendMail({
     from,
     to: options.to,
     subject: options.subject,
-    text: options.text,
+    html,
+    text: turndown.turndown(html),
   });
 }
