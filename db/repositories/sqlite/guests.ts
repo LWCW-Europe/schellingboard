@@ -94,6 +94,33 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return { rows, total: totalRow?.count ?? 0 };
   }
 
+  async listEventsByGuests(
+    guestIds: string[]
+  ): Promise<Map<string, { id: string; name: string }[]>> {
+    const result = new Map<string, { id: string; name: string }[]>(
+      guestIds.map((id) => [id, []])
+    );
+    if (guestIds.length === 0) return result;
+    const rows = this.db
+      .select({
+        guestId: schema.eventGuests.guestId,
+        eventId: schema.events.id,
+        eventName: schema.events.name,
+      })
+      .from(schema.eventGuests)
+      .innerJoin(
+        schema.events,
+        eq(schema.eventGuests.eventId, schema.events.id)
+      )
+      .where(inArray(schema.eventGuests.guestId, guestIds))
+      .orderBy(schema.events.name, schema.events.id)
+      .all();
+    for (const row of rows) {
+      result.get(row.guestId)?.push({ id: row.eventId, name: row.eventName });
+    }
+    return result;
+  }
+
   async searchForEventAssignment(
     eventId: string,
     opts: {

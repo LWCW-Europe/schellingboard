@@ -226,6 +226,14 @@ test.describe("Admin UI", () => {
     await users.getByRole("button", { name: "Search" }).click();
     await expect(userItem("Alice Test")).toBeVisible();
     await expect(page).not.toHaveURL(/[?&]q=/);
+
+    // Each user links to the events they are assigned to.
+    await userItem("Bob Test")
+      .getByRole("link", { name: "Conference Alpha" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Conference Alpha" })
+    ).toBeVisible();
   });
 });
 

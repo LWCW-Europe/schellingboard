@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
+import Link from "next/link";
 import clsx from "clsx";
 import { Input } from "@/app/input";
 import type { CompleteGuest } from "@/db/repositories/interfaces";
@@ -12,6 +13,12 @@ import {
 } from "../actions/admin-guests";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON, DANGER_BUTTON } from "./buttons";
 import { DataTable } from "./data-table";
+
+/** A guest plus the events they are assigned to. */
+export type AdminUser = {
+  guest: CompleteGuest;
+  events: { id: string; name: string }[];
+};
 
 function AddGuestForm({
   onError,
@@ -75,9 +82,11 @@ function AddGuestForm({
 
 function GuestRow({
   guest,
+  events,
   onError,
 }: {
   guest: CompleteGuest;
+  events: AdminUser["events"];
   onError: (error: string | null) => void;
 }) {
   const [mode, setMode] = useState<"view" | "edit" | "delete">("view");
@@ -173,6 +182,21 @@ function GuestRow({
       <div className="flex-1 min-w-0">
         <p className="font-medium text-gray-900 truncate">{guest.name}</p>
         <p className="text-sm text-gray-500 truncate">{guest.info.email}</p>
+        {events.length > 0 && (
+          <p className="text-sm text-gray-500 truncate">
+            {events.map((event, i) => (
+              <Fragment key={event.id}>
+                {i > 0 && " · "}
+                <Link
+                  href={`/admin/events/${event.id}`}
+                  className="underline hover:text-gray-700"
+                >
+                  {event.name}
+                </Link>
+              </Fragment>
+            ))}
+          </p>
+        )}
       </div>
       {mode === "delete" ? (
         <div className="flex gap-2 items-center">
@@ -227,13 +251,13 @@ function GuestRow({
 }
 
 export function GuestsManager({
-  guests,
+  users,
   total,
   page,
   pageSize,
   query,
 }: {
-  guests: CompleteGuest[];
+  users: AdminUser[];
   total: number;
   page: number;
   pageSize: number;
@@ -252,15 +276,17 @@ export function GuestsManager({
       <AddGuestForm onError={setError} />
 
       <DataTable
-        rows={guests}
-        rowKey={(g) => g.id}
+        rows={users}
+        rowKey={(u) => u.guest.id}
         total={total}
         page={page}
         pageSize={pageSize}
         searchQuery={query}
         searchPlaceholder="Search name or email…"
         emptyMessage="No users match."
-        listItem={(guest) => <GuestRow guest={guest} onError={setError} />}
+        listItem={(u) => (
+          <GuestRow guest={u.guest} events={u.events} onError={setError} />
+        )}
       />
     </div>
   );

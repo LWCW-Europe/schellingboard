@@ -70,6 +70,36 @@ describe("locations.countSessionLinksByLocations", () => {
   });
 });
 
+describe("guests.listEventsByGuests", () => {
+  beforeAll(() => setupTestDb());
+  beforeEach(() => resetTestDb());
+
+  it("returns events grouped per guest, ordered by event name", async () => {
+    const eventB = await createEvent({ name: "Beta" });
+    const eventA = await createEvent({ name: "Alpha" });
+    const g1 = await createGuest();
+    const g2 = await createGuest();
+    const g3 = await createGuest();
+    const repos = getRepositories();
+    await repos.guests.assignToEvent(eventA.id, [g1.id]);
+    await repos.guests.assignToEvent(eventB.id, [g1.id, g2.id]);
+
+    const result = await repos.guests.listEventsByGuests([g1.id, g2.id, g3.id]);
+
+    expect(result.get(g1.id)).toEqual([
+      { id: eventA.id, name: "Alpha" },
+      { id: eventB.id, name: "Beta" },
+    ]);
+    expect(result.get(g2.id)).toEqual([{ id: eventB.id, name: "Beta" }]);
+    expect(result.get(g3.id)).toEqual([]);
+  });
+
+  it("returns an empty map for no guests", async () => {
+    const result = await getRepositories().guests.listEventsByGuests([]);
+    expect(result.size).toBe(0);
+  });
+});
+
 describe("rsvps.listBySessions", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());

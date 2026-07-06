@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getRepositories } from "@/db/container";
 import { outOfRangePageRedirect } from "@/utils/pagination";
 import { requireAdminPage } from "../require-admin";
-import { GuestsManager } from "../guests-manager";
+import { GuestsManager, type AdminUser } from "../guests-manager";
 
 const PAGE_SIZE = 25;
 
@@ -38,12 +38,20 @@ export default async function AdminUsersPage({
   });
   if (redirectTarget) redirect(redirectTarget);
 
+  const eventsByGuest = await repositories.guests.listEventsByGuests(
+    rows.map((g) => g.id)
+  );
+  const users: AdminUser[] = rows.map((guest) => ({
+    guest,
+    events: eventsByGuest.get(guest.id) ?? [],
+  }));
+
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Users</h1>
       <section aria-label="Users" className="space-y-4">
         <GuestsManager
-          guests={rows}
+          users={users}
           total={total}
           page={page}
           pageSize={PAGE_SIZE}

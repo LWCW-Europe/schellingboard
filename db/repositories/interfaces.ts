@@ -128,6 +128,14 @@ export interface GuestsRepository {
     offset: number;
   }): Promise<GuestPage>;
   /**
+   * Assigned events for many guests in one query, ordered by event name.
+   * Every requested id is present in the result; guests without assignments
+   * map to [].
+   */
+  listEventsByGuests(
+    guestIds: string[]
+  ): Promise<Map<string, { id: string; name: string }[]>>;
+  /**
    * Server-side paginated + searchable guest list scoped to an event's
    * assignment. `assigned` filters by membership (undefined = all); `query`
    * matches name or email (case-insensitive substring). Ordered by name.
