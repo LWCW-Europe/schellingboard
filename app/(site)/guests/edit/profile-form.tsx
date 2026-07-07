@@ -66,9 +66,6 @@ export function ProfileForm({ guest }: { guest: Guest }) {
   const handleSubmit = async (
     rawProfile: z.infer<typeof profileFormSchema>
   ) => {
-    setIsSubmitting(true);
-    setFormError(null);
-
     const profile: z.infer<typeof profileSchema> = {
       ...rawProfile,
       avatar: rawProfile.avatar === null ? null : rawProfile.avatar?.[0],
@@ -86,6 +83,9 @@ export function ProfileForm({ guest }: { guest: Guest }) {
         profile.avatar = resized.blob;
       } catch {}
     }
+
+    setIsSubmitting(true);
+    setFormError(null);
 
     try {
       const result = await updateProfileAction(profile);
