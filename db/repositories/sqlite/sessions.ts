@@ -341,4 +341,42 @@ export class SqliteSessionsRepository implements SessionsRepository {
     // CASCADE.
     this.db.delete(schema.sessions).where(eq(schema.sessions.id, id)).run();
   }
+
+  async findLocationConflict(
+    eventId: string,
+    start: Date,
+    end: Date,
+    locationIds: string[],
+    excludeId?: string
+  ): Promise<{ id: string; title: string } | undefined> {
+    if (locationIds.length === 0) return undefined;
+
+    const conditions = [
+      eq(schema.sessions.eventId, eventId),
+      isNotNull(schema.sessions.startTime),
+      isNotNull(schema.sessions.endTime),
+      sql`${schema.sessions.startTime} < ${end.toISOString()}`,
+      sql`${schema.sessions.endTime} > ${start.toISOString()}`,
+      exists(
+        this.db
+          .select({ one: sql`1` })
+          .from(schema.sessionLocations)
+          .where(
+            and(
+              eq(schema.sessionLocations.sessionId, schema.sessions.id),
+              inArray(schema.sessionLocations.locationId, locationIds)
+            )
+          )
+      ),
+    ];
+    if (excludeId) conditions.push(sql`${schema.sessions.id} != ${excludeId}`);
+
+    const row = this.db
+      .select({ id: schema.sessions.id, title: schema.sessions.title })
+      .from(schema.sessions)
+      .where(and(...conditions))
+      .limit(1)
+      .get();
+    return row ?? undefined;
+  }
 }

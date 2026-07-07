@@ -325,6 +325,18 @@ export interface SessionsRepository {
   create(data: SessionCreateInput): Promise<Session>;
   update(id: string, patch: SessionUpdateInput): Promise<Session>;
   delete(id: string): Promise<void>;
+  /**
+   * Finds a scheduled session in the event that overlaps [start, end) and
+   * shares at least one of the given locations, excluding `excludeId`. Used
+   * for conflict checks; returns only the fields needed for an error message.
+   */
+  findLocationConflict(
+    eventId: string,
+    start: Date,
+    end: Date,
+    locationIds: string[],
+    excludeId?: string
+  ): Promise<{ id: string; title: string } | undefined>;
 }
 
 // ── RSVPs ─────────────────────────────────────────────────────────────────────

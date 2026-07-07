@@ -68,6 +68,27 @@ async function slotAlignmentError(
   return null;
 }
 
+// Mirrors the user-facing rule (validateSession in app/api/session-form-utils.ts):
+// two sessions conflict when they share a location and their times overlap.
+async function findLocationConflict(
+  eventId: string,
+  range: { start?: Date; end?: Date },
+  locationIds: string[],
+  excludeId?: string
+): Promise<string | null> {
+  const { start, end } = range;
+  if (!start || !end || locationIds.length === 0) return null;
+  const { sessions } = getRepositories();
+  const conflict = await sessions.findLocationConflict(
+    eventId,
+    start,
+    end,
+    locationIds,
+    excludeId
+  );
+  return conflict ? `Overlaps "${conflict.title}" in the same location` : null;
+}
+
 // The attendee-facing schedule fetches the session list in the shared
 // [eventSlug] layout (see app/(site)/[eventSlug]/session-actions.ts), so the
 // public layout must be revalidated alongside the admin pages.
@@ -108,6 +129,13 @@ export async function adminCreateSessionAction(
     range.end
   );
   if (alignmentError) return { ok: false, error: alignmentError };
+
+  const conflict = await findLocationConflict(
+    input.eventId,
+    range,
+    input.locationIds
+  );
+  if (conflict) return { ok: false, error: conflict };
 
   try {
     await sessions.create({
@@ -159,6 +187,14 @@ export async function adminUpdateSessionAction(
     range.end
   );
   if (alignmentError) return { ok: false, error: alignmentError };
+
+  const conflict = await findLocationConflict(
+    session.eventId,
+    range,
+    input.locationIds,
+    input.id
+  );
+  if (conflict) return { ok: false, error: conflict };
 
   try {
     await sessions.update(input.id, {

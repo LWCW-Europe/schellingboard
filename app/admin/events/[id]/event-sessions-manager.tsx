@@ -433,28 +433,36 @@ function SessionItem({
 
   const handleSave = (values: SessionFormValues) => {
     startSave(async () => {
-      const result = await adminUpdateSessionAction({
-        id: session.id,
-        ...toActionInput(values, timezone),
-      });
-      if (!result.ok) {
-        onError(result.error);
-      } else {
-        onError(null);
-        setEditMode(false);
-        router.refresh();
+      try {
+        const result = await adminUpdateSessionAction({
+          id: session.id,
+          ...toActionInput(values, timezone),
+        });
+        if (!result.ok) {
+          onError(result.error);
+        } else {
+          onError(null);
+          setEditMode(false);
+          router.refresh();
+        }
+      } catch {
+        onError("Request failed");
       }
     });
   };
 
   const handleDelete = () => {
     startDelete(async () => {
-      const result = await adminDeleteSessionAction({ id: session.id });
-      if (!result.ok) {
-        onError(result.error);
-      } else {
-        onError(null);
-        router.refresh();
+      try {
+        const result = await adminDeleteSessionAction({ id: session.id });
+        if (!result.ok) {
+          onError(result.error);
+        } else {
+          onError(null);
+          router.refresh();
+        }
+      } catch {
+        onError("Request failed");
       }
     });
   };
@@ -609,16 +617,20 @@ function AddSession({
 
   const handleCreate = (values: SessionFormValues) => {
     startCreate(async () => {
-      const result = await adminCreateSessionAction({
-        eventId,
-        ...toActionInput(values, timezone),
-      });
-      if (!result.ok) {
-        onError(result.error);
-      } else {
-        onError(null);
-        setOpen(false);
-        router.refresh();
+      try {
+        const result = await adminCreateSessionAction({
+          eventId,
+          ...toActionInput(values, timezone),
+        });
+        if (!result.ok) {
+          onError(result.error);
+        } else {
+          onError(null);
+          setOpen(false);
+          router.refresh();
+        }
+      } catch {
+        onError("Request failed");
       }
     });
   };

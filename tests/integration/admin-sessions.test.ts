@@ -345,6 +345,82 @@ describe("adminCreateSessionAction", () => {
     expect(revalidatePath).toHaveBeenCalledWith(`/${event.slug}`, "layout");
   });
 
+  it("rejects a session overlapping an existing one in the same location", async () => {
+    const event = await createEvent();
+    const loc = await createLocation({ name: "Room A" });
+    await createSession(event.id, {
+      title: "First",
+      locationIds: [loc.id],
+      startTime: new Date("2030-01-01T10:00:00.000Z"),
+      endTime: new Date("2030-01-01T11:00:00.000Z"),
+    });
+
+    const result = await adminCreateSessionAction({
+      eventId: event.id,
+      title: "Second",
+      description: "",
+      startTime: "2030-01-01T10:30:00.000Z",
+      endTime: "2030-01-01T11:30:00.000Z",
+      capacity: 0,
+      adminManaged: true,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [loc.id],
+    });
+    expect(!result.ok && result.error).toBe(
+      'Overlaps "First" in the same location'
+    );
+
+    expect(await getRepositories().sessions.listByEvent(event.id)).toHaveLength(
+      1
+    );
+  });
+
+  it("allows overlapping sessions in different locations and back-to-back sessions in the same location", async () => {
+    const event = await createEvent();
+    const locA = await createLocation({ name: "Room A" });
+    const locB = await createLocation({ name: "Room B" });
+    await createSession(event.id, {
+      title: "First",
+      locationIds: [locA.id],
+      startTime: new Date("2030-01-01T10:00:00.000Z"),
+      endTime: new Date("2030-01-01T11:00:00.000Z"),
+    });
+
+    const base = {
+      eventId: event.id,
+      description: "",
+      capacity: 0,
+      adminManaged: true,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+    };
+
+    const otherLocation = await adminCreateSessionAction({
+      ...base,
+      title: "Same time, other room",
+      startTime: "2030-01-01T10:00:00.000Z",
+      endTime: "2030-01-01T11:00:00.000Z",
+      locationIds: [locB.id],
+    });
+    expect(otherLocation.ok).toBe(true);
+
+    const backToBack = await adminCreateSessionAction({
+      ...base,
+      title: "Back to back",
+      startTime: "2030-01-01T11:00:00.000Z",
+      endTime: "2030-01-01T12:00:00.000Z",
+      locationIds: [locA.id],
+    });
+    expect(backToBack.ok).toBe(true);
+
+    expect(await getRepositories().sessions.listByEvent(event.id)).toHaveLength(
+      3
+    );
+  });
+
   it("rejects when not authenticated", async () => {
     const event = await createEvent();
     cookieJar.clear();
@@ -623,6 +699,70 @@ describe("adminUpdateSessionAction", () => {
       locationIds: [],
     });
     expect(!result.ok && result.error).toBe("Title is required");
+  });
+
+  it("rejects an update that overlaps another session in the same location", async () => {
+    const event = await createEvent();
+    const loc = await createLocation({ name: "Room A" });
+    await createSession(event.id, {
+      title: "First",
+      locationIds: [loc.id],
+      startTime: new Date("2030-01-01T10:00:00.000Z"),
+      endTime: new Date("2030-01-01T11:00:00.000Z"),
+    });
+    const session = await createSession(event.id, {
+      title: "Second",
+      locationIds: [loc.id],
+      startTime: new Date("2030-01-01T12:00:00.000Z"),
+      endTime: new Date("2030-01-01T13:00:00.000Z"),
+    });
+
+    const result = await adminUpdateSessionAction({
+      id: session.id,
+      title: "Second",
+      description: "",
+      startTime: "2030-01-01T10:30:00.000Z",
+      endTime: "2030-01-01T11:30:00.000Z",
+      capacity: 30,
+      adminManaged: false,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [loc.id],
+    });
+    expect(!result.ok && result.error).toBe(
+      'Overlaps "First" in the same location'
+    );
+
+    // session is unchanged
+    const updated = await getRepositories().sessions.findById(session.id);
+    expect(updated?.startTime?.toISOString()).toBe("2030-01-01T12:00:00.000Z");
+  });
+
+  it("does not conflict with itself when saved over its own slot", async () => {
+    const event = await createEvent();
+    const loc = await createLocation({ name: "Room A" });
+    const session = await createSession(event.id, {
+      title: "Keeps slot",
+      locationIds: [loc.id],
+      startTime: new Date("2030-01-01T10:00:00.000Z"),
+      endTime: new Date("2030-01-01T11:00:00.000Z"),
+    });
+
+    const result = await adminUpdateSessionAction({
+      id: session.id,
+      title: "Keeps slot",
+      description: "Updated description",
+      startTime: "2030-01-01T10:00:00.000Z",
+      endTime: "2030-01-01T11:00:00.000Z",
+      capacity: 30,
+      adminManaged: false,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [loc.id],
+    });
+    expect(result.ok).toBe(true);
   });
 
   it("returns an error instead of throwing when a host or location does not exist", async () => {
