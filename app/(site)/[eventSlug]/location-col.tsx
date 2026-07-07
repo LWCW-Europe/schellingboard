@@ -10,13 +10,15 @@ export function LocationCol(props: {
   location: Location;
   day: DayWithSessions;
   guests: Guest[];
+  /** Kiosk now-line offset from the top of the slot grid; null hides it. */
+  nowOffsetPx?: number | null;
 }) {
-  const { sessions, location, day, guests } = props;
+  const { sessions, location, day, guests, nowOffsetPx } = props;
   const slotIncrement = useSlotIncrement();
   const sessionsWithBlanks = insertBlankSessions(sessions, day, slotIncrement);
   const numSlots = getNumSlots(day.start, day.end, slotIncrement);
   return (
-    <div className={"px-0.5"}>
+    <div className={"relative px-0.5"}>
       <div
         className={clsx("grid h-full", `grid-rows-[repeat(${numSlots},44px)]`)}
       >
@@ -32,6 +34,16 @@ export function LocationCol(props: {
           );
         })}
       </div>
+      {/* Each column draws its own segment of the kiosk now line; together
+          with the gutter's segment (see DayGrid) they form one continuous
+          line across the day. */}
+      {nowOffsetPx != null && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 z-10 h-0.5 bg-red-500 pointer-events-none"
+          style={{ top: nowOffsetPx }}
+        />
+      )}
     </div>
   );
 }

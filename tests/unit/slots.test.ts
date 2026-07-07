@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   SLOT_INCREMENT_OPTIONS,
+  SLOT_HEIGHT_PX,
   isValidSlotIncrement,
   getNumSlots,
+  getNowOffsetPx,
   isSlotAligned,
   slotDurationOptions,
   snapDurationToSlots,
@@ -48,6 +50,35 @@ describe("getNumSlots", () => {
 
   it("rounds a misaligned window up so it still renders", () => {
     expect(getNumSlots(at(9), at(17), 45)).toBe(11); // 480 min / 45 = 10.67
+  });
+});
+
+// ── getNowOffsetPx ───────────────────────────────────────────────────────────
+
+describe("getNowOffsetPx", () => {
+  const at = (h: number, m = 0) => new Date(Date.UTC(2026, 8, 1, h, m));
+  const day = { start: at(9), end: at(18) };
+
+  it("day start → 0", () => {
+    expect(getNowOffsetPx(day, at(9), 30)).toBe(0);
+  });
+
+  it("one slot in → one slot height", () => {
+    expect(getNowOffsetPx(day, at(9, 30), 30)).toBe(SLOT_HEIGHT_PX);
+    expect(getNowOffsetPx(day, at(9, 15), 15)).toBe(SLOT_HEIGHT_PX);
+  });
+
+  it("interpolates within a slot", () => {
+    expect(getNowOffsetPx(day, at(9, 15), 30)).toBe(SLOT_HEIGHT_PX / 2);
+  });
+
+  it("before the day window → null", () => {
+    expect(getNowOffsetPx(day, at(8, 59), 30)).toBeNull();
+  });
+
+  it("at or after the day end → null", () => {
+    expect(getNowOffsetPx(day, at(18), 30)).toBeNull();
+    expect(getNowOffsetPx(day, at(23), 30)).toBeNull();
   });
 });
 

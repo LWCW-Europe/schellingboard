@@ -3,7 +3,8 @@ import { LocationCol } from "./location-col";
 import clsx from "clsx";
 import { useSearchParams } from "next/navigation";
 import { TIME_FORMAT } from "@/utils/utils";
-import { getNumSlots } from "@/utils/slots";
+import { getNumSlots, getNowOffsetPx } from "@/utils/slots";
+import { useKioskMode, useTickingNow } from "./kiosk";
 import { useContext } from "react";
 import Image from "next/image";
 import { Tooltip } from "./tooltip";
@@ -41,6 +42,12 @@ export function DayGrid(props: {
   const numSlots = getNumSlots(day.start, day.end, slotIncrement);
   const hasImages = includedLocations.some((loc) => loc.imageUrl);
   const date = DateTime.fromJSDate(day.start).setZone(timezone);
+
+  // Kiosk mode: a red line across the day at the current time. Client-only
+  // (useTickingNow is null on the server) so hydration stays consistent.
+  const now = useTickingNow(useKioskMode());
+  const nowOffsetPx =
+    now === null ? null : getNowOffsetPx(day, now, slotIncrement);
 
   return (
     <div
@@ -132,6 +139,14 @@ export function DayGrid(props: {
               .toFormat(TIME_FORMAT)}
           </div>
         ))}
+        {nowOffsetPx !== null && (
+          <div
+            data-testid="now-line"
+            aria-hidden="true"
+            className="absolute inset-x-0 z-10 h-0.5 bg-red-500 pointer-events-none"
+            style={{ top: nowOffsetPx }}
+          />
+        )}
       </div>
       {includedLocations.map((location) => (
         <LocationCol
@@ -142,6 +157,7 @@ export function DayGrid(props: {
           guests={guests}
           day={day}
           location={location}
+          nowOffsetPx={nowOffsetPx}
         />
       ))}
     </div>
