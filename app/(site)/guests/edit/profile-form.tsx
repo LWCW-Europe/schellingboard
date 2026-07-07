@@ -6,6 +6,7 @@ import {
   useMemo,
   ButtonHTMLAttributes,
   useRef,
+  useTransition,
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -39,9 +40,8 @@ export function ProfileForm({ guest }: { guest: Guest }) {
     name: "avatar",
   });
   const avatar = avatarFileList === null ? null : avatarFileList?.[0];
-  const [formError, setFormError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, startTransition] = useTransition();
   const canvas = useRef<HTMLCanvasElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -71,7 +71,8 @@ export function ProfileForm({ guest }: { guest: Guest }) {
       avatar: rawProfile.avatar === null ? null : rawProfile.avatar?.[0],
     };
 
-    // Try to preprocess the avatar
+    // Try to preprocess the avatar. Ultimately, though, the backend should have the final say
+    // So this operation doesn't block the submission
     if (profile.avatar) {
       try {
         const resized = await resize(profile.avatar, 256);
@@ -84,29 +85,26 @@ export function ProfileForm({ guest }: { guest: Guest }) {
       } catch {}
     }
 
-    setIsSubmitting(true);
-    setFormError(null);
-
     try {
       const result = await updateProfileAction(profile);
       if (!result.ok) {
-        if (typeof result.error === "string") setFormError(result.error);
-        else
+        if (typeof result.error === "string")
+          form.setError("root", { message: result.error });
+        else {
           for (const issue of result.error) {
             const path = issue.path.join(".") as Path<
               z.infer<typeof profileFormSchema>
             >;
             form.setError(path, issue);
           }
+        }
       } else {
         router.push(`/guests/${guest.id}`);
         router.refresh();
       }
     } catch (err) {
-      setFormError("An unexpected error occurred");
+      form.setError("root", { message: "An unexpected error occurred" });
       console.error(err);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -147,7 +145,9 @@ export function ProfileForm({ guest }: { guest: Guest }) {
       <canvas ref={canvas} hidden />
 
       <form
-        onSubmit={(e) => void form.handleSubmit(handleSubmit)(e)}
+        onSubmit={(e) =>
+          startTransition(() => form.handleSubmit(handleSubmit)(e))
+        }
         className="flex flex-col gap-4"
       >
         <div className="flex items-center gap-4 cursor-pointer">
@@ -235,9 +235,11 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           </span>
         </div>
 
-        {formError && (
+        {form.formState.errors.root && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-            <p className="text-sm font-medium">Error: {formError}</p>
+            <p className="text-sm font-medium">
+              Error: {form.formState.errors.root.message}
+            </p>
           </div>
         )}
 
