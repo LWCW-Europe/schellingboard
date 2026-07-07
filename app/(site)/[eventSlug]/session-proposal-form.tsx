@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/app/input";
-import { UserContext, useBreakMinutes } from "../context";
+import { UserContext, useBreakMinutes, useSlotIncrement } from "../context";
 import {
   createProposal,
   updateProposal,
@@ -15,6 +15,7 @@ import type { SessionProposal, Guest } from "@/db/repositories/interfaces";
 import { SelectHosts } from "@/app/select-hosts";
 import { ConfirmDeletionModal } from "../modals";
 import { formatDuration, durationMinusBreak } from "@/utils/utils";
+import { slotDurationOptions } from "@/utils/slots";
 
 export function SessionProposalForm(props: {
   eventID: string;
@@ -25,12 +26,10 @@ export function SessionProposalForm(props: {
 }) {
   const { eventID, eventSlug, proposal, guests, maxSessionDuration } = props;
   const breakMinutes = useBreakMinutes();
+  const slotIncrement = useSlotIncrement();
   const DURATION_OPTIONS = [
     undefined,
-    ...Array.from(
-      { length: Math.floor(maxSessionDuration / 30) },
-      (_, i) => (i + 1) * 30
-    ),
+    ...slotDurationOptions(slotIncrement, maxSessionDuration),
   ];
   const { user: currentUserId } = useContext(UserContext);
   const router = useRouter();

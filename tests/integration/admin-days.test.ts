@@ -429,4 +429,62 @@ describe("day actions", () => {
       expect(!result.ok && result.error).toBe("Day not found");
     });
   });
+
+  describe("slot alignment", () => {
+    it("rejects a day window that is not a multiple of the increment", async () => {
+      const event = await createEvent({ slotIncrementMinutes: 45 });
+      // 8h day: 480 minutes is not a multiple of 45.
+      const result = await createDayAction({
+        eventId: event.id,
+        start: "2026-10-01T09:00",
+        end: "2026-10-01T17:00",
+        startBookings: "2026-10-01T09:00",
+        endBookings: "2026-10-01T17:00",
+      });
+      expect(!result.ok && result.error).toMatch(/align/i);
+    });
+
+    it("rejects a bookings window off the slot grid", async () => {
+      const event = await createEvent({ slotIncrementMinutes: 45 });
+      const result = await createDayAction({
+        eventId: event.id,
+        start: "2026-10-01T09:00",
+        end: "2026-10-01T18:00",
+        startBookings: "2026-10-01T09:30",
+        endBookings: "2026-10-01T17:15",
+      });
+      expect(!result.ok && result.error).toMatch(/align/i);
+    });
+
+    it("accepts a day aligned to 45-minute slots", async () => {
+      const event = await createEvent({ slotIncrementMinutes: 45 });
+      const result = await createDayAction({
+        eventId: event.id,
+        start: "2026-10-01T09:00",
+        end: "2026-10-01T18:00",
+        startBookings: "2026-10-01T09:45",
+        endBookings: "2026-10-01T17:15",
+      });
+      expect(result.ok).toBe(true);
+    });
+
+    it("rejects a resize that would misalign an existing day", async () => {
+      const event = await createEvent({ slotIncrementMinutes: 45 });
+      const day = await createDay(event.id, {
+        start: new Date("2026-10-01T09:00:00Z"),
+        end: new Date("2026-10-01T18:00:00Z"),
+        startBookings: new Date("2026-10-01T09:00:00Z"),
+        endBookings: new Date("2026-10-01T17:15:00Z"),
+      });
+      const result = await updateDayAction({
+        id: day.id,
+        eventId: event.id,
+        start: "2026-10-01T09:00",
+        end: "2026-10-01T17:00",
+        startBookings: "2026-10-01T09:00",
+        endBookings: "2026-10-01T16:30",
+      });
+      expect(!result.ok && result.error).toMatch(/align/i);
+    });
+  });
 });

@@ -17,6 +17,7 @@ import type {
 } from "@/db/repositories/interfaces";
 import { Vote, voteChoiceToEmoji } from "@/app/(site)/votes";
 import { DEFAULT_BREAK_MINUTES, votesApiUrl } from "@/utils/utils";
+import { DEFAULT_SLOT_INCREMENT_MINUTES } from "@/utils/slots";
 
 export type DayWithSessions = Day & { sessions: Session[] };
 
@@ -71,6 +72,16 @@ export const EventContext = createContext<EventContextType>({
 export function useBreakMinutes(): number {
   const { event } = useContext(EventContext);
   return event?.breakMinutes ?? DEFAULT_BREAK_MINUTES;
+}
+
+/**
+ * The current event's slot increment, read from EventContext like
+ * useBreakMinutes. Falls back to DEFAULT_SLOT_INCREMENT_MINUTES when no event
+ * is in context.
+ */
+export function useSlotIncrement(): number {
+  const { event } = useContext(EventContext);
+  return event?.slotIncrementMinutes ?? DEFAULT_SLOT_INCREMENT_MINUTES;
 }
 
 export interface VotesContextType {

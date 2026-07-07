@@ -8,6 +8,12 @@ import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import type { Event } from "@/db/repositories/interfaces";
 import type { AdminActionResult } from "./admin-guests";
 import { isEventIconName } from "@/app/event-icons";
+import {
+  SLOT_INCREMENT_OPTIONS,
+  isValidSlotIncrement,
+  isSlotAligned,
+} from "@/utils/slots";
+import { sessionOverlapsWindow } from "@/utils/day-window";
 
 async function isAdminRequest(): Promise<boolean> {
   const cookieStore = await cookies();
@@ -23,6 +29,7 @@ export type EventInput = {
   timezone: string;
   maxSessionDuration: string;
   breakMinutes: string;
+  slotIncrementMinutes: string;
   icon?: string;
 };
 
@@ -72,6 +79,13 @@ function parseEventInput(input: EventInput): ParseResult {
     return { error: "Break must be zero or a positive number" };
   }
 
+  const slotIncrementMinutes = parseInt(input.slotIncrementMinutes, 10);
+  if (!isValidSlotIncrement(slotIncrementMinutes)) {
+    return {
+      error: `Slot increment must be one of ${SLOT_INCREMENT_OPTIONS.join(", ")} minutes`,
+    };
+  }
+
   const icon = input.icon?.trim() || undefined;
   if (icon && !isEventIconName(icon)) {
     return { error: "Unknown icon" };
@@ -87,6 +101,7 @@ function parseEventInput(input: EventInput): ParseResult {
       timezone,
       maxSessionDuration,
       breakMinutes,
+      slotIncrementMinutes,
       icon,
     },
   };
@@ -95,6 +110,41 @@ function parseEventInput(input: EventInput): ParseResult {
 // Top-level route segments served by this app (see app/); an event slug
 // matching one of these would shadow or be shadowed by that route.
 const RESERVED_SLUGS = new Set(["admin", "api", "login", "media"]);
+
+// A new increment only works if every day window and every scheduled session
+// still falls on slot boundaries; otherwise sessions would silently drop out
+// of the schedule grid. The admin must fix the misaligned data first.
+async function slotIncrementChangeError(
+  eventId: string,
+  incrementMinutes: number
+): Promise<string | null> {
+  const repos = getRepositories();
+  const days = await repos.days.listByEvent(eventId);
+  const dayAligned = (d: (typeof days)[number]) =>
+    isSlotAligned(d.end, d.start, incrementMinutes) &&
+    isSlotAligned(d.startBookings, d.start, incrementMinutes) &&
+    isSlotAligned(d.endBookings, d.start, incrementMinutes);
+  if (!days.every(dayAligned)) {
+    return `Cannot change the slot increment: some day windows are not aligned to ${incrementMinutes}-minute slots. Adjust the days first.`;
+  }
+
+  const sessions = await repos.sessions.listScheduledByEvent(eventId);
+  const misaligned = sessions.filter((s) => {
+    const day = days.find((d) => sessionOverlapsWindow(s, d.start, d.end));
+    if (!day || !s.startTime || !s.endTime) return false;
+    return (
+      !isSlotAligned(s.startTime, day.start, incrementMinutes) ||
+      !isSlotAligned(s.endTime, day.start, incrementMinutes)
+    );
+  });
+  if (misaligned.length > 0) {
+    const titles = misaligned.map((s) => `"${s.title}"`).join(", ");
+    return `Cannot change the slot increment: ${titles} would not align to ${incrementMinutes}-minute slots. Reschedule or delete ${
+      misaligned.length === 1 ? "it" : "them"
+    } first.`;
+  }
+  return null;
+}
 
 export async function createEventAction(
   input: EventInput
@@ -152,6 +202,17 @@ export async function updateEventAction(
 
   const parsed = parseEventInput(input);
   if ("error" in parsed) return { ok: false, error: parsed.error };
+
+  const existing = await getRepositories().events.findById(input.id);
+  if (!existing) return { ok: false, error: "Event not found" };
+
+  if (parsed.data.slotIncrementMinutes !== existing.slotIncrementMinutes) {
+    const error = await slotIncrementChangeError(
+      input.id,
+      parsed.data.slotIncrementMinutes
+    );
+    if (error) return { ok: false, error };
+  }
 
   const updated = await getRepositories().events.update(input.id, parsed.data);
   if (!updated) return { ok: false, error: "Event not found" };

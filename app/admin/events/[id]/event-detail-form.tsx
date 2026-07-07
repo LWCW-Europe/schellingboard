@@ -17,6 +17,7 @@ import {
 import { TimezoneSelect } from "@/app/admin/timezone-select";
 import { IconPicker } from "@/app/admin/icon-picker";
 import { normalizeEventIconName } from "@/app/event-icons";
+import { SLOT_INCREMENT_OPTIONS } from "@/utils/slots";
 
 function toDateInputValue(date: Date): string {
   return date.toISOString().split("T")[0];
@@ -33,6 +34,7 @@ export function EventDetailForm({ event }: { event: Event }) {
     timezone: event.timezone,
     maxSessionDuration: String(event.maxSessionDuration),
     breakMinutes: String(event.breakMinutes),
+    slotIncrementMinutes: String(event.slotIncrementMinutes),
     icon: normalizeEventIconName(event.icon),
   });
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -177,6 +179,23 @@ export function EventDetailForm({ event }: { event: Event }) {
               required
               className="w-full h-10"
             />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="ev-increment" className="text-sm text-gray-600">
+              Schedule increment (min)
+            </label>
+            <select
+              id="ev-increment"
+              value={form.slotIncrementMinutes}
+              onChange={(e) => set("slotIncrementMinutes", e.target.value)}
+              className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+            >
+              {SLOT_INCREMENT_OPTIONS.map((opt) => (
+                <option key={opt} value={String(opt)}>
+                  {opt}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="flex flex-col gap-1">

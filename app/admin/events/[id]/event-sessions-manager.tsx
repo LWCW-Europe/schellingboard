@@ -84,7 +84,9 @@ function toActionInput(values: SessionFormValues, timezone: string) {
     description: values.description,
     startTime: toIsoOrNull(values.startTime, timezone),
     endTime: toIsoOrNull(values.endTime, timezone),
-    capacity: Number(values.capacity) || 0,
+    // Empty means 0; anything else passes through (NaN included) so the
+    // server's capacity validation rejects it instead of saving a silent 0.
+    capacity: values.capacity === "" ? 0 : Number(values.capacity),
     adminManaged: values.adminManaged,
     blocker: values.blocker,
     closed: values.closed,

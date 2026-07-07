@@ -5,7 +5,6 @@ import {
   eventNameToSlug,
   dateOnDay,
   getPercentThroughDay,
-  getNumHalfHours,
   getStartTimePlusBreak,
   votesApiUrl,
 } from "@/utils/utils";
@@ -135,27 +134,6 @@ describe("getPercentThroughDay", () => {
   it("returns 50% at the midpoint", () => {
     const mid = new Date("2025-06-15T13:00:00Z");
     expect(getPercentThroughDay(mid, start, end)).toBe(50);
-  });
-});
-
-// ── getNumHalfHours ──────────────────────────────────────────────────────────
-
-describe("getNumHalfHours", () => {
-  it("0 when start equals end", () => {
-    const t = new Date("2025-06-15T10:00:00Z");
-    expect(getNumHalfHours(t, t)).toBe(0);
-  });
-
-  it("1 for a 30-minute window", () => {
-    const start = new Date("2025-06-15T10:00:00Z");
-    const end = new Date("2025-06-15T10:30:00Z");
-    expect(getNumHalfHours(start, end)).toBe(1);
-  });
-
-  it("4 for a 2-hour window", () => {
-    const start = new Date("2025-06-15T10:00:00Z");
-    const end = new Date("2025-06-15T12:00:00Z");
-    expect(getNumHalfHours(start, end)).toBe(4);
   });
 });
 

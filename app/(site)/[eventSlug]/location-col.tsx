@@ -1,7 +1,8 @@
 import type { Session, Location, Guest } from "@/db/repositories/interfaces";
 import type { DayWithSessions } from "@/app/(site)/context";
+import { useSlotIncrement } from "@/app/(site)/context";
 import { SessionBlock } from "./session-block";
-import { getNumHalfHours } from "@/utils/utils";
+import { getNumSlots } from "@/utils/slots";
 import clsx from "clsx";
 
 export function LocationCol(props: {
@@ -11,15 +12,13 @@ export function LocationCol(props: {
   guests: Guest[];
 }) {
   const { sessions, location, day, guests } = props;
-  const sessionsWithBlanks = insertBlankSessions(sessions, day);
-  const numHalfHours = getNumHalfHours(day.start, day.end);
+  const slotIncrement = useSlotIncrement();
+  const sessionsWithBlanks = insertBlankSessions(sessions, day, slotIncrement);
+  const numSlots = getNumSlots(day.start, day.end, slotIncrement);
   return (
     <div className={"px-0.5"}>
       <div
-        className={clsx(
-          "grid h-full",
-          `grid-rows-[repeat(${numHalfHours},44px)]`
-        )}
+        className={clsx("grid h-full", `grid-rows-[repeat(${numSlots},44px)]`)}
       >
         {sessionsWithBlanks.map((session) => {
           return (
@@ -39,13 +38,15 @@ export function LocationCol(props: {
 
 function insertBlankSessions(
   sessions: Session[],
-  day: DayWithSessions
+  day: DayWithSessions,
+  slotIncrementMinutes: number
 ): Session[] {
+  const slotMs = slotIncrementMinutes * 60 * 1000;
   const sessionsWithBlanks: Session[] = [];
   for (
     let currentTime = day.start.getTime();
     currentTime < day.end.getTime();
-    currentTime += 1800000
+    currentTime += slotMs
   ) {
     const sessionNow = sessions.find((session) => {
       const startTime = session.startTime?.getTime() ?? 0;
@@ -61,7 +62,7 @@ function insertBlankSessions(
     } else {
       sessionsWithBlanks.push({
         startTime: new Date(currentTime),
-        endTime: new Date(currentTime + 1800000),
+        endTime: new Date(currentTime + slotMs),
         title: "",
         description: "",
         hosts: [],

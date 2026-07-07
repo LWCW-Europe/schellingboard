@@ -24,6 +24,7 @@ export async function createEvent(opts?: {
   votingPhaseEnd?: Date;
   schedulingPhaseStart?: Date;
   schedulingPhaseEnd?: Date;
+  slotIncrementMinutes?: number;
 }): Promise<Event> {
   const { events } = getRepositories();
   const now = new Date();
@@ -76,6 +77,7 @@ export async function createEvent(opts?: {
     schedulingPhaseEnd: opts?.schedulingPhaseEnd ?? schedulingPhaseEnd,
     maxSessionDuration: 120,
     breakMinutes: 10,
+    slotIncrementMinutes: opts?.slotIncrementMinutes ?? 30,
     timezone: "UTC",
   });
 }
@@ -114,7 +116,7 @@ export async function createLocation(opts?: {
 
 export async function createDay(
   eventId: string,
-  opts?: { start?: Date; end?: Date }
+  opts?: { start?: Date; end?: Date; startBookings?: Date; endBookings?: Date }
 ): Promise<Day> {
   const { days } = getRepositories();
   const base =
@@ -126,8 +128,10 @@ export async function createDay(
       return d;
     })();
   const end = opts?.end ?? new Date(new Date(base).setHours(18, 0, 0, 0));
-  const startBookings = new Date(new Date(base).setHours(9, 0, 0, 0));
-  const endBookings = new Date(new Date(base).setHours(17, 0, 0, 0));
+  const startBookings =
+    opts?.startBookings ?? new Date(new Date(base).setHours(9, 0, 0, 0));
+  const endBookings =
+    opts?.endBookings ?? new Date(new Date(base).setHours(17, 0, 0, 0));
   return days.create({ start: base, end, startBookings, endBookings, eventId });
 }
 

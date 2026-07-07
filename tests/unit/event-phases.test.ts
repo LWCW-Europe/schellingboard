@@ -17,6 +17,7 @@ function makeEvent(overrides: Partial<Event>): Event {
     end: ahead(31),
     maxSessionDuration: 120,
     breakMinutes: 10,
+    slotIncrementMinutes: 30,
     timezone: "UTC",
     ...overrides,
   };

@@ -59,6 +59,7 @@ const VALID_EVENT_INPUT = {
   timezone: "Europe/Berlin",
   maxSessionDuration: "60",
   breakMinutes: "10",
+  slotIncrementMinutes: "30",
 };
 
 describe("events repo", () => {
@@ -387,6 +388,24 @@ describe("event actions", () => {
       expect(!result.ok && result.error).toMatch(/letter or number/i);
     });
 
+    it("persists the configured slot increment", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        slotIncrementMinutes: "45",
+      });
+      expect(result.ok).toBe(true);
+      const event = await getRepositories().events.findByName("Test Event");
+      expect(event?.slotIncrementMinutes).toBe(45);
+    });
+
+    it("rejects an invalid slot increment", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        slotIncrementMinutes: "20",
+      });
+      expect(!result.ok && result.error).toMatch(/increment/i);
+    });
+
     it("persists a known icon", async () => {
       const result = await createEventAction({
         ...VALID_EVENT_INPUT,
@@ -472,6 +491,99 @@ describe("event actions", () => {
       expect(
         (await getRepositories().events.findById(event.id))?.breakMinutes
       ).toBe(15);
+    });
+
+    describe("changing the slot increment", () => {
+      // Day aligned to 45-minute slots: 9h window, bookings offsets 45 & 495.
+      const alignedDayOpts = {
+        start: new Date("2026-10-01T09:00:00Z"),
+        end: new Date("2026-10-01T18:00:00Z"),
+        startBookings: new Date("2026-10-01T09:45:00Z"),
+        endBookings: new Date("2026-10-01T17:15:00Z"),
+      };
+
+      it("changes the increment when days and sessions align", async () => {
+        const event = await createEvent();
+        await createDay(event.id, alignedDayOpts);
+        await createSession(event.id, {
+          startTime: new Date("2026-10-01T09:45:00Z"),
+          endTime: new Date("2026-10-01T11:15:00Z"),
+        });
+        const result = await updateEventAction({
+          id: event.id,
+          ...VALID_EVENT_INPUT,
+          slotIncrementMinutes: "45",
+        });
+        expect(result.ok).toBe(true);
+        expect(
+          (await getRepositories().events.findById(event.id))
+            ?.slotIncrementMinutes
+        ).toBe(45);
+      });
+
+      it("blocks the change when a day window is misaligned", async () => {
+        const event = await createEvent();
+        // 8h day: 480 minutes is not a multiple of 45.
+        await createDay(event.id, {
+          ...alignedDayOpts,
+          end: new Date("2026-10-01T17:00:00Z"),
+        });
+        const result = await updateEventAction({
+          id: event.id,
+          ...VALID_EVENT_INPUT,
+          slotIncrementMinutes: "45",
+        });
+        expect(!result.ok && result.error).toMatch(/day.*align|align.*day/i);
+        expect(
+          (await getRepositories().events.findById(event.id))
+            ?.slotIncrementMinutes
+        ).toBe(30);
+      });
+
+      it("blocks the change when a scheduled session is misaligned", async () => {
+        const event = await createEvent();
+        await createDay(event.id, alignedDayOpts);
+        await createSession(event.id, {
+          title: "Off Grid",
+          startTime: new Date("2026-10-01T09:30:00Z"),
+          endTime: new Date("2026-10-01T10:30:00Z"),
+        });
+        const result = await updateEventAction({
+          id: event.id,
+          ...VALID_EVENT_INPUT,
+          slotIncrementMinutes: "45",
+        });
+        expect(!result.ok && result.error).toContain("Off Grid");
+        expect(
+          (await getRepositories().events.findById(event.id))
+            ?.slotIncrementMinutes
+        ).toBe(30);
+      });
+
+      it("skips alignment checks when the increment is unchanged", async () => {
+        const event = await createEvent();
+        // Misaligned for 45 but the event stays at 30.
+        await createDay(event.id, {
+          ...alignedDayOpts,
+          end: new Date("2026-10-01T17:00:00Z"),
+        });
+        const result = await updateEventAction({
+          id: event.id,
+          ...VALID_EVENT_INPUT,
+          slotIncrementMinutes: "30",
+        });
+        expect(result.ok).toBe(true);
+      });
+
+      it("rejects an invalid slot increment", async () => {
+        const event = await createEvent();
+        const result = await updateEventAction({
+          id: event.id,
+          ...VALID_EVENT_INPUT,
+          slotIncrementMinutes: "25",
+        });
+        expect(!result.ok && result.error).toMatch(/increment/i);
+      });
     });
   });
 
