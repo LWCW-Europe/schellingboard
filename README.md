@@ -13,6 +13,7 @@ This is a public open-source fork of [rachelweinberg12/scheduling-app](https://g
 - **Scheduling board** — drag sessions onto a time/location grid
 - **Event phases** — proposal, voting, and scheduling phases with configurable date ranges
 - **Multi-event support** — host multiple events from one deployment
+- **Kiosk mode** — append `?kiosk=1` to a schedule URL for large screens at the venue: a red line marks the current time, the schedule auto-scrolls to it and refreshes periodically, and the screen is kept awake. The schedule stays fully interactive. Combine with `loc` filters (e.g. `?kiosk=1&loc=Main+Hall`) to show only some rooms.
 - **Site password protection** — optional single-password gate for the whole app
 
 ![Scheduling board](docs/screenshot-schedule.png)

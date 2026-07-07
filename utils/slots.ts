@@ -12,6 +12,9 @@ export const DEFAULT_SLOT_INCREMENT_MINUTES = 30;
 
 const MS_PER_MINUTE = 60 * 1000;
 
+/** Rendered height of one slot row in the schedule grid. */
+export const SLOT_HEIGHT_PX = 44;
+
 export function isValidSlotIncrement(minutes: number): boolean {
   return SLOT_INCREMENT_OPTIONS.some((opt) => opt === minutes);
 }
@@ -27,6 +30,20 @@ export function getNumSlots(
 ): number {
   const lengthMs = end.getTime() - start.getTime();
   return Math.ceil(lengthMs / MS_PER_MINUTE / incrementMinutes);
+}
+
+/**
+ * Vertical pixel offset of `now` from the top of a day's slot grid (kiosk
+ * now-line), or null when `now` falls outside [start, end).
+ */
+export function getNowOffsetPx(
+  day: { start: Date; end: Date },
+  now: Date,
+  incrementMinutes: number
+): number | null {
+  const offsetMs = now.getTime() - day.start.getTime();
+  if (offsetMs < 0 || now.getTime() >= day.end.getTime()) return null;
+  return (offsetMs / (incrementMinutes * MS_PER_MINUTE)) * SLOT_HEIGHT_PX;
 }
 
 /** True when `date` sits a whole number of slots away from `anchor`. */

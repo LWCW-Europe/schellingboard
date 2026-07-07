@@ -17,6 +17,7 @@ import { EventContext } from "../context";
 import { hasPhases } from "@/app/(site)/utils/events";
 import Link from "next/link";
 import { getDefaultFoldedDayIds } from "@/utils/schedule-fold";
+import { KioskController, useKioskMode } from "./kiosk";
 import { SessionModal } from "./session-modal";
 import type { DayWithSessions } from "../context";
 
@@ -26,6 +27,7 @@ export function EventDisplay() {
   const searchParams = useSearchParams();
   const view = searchParams.get("view") ?? "grid";
   const viewSession = searchParams.get("viewSession");
+  const kiosk = useKioskMode();
   const [search, setSearch] = useState("");
   const [unfoldedDayIds, setUnfoldedDayIds] = useState<Set<string>>(
     () => new Set()
@@ -167,6 +169,7 @@ export function EventDisplay() {
       {viewSession && (
         <SessionModal sessionId={viewSession} eventSlug={event.slug} />
       )}
+      {kiosk && <KioskController />}
     </div>
   );
 }
