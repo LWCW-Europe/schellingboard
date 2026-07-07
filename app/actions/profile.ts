@@ -6,10 +6,9 @@ import { getRepositories } from "@/db/container";
 import { getImageRepositories } from "@/utils/images";
 import { profileSchema } from "@/model/guest";
 import { z } from "zod";
-import { $ZodIssue } from "zod/v4/core";
 
 export type ProfileActionResult =
-  { ok: true } | { ok: false; error: string | $ZodIssue[] };
+  { ok: true } | { ok: false; error: string | z.core.$ZodIssue[] };
 
 const profileActionSchema = profileSchema.extend({
   avatar: profileSchema.shape.avatar.transform(async (avatarFile, ctx) => {
