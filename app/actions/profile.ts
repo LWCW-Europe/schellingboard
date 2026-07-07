@@ -20,8 +20,6 @@ const profileActionSchema = profileSchema.extend({
       Buffer.from(await avatarFile.arrayBuffer())
     );
 
-    console.log(avatarFile);
-
     if ("error" in avatarBuffer) {
       ctx.addIssue({
         code: "custom",
@@ -42,7 +40,6 @@ export async function updateProfileAction(
   formData: unknown
 ): Promise<ProfileActionResult> {
   const parseResult = await profileActionSchema.safeParseAsync(formData);
-  console.dir(parseResult);
   if (!parseResult.success) {
     return { ok: false, error: parseResult.error.issues };
   }
