@@ -46,6 +46,9 @@ export async function EventLayoutContent({
     locations,
     guests,
     rsvps,
+    // Computed on the server so SSR and hydration agree on which days
+    // default to folded (see getDefaultFoldedDayIds).
+    now: new Date(),
   };
 
   return (
