@@ -1304,6 +1304,13 @@ test.describe("Admin UI sessions", () => {
     await sessions.getByRole("button", { name: "Add session" }).click();
     await sessions.getByLabel("Title *").fill(title);
     await sessions.getByLabel("Blocker").check();
+
+    // Pick a host through the searchable multi-select (opens on focus).
+    await sessions.getByLabel("Hosts").click();
+    await page.keyboard.type("Alice");
+    await page.getByRole("option", { name: "Alice Test" }).click();
+    await page.keyboard.press("Escape");
+
     await sessions.getByRole("button", { name: "Create", exact: true }).click();
 
     // Search for the unique title so pagination cannot hide the new row.
@@ -1313,6 +1320,7 @@ test.describe("Admin UI sessions", () => {
     await expect(row).toBeVisible();
     await expect(row).toContainText("blocker");
     await expect(row).toContainText("admin-managed");
+    await expect(row).toContainText("Alice Test");
 
     // Clean up so the shared seed stays stable for other tests.
     await row.getByRole("button", { name: /^Delete/ }).click();

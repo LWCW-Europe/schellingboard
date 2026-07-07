@@ -15,6 +15,7 @@ import {
   DANGER_BUTTON,
 } from "@/app/admin/buttons";
 import { DataTable } from "../../data-table";
+import { SelectHosts } from "@/app/select-hosts";
 import { utcToZonedInput, zonedInputToUtc } from "@/utils/admin-datetime";
 
 export type SessionRow = {
@@ -208,14 +209,15 @@ function SessionForm({
   const [adminManaged, setAdminManaged] = useState(initial.adminManaged);
   const [blocker, setBlocker] = useState(initial.blocker);
   const [closed, setClosed] = useState(initial.closed);
-  const [hostIds, setHostIds] = useState<string[]>(initial.hostIds);
+  const [hosts, setHosts] = useState<EventGuest[]>(
+    initial.hostIds.flatMap(
+      (id) => hostCandidates.find((g) => g.id === id) ?? []
+    )
+  );
   const [locationIds, setLocationIds] = useState<string[]>(initial.locationIds);
 
-  const toggle = (
-    set: React.Dispatch<React.SetStateAction<string[]>>,
-    id: string
-  ) =>
-    set((prev) =>
+  const toggleLocation = (id: string) =>
+    setLocationIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
 
@@ -230,7 +232,7 @@ function SessionForm({
       adminManaged,
       blocker,
       closed,
-      hostIds,
+      hostIds: hosts.map((h) => h.id),
       locationIds,
     });
   };
@@ -335,30 +337,24 @@ function SessionForm({
           Admin-managed
         </label>
       </fieldset>
-      <fieldset className="flex flex-col gap-1">
-        <legend className="text-sm text-gray-600">Hosts</legend>
+      <div className="flex flex-col gap-1">
+        <label htmlFor={`${idPrefix}-hosts`} className="text-sm text-gray-600">
+          Hosts
+        </label>
         {hostCandidates.length === 0 ? (
           <p className="text-sm text-gray-500">
             No guests assigned to this event yet.
           </p>
         ) : (
-          hostCandidates.map((g) => (
-            <label
-              key={g.id}
-              className="flex items-center gap-2 text-sm text-gray-700"
-            >
-              <input
-                type="checkbox"
-                checked={hostIds.includes(g.id)}
-                onChange={() => toggle(setHostIds, g.id)}
-                aria-label={`Host ${g.name}`}
-                className="h-4 w-4 cursor-pointer"
-              />
-              {g.name}
-            </label>
-          ))
+          <SelectHosts
+            guests={hostCandidates}
+            hosts={hosts}
+            setHosts={setHosts}
+            id={`${idPrefix}-hosts`}
+            selectMany
+          />
         )}
-      </fieldset>
+      </div>
       <fieldset className="flex flex-col gap-1">
         <legend className="text-sm text-gray-600">Locations</legend>
         {locationCandidates.length === 0 ? (
@@ -374,7 +370,7 @@ function SessionForm({
               <input
                 type="checkbox"
                 checked={locationIds.includes(l.id)}
-                onChange={() => toggle(setLocationIds, l.id)}
+                onChange={() => toggleLocation(l.id)}
                 aria-label={`Location ${l.name}`}
                 className="h-4 w-4 cursor-pointer"
               />

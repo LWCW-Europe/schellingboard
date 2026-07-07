@@ -1,7 +1,7 @@
 "use client";
 import type { Guest } from "@/db/repositories/interfaces";
 import { useContext } from "react";
-import { SelectHosts } from "./[eventSlug]/session-form";
+import { SelectHosts } from "@/app/select-hosts";
 import { UserContext } from "./context";
 
 export function UserSelect({

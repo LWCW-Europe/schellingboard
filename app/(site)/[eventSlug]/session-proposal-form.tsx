@@ -12,7 +12,7 @@ import {
   deleteProposal,
 } from "./proposals/actions";
 import type { SessionProposal, Guest } from "@/db/repositories/interfaces";
-import { SelectHosts } from "@/app/(site)/[eventSlug]/session-form";
+import { SelectHosts } from "@/app/select-hosts";
 import { ConfirmDeletionModal } from "../modals";
 import { formatDuration, durationMinusBreak } from "@/utils/utils";
 
