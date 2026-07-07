@@ -23,12 +23,6 @@ export type EventInput = {
   maxSessionDuration: string;
   breakMinutes: string;
   icon?: string;
-  proposalPhaseStart?: string;
-  proposalPhaseEnd?: string;
-  votingPhaseStart?: string;
-  votingPhaseEnd?: string;
-  schedulingPhaseStart?: string;
-  schedulingPhaseEnd?: string;
 };
 
 function parseDate(value: string | undefined): Date | undefined {
@@ -37,7 +31,20 @@ function parseDate(value: string | undefined): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
-type ParsedEvent = Omit<Event, "id" | "slug">;
+// Phase dates are deliberately excluded: they are managed only by
+// updateEventPhasesAction. Including the keys here (even as undefined) would
+// make the repository update NULL them out on every basic-info save.
+type ParsedEvent = Omit<
+  Event,
+  | "id"
+  | "slug"
+  | "proposalPhaseStart"
+  | "proposalPhaseEnd"
+  | "votingPhaseStart"
+  | "votingPhaseEnd"
+  | "schedulingPhaseStart"
+  | "schedulingPhaseEnd"
+>;
 type ParseResult = { data: ParsedEvent } | { error: string };
 
 function parseEventInput(input: EventInput): ParseResult {
@@ -75,12 +82,6 @@ function parseEventInput(input: EventInput): ParseResult {
       maxSessionDuration,
       breakMinutes,
       icon: input.icon?.trim() || undefined,
-      proposalPhaseStart: parseDate(input.proposalPhaseStart),
-      proposalPhaseEnd: parseDate(input.proposalPhaseEnd),
-      votingPhaseStart: parseDate(input.votingPhaseStart),
-      votingPhaseEnd: parseDate(input.votingPhaseEnd),
-      schedulingPhaseStart: parseDate(input.schedulingPhaseStart),
-      schedulingPhaseEnd: parseDate(input.schedulingPhaseEnd),
     },
   };
 }

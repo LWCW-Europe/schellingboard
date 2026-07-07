@@ -410,6 +410,29 @@ describe("event actions", () => {
       expect(!result.ok && result.error).toBe("Event not found");
     });
 
+    it("preserves phase dates when updating basic info", async () => {
+      const event = await createEvent({
+        name: "Phased",
+        proposalPhaseStart: new Date("2026-09-01T08:00:00Z"),
+        proposalPhaseEnd: new Date("2026-09-15T18:00:00Z"),
+      });
+      // The basic-info form sends no phase fields; they must survive the save.
+      const result = await updateEventAction({
+        id: event.id,
+        ...VALID_EVENT_INPUT,
+        timezone: "America/New_York",
+      });
+      expect(result.ok).toBe(true);
+      const updated = await getRepositories().events.findById(event.id);
+      expect(updated?.timezone).toBe("America/New_York");
+      expect(updated?.proposalPhaseStart?.toISOString()).toBe(
+        "2026-09-01T08:00:00.000Z"
+      );
+      expect(updated?.proposalPhaseEnd?.toISOString()).toBe(
+        "2026-09-15T18:00:00.000Z"
+      );
+    });
+
     it("updates the break", async () => {
       const event = await createEvent({ name: "Breaky" });
       const result = await updateEventAction({
