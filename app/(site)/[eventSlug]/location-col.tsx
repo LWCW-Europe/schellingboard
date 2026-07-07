@@ -69,7 +69,7 @@ function insertBlankSessions(
         capacity: 0,
         numRsvps: 0,
         id: "",
-        attendeeScheduled: false,
+        adminManaged: true,
         blocker: false,
         closed: false,
         eventId: day.eventId,

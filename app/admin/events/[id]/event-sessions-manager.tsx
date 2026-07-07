@@ -23,7 +23,7 @@ export type SessionRow = {
   startTime: string | null;
   endTime: string | null;
   capacity: number;
-  attendeeScheduled: boolean;
+  adminManaged: boolean;
   blocker: boolean;
   closed: boolean;
   hosts: { id: string; name: string }[];
@@ -51,7 +51,7 @@ function flagLabels(session: SessionRow): string[] {
   const flags: string[] = [];
   if (session.blocker) flags.push("blocker");
   if (session.closed) flags.push("closed");
-  if (session.attendeeScheduled) flags.push("attendee-scheduled");
+  if (session.adminManaged) flags.push("admin-managed");
   return flags;
 }
 
@@ -171,9 +171,7 @@ function SessionItem({
     utcToZonedInput(session.endTime, timezone)
   );
   const [capacity, setCapacity] = useState(String(session.capacity));
-  const [attendeeScheduled, setAttendeeScheduled] = useState(
-    session.attendeeScheduled
-  );
+  const [adminManaged, setAdminManaged] = useState(session.adminManaged);
   const [blocker, setBlocker] = useState(session.blocker);
   const [closed, setClosed] = useState(session.closed);
   const [hostIds, setHostIds] = useState<string[]>(
@@ -206,7 +204,7 @@ function SessionItem({
     setStartTime(utcToZonedInput(session.startTime, timezone));
     setEndTime(utcToZonedInput(session.endTime, timezone));
     setCapacity(String(session.capacity));
-    setAttendeeScheduled(session.attendeeScheduled);
+    setAdminManaged(session.adminManaged);
     setBlocker(session.blocker);
     setClosed(session.closed);
     setHostIds(session.hosts.map((h) => h.id));
@@ -231,7 +229,7 @@ function SessionItem({
         startTime: toIsoOrNull(startTime, timezone),
         endTime: toIsoOrNull(endTime, timezone),
         capacity: Number(capacity) || 0,
-        attendeeScheduled,
+        adminManaged,
         blocker,
         closed,
         hostIds,
@@ -447,11 +445,11 @@ function SessionItem({
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input
             type="checkbox"
-            checked={attendeeScheduled}
-            onChange={(e) => setAttendeeScheduled(e.target.checked)}
+            checked={adminManaged}
+            onChange={(e) => setAdminManaged(e.target.checked)}
             className="h-4 w-4 cursor-pointer"
           />
-          Attendee-scheduled
+          Admin-managed
         </label>
       </fieldset>
       <fieldset className="flex flex-col gap-1">

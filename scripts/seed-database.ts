@@ -513,7 +513,7 @@ interface GammaSessionConfig {
   hostNames: string[];
   capacity: number;
   closed?: boolean;
-  attendeeScheduled?: boolean; // default true (host-scheduled during the phase)
+  adminManaged?: boolean; // default false (host-scheduled during the phase)
 }
 
 const gammaSessionConfigs: GammaSessionConfig[] = [
@@ -696,7 +696,7 @@ const gammaSessionConfigs: GammaSessionConfig[] = [
     location: 0,
     hostNames: ["Charlie Test"],
     capacity: 100,
-    attendeeScheduled: false, // organizer-planned, like the keynote
+    adminManaged: true, // organizer-planned, like the keynote
   },
 ];
 
@@ -1072,7 +1072,7 @@ function seedTestData() {
       endTime: berlinTime(config.start, 0, 10, 30).toISOString(),
       eventId: ev.id,
       capacity: locationRows[0].capacity,
-      attendeeScheduled: false,
+      adminManaged: true,
       blocker: false,
       closed: false,
     });
@@ -1096,7 +1096,7 @@ function seedTestData() {
         endTime: berlinTime(config.start, dayIndex, 14, 0).toISOString(),
         eventId: ev.id,
         capacity: 0,
-        attendeeScheduled: false,
+        adminManaged: true,
         blocker: true,
         closed: false,
       });
@@ -1127,7 +1127,7 @@ function seedTestData() {
       endTime: berlinTime(gammaConfig.start, cfg.day, ...cfg.end).toISOString(),
       eventId: gammaEvent.id,
       capacity: cfg.capacity,
-      attendeeScheduled: cfg.attendeeScheduled ?? true,
+      adminManaged: cfg.adminManaged ?? false,
       blocker: false,
       closed: cfg.closed ?? false,
       proposalId: proposal?.id ?? null,

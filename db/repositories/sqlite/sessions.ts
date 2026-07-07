@@ -43,7 +43,7 @@ function buildSessions(
     startTime: row.startTime ? new Date(row.startTime) : undefined,
     endTime: row.endTime ? new Date(row.endTime) : undefined,
     capacity: row.capacity,
-    attendeeScheduled: row.attendeeScheduled,
+    adminManaged: row.adminManaged,
     blocker: row.blocker,
     closed: row.closed,
     proposalId: row.proposalId ?? undefined,
@@ -266,7 +266,7 @@ export class SqliteSessionsRepository implements SessionsRepository {
           startTime: data.startTime?.toISOString() ?? null,
           endTime: data.endTime?.toISOString() ?? null,
           capacity: data.capacity,
-          attendeeScheduled: data.attendeeScheduled,
+          adminManaged: data.adminManaged,
           blocker: data.blocker,
           closed: data.closed,
           proposalId: data.proposalId ?? null,
@@ -297,8 +297,8 @@ export class SqliteSessionsRepository implements SessionsRepository {
       if ("endTime" in patch)
         values.endTime = patch.endTime?.toISOString() ?? null;
       if (patch.capacity !== undefined) values.capacity = patch.capacity;
-      if (patch.attendeeScheduled !== undefined)
-        values.attendeeScheduled = patch.attendeeScheduled;
+      if (patch.adminManaged !== undefined)
+        values.adminManaged = patch.adminManaged;
       if (patch.blocker !== undefined) values.blocker = patch.blocker;
       if (patch.closed !== undefined) values.closed = patch.closed;
       if ("proposalId" in patch) values.proposalId = patch.proposalId ?? null;

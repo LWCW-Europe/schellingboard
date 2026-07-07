@@ -18,7 +18,7 @@ export type AdminSessionInput = {
   startTime: string | null;
   endTime: string | null;
   capacity: number;
-  attendeeScheduled: boolean;
+  adminManaged: boolean;
   blocker: boolean;
   closed: boolean;
   hostIds: string[];
@@ -72,7 +72,7 @@ export async function adminUpdateSessionAction(
       startTime: range.start,
       endTime: range.end,
       capacity: input.capacity,
-      attendeeScheduled: input.attendeeScheduled,
+      adminManaged: input.adminManaged,
       blocker: input.blocker,
       closed: input.closed,
       hostIds: input.hostIds,

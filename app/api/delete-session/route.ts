@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!session.attendeeScheduled || session.blocker) {
+  if (session.adminManaged || session.blocker) {
     return new Response("Cannot delete via web app", { status: 400 });
   }
 

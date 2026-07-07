@@ -87,7 +87,7 @@ describe("POST /api/delete-session", () => {
       startTime: new Date(Date.now() + 60 * 60 * 1000),
       endTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
       capacity: 30,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       eventId: event.id,
     });

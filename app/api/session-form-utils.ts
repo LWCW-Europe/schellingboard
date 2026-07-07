@@ -75,7 +75,7 @@ export function prepareToInsert(params: SessionParams): SessionCreateInput {
     startTime: start,
     endTime: end,
     capacity: location.capacity ?? 0,
-    attendeeScheduled: true,
+    adminManaged: false,
     blocker: false,
     proposalId: params.proposal ?? undefined,
     eventId: day.eventId,

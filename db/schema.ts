@@ -121,11 +121,11 @@ export const sessions = sqliteTable("sessions", {
   startTime: text("start_time"),
   endTime: text("end_time"),
   capacity: integer("capacity").notNull().default(0),
-  attendeeScheduled: integer("attendee_scheduled", {
+  adminManaged: integer("admin_managed", {
     mode: "boolean",
   })
     .notNull()
-    .default(false),
+    .default(true),
   blocker: integer("blocker", { mode: "boolean" }).notNull().default(false),
   closed: integer("closed", { mode: "boolean" }).notNull().default(false),
   proposalId: text("proposal_id").references(() => sessionProposals.id, {

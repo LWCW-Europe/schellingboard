@@ -167,7 +167,7 @@ function makeSession(startTime: Date, endTime: Date): Session {
     title: "",
     description: "",
     capacity: 0,
-    attendeeScheduled: true,
+    adminManaged: false,
     blocker: false,
     closed: false,
     hosts: [],

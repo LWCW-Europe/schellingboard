@@ -8,7 +8,7 @@ function makeSession(id: string, start?: Date, end?: Date): Session {
     title: "",
     description: "",
     capacity: 0,
-    attendeeScheduled: true,
+    adminManaged: false,
     blocker: false,
     closed: false,
     hosts: [],

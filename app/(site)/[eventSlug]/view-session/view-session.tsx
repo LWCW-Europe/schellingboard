@@ -68,7 +68,7 @@ export function ViewSession(props: {
 
   const rsvpd = currentUser ? rsvpdForSession(session.id) : false;
   const isHost = currentUser && session.hosts.some((h) => h.id === currentUser);
-  const isEditable = !!isHost && session.attendeeScheduled;
+  const isEditable = !!isHost && !session.adminManaged;
 
   const guestMap = new Map(guests.map((guest) => [guest.id, guest]));
   const attendees =

@@ -11,7 +11,7 @@ export function newEmptySession(eventId: string): Session {
     locations: [],
     capacity: 0,
     numRsvps: 0,
-    attendeeScheduled: true,
+    adminManaged: false,
     blocker: false,
     closed: false,
     proposalId: undefined,

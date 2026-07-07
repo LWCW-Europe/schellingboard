@@ -164,7 +164,7 @@ export async function createSession(
     startTime: opts?.startTime,
     endTime: opts?.endTime,
     capacity: opts?.capacity ?? 30,
-    attendeeScheduled: true,
+    adminManaged: false,
     blocker: false,
     closed: false,
     eventId,

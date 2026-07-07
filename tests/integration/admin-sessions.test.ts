@@ -75,7 +75,7 @@ describe("adminUpdateSessionAction", () => {
       startTime: "2030-01-01T10:00:00.000Z",
       endTime: "2030-01-01T11:00:00.000Z",
       capacity: 42,
-      attendeeScheduled: false,
+      adminManaged: true,
       blocker: true,
       closed: true,
       hostIds: [h2.id],
@@ -87,7 +87,7 @@ describe("adminUpdateSessionAction", () => {
     expect(updated?.title).toBe("New title");
     expect(updated?.description).toBe("New description");
     expect(updated?.capacity).toBe(42);
-    expect(updated?.attendeeScheduled).toBe(false);
+    expect(updated?.adminManaged).toBe(true);
     expect(updated?.blocker).toBe(true);
     expect(updated?.closed).toBe(true);
     expect(updated?.startTime?.toISOString()).toBe("2030-01-01T10:00:00.000Z");
@@ -110,7 +110,7 @@ describe("adminUpdateSessionAction", () => {
       startTime: null,
       endTime: null,
       capacity: 30,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       closed: false,
       hostIds: [],
@@ -135,7 +135,7 @@ describe("adminUpdateSessionAction", () => {
       title: "Title",
       description: "",
       capacity: 30,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       closed: false,
       hostIds: [],
@@ -175,7 +175,7 @@ describe("adminUpdateSessionAction", () => {
       title: "Title",
       description: "",
       capacity: 30,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       closed: false,
       hostIds: [],
@@ -210,7 +210,7 @@ describe("adminUpdateSessionAction", () => {
       startTime: "not-a-date",
       endTime: "2030-01-01T11:00:00.000Z",
       capacity: 30,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       closed: false,
       hostIds: [],
@@ -229,7 +229,7 @@ describe("adminUpdateSessionAction", () => {
       description: "",
       startTime: null,
       endTime: null,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       closed: false,
       hostIds: [],
@@ -259,7 +259,7 @@ describe("adminUpdateSessionAction", () => {
       startTime: null,
       endTime: null,
       capacity: 30,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       closed: false,
       hostIds: [],
@@ -279,7 +279,7 @@ describe("adminUpdateSessionAction", () => {
       startTime: null,
       endTime: null,
       capacity: 30,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       closed: false,
     };
@@ -317,7 +317,7 @@ describe("adminUpdateSessionAction", () => {
       startTime: null,
       endTime: null,
       capacity: 30,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       closed: false,
       hostIds: [],
@@ -334,7 +334,7 @@ describe("adminUpdateSessionAction", () => {
       startTime: null,
       endTime: null,
       capacity: 30,
-      attendeeScheduled: true,
+      adminManaged: false,
       blocker: false,
       closed: false,
       hostIds: [],

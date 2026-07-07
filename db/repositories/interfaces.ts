@@ -266,7 +266,7 @@ export type Session = {
   startTime?: Date;
   endTime?: Date;
   capacity: number;
-  attendeeScheduled: boolean;
+  adminManaged: boolean;
   blocker: boolean;
   closed: boolean;
   proposalId?: string;
@@ -282,7 +282,7 @@ export type SessionCreateInput = {
   startTime?: Date;
   endTime?: Date;
   capacity: number;
-  attendeeScheduled: boolean;
+  adminManaged: boolean;
   blocker: boolean;
   closed: boolean;
   proposalId?: string;

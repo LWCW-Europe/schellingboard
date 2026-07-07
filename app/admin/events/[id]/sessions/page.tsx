@@ -75,7 +75,7 @@ export default async function AdminEventSessionsPage({
     startTime: s.startTime ? s.startTime.toISOString() : null,
     endTime: s.endTime ? s.endTime.toISOString() : null,
     capacity: s.capacity,
-    attendeeScheduled: s.attendeeScheduled,
+    adminManaged: s.adminManaged,
     blocker: s.blocker,
     closed: s.closed,
     hosts: s.hosts.map((h) => ({ id: h.id, name: h.name })),

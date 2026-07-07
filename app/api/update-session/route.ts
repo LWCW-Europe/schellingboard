@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       { status: 403 }
     );
   }
-  if (!prevSession.attendeeScheduled || prevSession.blocker) {
+  if (prevSession.adminManaged || prevSession.blocker) {
     return new Response("Cannot edit via web app", { status: 400 });
   }
   const existingSessions = allSessions.filter((ses) => ses.id !== params.id);
