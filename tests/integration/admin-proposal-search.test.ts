@@ -60,6 +60,43 @@ describe("sessionProposals.searchByEvent", () => {
     expect(rows.map((r) => r.title)).toEqual(["First"]);
   });
 
+  it("treats % and _ in the query as literal characters, not wildcards", async () => {
+    const event = await createEvent();
+    await createProposal(event.id, [], { title: "50% Faster Builds" });
+    await createProposal(event.id, [], { title: "500 Faster Builds" });
+    await createProposal(event.id, [], { title: "Track A_1" });
+    await createProposal(event.id, [], { title: "Track AX1" });
+    const percentHost = await createGuest({ name: "Mr 10% Smith" });
+    const plainHost = await createGuest({ name: "Mr 100 Smith" });
+    await createProposal(event.id, [percentHost.id], { title: "Hosted A" });
+    await createProposal(event.id, [plainHost.id], { title: "Hosted B" });
+    const repos = getRepositories();
+
+    const percent = await repos.sessionProposals.searchByEvent(event.id, {
+      query: "50%",
+      limit: 50,
+      offset: 0,
+    });
+    expect(percent.rows.map((r) => r.title)).toEqual(["50% Faster Builds"]);
+    expect(percent.total).toBe(1);
+
+    const underscore = await repos.sessionProposals.searchByEvent(event.id, {
+      query: "A_1",
+      limit: 50,
+      offset: 0,
+    });
+    expect(underscore.rows.map((r) => r.title)).toEqual(["Track A_1"]);
+    expect(underscore.total).toBe(1);
+
+    const hostMatch = await repos.sessionProposals.searchByEvent(event.id, {
+      query: "10%",
+      limit: 50,
+      offset: 0,
+    });
+    expect(hostMatch.rows.map((r) => r.title)).toEqual(["Hosted A"]);
+    expect(hostMatch.total).toBe(1);
+  });
+
   it("paginates via limit/offset while reporting the full total", async () => {
     const event = await createEvent();
     for (const title of ["A", "B", "C", "D", "E"]) {

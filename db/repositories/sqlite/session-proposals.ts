@@ -5,7 +5,6 @@ import {
   exists,
   inArray,
   isNotNull,
-  like,
   or,
   sql,
 } from "drizzle-orm";
@@ -23,6 +22,12 @@ import type {
 
 type DB = BetterSQLite3Database<typeof schema>;
 type ProposalRow = typeof schema.sessionProposals.$inferSelect;
+
+// Escape LIKE meta-characters so user input is matched literally. Pairs with an
+// explicit `ESCAPE '\'` clause in the query below.
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+}
 
 export class SqliteSessionProposalsRepository implements SessionProposalsRepository {
   constructor(private readonly db: DB) {}
@@ -149,7 +154,7 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
   ): Promise<SessionProposalPage> {
     const conditions = [eq(schema.sessionProposals.eventId, eventId)];
     if (opts.query) {
-      const pattern = `%${opts.query}%`;
+      const pattern = `%${escapeLike(opts.query)}%`;
       // Match the title or any host's name.
       const hostMatch = exists(
         this.db
@@ -162,12 +167,15 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
           .where(
             and(
               eq(schema.proposalHosts.proposalId, schema.sessionProposals.id),
-              like(schema.guests.name, pattern)
+              sql`${schema.guests.name} like ${pattern} escape '\\'`
             )
           )
       );
       conditions.push(
-        or(like(schema.sessionProposals.title, pattern), hostMatch)!
+        or(
+          sql`${schema.sessionProposals.title} like ${pattern} escape '\\'`,
+          hostMatch
+        )!
       );
     }
     const where = and(...conditions);
