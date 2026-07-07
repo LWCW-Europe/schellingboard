@@ -41,10 +41,59 @@ function parseTimeRange(
   return { start, end };
 }
 
-function revalidateEventPaths(eventId: string) {
+// The attendee-facing schedule fetches the session list in the shared
+// [eventSlug] layout (see app/(site)/[eventSlug]/session-actions.ts), so the
+// public layout must be revalidated alongside the admin pages.
+async function revalidateEventPaths(eventId: string) {
   revalidatePath("/admin");
   revalidatePath("/admin/events");
   revalidatePath(`/admin/events/${eventId}`);
+  const event = await getRepositories().events.findById(eventId);
+  if (event) revalidatePath(`/${event.slug}`, "layout");
+}
+
+export type AdminSessionCreateInput = Omit<AdminSessionInput, "id"> & {
+  eventId: string;
+};
+
+export async function adminCreateSessionAction(
+  input: AdminSessionCreateInput
+): Promise<AdminActionResult> {
+  if (!(await isAdminRequest())) return { ok: false, error: "Unauthorized" };
+
+  const title = input.title.trim();
+  if (!title) return { ok: false, error: "Title is required" };
+
+  const range = parseTimeRange(input.startTime, input.endTime);
+  if ("error" in range) return { ok: false, error: range.error };
+
+  if (!Number.isInteger(input.capacity) || input.capacity < 0)
+    return { ok: false, error: "Capacity must be a non-negative whole number" };
+
+  const { sessions, events } = getRepositories();
+  const event = await events.findById(input.eventId);
+  if (!event) return { ok: false, error: "Event not found" };
+
+  try {
+    await sessions.create({
+      title,
+      description: input.description.trim(),
+      startTime: range.start,
+      endTime: range.end,
+      capacity: input.capacity,
+      adminManaged: input.adminManaged,
+      blocker: input.blocker,
+      closed: input.closed,
+      eventId: input.eventId,
+      hostIds: input.hostIds,
+      locationIds: input.locationIds,
+    });
+  } catch {
+    return { ok: false, error: "Failed to create session" };
+  }
+
+  await revalidateEventPaths(input.eventId);
+  return { ok: true };
 }
 
 export async function adminUpdateSessionAction(
@@ -82,7 +131,7 @@ export async function adminUpdateSessionAction(
     return { ok: false, error: "Failed to update session" };
   }
 
-  revalidateEventPaths(session.eventId);
+  await revalidateEventPaths(session.eventId);
   return { ok: true };
 }
 
@@ -101,6 +150,6 @@ export async function adminDeleteSessionAction(input: {
     return { ok: false, error: "Failed to delete session" };
   }
 
-  revalidateEventPaths(session.eventId);
+  await revalidateEventPaths(session.eventId);
   return { ok: true };
 }

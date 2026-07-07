@@ -89,6 +89,7 @@ export default async function AdminEventSessionsPage({
 
   return (
     <EventSessionsManager
+      eventId={id}
       sessions={sessionRows}
       eventGuests={eventGuests}
       eventLocations={eventLocations}

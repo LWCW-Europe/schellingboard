@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/app/input";
 import {
+  adminCreateSessionAction,
   adminUpdateSessionAction,
   adminDeleteSessionAction,
 } from "@/app/actions/admin-sessions";
@@ -60,6 +61,35 @@ function flagLabels(session: SessionRow): string[] {
 function toIsoOrNull(value: string, timezone: string): string | null {
   const utc = zonedInputToUtc(value, timezone);
   return utc === "" ? null : `${utc}Z`;
+}
+
+type SessionFormValues = {
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  capacity: string;
+  adminManaged: boolean;
+  blocker: boolean;
+  closed: boolean;
+  hostIds: string[];
+  locationIds: string[];
+};
+
+// Shared shape of the create/update action payloads (everything but the ids).
+function toActionInput(values: SessionFormValues, timezone: string) {
+  return {
+    title: values.title,
+    description: values.description,
+    startTime: toIsoOrNull(values.startTime, timezone),
+    endTime: toIsoOrNull(values.endTime, timezone),
+    capacity: Number(values.capacity) || 0,
+    adminManaged: values.adminManaged,
+    blocker: values.blocker,
+    closed: values.closed,
+    hostIds: values.hostIds,
+    locationIds: values.locationIds,
+  };
 }
 
 function SessionRsvps({
@@ -147,6 +177,229 @@ function SessionRsvps({
   );
 }
 
+function SessionForm({
+  initial,
+  idPrefix,
+  timezone,
+  hostCandidates,
+  locationCandidates,
+  submitLabel,
+  pendingLabel,
+  isPending,
+  onSubmit,
+  onCancel,
+}: {
+  initial: SessionFormValues;
+  idPrefix: string;
+  timezone: string;
+  hostCandidates: EventGuest[];
+  locationCandidates: EventLocation[];
+  submitLabel: string;
+  pendingLabel: string;
+  isPending: boolean;
+  onSubmit: (values: SessionFormValues) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(initial.title);
+  const [description, setDescription] = useState(initial.description);
+  const [startTime, setStartTime] = useState(initial.startTime);
+  const [endTime, setEndTime] = useState(initial.endTime);
+  const [capacity, setCapacity] = useState(initial.capacity);
+  const [adminManaged, setAdminManaged] = useState(initial.adminManaged);
+  const [blocker, setBlocker] = useState(initial.blocker);
+  const [closed, setClosed] = useState(initial.closed);
+  const [hostIds, setHostIds] = useState<string[]>(initial.hostIds);
+  const [locationIds, setLocationIds] = useState<string[]>(initial.locationIds);
+
+  const toggle = (
+    set: React.Dispatch<React.SetStateAction<string[]>>,
+    id: string
+  ) =>
+    set((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      title,
+      description,
+      startTime,
+      endTime,
+      capacity,
+      adminManaged,
+      blocker,
+      closed,
+      hostIds,
+      locationIds,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="flex flex-col gap-1">
+        <label htmlFor={`${idPrefix}-title`} className="text-sm text-gray-600">
+          Title *
+        </label>
+        <Input
+          id={`${idPrefix}-title`}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+          className="w-full h-10"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <label htmlFor={`${idPrefix}-desc`} className="text-sm text-gray-600">
+          Description
+        </label>
+        <textarea
+          id={`${idPrefix}-desc`}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
+        />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor={`${idPrefix}-start`}
+            className="text-sm text-gray-600"
+          >
+            Start ({timezone}) — leave empty if not scheduled
+          </label>
+          <Input
+            id={`${idPrefix}-start`}
+            type="datetime-local"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="w-full h-10"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor={`${idPrefix}-end`} className="text-sm text-gray-600">
+            End ({timezone})
+          </label>
+          <Input
+            id={`${idPrefix}-end`}
+            type="datetime-local"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            className="w-full h-10"
+          />
+        </div>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`${idPrefix}-capacity`}
+          className="text-sm text-gray-600"
+        >
+          Capacity
+        </label>
+        <Input
+          id={`${idPrefix}-capacity`}
+          type="number"
+          min="0"
+          value={capacity}
+          onChange={(e) => setCapacity(e.target.value)}
+          className="w-full h-10"
+        />
+      </div>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="text-sm text-gray-600">Flags</legend>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={blocker}
+            onChange={(e) => setBlocker(e.target.checked)}
+            className="h-4 w-4 cursor-pointer"
+          />
+          Blocker
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={closed}
+            onChange={(e) => setClosed(e.target.checked)}
+            className="h-4 w-4 cursor-pointer"
+          />
+          Closed
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={adminManaged}
+            onChange={(e) => setAdminManaged(e.target.checked)}
+            className="h-4 w-4 cursor-pointer"
+          />
+          Admin-managed
+        </label>
+      </fieldset>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="text-sm text-gray-600">Hosts</legend>
+        {hostCandidates.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No guests assigned to this event yet.
+          </p>
+        ) : (
+          hostCandidates.map((g) => (
+            <label
+              key={g.id}
+              className="flex items-center gap-2 text-sm text-gray-700"
+            >
+              <input
+                type="checkbox"
+                checked={hostIds.includes(g.id)}
+                onChange={() => toggle(setHostIds, g.id)}
+                aria-label={`Host ${g.name}`}
+                className="h-4 w-4 cursor-pointer"
+              />
+              {g.name}
+            </label>
+          ))
+        )}
+      </fieldset>
+      <fieldset className="flex flex-col gap-1">
+        <legend className="text-sm text-gray-600">Locations</legend>
+        {locationCandidates.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No locations assigned to this event yet.
+          </p>
+        ) : (
+          locationCandidates.map((l) => (
+            <label
+              key={l.id}
+              className="flex items-center gap-2 text-sm text-gray-700"
+            >
+              <input
+                type="checkbox"
+                checked={locationIds.includes(l.id)}
+                onChange={() => toggle(setLocationIds, l.id)}
+                aria-label={`Location ${l.name}`}
+                className="h-4 w-4 cursor-pointer"
+              />
+              {l.name}
+            </label>
+          ))
+        )}
+      </fieldset>
+      <div className="flex gap-2">
+        <button type="submit" disabled={isPending} className={PRIMARY_BUTTON}>
+          {isPending ? pendingLabel : submitLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isPending}
+          className={SECONDARY_BUTTON}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function SessionItem({
   session,
   eventGuests,
@@ -162,24 +415,6 @@ function SessionItem({
 }) {
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
-  const [title, setTitle] = useState(session.title);
-  const [description, setDescription] = useState(session.description);
-  const [startTime, setStartTime] = useState(
-    utcToZonedInput(session.startTime, timezone)
-  );
-  const [endTime, setEndTime] = useState(
-    utcToZonedInput(session.endTime, timezone)
-  );
-  const [capacity, setCapacity] = useState(String(session.capacity));
-  const [adminManaged, setAdminManaged] = useState(session.adminManaged);
-  const [blocker, setBlocker] = useState(session.blocker);
-  const [closed, setClosed] = useState(session.closed);
-  const [hostIds, setHostIds] = useState<string[]>(
-    session.hosts.map((h) => h.id)
-  );
-  const [locationIds, setLocationIds] = useState<string[]>(
-    session.locations.map((l) => l.id)
-  );
   const [isSaving, startSave] = useTransition();
   const [deleteMode, setDeleteMode] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -198,42 +433,11 @@ function SessionItem({
     ),
   ];
 
-  const reset = () => {
-    setTitle(session.title);
-    setDescription(session.description);
-    setStartTime(utcToZonedInput(session.startTime, timezone));
-    setEndTime(utcToZonedInput(session.endTime, timezone));
-    setCapacity(String(session.capacity));
-    setAdminManaged(session.adminManaged);
-    setBlocker(session.blocker);
-    setClosed(session.closed);
-    setHostIds(session.hosts.map((h) => h.id));
-    setLocationIds(session.locations.map((l) => l.id));
-  };
-
-  const toggle = (
-    set: React.Dispatch<React.SetStateAction<string[]>>,
-    id: string
-  ) =>
-    set((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = (values: SessionFormValues) => {
     startSave(async () => {
       const result = await adminUpdateSessionAction({
         id: session.id,
-        title,
-        description,
-        startTime: toIsoOrNull(startTime, timezone),
-        endTime: toIsoOrNull(endTime, timezone),
-        capacity: Number(capacity) || 0,
-        adminManaged,
-        blocker,
-        closed,
-        hostIds,
-        locationIds,
+        ...toActionInput(values, timezone),
       });
       if (!result.ok) {
         onError(result.error);
@@ -344,184 +548,115 @@ function SessionItem({
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-3">
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor={`sess-title-${session.id}`}
-          className="text-sm text-gray-600"
-        >
-          Title *
-        </label>
-        <Input
-          id={`sess-title-${session.id}`}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-          className="w-full h-10"
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor={`sess-desc-${session.id}`}
-          className="text-sm text-gray-600"
-        >
-          Description
-        </label>
-        <textarea
-          id={`sess-desc-${session.id}`}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
-        />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={`sess-start-${session.id}`}
-            className="text-sm text-gray-600"
-          >
-            Start ({timezone}) — leave empty if not scheduled
-          </label>
-          <Input
-            id={`sess-start-${session.id}`}
-            type="datetime-local"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className="w-full h-10"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={`sess-end-${session.id}`}
-            className="text-sm text-gray-600"
-          >
-            End ({timezone})
-          </label>
-          <Input
-            id={`sess-end-${session.id}`}
-            type="datetime-local"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            className="w-full h-10"
-          />
-        </div>
-      </div>
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor={`sess-capacity-${session.id}`}
-          className="text-sm text-gray-600"
-        >
-          Capacity
-        </label>
-        <Input
-          id={`sess-capacity-${session.id}`}
-          type="number"
-          min="0"
-          value={capacity}
-          onChange={(e) => setCapacity(e.target.value)}
-          className="w-full h-10"
-        />
-      </div>
-      <fieldset className="flex flex-col gap-1">
-        <legend className="text-sm text-gray-600">Flags</legend>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={blocker}
-            onChange={(e) => setBlocker(e.target.checked)}
-            className="h-4 w-4 cursor-pointer"
-          />
-          Blocker
-        </label>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={closed}
-            onChange={(e) => setClosed(e.target.checked)}
-            className="h-4 w-4 cursor-pointer"
-          />
-          Closed
-        </label>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={adminManaged}
-            onChange={(e) => setAdminManaged(e.target.checked)}
-            className="h-4 w-4 cursor-pointer"
-          />
-          Admin-managed
-        </label>
-      </fieldset>
-      <fieldset className="flex flex-col gap-1">
-        <legend className="text-sm text-gray-600">Hosts</legend>
-        {hostCandidates.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            No guests assigned to this event yet.
-          </p>
-        ) : (
-          hostCandidates.map((g) => (
-            <label
-              key={g.id}
-              className="flex items-center gap-2 text-sm text-gray-700"
-            >
-              <input
-                type="checkbox"
-                checked={hostIds.includes(g.id)}
-                onChange={() => toggle(setHostIds, g.id)}
-                aria-label={`Host ${g.name}`}
-                className="h-4 w-4 cursor-pointer"
-              />
-              {g.name}
-            </label>
-          ))
-        )}
-      </fieldset>
-      <fieldset className="flex flex-col gap-1">
-        <legend className="text-sm text-gray-600">Locations</legend>
-        {locationCandidates.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            No locations assigned to this event yet.
-          </p>
-        ) : (
-          locationCandidates.map((l) => (
-            <label
-              key={l.id}
-              className="flex items-center gap-2 text-sm text-gray-700"
-            >
-              <input
-                type="checkbox"
-                checked={locationIds.includes(l.id)}
-                onChange={() => toggle(setLocationIds, l.id)}
-                aria-label={`Location ${l.name}`}
-                className="h-4 w-4 cursor-pointer"
-              />
-              {l.name}
-            </label>
-          ))
-        )}
-      </fieldset>
-      <div className="flex gap-2">
-        <button type="submit" disabled={isSaving} className={PRIMARY_BUTTON}>
-          {isSaving ? "Saving..." : "Save"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            reset();
-            setEditMode(false);
-            onError(null);
-          }}
-          disabled={isSaving}
-          className={SECONDARY_BUTTON}
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+    <SessionForm
+      initial={{
+        title: session.title,
+        description: session.description,
+        startTime: utcToZonedInput(session.startTime, timezone),
+        endTime: utcToZonedInput(session.endTime, timezone),
+        capacity: String(session.capacity),
+        adminManaged: session.adminManaged,
+        blocker: session.blocker,
+        closed: session.closed,
+        hostIds: session.hosts.map((h) => h.id),
+        locationIds: session.locations.map((l) => l.id),
+      }}
+      idPrefix={`sess-${session.id}`}
+      timezone={timezone}
+      hostCandidates={hostCandidates}
+      locationCandidates={locationCandidates}
+      submitLabel="Save"
+      pendingLabel="Saving..."
+      isPending={isSaving}
+      onSubmit={handleSave}
+      onCancel={() => {
+        setEditMode(false);
+        onError(null);
+      }}
+    />
+  );
+}
+
+// Sessions created by an admin are admin-managed by default: they stay under
+// admin control instead of being editable by their hosts.
+const EMPTY_SESSION: SessionFormValues = {
+  title: "",
+  description: "",
+  startTime: "",
+  endTime: "",
+  capacity: "0",
+  adminManaged: true,
+  blocker: false,
+  closed: false,
+  hostIds: [],
+  locationIds: [],
+};
+
+function AddSession({
+  eventId,
+  eventGuests,
+  eventLocations,
+  timezone,
+  onError,
+}: {
+  eventId: string;
+  eventGuests: EventGuest[];
+  eventLocations: EventLocation[];
+  timezone: string;
+  onError: (e: string | null) => void;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isCreating, startCreate] = useTransition();
+
+  const handleCreate = (values: SessionFormValues) => {
+    startCreate(async () => {
+      const result = await adminCreateSessionAction({
+        eventId,
+        ...toActionInput(values, timezone),
+      });
+      if (!result.ok) {
+        onError(result.error);
+      } else {
+        onError(null);
+        setOpen(false);
+        router.refresh();
+      }
+    });
+  };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className={PRIMARY_BUTTON}>
+        Add session
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-3 border border-gray-200 rounded-md p-4">
+      <h3 className="font-medium text-gray-900">New session</h3>
+      <SessionForm
+        initial={EMPTY_SESSION}
+        idPrefix="sess-new"
+        timezone={timezone}
+        hostCandidates={eventGuests}
+        locationCandidates={eventLocations}
+        submitLabel="Create"
+        pendingLabel="Creating..."
+        isPending={isCreating}
+        onSubmit={handleCreate}
+        onCancel={() => {
+          setOpen(false);
+          onError(null);
+        }}
+      />
+    </div>
   );
 }
 
 export function EventSessionsManager({
+  eventId,
   sessions,
   eventGuests,
   eventLocations,
@@ -531,6 +666,7 @@ export function EventSessionsManager({
   pageSize,
   query,
 }: {
+  eventId: string;
   sessions: SessionRow[];
   eventGuests: EventGuest[];
   eventLocations: EventLocation[];
@@ -549,6 +685,14 @@ export function EventSessionsManager({
         All times are in the event timezone ({timezone}).
       </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <AddSession
+        eventId={eventId}
+        eventGuests={eventGuests}
+        eventLocations={eventLocations}
+        timezone={timezone}
+        onError={setError}
+      />
 
       <DataTable
         rows={sessions}

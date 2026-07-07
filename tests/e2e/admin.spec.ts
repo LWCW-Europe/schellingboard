@@ -1288,6 +1288,39 @@ test.describe("Admin UI sessions", () => {
     ).toBeVisible();
   });
 
+  test("creates a session and deletes it again", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Sessions");
+
+    const sessions = page.getByRole("region", { name: "Sessions" });
+    const title = `Lunch Blocker ${Date.now()}`;
+
+    await sessions.getByRole("button", { name: "Add session" }).click();
+    await sessions.getByLabel("Title *").fill(title);
+    await sessions.getByLabel("Blocker").check();
+    await sessions.getByRole("button", { name: "Create", exact: true }).click();
+
+    // Search for the unique title so pagination cannot hide the new row.
+    await sessions.getByRole("searchbox", { name: "Search" }).fill(title);
+    await sessions.getByRole("button", { name: "Search" }).click();
+    const row = sessions.getByRole("listitem").filter({ hasText: title });
+    await expect(row).toBeVisible();
+    await expect(row).toContainText("blocker");
+    await expect(row).toContainText("admin-managed");
+
+    // Clean up so the shared seed stays stable for other tests.
+    await row.getByRole("button", { name: /^Delete/ }).click();
+    await sessions.getByLabel("Type the session title to confirm").fill(title);
+    await sessions.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(row).toHaveCount(0);
+  });
+
   test("deletes a session via named confirm", async ({ page }) => {
     await adminLogin(page);
     await page.goto("/admin/events");

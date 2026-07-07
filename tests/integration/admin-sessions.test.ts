@@ -24,6 +24,7 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+import { revalidatePath } from "next/cache";
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import {
   createEvent,
@@ -34,6 +35,7 @@ import {
 import { getRepositories } from "@/db/container";
 import { createAdminAuthCookie } from "@/utils/auth";
 import {
+  adminCreateSessionAction,
   adminUpdateSessionAction,
   adminDeleteSessionAction,
 } from "@/app/actions/admin-sessions";
@@ -44,6 +46,243 @@ async function loginAsAdmin() {
   const c = await createAdminAuthCookie();
   cookieJar.set(c.name, c.value);
 }
+
+describe("adminCreateSessionAction", () => {
+  beforeAll(() => setupTestDb());
+
+  beforeEach(async () => {
+    resetTestDb();
+    cookieJar.clear();
+    vi.stubEnv("ADMIN_PASSWORD", "admin-pw");
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await loginAsAdmin();
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("creates a session with all fields, hosts and locations", async () => {
+    const event = await createEvent();
+    const host = await createGuest({ name: "Host One" });
+    const loc = await createLocation({ name: "Room A" });
+
+    const result = await adminCreateSessionAction({
+      eventId: event.id,
+      title: "Lunch",
+      description: "Meal time",
+      startTime: "2030-01-01T12:30:00.000Z",
+      endTime: "2030-01-01T14:00:00.000Z",
+      capacity: 0,
+      adminManaged: true,
+      blocker: true,
+      closed: false,
+      hostIds: [host.id],
+      locationIds: [loc.id],
+    });
+    expect(result.ok).toBe(true);
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(1);
+    const created = sessions[0];
+    expect(created.title).toBe("Lunch");
+    expect(created.description).toBe("Meal time");
+    expect(created.capacity).toBe(0);
+    expect(created.adminManaged).toBe(true);
+    expect(created.blocker).toBe(true);
+    expect(created.closed).toBe(false);
+    expect(created.startTime?.toISOString()).toBe("2030-01-01T12:30:00.000Z");
+    expect(created.endTime?.toISOString()).toBe("2030-01-01T14:00:00.000Z");
+    expect(created.hosts.map((h) => h.id)).toEqual([host.id]);
+    expect(created.locations.map((l) => l.id)).toEqual([loc.id]);
+  });
+
+  it("creates an unscheduled session without hosts or locations", async () => {
+    const event = await createEvent();
+
+    const result = await adminCreateSessionAction({
+      eventId: event.id,
+      title: "Untimed",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 10,
+      adminManaged: true,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [],
+    });
+    expect(result.ok).toBe(true);
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].startTime).toBeUndefined();
+    expect(sessions[0].endTime).toBeUndefined();
+    expect(sessions[0].hosts).toHaveLength(0);
+    expect(sessions[0].locations).toHaveLength(0);
+  });
+
+  it("rejects an empty title", async () => {
+    const event = await createEvent();
+
+    const result = await adminCreateSessionAction({
+      eventId: event.id,
+      title: "   ",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 0,
+      adminManaged: true,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [],
+    });
+    expect(!result.ok && result.error).toBe("Title is required");
+  });
+
+  it("rejects when only one of startTime/endTime is set or the range is invalid", async () => {
+    const event = await createEvent();
+    const base = {
+      eventId: event.id,
+      title: "Title",
+      description: "",
+      capacity: 0,
+      adminManaged: true,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [],
+    };
+
+    const startOnly = await adminCreateSessionAction({
+      ...base,
+      startTime: "2030-01-01T10:00:00.000Z",
+      endTime: null,
+    });
+    expect(!startOnly.ok && startOnly.error).toBe(
+      "Start and end time must both be set or both empty"
+    );
+
+    const reversed = await adminCreateSessionAction({
+      ...base,
+      startTime: "2030-01-01T11:00:00.000Z",
+      endTime: "2030-01-01T10:00:00.000Z",
+    });
+    expect(!reversed.ok && reversed.error).toBe(
+      "End time must be after start time"
+    );
+
+    expect(await getRepositories().sessions.listByEvent(event.id)).toHaveLength(
+      0
+    );
+  });
+
+  it("rejects a capacity that is not a non-negative whole number", async () => {
+    const event = await createEvent();
+
+    for (const capacity of [-1, 2.5, Number.NaN]) {
+      const result = await adminCreateSessionAction({
+        eventId: event.id,
+        title: "Title",
+        description: "",
+        startTime: null,
+        endTime: null,
+        capacity,
+        adminManaged: true,
+        blocker: false,
+        closed: false,
+        hostIds: [],
+        locationIds: [],
+      });
+      expect(!result.ok && result.error).toBe(
+        "Capacity must be a non-negative whole number"
+      );
+    }
+  });
+
+  it("errors for an unknown event", async () => {
+    const result = await adminCreateSessionAction({
+      eventId: "no-such-event",
+      title: "Title",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 0,
+      adminManaged: true,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [],
+    });
+    expect(!result.ok && result.error).toBe("Event not found");
+  });
+
+  it("returns an error instead of throwing when a host or location does not exist", async () => {
+    const event = await createEvent();
+
+    const result = await adminCreateSessionAction({
+      eventId: event.id,
+      title: "Title",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 0,
+      adminManaged: true,
+      blocker: false,
+      closed: false,
+      hostIds: ["no-such-guest"],
+      locationIds: [],
+    });
+    expect(!result.ok && result.error).toBe("Failed to create session");
+
+    // the transaction rolled back, nothing was created
+    expect(await getRepositories().sessions.listByEvent(event.id)).toHaveLength(
+      0
+    );
+  });
+
+  it("revalidates the public event layout so attendees see the new session", async () => {
+    const event = await createEvent();
+    vi.mocked(revalidatePath).mockClear();
+
+    const result = await adminCreateSessionAction({
+      eventId: event.id,
+      title: "Title",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 0,
+      adminManaged: true,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [],
+    });
+    expect(result.ok).toBe(true);
+
+    expect(revalidatePath).toHaveBeenCalledWith(`/${event.slug}`, "layout");
+  });
+
+  it("rejects when not authenticated", async () => {
+    const event = await createEvent();
+    cookieJar.clear();
+
+    const result = await adminCreateSessionAction({
+      eventId: event.id,
+      title: "Title",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 0,
+      adminManaged: true,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [],
+    });
+    expect(!result.ok && result.error).toBe("Unauthorized");
+  });
+});
 
 describe("adminUpdateSessionAction", () => {
   beforeAll(() => setupTestDb());
@@ -305,6 +544,29 @@ describe("adminUpdateSessionAction", () => {
     expect(updated?.title).toBe("Old title");
   });
 
+  it("revalidates the public event layout so attendees see the change", async () => {
+    const event = await createEvent();
+    const session = await createSession(event.id);
+    vi.mocked(revalidatePath).mockClear();
+
+    const result = await adminUpdateSessionAction({
+      id: session.id,
+      title: "New title",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 30,
+      adminManaged: false,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [],
+    });
+    expect(result.ok).toBe(true);
+
+    expect(revalidatePath).toHaveBeenCalledWith(`/${event.slug}`, "layout");
+  });
+
   it("rejects when not authenticated", async () => {
     const event = await createEvent();
     const session = await createSession(event.id);
@@ -377,6 +639,17 @@ describe("adminDeleteSessionAction", () => {
     // host and location are global records, untouched
     expect(await repos.guests.findById(host.id)).toBeDefined();
     expect(await repos.locations.findById(loc.id)).toBeDefined();
+  });
+
+  it("revalidates the public event layout so attendees see the removal", async () => {
+    const event = await createEvent();
+    const session = await createSession(event.id);
+    vi.mocked(revalidatePath).mockClear();
+
+    const result = await adminDeleteSessionAction({ id: session.id });
+    expect(result.ok).toBe(true);
+
+    expect(revalidatePath).toHaveBeenCalledWith(`/${event.slug}`, "layout");
   });
 
   it("rejects when not authenticated", async () => {
