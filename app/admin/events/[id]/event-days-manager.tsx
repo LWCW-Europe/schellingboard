@@ -14,6 +14,7 @@ import {
   SECONDARY_BUTTON,
   DANGER_BUTTON,
 } from "@/app/admin/buttons";
+import { utcToZonedInput, zonedInputToUtc } from "@/utils/admin-datetime";
 
 // Dates are pre-serialized to ISO strings in the server component to avoid
 // any RSC Date serialization ambiguity (Day.start is Date on server, but
@@ -37,11 +38,27 @@ const EMPTY_FORM: Omit<DayInput, "eventId"> = {
   endBookings: "",
 };
 
+// Converts every field of a day form from the event timezone to the UTC wire
+// format the day actions expect.
+function toUtcForm(
+  form: Omit<DayInput, "eventId">,
+  timezone: string
+): Omit<DayInput, "eventId"> {
+  return {
+    start: zonedInputToUtc(form.start, timezone),
+    end: zonedInputToUtc(form.end, timezone),
+    startBookings: zonedInputToUtc(form.startBookings, timezone),
+    endBookings: zonedInputToUtc(form.endBookings, timezone),
+  };
+}
+
 function AddDayForm({
   eventId,
+  timezone,
   onError,
 }: {
   eventId: string;
+  timezone: string;
   onError: (e: string | null) => void;
 }) {
   const router = useRouter();
@@ -56,7 +73,10 @@ function AddDayForm({
     e.preventDefault();
     startTransition(async () => {
       try {
-        const result = await createDayAction({ eventId, ...form });
+        const result = await createDayAction({
+          eventId,
+          ...toUtcForm(form, timezone),
+        });
         if (!result.ok) {
           onError(result.error);
         } else {
@@ -162,20 +182,22 @@ function AddDayForm({
 function DayRow({
   day,
   eventId,
+  timezone,
   onError,
 }: {
   day: SerializedDay;
   eventId: string;
+  timezone: string;
   onError: (e: string | null) => void;
 }) {
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
   const [form, setFormState] = useState<Omit<DayInput, "eventId">>({
-    start: day.start.slice(0, 16),
-    end: day.end.slice(0, 16),
-    startBookings: day.startBookings.slice(0, 16),
-    endBookings: day.endBookings.slice(0, 16),
+    start: utcToZonedInput(day.start, timezone),
+    end: utcToZonedInput(day.end, timezone),
+    startBookings: utcToZonedInput(day.startBookings, timezone),
+    endBookings: utcToZonedInput(day.endBookings, timezone),
   });
   const [isSaving, startSave] = useTransition();
   const [isDeleting, startDelete] = useTransition();
@@ -187,7 +209,11 @@ function DayRow({
     e.preventDefault();
     startSave(async () => {
       try {
-        const result = await updateDayAction({ id: day.id, eventId, ...form });
+        const result = await updateDayAction({
+          id: day.id,
+          eventId,
+          ...toUtcForm(form, timezone),
+        });
         if (!result.ok) {
           onError(result.error);
         } else {
@@ -217,7 +243,10 @@ function DayRow({
     });
   };
 
-  const label = `${day.start.slice(0, 16)} – ${day.end.slice(0, 16)} UTC`;
+  const label = `${utcToZonedInput(day.start, timezone)} – ${utcToZonedInput(
+    day.end,
+    timezone
+  )} (${timezone})`;
 
   if (deleteMode) {
     const affected = day.affectedSessionTitles;
@@ -378,16 +407,20 @@ function DayRow({
 export function EventDaysManager({
   days,
   eventId,
+  timezone,
 }: {
   days: SerializedDay[];
   eventId: string;
+  timezone: string;
 }) {
   const [error, setError] = useState<string | null>(null);
 
   return (
     <section aria-label="Days" className="space-y-4">
       <h2 className="text-lg font-semibold text-gray-900">Days</h2>
-      <p className="text-sm text-gray-500">All times are UTC.</p>
+      <p className="text-sm text-gray-500">
+        All times are in the event timezone ({timezone}).
+      </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {days.length > 0 && (
@@ -397,13 +430,14 @@ export function EventDaysManager({
               key={day.id}
               day={day}
               eventId={eventId}
+              timezone={timezone}
               onError={setError}
             />
           ))}
         </ul>
       )}
 
-      <AddDayForm eventId={eventId} onError={setError} />
+      <AddDayForm eventId={eventId} timezone={timezone} onError={setError} />
     </section>
   );
 }

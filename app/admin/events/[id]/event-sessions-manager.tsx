@@ -14,6 +14,7 @@ import {
   DANGER_BUTTON,
 } from "@/app/admin/buttons";
 import { DataTable } from "../../data-table";
+import { utcToZonedInput, zonedInputToUtc } from "@/utils/admin-datetime";
 
 export type SessionRow = {
   id: string;
@@ -38,9 +39,12 @@ function joinNames(items: { name: string }[]): string {
   return items.length > 0 ? items.map((i) => i.name).join(", ") : "—";
 }
 
-function timeLabel(session: SessionRow): string {
+function timeLabel(session: SessionRow, timezone: string): string {
   if (!session.startTime || !session.endTime) return "Not scheduled";
-  return `${session.startTime.slice(0, 16)} – ${session.endTime.slice(0, 16)} UTC`;
+  return `${utcToZonedInput(session.startTime, timezone)} – ${utcToZonedInput(
+    session.endTime,
+    timezone
+  )} (${timezone})`;
 }
 
 function flagLabels(session: SessionRow): string[] {
@@ -51,10 +55,11 @@ function flagLabels(session: SessionRow): string[] {
   return flags;
 }
 
-// datetime-local strings are 16 chars (no timezone). Times are treated as UTC,
-// so append "Z" before sending to the server; empty means "not scheduled".
-function toIsoOrNull(value: string): string | null {
-  return value.trim() === "" ? null : `${value}Z`;
+// datetime-local values are edited in the event timezone; the server expects
+// UTC ISO. Empty means "not scheduled".
+function toIsoOrNull(value: string, timezone: string): string | null {
+  const utc = zonedInputToUtc(value, timezone);
+  return utc === "" ? null : `${utc}Z`;
 }
 
 function SessionRsvps({
@@ -146,11 +151,13 @@ function SessionItem({
   session,
   eventGuests,
   eventLocations,
+  timezone,
   onError,
 }: {
   session: SessionRow;
   eventGuests: EventGuest[];
   eventLocations: EventLocation[];
+  timezone: string;
   onError: (e: string | null) => void;
 }) {
   const router = useRouter();
@@ -158,9 +165,11 @@ function SessionItem({
   const [title, setTitle] = useState(session.title);
   const [description, setDescription] = useState(session.description);
   const [startTime, setStartTime] = useState(
-    session.startTime?.slice(0, 16) ?? ""
+    utcToZonedInput(session.startTime, timezone)
   );
-  const [endTime, setEndTime] = useState(session.endTime?.slice(0, 16) ?? "");
+  const [endTime, setEndTime] = useState(
+    utcToZonedInput(session.endTime, timezone)
+  );
   const [capacity, setCapacity] = useState(String(session.capacity));
   const [attendeeScheduled, setAttendeeScheduled] = useState(
     session.attendeeScheduled
@@ -194,8 +203,8 @@ function SessionItem({
   const reset = () => {
     setTitle(session.title);
     setDescription(session.description);
-    setStartTime(session.startTime?.slice(0, 16) ?? "");
-    setEndTime(session.endTime?.slice(0, 16) ?? "");
+    setStartTime(utcToZonedInput(session.startTime, timezone));
+    setEndTime(utcToZonedInput(session.endTime, timezone));
     setCapacity(String(session.capacity));
     setAttendeeScheduled(session.attendeeScheduled);
     setBlocker(session.blocker);
@@ -219,8 +228,8 @@ function SessionItem({
         id: session.id,
         title,
         description,
-        startTime: toIsoOrNull(startTime),
-        endTime: toIsoOrNull(endTime),
+        startTime: toIsoOrNull(startTime, timezone),
+        endTime: toIsoOrNull(endTime, timezone),
         capacity: Number(capacity) || 0,
         attendeeScheduled,
         blocker,
@@ -305,7 +314,7 @@ function SessionItem({
           <div className="space-y-1">
             <p className="font-medium text-gray-900">{session.title}</p>
             <p className="text-sm text-gray-500">
-              {timeLabel(session)} · {joinNames(session.locations)}
+              {timeLabel(session, timezone)} · {joinNames(session.locations)}
             </p>
             <p className="text-sm text-gray-500">
               Hosts: {joinNames(session.hosts)} · {session.numRsvps} RSVPs
@@ -373,7 +382,7 @@ function SessionItem({
             htmlFor={`sess-start-${session.id}`}
             className="text-sm text-gray-600"
           >
-            Start (UTC) — leave empty if not scheduled
+            Start ({timezone}) — leave empty if not scheduled
           </label>
           <Input
             id={`sess-start-${session.id}`}
@@ -388,7 +397,7 @@ function SessionItem({
             htmlFor={`sess-end-${session.id}`}
             className="text-sm text-gray-600"
           >
-            End (UTC)
+            End ({timezone})
           </label>
           <Input
             id={`sess-end-${session.id}`}
@@ -518,6 +527,7 @@ export function EventSessionsManager({
   sessions,
   eventGuests,
   eventLocations,
+  timezone,
   total,
   page,
   pageSize,
@@ -526,6 +536,7 @@ export function EventSessionsManager({
   sessions: SessionRow[];
   eventGuests: EventGuest[];
   eventLocations: EventLocation[];
+  timezone: string;
   total: number;
   page: number;
   pageSize: number;
@@ -536,7 +547,9 @@ export function EventSessionsManager({
   return (
     <section aria-label="Sessions" className="space-y-4">
       <h2 className="text-lg font-semibold text-gray-900">Sessions</h2>
-      <p className="text-sm text-gray-500">All times are UTC.</p>
+      <p className="text-sm text-gray-500">
+        All times are in the event timezone ({timezone}).
+      </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <DataTable
@@ -553,6 +566,7 @@ export function EventSessionsManager({
             session={s}
             eventGuests={eventGuests}
             eventLocations={eventLocations}
+            timezone={timezone}
             onError={setError}
           />
         )}

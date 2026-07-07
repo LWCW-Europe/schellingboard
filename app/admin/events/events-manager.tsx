@@ -6,12 +6,13 @@ import { Input } from "@/app/input";
 import type { Event } from "@/db/repositories/interfaces";
 import { createEventAction, type EventInput } from "@/app/actions/admin-events";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/admin/buttons";
-import dynamic from "next/dynamic";
+import { TimezoneSelect } from "@/app/admin/timezone-select";
 
-const ClientTimestamp = dynamic(
-  () => import("@/app/client-only/ClientTimestamp"),
-  { ssr: false }
-);
+// Event start/end are date-only values stored as UTC midnight; format them in
+// UTC so browsers west of Greenwich don't show the previous day.
+function formatEventDate(date: Date): string {
+  return date.toISOString().split("T")[0];
+}
 
 const DEFAULT_FORM: EventInput = {
   name: "",
@@ -131,12 +132,10 @@ function AddEventForm({
           <label htmlFor="ev-timezone" className="text-sm text-gray-600">
             Timezone *
           </label>
-          <Input
+          <TimezoneSelect
             id="ev-timezone"
             value={form.timezone}
-            onChange={(e) => set("timezone", e.target.value)}
-            required
-            className="w-full h-10"
+            onChange={(v) => set("timezone", v)}
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -201,8 +200,7 @@ export function EventsManager({ events }: { events: Event[] }) {
                   {event.name}
                 </p>
                 <p className="text-sm text-gray-500">
-                  <ClientTimestamp timestamp={event.start} /> –{" "}
-                  <ClientTimestamp timestamp={event.end} />
+                  {formatEventDate(event.start)} – {formatEventDate(event.end)}
                   {" · "}
                   {event.timezone}
                 </p>

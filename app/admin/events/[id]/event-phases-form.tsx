@@ -8,22 +8,20 @@ import {
   type EventPhasesInput,
 } from "@/app/actions/admin-events";
 import { PRIMARY_BUTTON } from "@/app/admin/buttons";
-
-function toDateTimeInputValue(date: Date | undefined): string {
-  if (!date) return "";
-  return date.toISOString().slice(0, 16);
-}
+import { utcToZonedInput, zonedInputToUtc } from "@/utils/admin-datetime";
 
 type PhasesForm = Omit<EventPhasesInput, "id">;
 
 export function EventPhasesForm({ event }: { event: Event }) {
+  const toInput = (date: Date | undefined) =>
+    utcToZonedInput(date?.toISOString(), event.timezone);
   const [form, setForm] = useState<PhasesForm>({
-    proposalPhaseStart: toDateTimeInputValue(event.proposalPhaseStart),
-    proposalPhaseEnd: toDateTimeInputValue(event.proposalPhaseEnd),
-    votingPhaseStart: toDateTimeInputValue(event.votingPhaseStart),
-    votingPhaseEnd: toDateTimeInputValue(event.votingPhaseEnd),
-    schedulingPhaseStart: toDateTimeInputValue(event.schedulingPhaseStart),
-    schedulingPhaseEnd: toDateTimeInputValue(event.schedulingPhaseEnd),
+    proposalPhaseStart: toInput(event.proposalPhaseStart),
+    proposalPhaseEnd: toInput(event.proposalPhaseEnd),
+    votingPhaseStart: toInput(event.votingPhaseStart),
+    votingPhaseEnd: toInput(event.votingPhaseEnd),
+    schedulingPhaseStart: toInput(event.schedulingPhaseStart),
+    schedulingPhaseEnd: toInput(event.schedulingPhaseEnd),
   });
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -38,7 +36,17 @@ export function EventPhasesForm({ event }: { event: Event }) {
     e.preventDefault();
     setSaveError(null);
     startSave(async () => {
-      const result = await updateEventPhasesAction({ id: event.id, ...form });
+      // Form values are in the event timezone; the action expects UTC.
+      const utcForm = Object.fromEntries(
+        Object.entries(form).map(([key, value]) => [
+          key,
+          zonedInputToUtc(value ?? "", event.timezone),
+        ])
+      ) as PhasesForm;
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        ...utcForm,
+      });
       if (!result.ok) {
         setSaveError(result.error);
       } else {
@@ -51,9 +59,9 @@ export function EventPhasesForm({ event }: { event: Event }) {
     <form onSubmit={handleSave} className="space-y-4">
       <h2 className="text-lg font-semibold text-gray-900">Phases</h2>
       <p className="text-sm text-gray-500">
-        All times are UTC. Leave fields empty to unset a phase. A phase with no
-        end runs until the next phase starts; set an end earlier than the next
-        start to leave an inactive gap.
+        All times are in the event timezone ({event.timezone}). Leave fields
+        empty to unset a phase. A phase with no end runs until the next phase
+        starts; set an end earlier than the next start to leave an inactive gap.
       </p>
       {saveError && <p className="text-sm text-red-600">{saveError}</p>}
 

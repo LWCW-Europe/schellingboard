@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useSyncExternalStore } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/app/input";
 import type { Event } from "@/db/repositories/interfaces";
@@ -14,25 +14,11 @@ import {
   SECONDARY_BUTTON,
   DANGER_BUTTON,
 } from "@/app/admin/buttons";
+import { TimezoneSelect } from "@/app/admin/timezone-select";
 
 function toDateInputValue(date: Date): string {
   return date.toISOString().split("T")[0];
 }
-
-// useSyncExternalStore compares snapshots with Object.is, so each getter must
-// return a stable reference — otherwise it re-renders forever (React #185).
-const EMPTY_TIMEZONES: string[] = [];
-let cachedTimezones: string[] | null = null;
-function getClientTimezones(): string[] {
-  if (cachedTimezones === null) {
-    cachedTimezones = Intl.supportedValuesOf("timeZone");
-  }
-  return cachedTimezones;
-}
-function getServerTimezones(): string[] {
-  return EMPTY_TIMEZONES;
-}
-const subscribeTimezones = () => () => {};
 
 export function EventDetailForm({ event }: { event: Event }) {
   const router = useRouter();
@@ -54,11 +40,6 @@ export function EventDetailForm({ event }: { event: Event }) {
   const [deleteMode, setDeleteMode] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [isDeleting, startDelete] = useTransition();
-  const timezones = useSyncExternalStore(
-    subscribeTimezones,
-    getClientTimezones,
-    getServerTimezones
-  );
 
   const set = (key: keyof EventInput, value: string) => {
     setSaveSuccess(false);
@@ -161,19 +142,11 @@ export function EventDetailForm({ event }: { event: Event }) {
             <label htmlFor="ev-timezone" className="text-sm text-gray-600">
               Timezone *
             </label>
-            <Input
+            <TimezoneSelect
               id="ev-timezone"
-              list="timezones"
               value={form.timezone}
-              onChange={(e) => set("timezone", e.target.value)}
-              required
-              className="w-full h-10"
+              onChange={(v) => set("timezone", v)}
             />
-            <datalist id="timezones">
-              {timezones.map((tz) => (
-                <option key={tz} value={tz} />
-              ))}
-            </datalist>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="ev-duration" className="text-sm text-gray-600">

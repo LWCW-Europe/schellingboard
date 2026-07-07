@@ -42,7 +42,7 @@ export default async function AdminEventConfigPage({
         <EventPhasesForm event={event} />
       </div>
       <hr className="border-gray-200" />
-      <EventDaysManager days={days} eventId={id} />
+      <EventDaysManager days={days} eventId={id} timezone={event.timezone} />
     </div>
   );
 }
