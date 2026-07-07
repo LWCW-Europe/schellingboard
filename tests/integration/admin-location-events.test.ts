@@ -111,6 +111,20 @@ describe("assignLocationsToEventAction", () => {
     expect(!result.ok && result.error).toBe("Event not found");
   });
 
+  it("accepts duplicate location ids", async () => {
+    const event = await createEvent();
+    const l1 = await createLocation();
+
+    const result = await assignLocationsToEventAction({
+      eventId: event.id,
+      locationIds: [l1.id, l1.id],
+    });
+    expect(result.ok).toBe(true);
+    expect(await getRepositories().locations.listEventIds(l1.id)).toContain(
+      event.id
+    );
+  });
+
   it("errors if any location id does not exist", async () => {
     const event = await createEvent();
     const l1 = await createLocation();

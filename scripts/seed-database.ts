@@ -64,6 +64,10 @@ function generateEventDates() {
   const today = new Date();
   const phaseDuration = 14;
   const middleOffset = 7;
+  // Lead time between the start of scheduling work and the event itself.
+  // The scheduling phase stays open through the whole live event, so
+  // schedulingPhaseEnd always equals the event's end date.
+  const schedulingLeadTime = 21;
 
   // Event 1: Currently in proposal phase
   const e1PropStart = new Date(today);
@@ -74,12 +78,11 @@ function generateEventDates() {
   const e1VoteEnd = new Date(e1VoteStart);
   e1VoteEnd.setDate(e1VoteStart.getDate() + phaseDuration);
   const e1SchedStart = new Date(e1VoteEnd);
-  const e1SchedEnd = new Date(e1SchedStart);
-  e1SchedEnd.setDate(e1SchedStart.getDate() + phaseDuration);
-  const e1Start = new Date(e1SchedEnd);
-  e1Start.setDate(e1SchedEnd.getDate() + 7);
-  const e1End = new Date(e1Start);
-  e1End.setDate(e1Start.getDate() + 2);
+  // Align the event with the seeded Day windows (09:00–18:00 Berlin) so the
+  // exclusive schedulingPhaseEnd doesn't cut off the last day early.
+  const e1Start = berlinTime(e1SchedStart, schedulingLeadTime, 9, 0);
+  const e1End = berlinTime(e1Start, 2, 18, 0);
+  const e1SchedEnd = new Date(e1End);
 
   // Event 2: Currently in voting phase
   const e2VoteStart = new Date(today);
@@ -90,28 +93,22 @@ function generateEventDates() {
   e2PropStart.setDate(e2VoteStart.getDate() - phaseDuration);
   const e2PropEnd = new Date(e2VoteStart);
   const e2SchedStart = new Date(e2VoteEnd);
-  const e2SchedEnd = new Date(e2SchedStart);
-  e2SchedEnd.setDate(e2SchedStart.getDate() + phaseDuration);
-  const e2Start = new Date(e2SchedEnd);
-  e2Start.setDate(e2SchedEnd.getDate() + 7);
-  const e2End = new Date(e2Start);
-  e2End.setDate(e2Start.getDate() + 2);
+  const e2Start = berlinTime(e2SchedStart, schedulingLeadTime, 9, 0);
+  const e2End = berlinTime(e2Start, 2, 18, 0);
+  const e2SchedEnd = new Date(e2End);
 
   // Event 3: Currently in scheduling phase
   const e3SchedStart = new Date(today);
   e3SchedStart.setDate(today.getDate() - middleOffset);
-  const e3SchedEnd = new Date(e3SchedStart);
-  e3SchedEnd.setDate(e3SchedStart.getDate() + phaseDuration);
   const e3VoteStart = new Date(e3SchedStart);
   e3VoteStart.setDate(e3SchedStart.getDate() - phaseDuration);
   const e3VoteEnd = new Date(e3SchedStart);
   const e3PropStart = new Date(e3VoteStart);
   e3PropStart.setDate(e3VoteStart.getDate() - phaseDuration);
   const e3PropEnd = new Date(e3VoteStart);
-  const e3Start = new Date(e3SchedEnd);
-  e3Start.setDate(e3SchedEnd.getDate() + 7);
-  const e3End = new Date(e3Start);
-  e3End.setDate(e3Start.getDate() + 2);
+  const e3Start = berlinTime(e3SchedStart, schedulingLeadTime, 9, 0);
+  const e3End = berlinTime(e3Start, 2, 18, 0);
+  const e3SchedEnd = new Date(e3End);
 
   return [
     {
@@ -155,6 +152,265 @@ function generateEventDates() {
     },
   ];
 }
+
+// Committed CC0 avatar images (see scripts/seed-assets/avatars/README.md);
+// copied into UPLOADS_DIR at seed time like real uploads.
+const seedAvatarsDir = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "seed-assets/avatars"
+);
+
+function uploadedAvatarsDir(): string {
+  return path.join(process.env.UPLOADS_DIR ?? "./uploads", "avatars");
+}
+
+interface GuestConfig {
+  name: string;
+  email: string;
+  aboutMe?: string;
+  avatar?: number; // index into scripts/seed-assets/avatars/avatar-NN.webp
+}
+
+// 40 guests: the 3 e2e fixture guests must stay first (proposal host
+// assignment is index-based); 35 have a filled-in profile, 20 of those an
+// avatar, 5 stay default (no aboutMe/avatar) as examples of new guests.
+const guestConfigs: GuestConfig[] = [
+  {
+    name: "Alice Test",
+    email: "alice@test.com",
+    aboutMe:
+      "Frontend developer from Osaka. I love talking about accessibility and design systems — find me at the coffee machine.",
+    avatar: 1,
+  },
+  {
+    name: "Bob Test",
+    email: "bob@test.com",
+    aboutMe:
+      "Product manager and community organizer from Lagos. I run a local meetup on inclusive product design and I'm always looking for speakers.",
+    avatar: 2,
+  },
+  {
+    name: "Charlie Test",
+    email: "charlie@test.com",
+    aboutMe:
+      "Data engineer from Guadalajara. Ask me about stream processing, or better yet, about my sourdough starter.",
+    avatar: 16,
+  },
+  { name: "Yuki Tanaka", email: "yuki.tanaka@example.com" },
+  { name: "Amara Okafor", email: "amara.okafor@example.com" },
+  { name: "Sofía Martínez", email: "sofia.martinez@example.com" },
+  {
+    name: "Wei Chen",
+    email: "wei.chen@example.com",
+    aboutMe:
+      "Platform engineer focused on developer experience. Previously built CI tooling at a fintech startup in Shanghai.",
+    avatar: 4,
+  },
+  {
+    name: "Priya Sharma",
+    email: "priya.sharma@example.com",
+    aboutMe:
+      "ML researcher from Bengaluru working on fairness in recommendation systems.\n\nFirst time at this conference — say hi if you see me wandering around looking lost!",
+    avatar: 17,
+  },
+  {
+    name: "Lars Eriksson",
+    email: "lars.eriksson@example.com",
+    aboutMe:
+      "Backend developer from Gothenburg. Rust enthusiast, reluctant Kubernetes operator, enthusiastic sauna advocate.",
+    avatar: 6,
+  },
+  {
+    name: "Fatima Al-Farsi",
+    email: "fatima.alfarsi@example.com",
+    aboutMe:
+      "Security engineer from Muscat. I break things professionally and fix them as a hobby. Happy to chat about threat modeling for small teams.",
+    avatar: 7,
+  },
+  {
+    name: "Kwame Mensah",
+    email: "kwame.mensah@example.com",
+    aboutMe:
+      "Founder of a small agritech company in Accra. Interested in offline-first apps and building for low-bandwidth environments.",
+    avatar: 8,
+  },
+  {
+    name: "Hiroshi Yamamoto",
+    email: "hiroshi.yamamoto@example.com",
+    aboutMe:
+      "Embedded systems engineer. I make LEDs blink for a living and I'm not ashamed of it.",
+    avatar: 9,
+  },
+  {
+    name: "Aisha Diallo",
+    email: "aisha.diallo@example.com",
+    aboutMe:
+      "UX researcher from Dakar, currently based in Berlin. I care deeply about research ethics and multilingual interfaces.",
+    avatar: 10,
+  },
+  {
+    name: "Diego Fernández",
+    email: "diego.fernandez@example.com",
+    aboutMe:
+      "Site reliability engineer from Buenos Aires. On-call survivor, incident retrospective enthusiast, tango dancer on weekends.",
+    avatar: 11,
+  },
+  {
+    name: "Mei-Ling Wu",
+    email: "meiling.wu@example.com",
+    aboutMe:
+      "Technical writer from Taipei. I turn engineering mumbling into documentation people actually read.",
+    avatar: 12,
+  },
+  {
+    name: "Olga Petrova",
+    email: "olga.petrova@example.com",
+    aboutMe:
+      "Database internals nerd. If your query is slow I want to hear about it in excruciating detail.",
+    avatar: 13,
+  },
+  {
+    name: "Jean-Pierre Dubois",
+    email: "jeanpierre.dubois@example.com",
+    aboutMe:
+      "Engineering manager from Lyon. Interested in sustainable pace, team topologies, and where to find decent cheese near the venue.",
+    avatar: 14,
+  },
+  {
+    name: "Thabo Ndlovu",
+    email: "thabo.ndlovu@example.com",
+    aboutMe:
+      "Full-stack developer from Johannesburg working in civic tech. Building tools that help people navigate public services.",
+    avatar: 15,
+  },
+  {
+    name: "Anna Kowalska",
+    email: "anna.kowalska@example.com",
+    aboutMe:
+      "QA engineer from Kraków. I find the bugs you swore were impossible. Also: board game collector, 200+ and counting.",
+    avatar: 3,
+  },
+  {
+    name: "Mohammed El-Sayed",
+    email: "mohammed.elsayed@example.com",
+    aboutMe:
+      "Cloud architect from Cairo. Recovering microservices maximalist — ask me about the monolith we happily went back to.",
+    avatar: 5,
+  },
+  {
+    name: "Isabella Rossi",
+    email: "isabella.rossi@example.com",
+    aboutMe:
+      "Design lead from Milan. I bridge the gap between Figma and production, one design token at a time.",
+    avatar: 18,
+  },
+  {
+    name: "Min-jun Kim",
+    email: "minjun.kim@example.com",
+    aboutMe:
+      "Game developer from Seoul, moonlighting in web tech. Fascinated by real-time collaboration and CRDTs.",
+    avatar: 19,
+  },
+  {
+    name: "Carlos Silva",
+    email: "carlos.silva@example.com",
+    aboutMe:
+      "DevOps engineer from Porto. I automate myself out of a job roughly once a year and somehow still have one.",
+    avatar: 20,
+  },
+  {
+    name: "Nadia Haddad",
+    email: "nadia.haddad@example.com",
+    aboutMe:
+      "Mobile developer from Beirut. Flutter by day, native by necessity. Organizer of a local women-in-tech mentoring circle.",
+  },
+  {
+    name: "Freya Nielsen",
+    email: "freya.nielsen@example.com",
+    aboutMe:
+      "Accessibility consultant from Copenhagen. Screen reader power user. I will happily audit your conference talk slides.",
+  },
+  {
+    name: "Arjun Nair",
+    email: "arjun.nair@example.com",
+    aboutMe:
+      "Distributed systems engineer from Kochi. Currently obsessed with consensus protocols and filter coffee, in that order.",
+  },
+  {
+    name: "Elif Yılmaz",
+    email: "elif.yilmaz@example.com",
+    aboutMe:
+      "Computer science student from Istanbul, here on a scholarship ticket. Excited about everything, please recommend me sessions!",
+  },
+  {
+    name: "Samuel Adeyemi",
+    email: "samuel.adeyemi@example.com",
+    aboutMe:
+      "Backend engineer from Ibadan working on payment infrastructure across West Africa.",
+  },
+  {
+    name: "Linh Nguyen",
+    email: "linh.nguyen@example.com",
+    aboutMe:
+      "Freelance web developer from Ho Chi Minh City. Jamstack fan, static site generator connoisseur, occasional conference speaker.",
+  },
+  {
+    name: "Marta Horvat",
+    email: "marta.horvat@example.com",
+    aboutMe:
+      "Agile coach from Zagreb. Yes, we can talk about whether estimates are worth it. No, we won't agree.",
+  },
+  {
+    name: "Dmitri Volkov",
+    email: "dmitri.volkov@example.com",
+    aboutMe:
+      "Compiler engineer. I read language specs for fun and I'm told this is concerning.",
+  },
+  {
+    name: "Chiara Bianchi",
+    email: "chiara.bianchi@example.com",
+    aboutMe:
+      "Data scientist from Bologna working in public health. Interested in reproducible research and open data.",
+  },
+  {
+    name: "Zanele Khumalo",
+    email: "zanele.khumalo@example.com",
+    aboutMe:
+      "Frontend developer from Durban. CSS is my love language. Currently deep-diving into container queries.",
+  },
+  {
+    name: "Rafael Souza",
+    email: "rafael.souza@example.com",
+    aboutMe:
+      "Engineering lead from São Paulo. I care about mentoring junior devs and building teams where questions are welcome.",
+  },
+  {
+    name: "Hana Kobayashi",
+    email: "hana.kobayashi@example.com",
+    aboutMe:
+      "Developer advocate based in Kyoto. I write tutorials, give talks, and collect conference stickers competitively.",
+  },
+  {
+    name: "Tereza Nováková",
+    email: "tereza.novakova@example.com",
+    aboutMe:
+      "Open source maintainer from Prague. Ask me about sustainable maintainership — or just send help, either works.",
+  },
+  {
+    name: "Ahmad Karimi",
+    email: "ahmad.karimi@example.com",
+    aboutMe:
+      "Software engineer from Tehran, now in Amsterdam. Working on developer tooling and learning Dutch, slowly.",
+  },
+  {
+    name: "Maria Papadopoulou",
+    email: "maria.papadopoulou@example.com",
+    aboutMe:
+      "Tech lead from Thessaloniki. Legacy code whisperer. Strong opinions on testing, loosely held on everything else.",
+  },
+  { name: "Mateo Quispe", email: "mateo.quispe@example.com" },
+  { name: "Leilani Kahale", email: "leilani.kahale@example.com" },
+];
 
 const sessionTemplates = [
   {
@@ -236,6 +492,213 @@ const sessionTemplates = [
   },
 ];
 
+// Conference Gamma (scheduling phase) gets a realistic, mostly filled grid:
+// most sessions are scheduled from its seeded proposals (matched by title),
+// plus organizer/attendee extras. Times are Berlin clock times on event day
+// 0-2. Keep the slots that tests/e2e/scheduling.spec.ts relies on free:
+//   day 0: Main Hall 16:00 and Garden Terrace 09:00 (asserted free),
+//   day 2: Workshop Room from 15:00 and Garden Terrace from 16:00
+//          (used by tests to create sessions).
+// rsvp.spec.ts RSVPs Bob Test to the Opening Keynote, so nothing may run in
+// parallel to it and Bob gets no seeded RSVP there (see RSVP seeding).
+interface GammaSessionConfig {
+  title: string; // for fromProposal sessions: must equal a seeded Gamma proposal title
+  fromProposal: boolean;
+  description?: string; // only used when fromProposal is false
+  day: number; // event day 0-2
+  start: [hour: number, minute: number];
+  end: [hour: number, minute: number];
+  location: number; // index into locationRows: 0 Main Hall, 1 Workshop Room, 2 Garden Terrace
+  hostNames: string[];
+  capacity: number;
+  closed?: boolean;
+  attendeeScheduled?: boolean; // default true (host-scheduled during the phase)
+}
+
+const gammaSessionConfigs: GammaSessionConfig[] = [
+  // Day 1
+  {
+    title: "The Future of AI: Transforming Industries Through Machine Learning",
+    fromProposal: true,
+    day: 0,
+    start: [11, 0],
+    end: [12, 0],
+    location: 0,
+    hostNames: ["Yuki Tanaka"],
+    capacity: 100,
+  },
+  {
+    title: "Workshop: Hands-on Docker and Kubernetes",
+    fromProposal: true,
+    day: 0,
+    start: [11, 0],
+    end: [12, 30],
+    location: 1,
+    hostNames: ["Sofía Martínez"],
+    capacity: 30,
+    closed: true, // hands-on workshop, no late arrivals
+  },
+  {
+    title: "Design Systems: Creating Consistency at Scale",
+    fromProposal: true,
+    day: 0,
+    start: [14, 0],
+    end: [15, 0],
+    location: 0,
+    hostNames: ["Isabella Rossi"],
+    capacity: 100,
+  },
+  {
+    title: "Open Source Sustainability: Funding and Community Building",
+    fromProposal: true,
+    day: 0,
+    start: [14, 0],
+    end: [15, 30],
+    location: 2,
+    hostNames: ["Tereza Nováková"],
+    capacity: 25,
+  },
+  {
+    title: "API Design: RESTful vs GraphQL vs gRPC",
+    fromProposal: true,
+    day: 0,
+    start: [15, 30],
+    end: [16, 30],
+    location: 1,
+    hostNames: ["Arjun Nair"],
+    capacity: 30,
+  },
+  // Day 2
+  {
+    title: "Building Scalable Web Applications with Modern React",
+    fromProposal: true,
+    day: 1,
+    start: [9, 0],
+    end: [10, 0],
+    location: 0,
+    hostNames: ["Charlie Test"],
+    capacity: 100,
+  },
+  {
+    title:
+      "The Psychology of User Experience: Understanding Human-Computer Interaction",
+    fromProposal: true,
+    day: 1,
+    start: [10, 0],
+    end: [11, 30],
+    location: 2,
+    hostNames: ["Aisha Diallo"],
+    capacity: 25,
+  },
+  {
+    title: "Performance Optimization: Making Your Apps Lightning Fast",
+    fromProposal: true,
+    day: 1,
+    start: [10, 30],
+    end: [12, 0],
+    location: 1,
+    hostNames: ["Olga Petrova"],
+    capacity: 30,
+  },
+  {
+    title: "Machine Learning Ethics: Bias, Fairness, and Accountability",
+    fromProposal: true,
+    day: 1,
+    start: [14, 0],
+    end: [15, 0],
+    location: 0,
+    hostNames: ["Priya Sharma"],
+    capacity: 100,
+  },
+  {
+    title: "Sustainable Software Development: Green Coding Practices",
+    fromProposal: true,
+    day: 1,
+    start: [14, 0],
+    end: [15, 0],
+    location: 2,
+    hostNames: ["Carlos Silva"],
+    capacity: 25,
+  },
+  {
+    title: "Building Inclusive Tech Teams: Beyond Diversity Hiring",
+    fromProposal: true,
+    day: 1,
+    start: [16, 0],
+    end: [17, 0],
+    location: 0,
+    hostNames: ["Bob Test", "Rafael Souza"],
+    capacity: 100,
+  },
+  {
+    title: "Hallway Track: CRDT Show & Tell",
+    fromProposal: false,
+    description:
+      "Impromptu session: I'll demo a small real-time collaborative editor built on CRDTs and we can poke at the edge cases together. Bring your laptop if you want to pair on it.\n\nAdded straight to the schedule because the hallway conversation got out of hand — that's what open scheduling is for!",
+    day: 1,
+    start: [16, 0],
+    end: [16, 30],
+    location: 2,
+    hostNames: ["Min-jun Kim"],
+    capacity: 15,
+  },
+  // Day 3
+  {
+    title: "Microservices Architecture: Lessons from the Trenches",
+    fromProposal: true,
+    day: 2,
+    start: [9, 0],
+    end: [10, 0],
+    location: 0,
+    hostNames: ["Mohammed El-Sayed"],
+    capacity: 100,
+  },
+  {
+    title: "Blockchain Beyond Cryptocurrency: Practical Applications",
+    fromProposal: true,
+    day: 2,
+    start: [10, 0],
+    end: [11, 0],
+    location: 1,
+    hostNames: ["Kwame Mensah"],
+    capacity: 30,
+  },
+  {
+    title: "DevOps Culture: Breaking Down Silos",
+    fromProposal: true,
+    day: 2,
+    start: [10, 30],
+    end: [11, 30],
+    location: 2,
+    hostNames: ["Diego Fernández"],
+    capacity: 25,
+  },
+  {
+    title:
+      "Cybersecurity in the Age of Remote Work: Protecting Your Digital Assets",
+    fromProposal: true,
+    day: 2,
+    start: [14, 0],
+    end: [15, 0],
+    location: 0,
+    hostNames: ["Fatima Al-Farsi"],
+    capacity: 100,
+  },
+  {
+    title: "Closing Session & Farewell",
+    fromProposal: false,
+    description:
+      "Wrap-up of Conference Gamma: community announcements, a look back at the highlights of the last three days, thank-yous to volunteers and speakers, and a preview of next year's edition. We close with a group photo in front of the Main Hall.",
+    day: 2,
+    start: [16, 0],
+    end: [17, 0],
+    location: 0,
+    hostNames: ["Charlie Test"],
+    capacity: 100,
+    attendeeScheduled: false, // organizer-planned, like the keynote
+  },
+];
+
 function clearAll() {
   console.log("🧹 Clearing all tables...");
   const db = openDb();
@@ -252,6 +715,9 @@ function clearAll() {
   db.delete(schema.events).run();
   db.delete(schema.locations).run();
   db.delete(schema.guests).run();
+  // Avatar files belong to the guest rows just deleted; remove them too so
+  // repeated seeding doesn't accumulate orphaned uploads.
+  fs.rmSync(uploadedAvatarsDir(), { recursive: true, force: true });
   console.log("  ✅ All tables cleared");
 }
 
@@ -265,13 +731,40 @@ function seedTestData() {
 
   // Guests
   console.log("  📝 Creating test guests...");
-  const guestRows = [
-    { id: nanoid(), name: "Alice Test", email: "alice@test.com" },
-    { id: nanoid(), name: "Bob Test", email: "bob@test.com" },
-    { id: nanoid(), name: "Charlie Test", email: "charlie@test.com" },
-  ];
+  fs.mkdirSync(uploadedAvatarsDir(), { recursive: true });
+  const guestRows = guestConfigs.map((config) => {
+    const id = nanoid();
+    let avatarUrl: string | null = null;
+    if (config.avatar !== undefined) {
+      const filename = `${id}.webp`;
+      fs.copyFileSync(
+        path.join(
+          seedAvatarsDir,
+          `avatar-${String(config.avatar).padStart(2, "0")}.webp`
+        ),
+        path.join(uploadedAvatarsDir(), filename)
+      );
+      avatarUrl = `/media/avatars/${filename}?v=${Date.now()}`;
+    }
+    return {
+      id,
+      name: config.name,
+      email: config.email,
+      aboutMe: config.aboutMe ?? null,
+      avatarUrl,
+    };
+  });
   db.insert(schema.guests).values(guestRows).run();
-  console.log(`  ✅ Created ${guestRows.length} guests`);
+  const avatarCount = guestRows.filter((g) => g.avatarUrl).length;
+  console.log(
+    `  ✅ Created ${guestRows.length} guests (${avatarCount} with avatars)`
+  );
+
+  const guestIdByName = (name: string): string => {
+    const guest = guestRows.find((g) => g.name === name);
+    if (!guest) throw new Error(`Unknown seed guest: ${name}`);
+    return guest.id;
+  };
 
   // Locations
   console.log("  📍 Creating test locations...");
@@ -377,7 +870,9 @@ function seedTestData() {
 
   eventRows.forEach((ev, eventIndex) => {
     const eventName = eventConfigs[eventIndex].name;
-    const numProposals = 8 + eventIndex * 2; // 8, 10, 12
+    // Later phases have accumulated more proposals; Gamma (scheduling) gets
+    // all templates so gammaSessionConfigs can schedule any of them.
+    const numProposals = [8, 10, sessionTemplates.length][eventIndex];
 
     for (let i = 0; i < numProposals; i++) {
       const template = sessionTemplates[i % sessionTemplates.length];
@@ -455,6 +950,34 @@ function seedTestData() {
     });
   });
 
+  // Conference Gamma is mid-scheduling: most of its proposals get scheduled
+  // as sessions below (gammaSessionConfigs). Align each scheduled proposal's
+  // hosts and duration with its session so the data stays consistent — and so
+  // the vote seeding below skips the real hosts.
+  const gammaEvent = eventRows[2];
+  for (const cfg of gammaSessionConfigs) {
+    if (!cfg.fromProposal) continue;
+    const proposal = proposalRows.find(
+      (p) => p.eventId === gammaEvent.id && p.title === cfg.title
+    );
+    if (!proposal) {
+      throw new Error(`No seeded Gamma proposal titled "${cfg.title}"`);
+    }
+    for (let i = proposalHostRows.length - 1; i >= 0; i--) {
+      if (proposalHostRows[i].proposalId === proposal.id) {
+        proposalHostRows.splice(i, 1);
+      }
+    }
+    proposalHostRows.push(
+      ...cfg.hostNames.map((name) => ({
+        proposalId: proposal.id,
+        guestId: guestIdByName(name),
+      }))
+    );
+    proposal.durationMinutes =
+      cfg.end[0] * 60 + cfg.end[1] - (cfg.start[0] * 60 + cfg.start[1]);
+  }
+
   db.insert(schema.sessionProposals).values(proposalRows).run();
   if (proposalHostRows.length > 0) {
     db.insert(schema.proposalHosts).values(proposalHostRows).run();
@@ -526,7 +1049,8 @@ function seedTestData() {
   }
   console.log(`  ✅ Created ${voteRows.length} votes`);
 
-  // Sessions (one keynote + lunch blockers per event)
+  // Sessions: one keynote + lunch blockers per event, plus a filled-out
+  // schedule for Conference Gamma (scheduling phase).
   console.log("  🎯 Creating test sessions...");
   const sessionRows: (typeof schema.sessions.$inferInsert)[] = [];
   const sessionHostRows: (typeof schema.sessionHosts.$inferInsert)[] = [];
@@ -545,7 +1069,7 @@ function seedTestData() {
       startTime: berlinTime(config.start, 0, 9, 0).toISOString(),
       endTime: berlinTime(config.start, 0, 10, 30).toISOString(),
       eventId: ev.id,
-      capacity: 0,
+      capacity: locationRows[0].capacity,
       attendeeScheduled: false,
       blocker: false,
       closed: false,
@@ -580,6 +1104,41 @@ function seedTestData() {
     }
   });
 
+  // Conference Gamma's scheduled sessions (see gammaSessionConfigs)
+  const gammaConfig = eventConfigs[2];
+  for (const cfg of gammaSessionConfigs) {
+    const proposal = cfg.fromProposal
+      ? proposalRows.find(
+          (p) => p.eventId === gammaEvent.id && p.title === cfg.title
+        )
+      : undefined;
+    const sessionId = nanoid();
+    sessionRows.push({
+      id: sessionId,
+      title: cfg.title,
+      description: proposal?.description ?? cfg.description ?? "",
+      startTime: berlinTime(
+        gammaConfig.start,
+        cfg.day,
+        ...cfg.start
+      ).toISOString(),
+      endTime: berlinTime(gammaConfig.start, cfg.day, ...cfg.end).toISOString(),
+      eventId: gammaEvent.id,
+      capacity: cfg.capacity,
+      attendeeScheduled: cfg.attendeeScheduled ?? true,
+      blocker: false,
+      closed: cfg.closed ?? false,
+      proposalId: proposal?.id ?? null,
+    });
+    for (const name of cfg.hostNames) {
+      sessionHostRows.push({ sessionId, guestId: guestIdByName(name) });
+    }
+    sessionLocationRows.push({
+      sessionId,
+      locationId: locationRows[cfg.location].id,
+    });
+  }
+
   db.insert(schema.sessions).values(sessionRows).run();
   if (sessionHostRows.length > 0) {
     db.insert(schema.sessionHosts).values(sessionHostRows).run();
@@ -590,6 +1149,56 @@ function seedTestData() {
   console.log(
     `  ✅ Created ${sessionRows.length} sessions across ${eventRows.length} events`
   );
+
+  // RSVPs (Conference Gamma only — the server rejects RSVP changes outside
+  // the scheduling phase). Guests skip sessions they host and sessions
+  // overlapping one they already RSVP'd to. Bob Test and Yuki Tanaka never
+  // RSVP the Opening Keynote: rsvp.spec.ts (Bob) and the admin RSVP-moderation
+  // test (Yuki) use it as their clean "no prior RSVP" target.
+  console.log("  🙋 Creating test RSVPs...");
+  type SessionRow = (typeof sessionRows)[number];
+  const overlaps = (a: SessionRow, b: SessionRow) =>
+    a.startTime! < b.endTime! && b.startTime! < a.endTime!;
+  const rsvpRows: (typeof schema.rsvps.$inferInsert)[] = [];
+  const rsvpTargets = sessionRows
+    .filter((s) => s.eventId === gammaEvent.id && !s.blocker)
+    .sort((a, b) => a.startTime!.localeCompare(b.startTime!));
+  const rsvpCountBySession = new Map<string, number>();
+  for (const guest of guestRows) {
+    // Hosted sessions make the guest busy for that slot
+    const busy = rsvpTargets.filter((s) =>
+      sessionHostRows.some(
+        (sh) => sh.sessionId === s.id && sh.guestId === guest.id
+      )
+    );
+    for (const session of rsvpTargets) {
+      const isKeynote = session.title.startsWith("Opening Keynote");
+      if (
+        isKeynote &&
+        (guest.name === "Bob Test" || guest.name === "Yuki Tanaka")
+      ) {
+        continue;
+      }
+      if (busy.some((b) => b.id === session.id || overlaps(b, session))) {
+        continue;
+      }
+      const count = rsvpCountBySession.get(session.id) ?? 0;
+      if (count >= session.capacity!) continue;
+      if (seededRandom() < (isKeynote ? 0.6 : 0.3)) {
+        rsvpRows.push({
+          id: nanoid(),
+          sessionId: session.id,
+          guestId: guest.id,
+        });
+        rsvpCountBySession.set(session.id, count + 1);
+        busy.push(session);
+      }
+    }
+  }
+  if (rsvpRows.length > 0) {
+    db.insert(schema.rsvps).values(rsvpRows).run();
+  }
+  console.log(`  ✅ Created ${rsvpRows.length} RSVPs`);
 
   console.log("✅ Test data seeded successfully");
 }

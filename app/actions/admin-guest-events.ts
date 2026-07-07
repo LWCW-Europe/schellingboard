@@ -23,15 +23,19 @@ export async function assignGuestsToEventAction(input: {
 }): Promise<AdminActionResult> {
   if (!(await isAdminRequest())) return { ok: false, error: "Unauthorized" };
 
-  const event = await getRepositories().events.findById(input.eventId);
+  const { events, guests } = getRepositories();
+  const event = await events.findById(input.eventId);
   if (!event) return { ok: false, error: "Event not found" };
 
-  for (const guestId of input.guestIds) {
-    const guest = await getRepositories().guests.findById(guestId);
-    if (!guest) return { ok: false, error: "Guest not found" };
+  const uniqueGuestIds = [...new Set(input.guestIds)];
+  if (uniqueGuestIds.length > 0) {
+    const existing = await guests.findExistingIds(uniqueGuestIds);
+    if (existing.length !== uniqueGuestIds.length) {
+      return { ok: false, error: "Guest not found" };
+    }
   }
 
-  await getRepositories().guests.assignToEvent(input.eventId, input.guestIds);
+  await guests.assignToEvent(input.eventId, input.guestIds);
   revalidateEventPaths(input.eventId);
   return { ok: true };
 }

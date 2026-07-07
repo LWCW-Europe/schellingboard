@@ -21,7 +21,11 @@
 
 ### Prerequisites
 
-- Node.js / Bun
+- **Bun** (package manager and script runner)
+- **Node.js 22** (or higher), installed and on your `PATH`. Although Bun runs
+  the app, the tooling shells out to a real `node` — `bun x tsx` for
+  migrations/scripts, and Vitest's test workers — so `node` must be directly on
+  your `PATH`. Check with `node -v`.
 
 ### Setup
 
@@ -58,23 +62,13 @@
 
 ### Admin UI
 
-A web admin UI is available at `/admin` for managing users and location. It requires `ADMIN_PASSWORD` (and `AUTH_SECRET`) to be set; without `ADMIN_PASSWORD` the admin routes are disabled and return a diagnostic message explaining how to enable them. It is fully separate from the normal user UI: it has its own layout and only requires the admin password (not `SITE_PASSWORD`). It will gradually replace the admin CLI ([#368](https://github.com/LWCW-Europe/schellingboard/issues/368)).
-
-### Admin CLI
-
-For records not yet covered by the admin UI, a terminal CLI is available for managing core records (events, guests, phase dates):
-
-```bash
-make dev-admin
-```
-
-This opens an interactive menu to create, edit, and delete events and guests, and to set event phase dates.
-
-To run against a different environment (e.g. production):
-
-```bash
-bun set-env.ts production tsx scripts/admin.ts
-```
+A web admin UI is available at `/admin` for managing all core records: events
+(basic info, phases, days), the global pools of users and locations, event↔guest
+and event↔location assignments, and moderation of proposals, sessions, and RSVPs.
+It requires `ADMIN_PASSWORD` (and `AUTH_SECRET`) to be set; without
+`ADMIN_PASSWORD` the admin routes are disabled and return a diagnostic message
+explaining how to enable them. It is fully separate from the normal user UI: it
+has its own layout and only requires the admin password (not `SITE_PASSWORD`).
 
 ## Environment Variables
 
@@ -203,7 +197,7 @@ Each E2E run starts from a clean database with 3 events (Alpha/Beta/Gamma) in di
 
 - Use conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, etc.)
 - Subject line ≤ 72 chars; explain WHY in the body if not obvious
-- Before committing, run `bun lint`, `bun format`, and `bun typecheck`
+- Before committing, run `make precommit`
 - When working on a GitHub issue, add a footer: `issue #123` (partial work) or `fixes #123` (fully resolves it)
 
 ## Pull Requests

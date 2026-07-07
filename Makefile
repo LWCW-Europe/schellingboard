@@ -1,4 +1,4 @@
-.PHONY: help dev build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed dev-admin install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci
+.PHONY: help dev build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci
 
 SHELL := /usr/bin/env bash
 
@@ -6,7 +6,6 @@ help:
 	@printf "Available commands:\n"
 	@printf "\nDevelopment:\n"
 	@printf "  %-28s %s\n" "make dev"                "Start development server"
-	@printf "  %-28s %s\n" "make dev-admin"          "Run admin CLI"
 	@printf "  %-28s %s\n" "make precommit"          "Format, lint, typecheck, and run all tests (incl. e2e)"
 	@printf "\nBuilding:\n"
 	@printf "  %-28s %s\n" "make build"              "Build for production"
@@ -115,9 +114,6 @@ dev-migrate-create: install
 
 dev-db-seed: install
 	bun set-env.ts dev bun x tsx scripts/seed-database.ts
-
-dev-admin: install
-	bun set-env.ts dev bun x tsx scripts/admin.ts
 
 docker-build:
 	APP_VERSION=$$(git describe --tags --always --dirty) docker compose build

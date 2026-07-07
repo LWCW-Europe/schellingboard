@@ -12,9 +12,9 @@ async function adminLogin(page: Page) {
   ).toBeVisible();
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Access Admin" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Administration" })
-  ).toBeVisible();
+  // /admin redirects to the events list, which is the admin landing page.
+  await expect(page).toHaveURL(/\/admin\/events$/);
+  await expect(page.getByRole("heading", { name: "Events" })).toBeVisible();
 }
 
 async function gotoUsers(page: Page) {
@@ -31,6 +31,19 @@ async function gotoLocations(page: Page) {
     .getByRole("link", { name: "Locations" })
     .click();
   await expect(page.getByRole("heading", { name: "Locations" })).toBeVisible();
+}
+
+// Event detail is split into tab sub-routes (Config · Guests · Proposals ·
+// Sessions). Call this after clicking an event's "Manage" link to open a tab.
+async function openEventTab(
+  page: Page,
+  tab: "Config" | "Guests" | "Proposals" | "Sessions"
+) {
+  const link = page
+    .getByRole("navigation", { name: "Event sections" })
+    .getByRole("link", { name: tab });
+  await link.click();
+  await expect(link).toHaveAttribute("aria-current", "page");
 }
 
 test.describe("Admin UI", () => {
@@ -63,20 +76,55 @@ test.describe("Admin UI", () => {
     ).toBeVisible();
   });
 
-  test("dashboard lists events and links to global sections", async ({
+  test("header title links back to the admin home", async ({ page }) => {
+    await adminLogin(page);
+
+    // Navigate away, then click the title to return home (→ events list).
+    await gotoUsers(page);
+    await page
+      .getByRole("link", { name: /Admin$/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
+    await expect(page.getByRole("heading", { name: "Events" })).toBeVisible();
+  });
+
+  test("collapses nav and logout into a hamburger on mobile", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.setViewportSize({ width: 375, height: 800 });
+
+    // On a narrow viewport the nav links and logout are behind the menu, so
+    // nothing wraps onto a second header row.
+    await expect(page.getByRole("link", { name: "Users" })).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: "Admin logout" })
+    ).toBeHidden();
+
+    // Opening the menu reveals the nav links and the logout button.
+    await page.getByRole("button", { name: "Open admin menu" }).click();
+    const nav = page.getByRole("navigation", { name: "Admin" });
+    await expect(nav.getByRole("link", { name: "Users" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Admin logout" })
+    ).toBeVisible();
+  });
+
+  test("redirects /admin to the events list and has no dashboard nav", async ({
     page,
   }) => {
     await adminLogin(page);
 
-    // Seeded events are listed on the dashboard
-    const eventsRegion = page.getByRole("region", { name: "Events" });
-    await expect(eventsRegion.getByText("Conference Alpha")).toBeVisible();
+    // /admin is no longer a dashboard; it redirects to the events list.
+    await page.goto("/admin");
+    await expect(page).toHaveURL(/\/admin\/events$/);
+    await expect(page.getByText("Conference Alpha")).toBeVisible();
 
-    // The global section cards navigate to their dedicated pages
-    const globalRegion = page.getByRole("region", { name: "Global sections" });
-    await globalRegion.getByRole("link", { name: /Users/ }).click();
-    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
-
+    // The nav links straight to the sections; there is no "Dashboard" entry.
+    const nav = page.getByRole("navigation", { name: "Admin" });
+    await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveCount(0);
+    await gotoUsers(page);
     await gotoLocations(page);
   });
 
@@ -95,9 +143,10 @@ test.describe("Admin UI", () => {
     await page.getByLabel("Password").fill("definitely-wrong");
     await page.getByRole("button", { name: "Access Admin" }).click();
     await expect(page.getByText("Invalid password")).toBeVisible();
+    // Stays on the login page; the admin UI is not reached.
     await expect(
-      page.getByRole("heading", { name: "Administration" })
-    ).not.toBeVisible();
+      page.getByRole("heading", { name: "Admin Access" })
+    ).toBeVisible();
   });
 
   test("can create, edit, and delete a user", async ({ page }) => {
@@ -170,6 +219,52 @@ test.describe("Admin UI events", () => {
     // Manage link navigates to the event detail page
     await row.getByRole("link", { name: "Manage" }).click();
     await expect(page).toHaveURL(/\/admin\/events\//);
+  });
+
+  test("event detail exposes tab sub-routes for each section", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    const unique = Date.now();
+    const eventName = `E2E Tabs ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    // Config is the default tab — basic info form is shown
+    await expect(page.getByRole("heading", { name: eventName })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Save changes" })
+    ).toBeVisible();
+
+    // Each section lives on its own sub-route, loading only its own slice
+    await openEventTab(page, "Guests");
+    await expect(page).toHaveURL(/\/guests$/);
+    await expect(page.getByRole("region", { name: "Guests" })).toBeVisible();
+
+    await openEventTab(page, "Proposals");
+    await expect(page).toHaveURL(/\/proposals$/);
+    await expect(page.getByRole("region", { name: "Proposals" })).toBeVisible();
+
+    await openEventTab(page, "Sessions");
+    await expect(page).toHaveURL(/\/sessions$/);
+    await expect(page.getByRole("region", { name: "Sessions" })).toBeVisible();
+
+    // Back to Config and clean up
+    await openEventTab(page, "Config");
+    await page.getByRole("button", { name: "Delete event" }).click();
+    await page.getByLabel("Type the event name to confirm").fill(eventName);
+    await page.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
   });
 
   test("shows validation error when end is before start", async ({ page }) => {
@@ -465,18 +560,21 @@ test.describe("Admin UI guest assignment", () => {
       .filter({ hasText: eventName })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Guests");
 
     const guests = page.getByRole("region", { name: "Guests" });
     await expect(guests).toBeVisible();
 
     // Work with fixed seeded guests. Other tests running in parallel may
     // create or delete guests, so never assert on global row counts here.
+    // Each row has a "Select" checkbox (bulk) and an "Assign" checkbox (state).
     const aliceRow = guests.getByRole("row").filter({ hasText: "Alice Test" });
-    await expect(aliceRow.getByRole("checkbox")).not.toBeChecked();
+    const aliceAssign = aliceRow.getByRole("checkbox", { name: /^Assign / });
+    await expect(aliceAssign).not.toBeChecked();
 
     // Assign Alice — click and wait for server-driven state update
-    await aliceRow.getByRole("checkbox").click();
-    await expect(aliceRow.getByRole("checkbox")).toBeChecked();
+    await aliceAssign.click();
+    await expect(aliceAssign).toBeChecked();
 
     // Navigate away and back — assignment must persist. Soft navigation via
     // the back link avoids aborting the assignment action's revalidation
@@ -488,6 +586,7 @@ test.describe("Admin UI guest assignment", () => {
       .filter({ hasText: eventName })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Guests");
     await expect(
       page
         .getByRole("region", { name: "Guests" })
@@ -499,9 +598,7 @@ test.describe("Admin UI guest assignment", () => {
     // still shows other seeded guests
     const g2 = page.getByRole("region", { name: "Guests" });
     await g2.getByRole("button", { name: "Assigned", exact: true }).click();
-    await expect(
-      g2.getByRole("row").filter({ has: page.getByRole("checkbox") })
-    ).toHaveCount(1);
+    await expect(g2.getByRole("checkbox", { name: /^Assign / })).toHaveCount(1);
     await expect(
       g2.getByRole("row").filter({ hasText: "Alice Test" })
     ).toBeVisible();
@@ -519,11 +616,133 @@ test.describe("Admin UI guest assignment", () => {
     await g2.getByRole("checkbox", { checked: true }).click();
     await expect(g2.getByRole("checkbox", { checked: true })).toHaveCount(0);
 
-    // Clean up
+    // Clean up — the delete control lives on the Config tab
+    await openEventTab(page, "Config");
     await page.getByRole("button", { name: "Delete event" }).click();
     await page.getByLabel("Type the event name to confirm").fill(eventName);
     await page.getByRole("button", { name: "Confirm delete" }).click();
     await expect(page).toHaveURL(/\/admin\/events$/);
+  });
+
+  test("bulk assigns and removes selected guests", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Fresh event so all seeded guests start unassigned.
+    const unique = Date.now();
+    const eventName = `E2E Bulk Guests ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Guests");
+
+    const guests = page.getByRole("region", { name: "Guests" });
+    const dataRows = guests
+      .getByRole("row")
+      .filter({ has: page.getByRole("checkbox", { name: /^Assign / }) });
+    const count = await dataRows.count();
+    expect(count).toBeGreaterThan(1);
+
+    // Select every row on the page, then bulk-assign.
+    await guests.getByRole("checkbox", { name: "Select all" }).check();
+    await guests.getByRole("button", { name: "Assign selected" }).click();
+    await expect(
+      guests.getByRole("checkbox", { name: /^Assign /, checked: true })
+    ).toHaveCount(count);
+
+    // Select every row again and bulk-remove.
+    await guests.getByRole("checkbox", { name: "Select all" }).check();
+    await guests.getByRole("button", { name: "Remove selected" }).click();
+    await expect(
+      guests.getByRole("checkbox", { name: /^Assign /, checked: true })
+    ).toHaveCount(0);
+
+    // Clean up — the delete control lives on the Config tab.
+    await openEventTab(page, "Config");
+    await page.getByRole("button", { name: "Delete event" }).click();
+    await page.getByLabel("Type the event name to confirm").fill(eventName);
+    await page.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
+  });
+
+  test("shows an error and keeps the selection when a bulk action fails", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Guests");
+
+    const guests = page.getByRole("region", { name: "Guests" });
+    await guests.getByRole("checkbox", { name: "Select all" }).check();
+    const bulkBar = page.getByRole("region", { name: "Bulk actions" });
+    await expect(bulkBar).toBeVisible();
+
+    // Simulate a network failure for the bulk server action.
+    await page.route("**/*", (route) =>
+      route.request().method() === "POST" ? route.abort() : route.continue()
+    );
+
+    await guests.getByRole("button", { name: "Assign selected" }).click();
+    await expect(guests.getByText("Request failed")).toBeVisible();
+    // Selection is kept so the user can retry.
+    await expect(bulkBar).toBeVisible();
+  });
+
+  test("searches guests by name on the guests sub-route", async ({ page }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Conference Alpha has all three seeded guests assigned.
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Guests");
+
+    const guests = page.getByRole("region", { name: "Guests" });
+    const dataRows = () =>
+      guests
+        .getByRole("row")
+        .filter({ has: page.getByRole("checkbox", { name: /^Assign / }) });
+
+    // Server-side search narrows the result set; the URL carries the query.
+    await guests.getByRole("searchbox", { name: "Search" }).fill("Alice");
+    await guests.getByRole("button", { name: "Search" }).click();
+    await expect(page).toHaveURL(/[?&]q=Alice/);
+    await expect(dataRows()).toHaveCount(1);
+    await expect(dataRows().first()).toContainText("Alice Test");
+    await expect(guests.getByRole("cell", { name: "Bob Test" })).toHaveCount(0);
+
+    // A single page of results: pagination reports page 1 of 1.
+    await expect(guests.getByText("Page 1 of 1")).toBeVisible();
+    await expect(
+      guests.getByRole("button", { name: "Next page" })
+    ).toBeDisabled();
+
+    // Browser back drops the query — the search input must follow the URL
+    // (the table state is URL-driven), not keep showing the stale query.
+    await page.goBack();
+    await expect(page).not.toHaveURL(/[?&]q=/);
+    await expect(
+      guests.getByRole("cell", { name: "Bob Test", exact: true })
+    ).toBeVisible();
+    await expect(guests.getByRole("searchbox", { name: "Search" })).toHaveValue(
+      ""
+    );
   });
 });
 
@@ -624,6 +843,7 @@ test.describe("Admin UI proposals", () => {
       .filter({ hasText: "Conference Alpha" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Proposals");
 
     const proposals = page.getByRole("region", { name: "Proposals" });
     await expect(proposals).toBeVisible();
@@ -646,6 +866,7 @@ test.describe("Admin UI proposals", () => {
       .filter({ hasText: "Conference Alpha" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Proposals");
 
     const proposals = page.getByRole("region", { name: "Proposals" });
     // Use the seeded Panel proposal (not asserted by the list test) and revert
@@ -703,6 +924,7 @@ test.describe("Admin UI proposals", () => {
       .filter({ hasText: "Conference Alpha" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Proposals");
 
     const proposals = page.getByRole("region", { name: "Proposals" });
     const row = proposals.getByRole("listitem").filter({ hasText: title });
@@ -741,6 +963,7 @@ test.describe("Admin UI sessions", () => {
       .filter({ hasText: "Conference Gamma" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Sessions");
 
     const sessions = page.getByRole("region", { name: "Sessions" });
     await expect(sessions).toBeVisible();
@@ -762,6 +985,7 @@ test.describe("Admin UI sessions", () => {
       .filter({ hasText: "Conference Alpha" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Sessions");
 
     const sessions = page.getByRole("region", { name: "Sessions" });
     const original = "Opening Keynote - Conference Alpha";
@@ -803,6 +1027,7 @@ test.describe("Admin UI sessions", () => {
       .filter({ hasText: "Conference Beta" })
       .getByRole("link", { name: "Manage" })
       .click();
+    await openEventTab(page, "Sessions");
 
     const sessions = page.getByRole("region", { name: "Sessions" });
     const title = "Opening Keynote - Conference Beta";
@@ -820,6 +1045,50 @@ test.describe("Admin UI sessions", () => {
     await expect(
       sessions.getByRole("listitem").filter({ hasText: title })
     ).toHaveCount(0);
+  });
+
+  test("removes an RSVP from a session via standard confirm", async ({
+    page,
+  }) => {
+    // Create the RSVP to remove through the public UI first. Yuki Tanaka is
+    // guaranteed a clean "no prior RSVP" state on the keynote by the seed and
+    // is used by no other spec (Bob Test's keynote slot belongs to
+    // rsvp.spec.ts).
+    await loginAndGoto(page, "/Conference-Gamma");
+    await page.getByLabel("My name is:").click();
+    await page.keyboard.type("Yuki Tanaka");
+    await page.getByRole("option", { name: /Yuki Tanaka/i }).click();
+    await page
+      .getByRole("link", { name: /Opening Keynote/ })
+      .first()
+      .click();
+    const dialog = page.getByRole("dialog", { name: "Session details" });
+    await dialog.getByRole("button", { name: "RSVP", exact: true }).click();
+    await expect(dialog.getByRole("button", { name: "Un-RSVP" })).toBeVisible();
+
+    // Remove it again as admin
+    await adminLogin(page);
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Gamma" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Sessions");
+
+    const sessions = page.getByRole("region", { name: "Sessions" });
+    const row = sessions
+      .getByRole("listitem")
+      .filter({ hasText: "Opening Keynote - Conference Gamma" });
+    await expect(row).toBeVisible();
+
+    // Expand the RSVPs disclosure and remove Yuki Tanaka
+    await row.getByText(/^RSVPs \(/).click();
+    await expect(row.getByText("Yuki Tanaka")).toBeVisible();
+    await row.getByRole("button", { name: "Remove RSVP Yuki Tanaka" }).click();
+    await row.getByRole("button", { name: "Confirm" }).click();
+
+    await expect(row.getByText("Yuki Tanaka")).toHaveCount(0);
   });
 });
 

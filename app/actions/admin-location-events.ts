@@ -28,14 +28,15 @@ export async function assignLocationsToEventAction(input: {
   const event = await events.findById(input.eventId);
   if (!event) return { ok: false, error: "Event not found" };
 
-  if (input.locationIds.length > 0) {
-    const existing = await locations.findExistingIds(input.locationIds);
-    if (existing.length !== input.locationIds.length) {
+  const uniqueLocationIds = [...new Set(input.locationIds)];
+  if (uniqueLocationIds.length > 0) {
+    const existing = await locations.findExistingIds(uniqueLocationIds);
+    if (existing.length !== uniqueLocationIds.length) {
       return { ok: false, error: "Location not found" };
     }
   }
 
-  await locations.assignToEvent(input.eventId, input.locationIds);
+  await locations.assignToEvent(input.eventId, uniqueLocationIds);
 
   revalidateEventPaths(input.eventId);
   return { ok: true };

@@ -2,8 +2,7 @@ import { cookies } from "next/headers";
 import Footer from "../footer";
 import { CONSTS } from "@/utils/constants";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
-import { AdminLogoutButton } from "./logout-button";
-import { AdminNav } from "./admin-nav";
+import { AdminHeader } from "./admin-header";
 
 export default async function AdminLayout({
   children,
@@ -17,14 +16,8 @@ export default async function AdminLayout({
 
   return (
     <>
-      <header className="bg-gray-900 text-white">
-        <div className="max-w-3xl mx-auto px-3 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 justify-between">
-          <span className="font-semibold">{CONSTS.TITLE} Admin</span>
-          {isAdmin && <AdminNav />}
-          {isAdmin && <AdminLogoutButton />}
-        </div>
-      </header>
-      <main className="flex-1 flex flex-col lg:px-24 p-3 lg:pb-16">
+      <AdminHeader title={CONSTS.TITLE} isAdmin={isAdmin} />
+      <main className="flex-1 flex flex-col px-3 lg:px-8 py-6 lg:pb-16">
         {children}
       </main>
       <Footer />
