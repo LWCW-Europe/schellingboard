@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/db/container";
+import { SECONDARY_BUTTON } from "../buttons";
 import { outOfRangePageRedirect } from "@/utils/pagination";
 import { requireAdminPage } from "../require-admin";
 import { GuestsManager, type AdminUser } from "../guests-manager";
@@ -48,7 +50,12 @@ export default async function AdminUsersPage({
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+        <Link href="/admin/users/import" className={SECONDARY_BUTTON}>
+          Import CSV
+        </Link>
+      </div>
       <section aria-label="Users" className="space-y-4">
         <GuestsManager
           users={users}

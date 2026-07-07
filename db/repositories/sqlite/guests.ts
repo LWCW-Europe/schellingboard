@@ -201,6 +201,17 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return row ? rowToGuest(row) : undefined;
   }
 
+  async findByEmails(emails: string[]): Promise<CompleteGuest[]> {
+    if (emails.length === 0) return [];
+    const lowered = emails.map((e) => e.toLowerCase());
+    return this.db
+      .select()
+      .from(schema.guests)
+      .where(inArray(sql`lower(${schema.guests.email})`, lowered))
+      .all()
+      .map(rowToGuest);
+  }
+
   async create(data: Omit<CompleteGuest, "id">): Promise<CompleteGuest> {
     const id = nanoid();
     const {
@@ -264,6 +275,57 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .values(guestIds.map((guestId) => ({ eventId, guestId })))
       .onConflictDoNothing()
       .run();
+  }
+
+  async importAndAssign(
+    rows: { name: string; email: string }[],
+    eventIds: string[]
+  ): Promise<{ created: number }> {
+    let created = 0;
+    this.db.transaction((tx) => {
+      const existingByEmail = new Map(
+        (rows.length === 0
+          ? []
+          : tx
+              .select()
+              .from(schema.guests)
+              .where(
+                inArray(
+                  sql`lower(${schema.guests.email})`,
+                  rows.map((r) => r.email.toLowerCase())
+                )
+              )
+              .all()
+              .map(rowToGuest)
+        ).map((g) => [g.info.email.toLowerCase(), g])
+      );
+
+      const guestIds: string[] = [];
+      for (const row of rows) {
+        const existing = existingByEmail.get(row.email.toLowerCase());
+        if (existing) {
+          guestIds.push(existing.id);
+        } else {
+          const id = nanoid();
+          tx.insert(schema.guests)
+            .values({ id, name: row.name, email: row.email })
+            .run();
+          guestIds.push(id);
+          created++;
+        }
+      }
+
+      if (guestIds.length > 0) {
+        for (const eventId of eventIds) {
+          tx.insert(schema.eventGuests)
+            .values(guestIds.map((guestId) => ({ eventId, guestId })))
+            .onConflictDoNothing()
+            .run();
+        }
+      }
+    });
+
+    return { created };
   }
 
   async removeFromEvent(eventId: string, guestIds: string[]): Promise<void> {
