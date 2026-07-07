@@ -38,6 +38,9 @@ export interface EventContextType {
   locations: Location[];
   guests: Guest[];
   rsvps: Rsvp[];
+  // Captured once on the server so SSR and hydration agree on time-dependent
+  // decisions (e.g. which schedule days default to folded).
+  now: Date;
   rsvpdForSession: (sessionId: string) => boolean;
   localSessions: Session[];
   userBusySessions: () => Session[];
@@ -55,6 +58,7 @@ export const EventContext = createContext<EventContextType>({
   locations: [],
   guests: [],
   rsvps: [],
+  now: new Date(0),
   localSessions: [],
   userBusySessions: () => [],
   rsvpdForSession: () => false,
