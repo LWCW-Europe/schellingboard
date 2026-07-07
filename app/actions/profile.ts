@@ -9,8 +9,7 @@ import { z } from "zod";
 import { $ZodIssue } from "zod/v4/core";
 
 export type ProfileActionResult =
-  | { ok: true }
-  | { ok: false; error: string | $ZodIssue[] };
+  { ok: true } | { ok: false; error: string | $ZodIssue[] };
 
 const profileActionSchema = profileSchema.extend({
   avatar: profileSchema.shape.avatar.transform(async (avatarFile, ctx) => {
