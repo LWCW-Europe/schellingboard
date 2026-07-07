@@ -152,6 +152,8 @@ export interface GuestsRepository {
   ): Promise<EventGuestPage>;
   findById(id: string): Promise<CompleteGuest | undefined>;
   findByEmail(email: string): Promise<CompleteGuest | undefined>;
+  /** Guests whose email matches any of `emails`, compared case-insensitively. */
+  findByEmails(emails: string[]): Promise<CompleteGuest[]>;
   create(data: Omit<CompleteGuest, "id">): Promise<CompleteGuest>;
   // Usage: an admin updates a user (name and private info such as email).
   update(
@@ -168,6 +170,16 @@ export interface GuestsRepository {
   findExistingIds(ids: string[]): Promise<string[]>;
   assignToEvent(eventId: string, guestIds: string[]): Promise<void>;
   removeFromEvent(eventId: string, guestIds: string[]): Promise<void>;
+  /**
+   * Matches `rows` to existing guests by email (case-insensitive), creates
+   * the missing ones, and assigns every resulting guest to each event in
+   * `eventIds`. Existing guests are left unchanged. Runs in a single
+   * transaction so a failure partway through leaves no partial writes.
+   */
+  importAndAssign(
+    rows: { name: string; email: string }[],
+    eventIds: string[]
+  ): Promise<{ created: number }>;
 }
 
 // ── Locations ─────────────────────────────────────────────────────────────────

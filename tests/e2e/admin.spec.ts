@@ -190,6 +190,85 @@ test.describe("Admin UI", () => {
     ).toHaveCount(0);
   });
 
+  test("imports users from CSV and assigns them to an event", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await gotoUsers(page);
+
+    const unique = Date.now();
+    const newName = `CSV Import User ${unique}`;
+    const newEmail = `csv-import-${unique}@test.example`;
+    // bob@test.com already exists in the seed, so he must be skipped.
+    const csv = `name,email\n${newName},${newEmail}\nBob Duplicate,bob@test.com\n`;
+
+    await page.getByRole("link", { name: "Import CSV" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Import users" })
+    ).toBeVisible();
+
+    await page.getByLabel("CSV file").setInputFiles({
+      name: "users.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(csv),
+    });
+
+    // Pick an event through the searchable multi-select (opens on focus).
+    await page.getByLabel("Assign to events").click();
+    await page.keyboard.type("Alpha");
+    await page.getByRole("option", { name: "Conference Alpha" }).click();
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("button", { name: "Import" }).click();
+    const summary = page.getByRole("status");
+    await expect(summary).toContainText("1 user created");
+    await expect(summary).toContainText("1 user already existed");
+
+    // The new user shows up in the users list, assigned to the event.
+    await gotoUsers(page);
+    const users = page.getByRole("region", { name: "Users" });
+    await users.getByRole("searchbox", { name: "Search" }).fill(newEmail);
+    await users.getByRole("button", { name: "Search" }).click();
+    const row = users.getByRole("listitem").filter({ hasText: newEmail });
+    await expect(row.getByText(newName)).toBeVisible();
+    await expect(
+      row.getByRole("link", { name: "Conference Alpha" })
+    ).toBeVisible();
+
+    // Clean up so the shared seed stays stable for other tests.
+    await row.getByRole("button", { name: "Delete", exact: true }).click();
+    await row.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(row).toHaveCount(0);
+  });
+
+  test("rejects an invalid CSV file without importing anything", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await gotoUsers(page);
+    await page.getByRole("link", { name: "Import CSV" }).click();
+
+    await page.getByLabel("CSV file").setInputFiles({
+      name: "users.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from("name,email\nBroken Row,not-an-email\n"),
+    });
+    await page.getByRole("button", { name: "Import" }).click();
+
+    const errors = page
+      .getByRole("alert")
+      .filter({ hasText: "Invalid CSV file" });
+    await expect(errors).toContainText("Line 2");
+    await expect(errors).toContainText("not-an-email");
+
+    // Nothing was imported.
+    await gotoUsers(page);
+    const users = page.getByRole("region", { name: "Users" });
+    await users.getByRole("searchbox", { name: "Search" }).fill("Broken Row");
+    await users.getByRole("button", { name: "Search" }).click();
+    await expect(users.getByText("No users match.")).toBeVisible();
+  });
+
   test("searches and paginates users", async ({ page }) => {
     await adminLogin(page);
     await gotoUsers(page);
