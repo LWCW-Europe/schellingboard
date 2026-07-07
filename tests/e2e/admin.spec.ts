@@ -1,4 +1,4 @@
-import { Page } from "@playwright/test";
+import { Page, Route } from "@playwright/test";
 import sharp from "sharp";
 import { test, expect } from "./helpers/fixtures";
 import { loginAndGoto } from "./helpers/auth";
@@ -919,6 +919,53 @@ test.describe("Admin UI locations", () => {
       await page.getByRole("button", { name: "Confirm delete" }).click();
       await expect(page).toHaveURL(/\/admin\/events$/);
     });
+  });
+
+  test("disables row assign toggles while a bulk action is in flight", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Alpha" })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Locations");
+
+    const locations = page.getByRole("region", { name: "Locations" });
+    await locations.getByRole("checkbox", { name: "Select Main Hall" }).check();
+    await expect(
+      page.getByRole("region", { name: "Bulk actions" })
+    ).toBeVisible();
+
+    // Hold the bulk server action's POST so the pending window is observable,
+    // then abort it below so no seeded assignment is actually mutated.
+    const heldPosts: Route[] = [];
+    await page.route("**/*", (route) =>
+      route.request().method() === "POST"
+        ? heldPosts.push(route)
+        : route.continue()
+    );
+
+    await locations.getByRole("button", { name: "Assign selected" }).click();
+
+    // While the bulk mutation is pending, row toggles must be disabled —
+    // otherwise an individual toggle can race the in-flight bulk request.
+    await expect(
+      locations.getByRole("checkbox", { name: "Assign Main Hall" })
+    ).toBeDisabled();
+    await expect(
+      locations.getByRole("checkbox", { name: "Assign Workshop Room" })
+    ).toBeDisabled();
+
+    for (const route of heldPosts) await route.abort();
+    await page.unroute("**/*");
+    await expect(locations.getByText("Request failed")).toBeVisible();
+    await expect(
+      locations.getByRole("checkbox", { name: "Assign Workshop Room" })
+    ).toBeEnabled();
   });
 });
 

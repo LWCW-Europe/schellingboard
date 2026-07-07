@@ -146,7 +146,7 @@ export function EventLocationsManager({
     <input
       type="checkbox"
       checked={l.assigned}
-      disabled={pendingIds.has(l.id)}
+      disabled={pendingIds.has(l.id) || isPending}
       aria-label={`Assign ${l.name}`}
       onChange={() => handleToggle(l.id, l.assigned)}
       className="h-4 w-4 cursor-pointer"
