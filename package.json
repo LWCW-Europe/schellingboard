@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "@tailwindcss/postcss": "^4.3.1",
+    "@tailwindcss/postcss": "^4.3.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/js-cookie": "^3.0.6",
     "@types/lodash": "^4.17.24",
@@ -34,19 +34,19 @@
     "@types/node": "^26",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@typescript-eslint/eslint-plugin": "^8.62.0",
-    "@typescript-eslint/parser": "^8.62.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
     "@vitest/coverage-v8": "^4",
     "@vitest/ui": "^4",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "^16",
     "postcss": "^8.5.16",
-    "prettier": "3.9.1",
-    "tailwindcss": "^4.3.1",
+    "prettier": "3.9.4",
+    "tailwindcss": "^4.3.2",
     "tsx": "^4.22.4",
     "typescript": "^6",
-    "typescript-eslint": "^8.62.0",
+    "typescript-eslint": "^8.62.1",
     "vitest": "^4"
   }
 }
