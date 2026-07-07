@@ -7,6 +7,7 @@ import { eventNameToSlug } from "@/utils/utils";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import type { Event } from "@/db/repositories/interfaces";
 import type { AdminActionResult } from "./admin-guests";
+import { isEventIconName } from "@/app/event-icons";
 
 async function isAdminRequest(): Promise<boolean> {
   const cookieStore = await cookies();
@@ -71,6 +72,11 @@ function parseEventInput(input: EventInput): ParseResult {
     return { error: "Break must be zero or a positive number" };
   }
 
+  const icon = input.icon?.trim() || undefined;
+  if (icon && !isEventIconName(icon)) {
+    return { error: "Unknown icon" };
+  }
+
   return {
     data: {
       name,
@@ -81,7 +87,7 @@ function parseEventInput(input: EventInput): ParseResult {
       timezone,
       maxSessionDuration,
       breakMinutes,
-      icon: input.icon?.trim() || undefined,
+      icon,
     },
   };
 }

@@ -15,6 +15,8 @@ import {
   DANGER_BUTTON,
 } from "@/app/admin/buttons";
 import { TimezoneSelect } from "@/app/admin/timezone-select";
+import { IconPicker } from "@/app/admin/icon-picker";
+import { normalizeEventIconName } from "@/app/event-icons";
 
 function toDateInputValue(date: Date): string {
   return date.toISOString().split("T")[0];
@@ -31,7 +33,7 @@ export function EventDetailForm({ event }: { event: Event }) {
     timezone: event.timezone,
     maxSessionDuration: String(event.maxSessionDuration),
     breakMinutes: String(event.breakMinutes),
-    icon: event.icon ?? "",
+    icon: normalizeEventIconName(event.icon),
   });
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -178,15 +180,11 @@ export function EventDetailForm({ event }: { event: Event }) {
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="ev-icon" className="text-sm text-gray-600">
-            Icon
-          </label>
-          <Input
-            id="ev-icon"
+          <span className="text-sm text-gray-600">Icon</span>
+          <IconPicker
+            label="Icon"
             value={form.icon ?? ""}
-            onChange={(e) => set("icon", e.target.value)}
-            placeholder="e.g. AcademicCapIcon"
-            className="w-full h-10"
+            onChange={(v) => set("icon", v)}
           />
         </div>
         <div className="flex items-center gap-3">

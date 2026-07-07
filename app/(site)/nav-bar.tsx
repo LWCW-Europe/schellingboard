@@ -1,36 +1,8 @@
 "use client";
 import { Disclosure } from "@headlessui/react";
 import {
-  AcademicCapIcon,
   Bars3Icon,
-  BeakerIcon,
-  BoltIcon,
-  BookOpenIcon,
-  BriefcaseIcon,
-  BuildingOfficeIcon,
-  CakeIcon,
-  CalendarIcon,
-  ChatBubbleLeftIcon,
-  CloudIcon,
-  CodeBracketIcon,
-  CogIcon,
-  CommandLineIcon,
-  ComputerDesktopIcon,
-  CpuChipIcon,
-  FireIcon,
-  GlobeAltIcon,
-  HeartIcon,
-  HomeIcon,
-  MicrophoneIcon,
-  MusicalNoteIcon,
-  PaintBrushIcon,
-  RocketLaunchIcon,
-  SparklesIcon,
-  StarIcon,
-  SunIcon,
-  TrophyIcon,
   UserGroupIcon,
-  WrenchIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import clsx from "clsx";
@@ -38,46 +10,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { MapModal } from "./modals";
 import { LogoutButton } from "./logout-button";
-import { ForwardRefExoticComponent, RefAttributes, SVGProps } from "react";
-
-type HeroIcon = ForwardRefExoticComponent<
-  Omit<SVGProps<SVGSVGElement>, "ref"> & {
-    title?: string;
-    titleId?: string;
-  } & RefAttributes<SVGSVGElement>
->;
-
-const ICON_MAP: Record<string, HeroIcon> = {
-  AcademicCapIcon,
-  BeakerIcon,
-  BoltIcon,
-  BookOpenIcon,
-  BriefcaseIcon,
-  BuildingOfficeIcon,
-  CakeIcon,
-  CalendarIcon,
-  ChatBubbleLeftIcon,
-  CloudIcon,
-  CodeBracketIcon,
-  CogIcon,
-  CommandLineIcon,
-  ComputerDesktopIcon,
-  CpuChipIcon,
-  FireIcon,
-  GlobeAltIcon,
-  HeartIcon,
-  HomeIcon,
-  MicrophoneIcon,
-  MusicalNoteIcon,
-  PaintBrushIcon,
-  RocketLaunchIcon,
-  SparklesIcon,
-  StarIcon,
-  SunIcon,
-  TrophyIcon,
-  UserGroupIcon,
-  WrenchIcon,
-};
+import { EVENT_ICONS } from "@/app/event-icons";
 
 export type NavItem = {
   name: string;
@@ -162,7 +95,7 @@ export default function NavBar({
 function NavBarItem(props: { item: NavItem }) {
   const { item } = props;
   const isCurrentPage = usePathname().includes(item.href) && item.href != null;
-  const Icon = item.icon ? ICON_MAP[item.icon] : null;
+  const Icon = item.icon ? EVENT_ICONS[item.icon] : null;
   return (
     <Link
       key={item.name}
@@ -183,7 +116,7 @@ function NavBarItem(props: { item: NavItem }) {
 function SmallNavBarItem(props: { item: NavItem }) {
   const { item } = props;
   const isCurrentPage = usePathname().includes(item.href) && item.href != null;
-  const Icon = item.icon ? ICON_MAP[item.icon] : null;
+  const Icon = item.icon ? EVENT_ICONS[item.icon] : null;
   return (
     <Disclosure.Button
       key={item.name}

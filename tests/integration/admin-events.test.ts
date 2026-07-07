@@ -386,6 +386,34 @@ describe("event actions", () => {
       });
       expect(!result.ok && result.error).toMatch(/letter or number/i);
     });
+
+    it("persists a known icon", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        icon: "RocketLaunchIcon",
+      });
+      expect(result.ok).toBe(true);
+      const event = await getRepositories().events.findByName("Test Event");
+      expect(event?.icon).toBe("RocketLaunchIcon");
+    });
+
+    it("allows no icon", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        icon: "",
+      });
+      expect(result.ok).toBe(true);
+      const event = await getRepositories().events.findByName("Test Event");
+      expect(event?.icon).toBeUndefined();
+    });
+
+    it("rejects an unknown icon", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        icon: "NoSuchIcon",
+      });
+      expect(!result.ok && result.error).toMatch(/icon/i);
+    });
   });
 
   describe("updateEventAction", () => {
