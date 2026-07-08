@@ -143,9 +143,8 @@ export async function sendMail(options: {
 }): Promise<void> {
   const mailer = getMailer();
   if (!mailer) {
-    console.warn(
-      `SMTP is not configured - not sending email "${options.subject}" to ${options.to}`
-    );
+    // Don't include details of the email, to avoid putting PII in logs.
+    console.warn("SMTP is not configured - not sending email");
     return;
   }
   const { transport, from } = mailer;
