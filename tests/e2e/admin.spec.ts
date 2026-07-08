@@ -967,6 +967,50 @@ test.describe("Admin UI locations", () => {
       locations.getByRole("checkbox", { name: "Assign Workshop Room" })
     ).toBeEnabled();
   });
+
+  test("clears the bulk selection when the filter changes", async ({
+    page,
+  }) => {
+    await adminLogin(page);
+    await page.goto("/admin/events");
+
+    // Fresh event so all seeded locations start "Not assigned".
+    const unique = Date.now();
+    const eventName = `E2E Loc Selection ${unique}`;
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await openEventTab(page, "Locations");
+
+    const locations = page.getByRole("region", { name: "Locations" });
+    await expect(locations).toBeVisible();
+
+    // Select a location for a bulk action while on the default "All" filter.
+    await locations.getByRole("checkbox", { name: "Select Main Hall" }).check();
+    const bulkBar = locations.getByRole("region", { name: "Bulk actions" });
+    await expect(bulkBar).toBeVisible();
+
+    // Switching the filter changes which rows are visible. The selection must
+    // not survive it — otherwise a bulk action would hit now-hidden rows.
+    await locations
+      .getByRole("button", { name: "Assigned", exact: true })
+      .click();
+    await expect(bulkBar).toHaveCount(0);
+
+    // Clean up — the delete control lives on the Config tab.
+    await openEventTab(page, "Config");
+    await page.getByRole("button", { name: "Delete event" }).click();
+    await page.getByLabel("Type the event name to confirm").fill(eventName);
+    await page.getByRole("button", { name: "Confirm delete" }).click();
+    await expect(page).toHaveURL(/\/admin\/events$/);
+  });
 });
 
 test.describe("Admin UI proposals", () => {

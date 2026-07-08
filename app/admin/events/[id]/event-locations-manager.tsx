@@ -50,8 +50,16 @@ export function EventLocationsManager({
   const { setParams } = useTableParams();
   // Tracks which location IDs have a pending toggle so we can disable the box.
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
-  // Rows selected for bulk assign/remove (persists across pages until applied).
+  // Rows selected for bulk assign/remove. Persists across pages of the same
+  // list, but is reset when the search/filter changes so a bulk action can
+  // never hit rows that are no longer visible under the new criteria.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const listKey = `${eventId} ${query} ${filter}`;
+  const [prevListKey, setPrevListKey] = useState(listKey);
+  if (listKey !== prevListKey) {
+    setPrevListKey(listKey);
+    setSelectedIds(new Set());
+  }
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
