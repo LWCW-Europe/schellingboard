@@ -1,16 +1,15 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { initMailer, resetMailer, sendMail } from "@/utils/mailer";
 
-// Runs only when MAILPIT_API_URL points at a mailpit instance (e.g.
-// http://localhost:8025 via `docker compose up mailpit`). SMTP_URL and
-// SMTP_FROM come from the environment too; .env.test sets all three.
-// Skips when MAILPIT_API_URL is unset or empty; fails when it is set but
-// mailpit is unreachable.
+// This suite runs only when MAILPIT_API_URL points at a mailpit instance (e.g.
+// http://localhost:8025 via `docker compose up mailpit`). Skips when
+// MAILPIT_API_URL is unset or empty; fails when it's set but mailpit is
+// unreachable.
 const MAILPIT_API_URL = process.env.MAILPIT_API_URL ?? "";
 
 type MessageSummary = {
   ID: string;
-  From: { Address: string };
+  From: { Name: string; Address: string };
   To: { Address: string }[];
   Subject: string;
 };
@@ -33,12 +32,18 @@ async function searchBySubject(subject: string): Promise<MessageSummary[]> {
 
 describe.skipIf(!MAILPIT_API_URL)("sendMail via mailpit", () => {
   beforeEach(() => {
+    // Fix the sender rather than using the environment's SMTP_FROM, whose
+    // format (bare address or `Name <address>`) the assertions would
+    // otherwise depend on.
+    vi.stubEnv("SMTP_FROM", "Test Sender <sender@test.example>");
     resetMailer();
     initMailer();
     console.warn(
       "This test fails if you don't have Mailpit running. If you want to skip the test instead of running Mailpit, set `MAILPIT_API_URL=''`."
     );
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   it("delivers an email that mailpit receives", async () => {
     // Unique subject so the test finds its own message without wiping the
@@ -58,7 +63,10 @@ describe.skipIf(!MAILPIT_API_URL)("sendMail via mailpit", () => {
       .toHaveLength(1);
 
     const [summary] = await searchBySubject(subject);
-    expect(summary.From.Address).toBe(process.env.SMTP_FROM);
+    expect(summary.From).toMatchObject({
+      Name: "Test Sender",
+      Address: "sender@test.example",
+    });
     expect(summary.To).toEqual([
       expect.objectContaining({ Address: "recipient@test.example" }),
     ]);
