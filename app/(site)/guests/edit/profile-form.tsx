@@ -6,7 +6,6 @@ import {
   useMemo,
   ButtonHTMLAttributes,
   useRef,
-  useTransition,
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,7 +40,6 @@ export function ProfileForm({ guest }: { guest: Guest }) {
   });
   const avatar = avatarFileList === null ? null : avatarFileList?.[0];
   const [isDragging, setIsDragging] = useState(false);
-  const [isSubmitting, startTransition] = useTransition();
   const canvas = useRef<HTMLCanvasElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -145,9 +143,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
       <canvas ref={canvas} hidden />
 
       <form
-        onSubmit={(e) =>
-          startTransition(() => form.handleSubmit(handleSubmit)(e))
-        }
+        onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}
         className="flex flex-col gap-4"
       >
         <div className="flex items-center gap-4 cursor-pointer">
@@ -246,9 +242,9 @@ export function ProfileForm({ guest }: { guest: Guest }) {
         <button
           type="submit"
           className="bg-rose-400 text-white font-semibold py-2 rounded shadow disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500 mx-auto px-12"
-          disabled={isSubmitting}
+          disabled={form.formState.isSubmitting}
         >
-          {isSubmitting ? "Saving..." : "Save"}
+          {form.formState.isSubmitting ? "Saving..." : "Save"}
         </button>
       </form>
     </div>
