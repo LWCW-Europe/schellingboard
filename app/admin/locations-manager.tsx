@@ -13,6 +13,11 @@ import {
   moveLocationAction,
 } from "../actions/admin-locations";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON, DANGER_BUTTON } from "./buttons";
+import {
+  LOCATION_COLOR_NAMES,
+  DEFAULT_LOCATION_COLOR,
+  isLocationColorName,
+} from "@/utils/location-colors";
 
 export type AdminLocation = {
   location: Location;
@@ -42,6 +47,11 @@ function LocationForm({
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const idPrefix = location ? `loc-${location.id}` : "loc-new";
+  const [color, setColor] = useState<string>(
+    location && isLocationColorName(location.color)
+      ? location.color
+      : DEFAULT_LOCATION_COLOR
+  );
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -128,13 +138,28 @@ function LocationForm({
           >
             Color
           </label>
-          <input
-            id={`${idPrefix}-color`}
-            name="color"
-            type="color"
-            defaultValue={location?.color || "#94a3b8"}
-            className="h-10 w-20 rounded-md border border-gray-300 bg-white"
-          />
+          <div className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className={clsx(
+                "h-10 w-10 shrink-0 rounded-md border border-gray-300",
+                `bg-${color}-500`
+              )}
+            />
+            <select
+              id={`${idPrefix}-color`}
+              name="color"
+              value={color}
+              onChange={(e) => setColor(e.target.value)}
+              className="h-10 flex-1 rounded-md border border-gray-300 bg-white px-2 capitalize shadow-sm focus:ring-2 focus:ring-rose-400 focus:outline-0"
+            >
+              {LOCATION_COLOR_NAMES.map((name) => (
+                <option key={name} value={name} className="capitalize">
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -347,11 +372,13 @@ function LocationRow({
         )}
         <div className="flex-1 min-w-0">
           <p className="font-medium text-gray-900 truncate flex items-center gap-2">
-            {location.color && (
+            {isLocationColorName(location.color) && (
               <span
                 aria-hidden
-                className="inline-block w-3 h-3 rounded-full border border-gray-300 shrink-0"
-                style={{ backgroundColor: location.color }}
+                className={clsx(
+                  "inline-block w-3 h-3 rounded-full border border-gray-300 shrink-0",
+                  `bg-${location.color}-500`
+                )}
               />
             )}
             {location.name}

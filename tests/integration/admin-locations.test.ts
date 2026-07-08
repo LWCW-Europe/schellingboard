@@ -57,7 +57,7 @@ function locationFormData(
   formData.set("name", "Main Hall");
   formData.set("description", "The big one");
   formData.set("capacity", "50");
-  formData.set("color", "#aabbcc");
+  formData.set("color", "teal");
   for (const [key, value] of Object.entries(overrides)) {
     formData.set(key, value);
   }
@@ -133,12 +133,22 @@ describe("admin location actions", () => {
         name: "Main Hall",
         description: "The big one",
         capacity: 50,
-        color: "#aabbcc",
+        color: "teal",
         hidden: true,
         bookable: true,
         areaDescription: "First floor",
         imageUrl: "",
       });
+    });
+
+    it("coerces an invalid colour to the default palette name", async () => {
+      const result = await createLocationAction(
+        locationFormData({ color: "#aabbcc" })
+      );
+      expect(result).toEqual({ ok: true });
+
+      const [created] = await getRepositories().locations.list();
+      expect(created.color).toBe("slate");
     });
 
     it("appends new locations at the end of the sort order", async () => {

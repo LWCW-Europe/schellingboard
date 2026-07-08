@@ -105,7 +105,7 @@ export async function createLocation(opts?: {
     imageUrl: "",
     description: "",
     capacity: opts?.capacity ?? 30,
-    color: "#3b82f6",
+    color: "blue",
     hidden: false,
     bookable: opts?.bookable ?? true,
     sortIndex: 0,
