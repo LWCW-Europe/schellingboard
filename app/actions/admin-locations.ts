@@ -10,6 +10,7 @@ import {
   validateLocationImage,
 } from "@/utils/location-images";
 import type { Location } from "@/db/repositories/interfaces";
+import { normalizeLocationColor } from "@/utils/location-colors";
 import type { AdminActionResult } from "./admin-guests";
 
 async function isAdminRequest(): Promise<boolean> {
@@ -46,10 +47,7 @@ function parseLocationForm(
     return { error: "Capacity must be a non-negative whole number" };
   }
 
-  const color = formString(formData, "color");
-  if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) {
-    return { error: "Color must be a hex value like #aabbcc" };
-  }
+  const color = normalizeLocationColor(formString(formData, "color"));
 
   const areaDescription = formString(formData, "areaDescription");
   const imageEntry = formData.get("image");

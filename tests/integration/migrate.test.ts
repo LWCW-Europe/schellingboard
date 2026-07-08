@@ -176,6 +176,63 @@ describe("runMigrations", () => {
     ]);
   });
 
+  // The locations table with a `color` column holding legacy values, so the
+  // colour-coercion migration runs against realistic pre-existing data.
+  const legacyLocationsTable = `CREATE TABLE \`locations\` (
+      \`id\` text PRIMARY KEY NOT NULL,
+      \`name\` text NOT NULL,
+      \`image_url\` text DEFAULT '' NOT NULL,
+      \`description\` text DEFAULT '' NOT NULL,
+      \`capacity\` integer DEFAULT 0 NOT NULL,
+      \`color\` text DEFAULT '' NOT NULL,
+      \`hidden\` integer DEFAULT false NOT NULL,
+      \`bookable\` integer DEFAULT false NOT NULL,
+      \`sort_index\` integer DEFAULT 0 NOT NULL,
+      \`area_description\` text
+    );`;
+
+  function readColorMigration(): string[] {
+    const drizzleDir = path.join(process.cwd(), "drizzle");
+    const file = fs
+      .readdirSync(drizzleDir)
+      .filter((f) => /^\d+_.*\.sql$/.test(f))
+      .find((f) =>
+        fs
+          .readFileSync(path.join(drizzleDir, f), "utf8")
+          .includes("UPDATE `locations` SET `color`")
+      );
+    expect(file, "location colour migration not found").toBeDefined();
+    return fs
+      .readFileSync(path.join(drizzleDir, file!), "utf8")
+      .split("--> statement-breakpoint\n");
+  }
+
+  it("the colour migration coerces legacy hex/empty location colours", () => {
+    writeMigrations(tmpDir, [
+      [
+        legacyLocationsTable,
+        `INSERT INTO locations (id, name, color) VALUES
+           ('l1', 'Hex', '#aabbcc'),
+           ('l2', 'Old default', '#94a3b8'),
+           ('l3', 'Empty', ''),
+           ('l4', 'Already valid', 'teal');`,
+      ],
+      readColorMigration(),
+    ]);
+
+    runMigrations(sqlite, tmpDir);
+
+    const rows = sqlite
+      .prepare("SELECT id, color FROM locations ORDER BY id")
+      .all();
+    expect(rows).toEqual([
+      { id: "l1", color: "slate" },
+      { id: "l2", color: "slate" },
+      { id: "l3", color: "slate" },
+      { id: "l4", color: "teal" },
+    ]);
+  });
+
   it("leaves foreign key enforcement enabled afterwards", () => {
     writeMigration(tmpDir, ["CREATE TABLE t (id text PRIMARY KEY);"]);
 

@@ -1,6 +1,19 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
+/*
+ * Location colors are stored as Tailwind palette names and rendered as
+ * dynamic classes (bg-${color}-500, …), which Tailwind's static content
+ * scanner can't see. Safelist every shade actually used across the app.
+ * Keep the color list here in sync with LOCATION_COLOR_NAMES in
+ * utils/location-colors.ts — tests/unit/location-colors-safelist.test.ts
+ * enforces it.
+ */
+@source inline("bg-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{100,200,400,500}");
+@source inline("border-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{400,600}");
+@source inline("text-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{400,500}");
+@source inline("focus:ring-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-400");
+
 html {
   scrollbar-gutter: stable;
 }
