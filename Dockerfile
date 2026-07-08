@@ -30,6 +30,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Migrations are loaded at runtime relative to process.cwd()
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+# sharp's native addon loads libvips via dlopen, which Next's file-tracer
+# can't detect, so the standalone output omits it; copy it in explicitly
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/sharp ./node_modules/sharp
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@img ./node_modules/@img
 
 RUN mkdir -p /data && chown nextjs:nodejs /data
 
