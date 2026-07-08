@@ -110,7 +110,7 @@ dev-migrate-status: install
 	bun set-env.ts dev bun x drizzle-kit check
 
 dev-migrate-create: install
-	bun set-env.ts dev bun x drizzle-kit generate
+	bun set-env.ts dev bun x drizzle-kit generate $(if $(NAME),--name $(NAME),)
 
 dev-db-seed: install
 	bun set-env.ts dev bun x tsx scripts/seed-database.ts

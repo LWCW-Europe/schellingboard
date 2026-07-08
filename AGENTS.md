@@ -18,6 +18,7 @@ Next.js scheduling app for managing conference/event sessions with three phases:
 
 - Use `jj` (jujutsu) if available, otherwise `git`
 - Pre-commit: run `make precommit` to format, lint, type check, and run tests
+- Check [CONTRIBUTING.md](CONTRIBUTING.md) for resolving `drizzle` migration conflicts
 
 ## Testing
 
