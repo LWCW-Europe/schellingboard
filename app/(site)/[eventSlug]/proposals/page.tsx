@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { getRepositories } from "@/db/container";
-import { eventSlugToName } from "@/utils/utils";
 import { ProposalActionBar } from "./proposal-action-bar";
 import { ProposalTable } from "./proposal-table";
 import { UserSelect } from "@/app/(site)/user-select";
@@ -19,10 +18,8 @@ export default async function ProposalsPage({
   const { eventSlug } = await params;
   const { viewProposal } = await searchParams;
 
-  // Convert slug to event name (simple conversion for now)
-  const eventName = eventSlugToName(eventSlug);
   const repos = getRepositories();
-  const event = await repos.events.findByName(eventName);
+  const event = await repos.events.findBySlug(eventSlug);
 
   if (!event) {
     return <div>Event not found</div>;

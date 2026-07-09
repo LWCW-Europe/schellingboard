@@ -66,28 +66,21 @@ describe("POST /api/toggle-rsvp", () => {
     expect(await rsvpsForGuest(guest.id)).toHaveLength(0);
   });
 
-  // FINDING: rsvps has no unique constraint on (sessionId, guestId) and the
-  // route inserts blindly, so a repeated add duplicates the RSVP and inflates
-  // attendee counts. Expected behavior is one RSVP per (guest, session) pair.
-  // Remove `.fails` once the server enforces uniqueness (upsert or constraint).
-  it.fails(
-    "adding twice keeps a single RSVP per (guest, session)",
-    async () => {
-      const event = await createEvent({ phase: "scheduling" });
-      const guest = await createGuest();
-      const session = await createSession(event.id);
-      await getRepositories().guests.assignToEvent(event.id, [guest.id]);
+  it("adding twice keeps a single RSVP per (guest, session)", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest();
+    const session = await createSession(event.id);
+    await getRepositories().guests.assignToEvent(event.id, [guest.id]);
 
-      for (let i = 0; i < 2; i++) {
-        const res = await toggleRsvp(
-          makeToggleReq({ sessionId: session.id, guestId: guest.id })
-        );
-        expect(res.ok).toBe(true);
-      }
-
-      expect(await rsvpsForGuest(guest.id)).toHaveLength(1);
+    for (let i = 0; i < 2; i++) {
+      const res = await toggleRsvp(
+        makeToggleReq({ sessionId: session.id, guestId: guest.id })
+      );
+      expect(res.ok).toBe(true);
     }
-  );
+
+    expect(await rsvpsForGuest(guest.id)).toHaveLength(1);
+  });
 
   it("rejects toggling an RSVP for a nonexistent session", async () => {
     const guest = await createGuest();

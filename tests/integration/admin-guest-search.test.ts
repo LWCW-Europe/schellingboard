@@ -72,6 +72,34 @@ describe("guests.searchForEventAssignment", () => {
     expect(byEmail.rows.map((r) => r.name)).toEqual(["Bob Jones"]);
   });
 
+  it("treats % and _ in the query as literal characters, not wildcards", async () => {
+    const event = await createEvent();
+    await createGuest({ name: "50% Discount", email: "fifty@test.example" });
+    await createGuest({
+      name: "500 Discount",
+      email: "fivehundred@test.example",
+    });
+    await createGuest({ name: "Underscore", email: "a_1@test.example" });
+    await createGuest({ name: "No Underscore", email: "ax1@test.example" });
+    const repos = getRepositories();
+
+    const percent = await repos.guests.searchForEventAssignment(event.id, {
+      query: "50%",
+      limit: 50,
+      offset: 0,
+    });
+    expect(percent.rows.map((r) => r.name)).toEqual(["50% Discount"]);
+    expect(percent.total).toBe(1);
+
+    const underscore = await repos.guests.searchForEventAssignment(event.id, {
+      query: "a_1",
+      limit: 50,
+      offset: 0,
+    });
+    expect(underscore.rows.map((r) => r.name)).toEqual(["Underscore"]);
+    expect(underscore.total).toBe(1);
+  });
+
   it("paginates via limit/offset while reporting the full total", async () => {
     const event = await createEvent();
     for (const name of ["A", "B", "C", "D", "E"]) {

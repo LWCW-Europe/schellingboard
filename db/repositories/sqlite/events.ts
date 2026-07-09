@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
+import { eventNameToSlug } from "@/utils/utils";
 import type { Event, EventsRepository } from "../interfaces";
 
 type EventRow = typeof schema.events.$inferInsert;
@@ -12,6 +13,7 @@ function rowToEvent(row: typeof schema.events.$inferSelect): Event {
   return {
     id: row.id,
     name: row.name,
+    slug: row.slug,
     description: row.description,
     website: row.website,
     start: new Date(row.start),
@@ -66,13 +68,24 @@ export class SqliteEventsRepository implements EventsRepository {
     return row ? rowToEvent(row) : undefined;
   }
 
-  async create(data: Omit<Event, "id">): Promise<Event> {
+  async findBySlug(slug: string): Promise<Event | undefined> {
+    const row = this.db
+      .select()
+      .from(schema.events)
+      .where(eq(schema.events.slug, slug))
+      .get();
+    return row ? rowToEvent(row) : undefined;
+  }
+
+  async create(data: Omit<Event, "id" | "slug">): Promise<Event> {
     const id = nanoid();
+    const slug = eventNameToSlug(data.name);
     this.db
       .insert(schema.events)
       .values({
         id,
         name: data.name,
+        slug,
         description: data.description,
         website: data.website,
         start: data.start.toISOString(),
@@ -89,12 +102,12 @@ export class SqliteEventsRepository implements EventsRepository {
         icon: data.icon ?? null,
       })
       .run();
-    return { id, ...data };
+    return { id, slug, ...data };
   }
 
   async update(
     id: string,
-    patch: Partial<Omit<Event, "id">>
+    patch: Partial<Omit<Event, "id" | "slug">>
   ): Promise<Event | undefined> {
     const existing = await this.findById(id);
     if (!existing) return undefined;

@@ -22,11 +22,11 @@ function makeDeleteReq(payload: unknown): Request {
   });
 }
 
-// Read surface: GET /api/votes?user=<guestId>&event=<eventName>
-async function votesFor(guestId: string, eventName: string): Promise<Vote[]> {
+// Read surface: GET /api/votes?user=<guestId>&event=<eventSlug>
+async function votesFor(guestId: string, eventSlug: string): Promise<Vote[]> {
   const res = await getVotes(
     new NextRequest(
-      `http://test/api/votes?user=${guestId}&event=${encodeURIComponent(eventName)}`
+      `http://test/api/votes?user=${guestId}&event=${encodeURIComponent(eventSlug)}`
     )
   );
   expect(res.ok).toBe(true);
@@ -51,7 +51,7 @@ describe("voting API", () => {
     );
     expect(res.ok).toBe(true);
 
-    const votes = await votesFor(guest.id, "Vote Event");
+    const votes = await votesFor(guest.id, "Vote-Event");
     expect(votes).toHaveLength(1);
     expect(votes[0]).toMatchObject({
       proposalId: proposal.id,
@@ -76,7 +76,7 @@ describe("voting API", () => {
       expect(res.ok).toBe(true);
     }
 
-    const votes = await votesFor(guest.id, "Vote Event");
+    const votes = await votesFor(guest.id, "Vote-Event");
     expect(votes).toHaveLength(1);
     expect(votes[0].choice).toBe(VoteChoice.skip);
   });
@@ -118,7 +118,7 @@ describe("voting API", () => {
       choice: VoteChoice.maybe,
     });
 
-    const votes = await votesFor(guest.id, "Vote Event");
+    const votes = await votesFor(guest.id, "Vote-Event");
     expect(votes).toHaveLength(1);
     expect(votes[0].choice).toBe(VoteChoice.maybe);
   });
@@ -144,8 +144,8 @@ describe("voting API", () => {
     );
     expect(res.ok).toBe(true);
 
-    expect(await votesFor(alice.id, "Vote Event")).toHaveLength(0);
-    expect(await votesFor(bob.id, "Vote Event")).toHaveLength(1);
+    expect(await votesFor(alice.id, "Vote-Event")).toHaveLength(0);
+    expect(await votesFor(bob.id, "Vote-Event")).toHaveLength(1);
   });
 
   it("delete-vote is rejected outside the voting phase", async () => {
@@ -176,7 +176,7 @@ describe("voting API", () => {
     );
     expect(res.status).toBe(403);
     // The vote must still be there.
-    expect(await votesFor(guest.id, "Vote Event")).toHaveLength(1);
+    expect(await votesFor(guest.id, "Vote-Event")).toHaveLength(1);
   });
 
   it("delete-vote returns 404 for a missing proposal", async () => {
@@ -209,9 +209,29 @@ describe("voting API", () => {
       })
     );
 
-    const votesA = await votesFor(guest.id, "Event A");
+    const votesA = await votesFor(guest.id, "Event-A");
     expect(votesA).toHaveLength(1);
     expect(votesA[0].proposalId).toBe(proposalA.id);
+  });
+
+  it("GET /api/votes finds events whose name contains hyphens", async () => {
+    const event = await createEvent({
+      name: "Vote-Event 2026",
+      phase: "voting",
+    });
+    const guest = await createGuest();
+    const proposal = await createProposal(event.id, []);
+
+    await addVote(
+      makeAddReq({
+        proposalId: proposal.id,
+        guestId: guest.id,
+        choice: VoteChoice.interested,
+      })
+    );
+
+    const votes = await votesFor(guest.id, "Vote-Event-2026");
+    expect(votes).toHaveLength(1);
   });
 
   it("GET /api/votes requires user and event and rejects unknown events", async () => {

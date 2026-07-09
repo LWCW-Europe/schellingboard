@@ -1,5 +1,4 @@
 import { cookies } from "next/headers";
-import { eventSlugToName } from "@/utils/utils";
 import { getRepositories } from "@/db/container";
 import { EventProviderWrapper } from "./event-provider-wrapper";
 import type { DayWithSessions } from "@/app/(site)/context";
@@ -11,9 +10,8 @@ export async function EventLayoutContent({
   eventSlug: string;
   children: React.ReactNode;
 }) {
-  const eventName = eventSlugToName(eventSlug);
   const repos = getRepositories();
-  const event = await repos.events.findByName(eventName);
+  const event = await repos.events.findBySlug(eventSlug);
 
   if (!event) {
     return <div>Event not found</div>;

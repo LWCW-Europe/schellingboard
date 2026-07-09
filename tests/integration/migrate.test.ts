@@ -5,25 +5,35 @@ import os from "os";
 import path from "path";
 import { runMigrations } from "@/db/migrate";
 
-// Writes a minimal Drizzle migrations folder containing a single migration.
-// Statements are separated by the Drizzle statement-breakpoint marker.
-function writeMigration(dir: string, statements: string[]): void {
+// Writes a minimal Drizzle migrations folder. Each entry is one migration's
+// statements, separated by the Drizzle statement-breakpoint marker.
+function writeMigrations(dir: string, migrations: string[][]): void {
   fs.mkdirSync(path.join(dir, "meta"), { recursive: true });
   const journal = {
     version: "7",
     dialect: "sqlite",
-    entries: [
-      { idx: 0, version: "6", when: 1, tag: "0000_test", breakpoints: true },
-    ],
+    entries: migrations.map((_, idx) => ({
+      idx,
+      version: "6",
+      when: idx + 1,
+      tag: `000${idx}_test`,
+      breakpoints: true,
+    })),
   };
   fs.writeFileSync(
     path.join(dir, "meta", "_journal.json"),
     JSON.stringify(journal)
   );
-  fs.writeFileSync(
-    path.join(dir, "0000_test.sql"),
-    statements.join("--> statement-breakpoint\n")
-  );
+  migrations.forEach((statements, idx) => {
+    fs.writeFileSync(
+      path.join(dir, `000${idx}_test.sql`),
+      statements.join("--> statement-breakpoint\n")
+    );
+  });
+}
+
+function writeMigration(dir: string, statements: string[]): void {
+  writeMigrations(dir, [statements]);
 }
 
 describe("runMigrations", () => {
@@ -70,6 +80,100 @@ describe("runMigrations", () => {
     ]);
 
     expect(() => runMigrations(sqlite, tmpDir)).toThrow(/foreign key/i);
+  });
+
+  // The events table as it exists just before the slug migration, so the real
+  // migration runs against realistic data.
+  const preSlugEventsTable = `CREATE TABLE \`events\` (
+      \`id\` text PRIMARY KEY NOT NULL,
+      \`name\` text NOT NULL,
+      \`description\` text DEFAULT '' NOT NULL,
+      \`website\` text DEFAULT '' NOT NULL,
+      \`start\` text NOT NULL,
+      \`end\` text NOT NULL,
+      \`proposal_phase_start\` text,
+      \`proposal_phase_end\` text,
+      \`voting_phase_start\` text,
+      \`voting_phase_end\` text,
+      \`scheduling_phase_start\` text,
+      \`scheduling_phase_end\` text,
+      \`max_session_duration\` integer DEFAULT 120 NOT NULL,
+      \`timezone\` text DEFAULT 'UTC' NOT NULL,
+      \`icon\` text,
+      \`break_minutes\` integer DEFAULT 10 NOT NULL
+    );`;
+
+  function readSlugMigration(): string[] {
+    const drizzleDir = path.join(process.cwd(), "drizzle");
+    const file = fs
+      .readdirSync(drizzleDir)
+      .filter((f) => /^\d+_.*\.sql$/.test(f))
+      .find((f) =>
+        fs
+          .readFileSync(path.join(drizzleDir, f), "utf8")
+          .includes("events_slug_unique")
+      );
+    expect(file, "event slug migration not found").toBeDefined();
+    return fs
+      .readFileSync(path.join(drizzleDir, file!), "utf8")
+      .split("--> statement-breakpoint\n");
+  }
+
+  it("the slug migration backfills event slugs on an existing database", () => {
+    writeMigrations(tmpDir, [
+      [
+        preSlugEventsTable,
+        `INSERT INTO events (id, name, start, end) VALUES
+           ('e1', 'My-Event 2026', '2026-01-01', '2026-01-02'),
+           ('e2', 'Other Event', '2026-02-01', '2026-02-02');`,
+      ],
+      readSlugMigration(),
+    ]);
+
+    runMigrations(sqlite, tmpDir);
+
+    const rows = sqlite
+      .prepare("SELECT id, name, slug FROM events ORDER BY id")
+      .all();
+    expect(rows).toEqual([
+      { id: "e1", name: "My-Event 2026", slug: "My-Event-2026" },
+      { id: "e2", name: "Other Event", slug: "Other-Event" },
+    ]);
+    // The unique index must survive the rebuild.
+    expect(() =>
+      sqlite
+        .prepare(
+          "INSERT INTO events (id, name, slug, start, end) VALUES ('e3', 'x', 'Other-Event', 's', 'e')"
+        )
+        .run()
+    ).toThrow(/unique/i);
+  });
+
+  it("the slug migration disambiguates events whose names collide as slugs", () => {
+    // Pre-slug, "My Event" and "My-Event" both resolved to the same URL, so
+    // such pairs can exist. The migration must not die on CREATE UNIQUE INDEX;
+    // it keeps one clean slug and suffixes the others with their id.
+    writeMigrations(tmpDir, [
+      [
+        preSlugEventsTable,
+        `INSERT INTO events (id, name, start, end) VALUES
+           ('e1', 'My Event', '2026-01-01', '2026-01-02'),
+           ('e2', 'My-Event', '2026-02-01', '2026-02-02'),
+           ('e3', 'My Event', '2026-03-01', '2026-03-02');`,
+      ],
+      readSlugMigration(),
+    ]);
+
+    expect(() => runMigrations(sqlite, tmpDir)).not.toThrow();
+
+    const rows = sqlite
+      .prepare("SELECT id, name, slug FROM events ORDER BY id")
+      .all();
+    expect(rows).toEqual([
+      { id: "e1", name: "My Event", slug: "My-Event" },
+      { id: "e2", name: "My-Event", slug: "My-Event-e2" },
+      { id: "e3", name: "My Event", slug: "My-Event-e3" },
+    ]);
   });
 
   it("leaves foreign key enforcement enabled afterwards", () => {

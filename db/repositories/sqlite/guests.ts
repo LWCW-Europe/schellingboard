@@ -1,13 +1,4 @@
-import {
-  and,
-  eq,
-  inArray,
-  isNotNull,
-  isNull,
-  like,
-  or,
-  sql,
-} from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
@@ -20,6 +11,12 @@ import type {
 import { sanitizeGuest } from "@/utils/guests";
 
 type DB = BetterSQLite3Database<typeof schema>;
+
+// Escape LIKE meta-characters so user input is matched literally. Pairs with an
+// explicit `ESCAPE '\'` clause in the query below.
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+}
 
 function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
   return {
@@ -83,12 +80,9 @@ export class SqliteGuestsRepository implements GuestsRepository {
       conditions.push(isNull(schema.eventGuests.guestId));
     }
     if (opts.query) {
-      const pattern = `%${opts.query}%`;
+      const pattern = `%${escapeLike(opts.query)}%`;
       conditions.push(
-        or(
-          like(schema.guests.name, pattern),
-          like(schema.guests.email, pattern)
-        )
+        sql`((${schema.guests.name} like ${pattern} escape '\\') or (${schema.guests.email} like ${pattern} escape '\\'))`
       );
     }
     const where = conditions.length > 0 ? and(...conditions) : undefined;

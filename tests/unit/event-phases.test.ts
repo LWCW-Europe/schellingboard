@@ -10,6 +10,7 @@ function makeEvent(overrides: Partial<Event>): Event {
   return {
     id: "e1",
     name: "Test",
+    slug: "Test",
     description: "",
     website: "",
     start: ahead(30),

@@ -28,12 +28,32 @@ export const dateOnDay = (date: Date, day: Day) => {
   );
 };
 
+/**
+ * Derives the URL slug for a new event from its name. Only used at event
+ * creation: the slug is stored on the event and stays stable across renames,
+ * so for anything else read `event.slug` / `EventsRepository.findBySlug`
+ * instead of re-deriving it (slugification is lossy and cannot be reversed).
+ *
+ * The slug must be safe as a single URL path segment (`/[eventSlug]`), so
+ * anything other than letters, numbers, and hyphens is replaced with a
+ * hyphen; runs are collapsed and edge hyphens trimmed. Can return "" when
+ * the name has no safe characters — callers must reject that.
+ */
 export function eventNameToSlug(name: string): string {
-  return name.replace(/ /g, "-");
+  return name
+    .replace(/[^\p{L}\p{N}-]+/gu, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-export function eventSlugToName(slug: string): string {
-  return slug.replace(/-/g, " ");
+/**
+ * URL for fetching a guest's votes. Encodes both values so reserved URL
+ * characters (e.g. in legacy slugs stored before sanitization, like "&")
+ * cannot corrupt the query string.
+ */
+export function votesApiUrl(user: string, eventSlug: string): string {
+  const params = new URLSearchParams({ user, event: eventSlug });
+  return `/api/votes?${params.toString()}`;
 }
 
 /**

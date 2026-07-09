@@ -32,12 +32,25 @@ export class SqliteRsvpsRepository implements RsvpsRepository {
   }
 
   async create(data: { sessionId: string; guestId: string }): Promise<Rsvp> {
-    const id = nanoid();
     this.db
       .insert(schema.rsvps)
-      .values({ id, ...data })
+      .values({ id: nanoid(), ...data })
+      .onConflictDoNothing({
+        target: [schema.rsvps.sessionId, schema.rsvps.guestId],
+      })
       .run();
-    return { id, ...data };
+    const row = this.db
+      .select()
+      .from(schema.rsvps)
+      .where(
+        and(
+          eq(schema.rsvps.sessionId, data.sessionId),
+          eq(schema.rsvps.guestId, data.guestId)
+        )
+      )
+      .get();
+    if (!row) throw new Error("Failed to create RSVP");
+    return rowToRsvp(row);
   }
 
   async deleteBySessionAndGuest(

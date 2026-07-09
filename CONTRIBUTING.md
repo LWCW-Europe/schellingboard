@@ -86,6 +86,7 @@ has its own layout and only requires the admin password (not `SITE_PASSWORD`).
 | `ADMIN_PASSWORD` | Enables the admin UI at `/admin`. Omit to disable (admin routes return a diagnostic message).                                      |
 | `AUTH_SECRET`    | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Use ≥32 random bytes.             |
 | `UPLOADS_DIR`    | Directory for admin-uploaded files (location images). Defaults to `./uploads`; in Docker it is `/data/uploads` so uploads persist. |
+| `SMTP_*`         | See "email variables" below.                                                                                                       |
 
 `NEXT_PUBLIC_` variables are exposed to the browser; all others are server-side only.
 
@@ -94,6 +95,23 @@ Generate a fresh `AUTH_SECRET`:
 ```bash
 openssl rand -base64 32
 ```
+
+### Email variables
+
+If you don't want to send email from the app, leave all of these options blank
+(unset or empty string). If you do want to send email, set `SMTP_FROM` and
+exactly one of `SMTP_URL` and `SMTP_HOST`. If you set `HOST`, you may optionally
+set `PORT`/`USER`/`PASSWORD`/`SECURE`.
+
+| Variable        | Description                                                                                                                                                                                  |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SMTP_FROM`     | Sender address for outgoing email (e.g. `SchellingBoard <noreply@example.org>`).                                                                                                             |
+| `SMTP_URL`      | SMTP connection URL (e.g. `smtp://localhost:1025`) used to send email. Supports [nodemailer URL options](https://nodemailer.com/smtp/) as query parameters.                                  |
+| `SMTP_HOST`     | SMTP server hostname.                                                                                                                                                                        |
+| `SMTP_PORT`     | SMTP server port (defaults to 465 with `SECURE=true` or 587 otherwise).                                                                                                                      |
+| `SMTP_USER`     | SMTP username.                                                                                                                                                                               |
+| `SMTP_PASSWORD` | SMTP password.                                                                                                                                                                               |
+| `SMTP_SECURE`   | One of `true` (wrap SMTP inside TLS), `false` (upgrade to TLS after connecting, if supported by the server), or `requireTLS` (default; upgrade after connecting, and fail if not supported). |
 
 ## Development Commands
 
@@ -164,6 +182,8 @@ make test-e2e-headed     # Run E2E tests (headed, for local dev)
 ```
 
 **Warning**: E2E tests reset the test database before each run. Do not run against production data.
+
+By default, `make test` tests that we can successfully send email to a local [mailpit](https://mailpit.axllent.org/) (start it with `docker compose up mailpit`). You can skip that test by setting `MAILPIT_API_URL` to blank in `.env.test.local`.
 
 Install Playwright browsers before first use:
 

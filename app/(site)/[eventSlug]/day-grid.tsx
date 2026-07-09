@@ -21,12 +21,11 @@ const GUTTER = "2.5rem";
 // JS, no scroll listeners — just `position: sticky` inside the scroll container
 // that wraps every day (see `EventDisplay`).
 export function DayGrid(props: {
-  eventName: string;
   locations: Location[];
   day: DayWithSessions;
   guests: Guest[];
 }) {
-  const { eventName, day, locations, guests } = props;
+  const { day, locations, guests } = props;
   const { event } = useContext(EventContext);
   const timezone = event?.timezone ?? "UTC";
   const searchParams = useSearchParams();
@@ -139,7 +138,6 @@ export function DayGrid(props: {
           guests={guests}
           day={day}
           location={location}
-          eventName={eventName}
         />
       ))}
     </div>

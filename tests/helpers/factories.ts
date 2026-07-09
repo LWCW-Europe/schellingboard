@@ -11,6 +11,10 @@ import { sanitizeGuest } from "@/utils/guests";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Date.now() alone can collide when two events are created in the same
+// millisecond, violating the unique event slug.
+let eventCounter = 0;
+
 export async function createEvent(opts?: {
   phase?: "proposal" | "voting" | "scheduling";
   name?: string;
@@ -59,7 +63,7 @@ export async function createEvent(opts?: {
   const end = new Date(start.getTime() + 2 * DAY_MS);
 
   return events.create({
-    name: opts?.name ?? `Test Event ${Date.now()}`,
+    name: opts?.name ?? `Test Event ${++eventCounter}`,
     description: "",
     website: "",
     start,

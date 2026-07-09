@@ -3,13 +3,11 @@ import Link from "next/link";
 
 import { QuickVoting } from "./quick-voting";
 import { getRepositories } from "@/db/container";
-import { eventSlugToName } from "@/utils/utils";
 
 export default async function ProposalQuickVoting(props: {
   params: Promise<{ eventSlug: string }>;
 }) {
   const { eventSlug } = await props.params;
-  const eventName = eventSlugToName(eventSlug);
   const currentUser = (await cookies()).get("user")?.value;
   if (!currentUser) {
     return (
@@ -26,7 +24,7 @@ export default async function ProposalQuickVoting(props: {
   }
 
   const repos = getRepositories();
-  const event = await repos.events.findByName(eventName);
+  const event = await repos.events.findBySlug(eventSlug);
   if (!event) {
     return <div>Event not found</div>;
   }
@@ -46,7 +44,7 @@ export default async function ProposalQuickVoting(props: {
       guests={guests}
       currentUser={currentUser}
       initialVotes={votes}
-      eventName={eventName}
+      eventName={event.name}
       eventSlug={eventSlug}
     />
   );

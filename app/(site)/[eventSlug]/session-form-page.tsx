@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 
-import { eventSlugToName } from "@/utils/utils";
 import { SessionForm } from "./session-form";
 import { getRepositories } from "@/db/container";
 
@@ -10,10 +9,9 @@ export async function renderSessionForm(props: {
 }) {
   const { eventSlug } = await props.params;
   const currentUser = (await cookies()).get("user")?.value;
-  const eventName = eventSlugToName(eventSlug);
   const repos = getRepositories();
 
-  const event = await repos.events.findByName(eventName);
+  const event = await repos.events.findBySlug(eventSlug);
   if (!event) {
     return <div>Event not found</div>;
   }

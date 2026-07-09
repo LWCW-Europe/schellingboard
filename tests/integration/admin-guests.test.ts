@@ -24,6 +24,10 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
+
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import {
   createEvent,
@@ -33,11 +37,13 @@ import {
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { createAdminAuthCookie } from "@/utils/auth";
+import { sendMail } from "@/utils/mailer";
 import { VoteChoice } from "@/db/repositories/interfaces";
 import {
   createGuestAction,
   updateGuestAction,
   deleteGuestAction,
+  sendTestEmailAction,
 } from "@/app/actions/admin-guests";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef"; // 32 chars
@@ -53,6 +59,7 @@ describe("admin guest actions", () => {
   beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
+    vi.mocked(sendMail).mockReset();
     vi.stubEnv("ADMIN_PASSWORD", "admin-pw");
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
     await loginAsAdmin();
@@ -93,6 +100,16 @@ describe("admin guest actions", () => {
         error: "Unauthorized",
       });
       expect(await getRepositories().guests.findById(guest.id)).toBeDefined();
+    });
+
+    it("rejects sendTestEmailAction without an admin cookie", async () => {
+      const guest = await createGuest();
+      cookieJar.clear();
+      expect(await sendTestEmailAction({ id: guest.id })).toEqual({
+        ok: false,
+        error: "Unauthorized",
+      });
+      expect(sendMail).not.toHaveBeenCalled();
     });
   });
 
@@ -259,6 +276,35 @@ describe("admin guest actions", () => {
         await repos.votes.listByGuestAndEvent(otherGuest.id, event.id)
       ).toHaveLength(1);
       expect(await repos.rsvps.listByGuest(otherGuest.id)).toHaveLength(1);
+    });
+  });
+
+  describe("sendTestEmailAction", () => {
+    it("sends a test email to the guest's address", async () => {
+      const guest = await createGuest({ email: "guest@test.example" });
+      const result = await sendTestEmailAction({ id: guest.id });
+      expect(result).toEqual({ ok: true });
+      expect(sendMail).toHaveBeenCalledWith({
+        to: "guest@test.example",
+        subject: "Test email",
+        text: "test email",
+      });
+    });
+
+    it("errors for an unknown id", async () => {
+      const result = await sendTestEmailAction({ id: "does-not-exist" });
+      expect(result).toEqual({ ok: false, error: "User not found" });
+      expect(sendMail).not.toHaveBeenCalled();
+    });
+
+    it("returns a helpful error when sending fails", async () => {
+      vi.mocked(sendMail).mockRejectedValueOnce(new Error("boom"));
+      const guest = await createGuest();
+      const result = await sendTestEmailAction({ id: guest.id });
+      expect(result).toEqual({
+        ok: false,
+        error: "Failed to send test email: boom",
+      });
     });
   });
 });

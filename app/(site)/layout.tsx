@@ -3,7 +3,6 @@ import Footer from "../footer";
 import { UserProvider } from "./context";
 import clsx from "clsx";
 import { getRepositories } from "@/db/container";
-import { eventNameToSlug } from "@/utils/utils";
 import { cookies } from "next/headers";
 import {
   AUTH_COOKIE_NAME,
@@ -27,7 +26,7 @@ export default async function SiteLayout({
   const multipleEvents = events.length > 1;
   const navItems = events.map((e) => ({
     name: e.name,
-    href: `/${eventNameToSlug(e.name)}`,
+    href: `/${e.slug}`,
     icon: e.icon ?? null,
   }));
 
