@@ -6,6 +6,27 @@ export enum VoteChoice {
   skip = "skip",
 }
 
+// ── Site settings ────────────────────────────────────────────────────────────
+
+export type SiteSettings = {
+  title: string;
+  description: string;
+  mapImageUrl: string;
+};
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  title: "Example Conference Weekend",
+  description: "Welcome! Browse the schedules for each event below.",
+  mapImageUrl: "",
+};
+
+export interface SettingsRepository {
+  /** The singleton settings row, falling back to defaults when unset. */
+  get(): Promise<SiteSettings>;
+  /** Upserts the singleton row and returns the merged settings. */
+  update(patch: Partial<SiteSettings>): Promise<SiteSettings>;
+}
+
 // ── Days ─────────────────────────────────────────────────────────────────────
 
 export type Day = {

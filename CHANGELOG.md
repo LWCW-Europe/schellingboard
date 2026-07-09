@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Configurable maximum session duration**: set per event; duration buttons in forms are generated dynamically (30-minute increments up to the configured limit)
 - **Location images**: images can be attached to locations via the admin CLI
 - **Dynamic navigation from database**: nav items are generated from events stored in the database, with an optional icon per event
+- **Configurable site settings**: the site title, description, and an optional venue map are stored in the database and editable at `/admin/settings`; the map modal appears only when a map has been uploaded
 - **Production Docker Compose setup**: `compose.yml`, `Dockerfile`, and `.env.example` for running the app in production
 - **MIT License**: the project is now explicitly MIT-licensed
 

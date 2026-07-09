@@ -7,18 +7,21 @@ import {
 import { DateTime } from "luxon";
 import Link from "next/link";
 import type { Event } from "@/db/repositories/interfaces";
-import { CONSTS } from "@/utils/constants";
 
-export default function SummaryPage(props: { events: Event[] }) {
-  const { events } = props;
+export default function SummaryPage(props: {
+  events: Event[];
+  title: string;
+  description: string;
+}) {
+  const { events, title, description } = props;
   const sortedEvents = events.sort((a, b) => {
     return a.start.getTime() - b.start.getTime();
   });
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-4xl font-bold mt-5">{CONSTS.TITLE}</h1>
-        <p className="mt-3">{CONSTS.DESCRIPTION}</p>
+        <h1 className="text-4xl font-bold mt-5">{title}</h1>
+        <p className="mt-3">{description}</p>
         <div className="flex flex-col gap-8 sm:pl-5 mt-10">
           {sortedEvents.map((event) => (
             <div key={event.name}>

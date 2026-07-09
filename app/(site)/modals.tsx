@@ -8,24 +8,30 @@ import { UserSelect } from "./user-select";
 import { UserContext } from "./context";
 import type { Guest } from "@/db/repositories/interfaces";
 
-export function MapModal() {
+export function MapModal({ mapImageUrl }: { mapImageUrl: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
       <button
         type="button"
+        aria-label="Show map"
         className="relative inline-flex items-center justify-center rounded-md p-1.5 bg-rose-400 text-white hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-rose-400"
         onClick={() => setOpen(true)}
       >
         <MapIcon className="h-5 w-5 stroke-2" aria-hidden="true" />
       </button>
       <Modal open={open} setOpen={setOpen}>
+        {/* The map is an arbitrary, admin-uploaded image of unknown dimensions;
+            serve it directly (unoptimized) rather than through the responsive
+            optimizer, which would emit a srcset we don't need. */}
         <Image
-          src="/map.png"
+          src={mapImageUrl}
           alt="Map"
-          className="w-full h-full"
-          width={500}
-          height={500}
+          className="w-full h-auto"
+          width={0}
+          height={0}
+          sizes="100vw"
+          unoptimized
         />
       </Modal>
     </div>

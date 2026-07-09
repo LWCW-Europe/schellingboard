@@ -7,6 +7,17 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
+// Singleton table holding site-wide configuration (title, description, map).
+// Always a single row with id "singleton"; see SqliteSettingsRepository.
+export const siteSettings = sqliteTable("site_settings", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull().default("Example Conference Weekend"),
+  description: text("description")
+    .notNull()
+    .default("Welcome! Browse the schedules for each event below."),
+  mapImageUrl: text("map_image_url").notNull().default(""),
+});
+
 export const guests = sqliteTable(
   "guests",
   {

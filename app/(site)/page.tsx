@@ -11,7 +11,14 @@ export default async function Home() {
     return a.start.getTime() - b.start.getTime();
   });
   if (sortedEvents.length > 1) {
-    return <SummaryPage events={sortedEvents} />;
+    const { title, description } = await repos.settings.get();
+    return (
+      <SummaryPage
+        events={sortedEvents}
+        title={title}
+        description={description}
+      />
+    );
   } else if (sortedEvents.length === 1) {
     const eventSlug = sortedEvents[0].slug;
     redirect(`/${eventSlug}`);

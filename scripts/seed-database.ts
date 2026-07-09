@@ -747,9 +747,15 @@ function clearAll() {
   db.delete(schema.events).run();
   db.delete(schema.locations).run();
   db.delete(schema.guests).run();
+  db.delete(schema.siteSettings).run();
   // Avatar files belong to the guest rows just deleted; remove them too so
-  // repeated seeding doesn't accumulate orphaned uploads.
+  // repeated seeding doesn't accumulate orphaned uploads. Likewise the map
+  // upload belongs to the site-settings row just cleared.
   fs.rmSync(uploadedAvatarsDir(), { recursive: true, force: true });
+  fs.rmSync(path.join(process.env.UPLOADS_DIR ?? "./uploads", "site"), {
+    recursive: true,
+    force: true,
+  });
   console.log("  ✅ All tables cleared");
 }
 
