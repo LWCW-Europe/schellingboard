@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `guests_email_unique` ON `guests` (lower("email"));

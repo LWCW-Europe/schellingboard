@@ -33,11 +33,16 @@ export async function createGuestAction(input: {
   if (validationError) return { ok: false, error: validationError };
 
   const { guests } = getRepositories();
-  if (await guests.findByEmail(email)) {
+  // findOrCreateByEmail is atomic (unique index on lower(email)), so a
+  // concurrent create with the same email can't slip past this check.
+  const { created } = await guests.findOrCreateByEmail({
+    name,
+    info: { email },
+  });
+  if (!created) {
     return { ok: false, error: "A user with this email already exists" };
   }
 
-  await guests.create({ name, info: { email } });
   revalidatePath("/admin/users");
   return { ok: true };
 }
@@ -60,7 +65,23 @@ export async function updateGuestAction(input: {
     return { ok: false, error: "A user with this email already exists" };
   }
 
-  const updated = await guests.update(input.id, { name, info: { email } });
+  let updated;
+  try {
+    updated = await guests.update(input.id, { name, info: { email } });
+  } catch (e) {
+    // A concurrent update/create can win the race between the findByEmail
+    // check above and this update; translate the constraint violation into
+    // the same friendly error instead of surfacing a 500.
+    if (
+      e instanceof Error &&
+      e.message.includes(
+        "UNIQUE constraint failed: index 'guests_email_unique'"
+      )
+    ) {
+      return { ok: false, error: "A user with this email already exists" };
+    }
+    throw e;
+  }
   if (!updated) return { ok: false, error: "User not found" };
 
   revalidatePath("/admin/users");
