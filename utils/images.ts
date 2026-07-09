@@ -66,6 +66,10 @@ export abstract class BaseImageResourceRepository<
       return { error: "File is not a valid image" };
     }
 
+    if (metadata.orientation !== undefined && metadata.orientation >= 5) {
+      [metadata.width, metadata.height] = [metadata.height, metadata.width];
+    }
+
     const { width, format } = metadata;
 
     const ext = FORMAT_EXTENSIONS[format];

@@ -202,6 +202,27 @@ describe("admin location actions", () => {
       ).toBe(true);
     });
 
+    it("accepts a 4:3 image whose orientation is specified by EXIF", async () => {
+      const formData = locationFormData({
+        image: await createImageFile(600, 800, "image.jpg", {
+          preprocess: (image) => image.jpeg().withMetadata({ orientation: 6 }),
+        }),
+      });
+
+      const result = await createLocationAction(formData);
+
+      expect(result).toEqual({ ok: true });
+
+      const [created] = await getRepositories().locations.list();
+
+      expect(created.imageUrl).toMatch(
+        new RegExp(`^/media/locations/${created.id}\\.jpg\\?v=\\d+$`)
+      );
+      expect(
+        fs.existsSync(path.join(uploadsDir, "locations", `${created.id}.jpg`))
+      ).toBe(true);
+    });
+
     it("rejects an image with the wrong aspect ratio and creates nothing", async () => {
       const formData = locationFormData({
         image: await makeImageFile(800, 800),
