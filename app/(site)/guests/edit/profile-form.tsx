@@ -2,11 +2,10 @@
 
 import {
   useState,
-  type SyntheticEvent,
-  useRef,
   useEffect,
   useMemo,
   ButtonHTMLAttributes,
+  useRef,
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,70 +16,93 @@ import { Avatar } from "../avatar";
 import type { Guest } from "@/db/repositories/interfaces";
 import { resizeImage } from "@/utils/images-client";
 import clsx from "clsx";
+import { Path, useForm, useWatch } from "react-hook-form";
+import { profileSchema } from "@/model/guest";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const profileFormSchema = profileSchema.extend({
+  avatar: z.instanceof(FileList).nullable().optional(),
+});
 
 export function ProfileForm({ guest }: { guest: Guest }) {
   const router = useRouter();
-  const [name, setName] = useState(guest.name);
-  const [aboutMe, setAboutMe] = useState(guest.aboutMe ?? "");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [avatar, setAvatar] = useState<File | null | undefined>();
+  const form = useForm({
+    defaultValues: {
+      name: guest.name,
+      aboutMe: guest.aboutMe,
+    },
+    resolver: zodResolver(profileFormSchema),
+  });
+  const avatarFileList = useWatch({
+    control: form.control,
+    name: "avatar",
+  });
+  const avatar = avatarFileList === null ? null : avatarFileList?.[0];
   const [isDragging, setIsDragging] = useState(false);
-  const canvas = useRef<HTMLCanvasElement | null>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const avatarUrl = useMemo(
     () => avatar && URL.createObjectURL(avatar),
     [avatar]
   );
 
-  useEffect(
-    () => () => {
-      if (avatarUrl) URL.revokeObjectURL(avatarUrl);
-    },
-    [avatarUrl]
-  );
+  useEffect(() => {
+    const url = avatarUrl;
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [avatarUrl]);
 
-  const resize = async (file: File, maxSize: number) => {
+  const resize = async (file: Blob, maxSize: number) => {
     return canvas.current
       ? await resizeImage(canvas.current, file, maxSize)
       : { blob: file };
   };
 
-  const handleSubmit = async (e: SyntheticEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+  const handleSubmit = async (
+    rawProfile: z.infer<typeof profileFormSchema>
+  ) => {
+    const profile: z.infer<typeof profileSchema> = {
+      ...rawProfile,
+      avatar: rawProfile.avatar === null ? null : rawProfile.avatar?.[0],
+    };
 
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("aboutMe", aboutMe);
-
-    try {
-      if (avatar === null) {
-        formData.append("avatar", "");
-      } else if (avatar) {
-        const resized = await resize(avatar, 256);
+    // Try to preprocess the avatar. Ultimately, though, the backend should have the final say
+    // So this operation doesn't block the submission
+    if (profile.avatar) {
+      try {
+        const resized = await resize(profile.avatar, 256);
         if ("error" in resized) {
-          setError(resized.error);
+          form.setError("avatar", { message: resized.error });
           return;
         }
 
-        formData.append("avatar", resized.blob);
-      }
+        profile.avatar = resized.blob;
+      } catch {}
+    }
 
-      const result = await updateProfileAction(formData);
+    try {
+      const result = await updateProfileAction(profile);
       if (!result.ok) {
-        setError(result.error);
+        if (typeof result.error === "string")
+          form.setError("root", { message: result.error });
+        else {
+          for (const issue of result.error) {
+            const path = issue.path.join(".") as Path<
+              z.infer<typeof profileFormSchema>
+            >;
+            form.setError(path, issue);
+          }
+        }
       } else {
         router.push(`/guests/${guest.id}`);
         router.refresh();
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      form.setError("root", { message: "An unexpected error occurred" });
       console.error(err);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -88,7 +110,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
     () => ({
       onDrop(e) {
         e.preventDefault();
-        setAvatar(e.dataTransfer.files?.item(0) ?? null);
+        form.setValue("avatar", e.dataTransfer.files);
         setIsDragging(false);
       },
       onDragOver: function (e) {
@@ -103,8 +125,10 @@ export function ProfileForm({ guest }: { guest: Guest }) {
         fileInput.current?.click();
       },
     }),
-    [fileInput]
+    [fileInput, form]
   );
+
+  const { ref: avatarRef, ...avatarInputController } = form.register("avatar");
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4">
@@ -119,7 +143,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
       <canvas ref={canvas} hidden />
 
       <form
-        onSubmit={(e) => void handleSubmit(e)}
+        onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}
         className="flex flex-col gap-4"
       >
         <div className="flex items-center gap-4 cursor-pointer">
@@ -136,7 +160,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
             {...avatarAreaController}
           >
             <Avatar
-              name={name}
+              name={form.getValues().name}
               size="sm"
               image={
                 avatarUrl === null
@@ -153,19 +177,25 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           <button
             type="button"
             className="text-rose-400 hover:text-rose-500 active:text-rose-600 cursor-pointer"
-            onClick={() => setAvatar(null)}
+            onClick={() => form.setValue("avatar", null)}
           >
             Reset
           </button>
           <input
             id={`${guest.id}-image`}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
-            ref={fileInput}
+            className={form.formState.errors.avatar ? "invalid" : ""}
+            {...avatarInputController}
+            ref={(el) => {
+              avatarRef(el);
+              fileInput.current = el;
+            }}
             hidden
-            onChange={(e) => setAvatar(e.target.files?.item(0) ?? null)}
           />
         </div>
+        <span className="text-rose-400 text-sm">
+          {form.formState.errors.avatar?.message}
+        </span>
 
         <div className="flex flex-col gap-1">
           <label className="font-medium" htmlFor="profile-name">
@@ -174,11 +204,13 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           </label>
           <Input
             id="profile-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
+            className={form.formState.errors.name ? "invalid" : ""}
+            {...form.register("name")}
             placeholder="Your name"
           />
+          <span className="text-rose-400 text-sm">
+            {form.formState.errors.name?.message}
+          </span>
         </div>
 
         <div className="flex flex-col gap-1">
@@ -187,25 +219,32 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           </label>
           <textarea
             id="profile-about-me"
-            value={aboutMe}
-            onChange={(e) => setAboutMe(e.target.value)}
+            {...form.register("aboutMe")}
             placeholder="Tell others about yourself"
-            className="rounded-md text-sm resize-y h-40 border bg-white px-4 py-2 shadow-sm transition-colors focus:outline-none border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
+            className={clsx(
+              "rounded-md text-sm resize-y h-40 border bg-white px-4 py-2 shadow-sm transition-colors focus:outline-none border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none",
+              form.formState.errors.aboutMe ? "invalid" : ""
+            )}
           />
+          <span className="text-rose-400 text-sm">
+            {form.formState.errors.aboutMe?.message}
+          </span>
         </div>
 
-        {error && (
+        {form.formState.errors.root && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-            <p className="text-sm font-medium">Error: {error}</p>
+            <p className="text-sm font-medium">
+              Error: {form.formState.errors.root.message}
+            </p>
           </div>
         )}
 
         <button
           type="submit"
           className="bg-rose-400 text-white font-semibold py-2 rounded shadow disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500 mx-auto px-12"
-          disabled={!name || isSubmitting}
+          disabled={form.formState.isSubmitting}
         >
-          {isSubmitting ? "Saving..." : "Save"}
+          {form.formState.isSubmitting ? "Saving..." : "Save"}
         </button>
       </form>
     </div>
