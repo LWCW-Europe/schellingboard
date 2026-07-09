@@ -36,7 +36,7 @@ import {
 import clsx from "clsx";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ExportScheduleModal, MapModal } from "./modals";
+import { MapModal } from "./modals";
 import { LogoutButton } from "./logout-button";
 import { ForwardRefExoticComponent, RefAttributes, SVGProps } from "react";
 
@@ -136,7 +136,6 @@ export default function NavBar({
                     </Link>
                   )}
                   <MapModal />
-                  <ExportScheduleModal />
                   {showLogout && <LogoutButton />}
                 </div>
               </div>

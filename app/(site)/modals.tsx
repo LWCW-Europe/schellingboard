@@ -3,10 +3,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useContext, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import {
-  ArrowTopRightOnSquareIcon,
-  MapIcon,
-} from "@heroicons/react/24/outline";
+import { MapIcon } from "@heroicons/react/24/outline";
 import { UserSelect } from "./user-select";
 import { UserContext } from "./context";
 import type { Guest } from "@/db/repositories/interfaces";
@@ -97,50 +94,6 @@ export function CurrentUserModal(props: {
         </div>
       )}
     </Modal>
-  );
-}
-
-export function ExportScheduleModal() {
-  const [open, setOpen] = useState(false);
-  return (
-    <div>
-      <button
-        type="button"
-        className="relative inline-flex items-center justify-center rounded-md p-1.5 bg-rose-400 text-white hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-rose-400"
-        onClick={() => setOpen(true)}
-      >
-        <ArrowTopRightOnSquareIcon
-          className="h-5 w-5 stroke-2"
-          aria-hidden="true"
-        />
-      </button>
-      <Modal open={open} setOpen={setOpen}>
-        <h1 className="text-2xl font-bold">Export schedule</h1>
-        <p className="mt-2">
-          Add the schedule to an external calendar using any of the links below.
-        </p>
-        <div className="flex flex-col gap-4 mt-3 pl-4">
-          <a
-            href="https://calendar.google.com/calendar/u/0?cid=fo6ng9e5sji2mli6eisk5lctpk9eb8da@import.calendar.google.com"
-            className="text-rose-400 hover:underline"
-          >
-            Google Calendar link
-          </a>
-          <a
-            href="https://calendar.google.com/calendar/ical/fo6ng9e5sji2mli6eisk5lctpk9eb8da%40import.calendar.google.com/public/basic.ics"
-            className="text-rose-400 hover:underline"
-          >
-            iCal link
-          </a>
-          <a
-            href="https://calendar.google.com/calendar/embed?src=fo6ng9e5sji2mli6eisk5lctpk9eb8da%40import.calendar.google.com&ctz=America%2FLos_Angeles"
-            className="text-rose-400 hover:underline"
-          >
-            Public generic link
-          </a>
-        </div>
-      </Modal>
-    </div>
   );
 }
 
