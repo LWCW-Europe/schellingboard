@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   sqliteTable,
   text,
@@ -6,14 +7,21 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
-export const guests = sqliteTable("guests", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  aboutMe: text("about_me"),
-  pronouns: text("pronouns"),
-  avatarUrl: text("avatar_url"),
-});
+export const guests = sqliteTable(
+  "guests",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    aboutMe: text("about_me"),
+    pronouns: text("pronouns"),
+    avatarUrl: text("avatar_url"),
+  },
+  (table) => [
+    // Case-insensitive: two guests must never share an email up to case.
+    uniqueIndex("guests_email_unique").on(sql`lower(${table.email})`),
+  ]
+);
 
 export const events = sqliteTable(
   "events",

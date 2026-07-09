@@ -152,10 +152,19 @@ export interface GuestsRepository {
     }
   ): Promise<EventGuestPage>;
   findById(id: string): Promise<CompleteGuest | undefined>;
+  // Matches the email case-insensitively.
   findByEmail(email: string): Promise<CompleteGuest | undefined>;
   /** Guests whose email matches any of `emails`, compared case-insensitively. */
   findByEmails(emails: string[]): Promise<CompleteGuest[]>;
   create(data: Omit<CompleteGuest, "id">): Promise<CompleteGuest>;
+  /**
+   * Atomically creates a guest, or returns the existing one if a guest with
+   * the same email (case-insensitive) already exists. Safe under concurrent
+   * calls with the same email (backed by a DB-level unique index).
+   */
+  findOrCreateByEmail(
+    data: Omit<CompleteGuest, "id">
+  ): Promise<{ guest: CompleteGuest; created: boolean }>;
   // Usage: an admin updates a user (name and private info such as email).
   update(
     id: string,

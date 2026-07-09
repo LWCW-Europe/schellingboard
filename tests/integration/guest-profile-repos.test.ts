@@ -13,6 +13,51 @@ describe("guest profile repositories", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());
 
+  describe("guests.findOrCreateByEmail", () => {
+    it("creates a new guest when the email is unused", async () => {
+      const { guests } = getRepositories();
+      const { guest, created } = await guests.findOrCreateByEmail({
+        name: "New Guest",
+        info: { email: "new@test.example" },
+      });
+      expect(created).toBe(true);
+      expect(await guests.findById(guest.id)).toMatchObject({
+        name: "New Guest",
+      });
+    });
+
+    it("returns the existing guest without creating a duplicate row when the email (any case) already exists", async () => {
+      const { guests } = getRepositories();
+      const existing = await createGuest({
+        name: "Existing",
+        email: "dup@test.example",
+      });
+
+      const { guest, created } = await guests.findOrCreateByEmail({
+        name: "Someone Else",
+        info: { email: "Dup@Test.Example" },
+      });
+
+      expect(created).toBe(false);
+      expect(guest.id).toBe(existing.id);
+      expect(guest.name).toBe("Existing");
+      const all = await guests.listFull();
+      expect(
+        all.filter((g) => g.info.email.toLowerCase() === "dup@test.example")
+      ).toHaveLength(1);
+    });
+  });
+
+  describe("guests table uniqueness", () => {
+    it("rejects inserting two guests with the same email up to case", async () => {
+      const { guests } = getRepositories();
+      await createGuest({ name: "A", email: "case@test.example" });
+      await expect(
+        guests.create({ name: "B", info: { email: "Case@Test.Example" } })
+      ).rejects.toThrow(/UNIQUE constraint failed/i);
+    });
+  });
+
   describe("guests.updateProfile", () => {
     it("updates name and aboutMe, leaving email intact", async () => {
       const { guests } = getRepositories();

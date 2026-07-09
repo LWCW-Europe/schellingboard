@@ -197,7 +197,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
     const row = this.db
       .select()
       .from(schema.guests)
-      .where(eq(schema.guests.email, email))
+      .where(sql`lower(${schema.guests.email}) = lower(${email})`)
       .get();
     return row ? rowToGuest(row) : undefined;
   }
@@ -222,6 +222,36 @@ export class SqliteGuestsRepository implements GuestsRepository {
 
     this.db.insert(schema.guests).values({ id, name, email }).run();
     return { id, ...data };
+  }
+
+  async findOrCreateByEmail(
+    data: Omit<CompleteGuest, "id">
+  ): Promise<{ guest: CompleteGuest; created: boolean }> {
+    const id = nanoid();
+    const {
+      name,
+      info: { email },
+    } = data;
+
+    // Atomic under concurrency: the unique index on lower(email) makes the
+    // insert the single source of truth, instead of racing a prior read.
+    const inserted = this.db
+      .insert(schema.guests)
+      .values({ id, name, email })
+      .onConflictDoNothing()
+      .returning()
+      .all();
+    if (inserted.length > 0) {
+      return { guest: rowToGuest(inserted[0]), created: true };
+    }
+
+    const existing = await this.findByEmail(email);
+    if (!existing) {
+      throw new Error(
+        `Guest insert conflicted but no existing row for email ${email}`
+      );
+    }
+    return { guest: existing, created: false };
   }
 
   async update(
