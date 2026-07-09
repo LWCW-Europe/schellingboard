@@ -283,8 +283,8 @@ function DeleteConfirmation({
 }
 
 // If the image is too large, NEXT.js cannot send it to the server at all.
-function validateImageWithinSizeLimit(file: File): void | { error: string } {
-  if (file.size >= MAX_IMAGE_BYTES) {
+function validateImageWithinSizeLimit(file: FormDataEntryValue | null): void | { error: string } {
+  if (file instanceof File && file.size >= MAX_IMAGE_BYTES) {
     return {
       error: `Image exceeds ${MAX_IMAGE_BYTES / 1024 / 1024} MB limit.`,
     };
@@ -317,7 +317,7 @@ function LocationRow({
 
   const handleUpdate = async (formData: FormData) => {
     const imageSizeError = validateImageWithinSizeLimit(
-      formData.get("image") as File
+      formData.get("image")
     );
     if (imageSizeError) {
       onError(imageSizeError.error);
@@ -453,7 +453,7 @@ export function LocationsManager({
 
   const handleCreate = async (formData: FormData) => {
     const imageSizeError = validateImageWithinSizeLimit(
-      formData.get("image") as File
+      formData.get("image")
     );
     if (imageSizeError) {
       setError(imageSizeError.error);
