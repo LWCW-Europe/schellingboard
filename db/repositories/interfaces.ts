@@ -108,6 +108,7 @@ export type EventGuestPage = {
 
 export interface GuestsRepository {
   list(): Promise<Guest[]>;
+  /** Every user with their private info (email). For admin export/lookup. */
   listFull(): Promise<CompleteGuest[]>;
   listByEvent(eventId: string): Promise<Guest[]>;
   /**
