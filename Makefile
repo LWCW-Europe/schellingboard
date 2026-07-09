@@ -116,7 +116,9 @@ dev-db-seed: install
 	bun set-env.ts dev bun x tsx scripts/seed-database.ts
 
 docker-build:
-	APP_VERSION=$$(git describe --tags --always --dirty) docker compose build
+	$(eval APP_VERSION := $(shell git describe --tags --always --dirty))
+	APP_VERSION=$(APP_VERSION) docker compose build
+	docker tag schellingboard/schellingboard:latest schellingboard/schellingboard:$(APP_VERSION)
 
 # Deprecated aliases (hidden from help) — remove after a deprecation period.
 # They print a warning pointing to the new name, then run it.
