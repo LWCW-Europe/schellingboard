@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat, Roboto } from "next/font/google";
 import "./globals.css";
-import { CONSTS } from "@/utils/constants";
+import { getRepositories } from "@/db/container";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -15,13 +15,16 @@ const monteserrat = Montserrat({
 
 const fontVars = [roboto.variable, monteserrat.variable].join(" ");
 
-export const metadata: Metadata = {
-  title: CONSTS.TITLE,
-  description: CONSTS.DESCRIPTION,
-  icons: {
-    icon: "/favicon.ico",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getRepositories().settings.get();
+  return {
+    title: settings.title,
+    description: settings.description,
+    icons: {
+      icon: "/favicon.ico",
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",

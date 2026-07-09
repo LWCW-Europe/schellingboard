@@ -11,6 +11,7 @@ const LINKS: { href: string; label: string }[] = [
   { href: "/admin/events", label: "Events" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/locations", label: "Locations" },
+  { href: "/admin/settings", label: "Settings" },
 ];
 
 function NavLinks({ block }: { block?: boolean }) {

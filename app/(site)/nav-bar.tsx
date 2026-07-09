@@ -22,10 +22,12 @@ export default function NavBar({
   navItems,
   showLogout,
   showGuestsLink,
+  mapImageUrl,
 }: {
   navItems: NavItem[];
   showLogout: boolean;
   showGuestsLink: boolean;
+  mapImageUrl: string;
 }) {
   return (
     <Disclosure
@@ -68,7 +70,7 @@ export default function NavBar({
                       Participants
                     </Link>
                   )}
-                  <MapModal />
+                  {mapImageUrl && <MapModal mapImageUrl={mapImageUrl} />}
                   {showLogout && <LogoutButton />}
                 </div>
               </div>

@@ -29,6 +29,9 @@ export default async function SiteLayout({
     href: `/${e.slug}`,
     icon: e.icon ?? null,
   }));
+  const mapImageUrl = isAuthenticated
+    ? (await getRepositories().settings.get()).mapImageUrl
+    : "";
 
   return (
     <UserProvider initialUser={initialUser}>
@@ -36,6 +39,7 @@ export default async function SiteLayout({
         navItems={multipleEvents ? navItems : []}
         showLogout={passwordProtected && isAuthenticated}
         showGuestsLink={isAuthenticated}
+        mapImageUrl={mapImageUrl}
       />
       <main
         className={clsx(

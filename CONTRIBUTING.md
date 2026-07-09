@@ -64,7 +64,8 @@
 
 A web admin UI is available at `/admin` for managing all core records: events
 (basic info, phases, days), the global pools of users and locations, event↔guest
-and event↔location assignments, and moderation of proposals, sessions, and RSVPs.
+and event↔location assignments, moderation of proposals, sessions, and RSVPs, and
+site settings (title, description, and the optional venue map).
 It requires `ADMIN_PASSWORD` (and `AUTH_SECRET`) to be set; without
 `ADMIN_PASSWORD` the admin routes are disabled and return a diagnostic message
 explaining how to enable them. It is fully separate from the normal user UI: it
@@ -80,13 +81,13 @@ has its own layout and only requires the admin password (not `SITE_PASSWORD`).
 
 ### Optional
 
-| Variable         | Description                                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `SITE_PASSWORD`  | Enables site-wide password protection. Omit to disable.                                                                            |
-| `ADMIN_PASSWORD` | Enables the admin UI at `/admin`. Omit to disable (admin routes return a diagnostic message).                                      |
-| `AUTH_SECRET`    | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Use ≥32 random bytes.             |
-| `UPLOADS_DIR`    | Directory for admin-uploaded files (location images). Defaults to `./uploads`; in Docker it is `/data/uploads` so uploads persist. |
-| `SMTP_*`         | See "email variables" below.                                                                                                       |
+| Variable         | Description                                                                                                                                               |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SITE_PASSWORD`  | Enables site-wide password protection. Omit to disable.                                                                                                   |
+| `ADMIN_PASSWORD` | Enables the admin UI at `/admin`. Omit to disable (admin routes return a diagnostic message).                                                             |
+| `AUTH_SECRET`    | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Use ≥32 random bytes.                                    |
+| `UPLOADS_DIR`    | Directory for admin-uploaded files (location images, avatars, the site map). Defaults to `./uploads`; in Docker it is `/data/uploads` so uploads persist. |
+| `SMTP_*`         | See "email variables" below.                                                                                                                              |
 
 `NEXT_PUBLIC_` variables are exposed to the browser; all others are server-side only.
 
