@@ -5,7 +5,10 @@ import Image from "next/image";
 import clsx from "clsx";
 import { Input } from "@/app/input";
 import type { Location } from "@/db/repositories/interfaces";
-import { IMAGE_REQUIREMENTS_HINT } from "@/utils/location-image-constraints";
+import {
+  IMAGE_REQUIREMENTS_HINT,
+  MAX_IMAGE_BYTES,
+} from "@/utils/location-image-constraints";
 import {
   createLocationAction,
   updateLocationAction,
@@ -279,6 +282,18 @@ function DeleteConfirmation({
   );
 }
 
+// If the image is too large, NEXT.js cannot send it to the server at all.
+async function validateImageWithinSizeLimit(
+  file: File
+): Promise<void | { error: string }> {
+  const buffer = await file.arrayBuffer();
+  if (buffer.byteLength >= MAX_IMAGE_BYTES) {
+    return {
+      error: `Image exceeds ${MAX_IMAGE_BYTES / 1024 / 1024} MB limit.`,
+    };
+  }
+}
+
 function LocationRow({
   adminLocation,
   events,
@@ -304,6 +319,14 @@ function LocationRow({
   };
 
   const handleUpdate = async (formData: FormData) => {
+    const imageSizeError = await validateImageWithinSizeLimit(
+      formData.get("image") as File
+    );
+    if (imageSizeError) {
+      onError(imageSizeError.error);
+      return false;
+    }
+
     const result = await updateLocationAction(formData);
     if (!result.ok) {
       onError(result.error);
@@ -432,6 +455,13 @@ export function LocationsManager({
   const [showAddForm, setShowAddForm] = useState(false);
 
   const handleCreate = async (formData: FormData) => {
+    const imageSizeError = await validateImageWithinSizeLimit(
+      formData.get("image") as File
+    );
+    if (imageSizeError) {
+      setError(imageSizeError.error);
+      return false;
+    }
     const result = await createLocationAction(formData);
     if (!result.ok) {
       setError(result.error);

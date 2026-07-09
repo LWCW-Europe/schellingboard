@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import sharp from "sharp";
 import { MAX_IMAGE_BYTES } from "@/utils/location-image-constraints";
-import { validateLocationImage } from "@/utils/location-images";
+import { getImageRepositories } from "@/utils/images";
 
 async function makeImage(
   width: number,
@@ -20,47 +20,67 @@ async function makeImage(
     .toBuffer();
 }
 
-describe("validateLocationImage", () => {
+describe("locationImages.validate", () => {
   it("accepts a 4:3 PNG and returns the png extension", async () => {
-    const result = await validateLocationImage(await makeImage(800, 600));
-    expect(result).toEqual({ ext: "png" });
+    const result = await getImageRepositories().locations.validate(
+      await makeImage(800, 600)
+    );
+    expect(result).toEqual({
+      buffer: expect.any(Buffer) as Buffer,
+      ext: "png",
+    });
   });
 
   it("accepts JPEG and WebP with their canonical extensions", async () => {
     expect(
-      await validateLocationImage(await makeImage(800, 600, "jpeg"))
-    ).toEqual({ ext: "jpg" });
+      await getImageRepositories().locations.validate(
+        await makeImage(800, 600, "jpeg")
+      )
+    ).toEqual({ buffer: expect.any(Buffer) as Buffer, ext: "jpg" });
     expect(
-      await validateLocationImage(await makeImage(800, 600, "webp"))
-    ).toEqual({ ext: "webp" });
+      await getImageRepositories().locations.validate(
+        await makeImage(800, 600, "webp")
+      )
+    ).toEqual({ buffer: expect.any(Buffer) as Buffer, ext: "webp" });
   });
 
   it("accepts a slight deviation from 4:3 within tolerance", async () => {
     // 799x600 is ~0.1% off the 4:3 ratio
-    const result = await validateLocationImage(await makeImage(799, 600));
-    expect(result).toEqual({ ext: "png" });
+    const result = await getImageRepositories().locations.validate(
+      await makeImage(799, 600)
+    );
+    expect(result).toEqual({
+      buffer: expect.any(Buffer) as Buffer,
+      ext: "png",
+    });
   });
 
   it("rejects an image that is not 4:3", async () => {
-    const result = await validateLocationImage(await makeImage(800, 800));
+    const result = await getImageRepositories().locations.validate(
+      await makeImage(800, 800)
+    );
     expect(result).toHaveProperty("error");
     expect((result as { error: string }).error).toMatch(/4:3/);
   });
 
   it("rejects an image that is too narrow", async () => {
-    const result = await validateLocationImage(await makeImage(200, 150));
+    const result = await getImageRepositories().locations.validate(
+      await makeImage(200, 150)
+    );
     expect((result as { error: string }).error).toMatch(/too small/);
   });
 
   it("rejects oversized files without parsing them", async () => {
-    const result = await validateLocationImage(
+    const result = await getImageRepositories().locations.validate(
       Buffer.alloc(MAX_IMAGE_BYTES + 1)
     );
     expect((result as { error: string }).error).toMatch(/too large/);
   });
 
   it("rejects data that is not an image", async () => {
-    const result = await validateLocationImage(Buffer.from("hello world"));
+    const result = await getImageRepositories().locations.validate(
+      Buffer.from("hello world")
+    );
     expect((result as { error: string }).error).toMatch(/not a valid image/);
   });
 
@@ -75,7 +95,7 @@ describe("validateLocationImage", () => {
     })
       .gif()
       .toBuffer();
-    const result = await validateLocationImage(gif);
+    const result = await getImageRepositories().locations.validate(gif);
     expect((result as { error: string }).error).toMatch(/Unsupported/);
   });
 });

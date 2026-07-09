@@ -2,6 +2,11 @@ import { ImageResourceRepository } from "@/db/repositories/interfaces";
 import sharp, { FormatEnum, Metadata, Sharp } from "sharp";
 import fs from "fs/promises";
 import path from "path";
+import {
+  ASPECT_RATIO_TOLERANCE,
+  MIN_IMAGE_WIDTH,
+  REQUIRED_ASPECT_RATIO,
+} from "@/utils/location-image-constraints";
 
 // Images are stored on the filesystem under UPLOADS_DIR
 // (a persistent volume in production), not in public/,
@@ -17,13 +22,12 @@ const FORMAT_EXTENSIONS: Partial<Record<keyof FormatEnum, string>> = {
 };
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-export const MIN_IMAGE_WIDTH = 400;
 
 export abstract class BaseImageResourceRepository<
   Id extends string,
 > implements ImageResourceRepository<Id> {
   readonly maxImageBytes = MAX_IMAGE_BYTES;
-  readonly minImageWidth: number = MIN_IMAGE_WIDTH;
+  abstract readonly minImageWidth: number;
   abstract readonly directory: string;
 
   get dirPath() {
@@ -74,11 +78,14 @@ export abstract class BaseImageResourceRepository<
     }
 
     try {
+      const imageResult = this.decodeImage(decodedImage, metadata);
+
+      if ("error" in imageResult) {
+        return { error: imageResult.error };
+      }
+
       // strips EXIF, ICC profiles, XMP, IPTC, GPS data, and other metadata from images
-      const newBuffer = await this.decodeImage(
-        decodedImage,
-        metadata
-      ).toBuffer();
+      const newBuffer = await imageResult.ok.toBuffer();
 
       return { ext, buffer: newBuffer };
     } catch {
@@ -86,8 +93,11 @@ export abstract class BaseImageResourceRepository<
     }
   }
 
-  protected decodeImage(image: Sharp, metadata: Metadata): Sharp {
-    return image.rotate().toFormat(metadata.format);
+  protected decodeImage(
+    image: Sharp,
+    metadata: Metadata
+  ): { ok: Sharp } | { error: string } {
+    return { ok: image.rotate().toFormat(metadata.format) };
   }
 
   /** Removes all stored image files for the ID, if any. */
@@ -163,15 +173,55 @@ export class AvatarImageResourceRepository extends BaseImageResourceRepository<s
     return `/media/avatars/${filename}`;
   }
 
-  override decodeImage(image: Sharp, metadata: Metadata): Sharp {
-    return super
-      .decodeImage(image, metadata)
-      .resize(256, 256, { fit: "cover" });
+  override decodeImage(
+    image: Sharp,
+    metadata: Metadata
+  ): { ok: Sharp } | { error: string } {
+    const decodeResult = super.decodeImage(image, metadata);
+
+    if ("error" in decodeResult) {
+      return decodeResult;
+    }
+
+    return { ok: decodeResult.ok.resize(256, 256, { fit: "cover" }) };
+  }
+}
+
+export class LocationImageResourceRepository extends BaseImageResourceRepository<string> {
+  override directory = "locations";
+
+  override minImageWidth = MIN_IMAGE_WIDTH;
+
+  override decodeImage(
+    image: Sharp,
+    metadata: Metadata
+  ): { ok: Sharp } | { error: string } {
+    const decodeResult = super.decodeImage(image, metadata);
+
+    if ("error" in decodeResult) {
+      return decodeResult;
+    }
+
+    const { width, height } = metadata;
+    const ratio = width / height;
+    const deviation = Math.abs(ratio - REQUIRED_ASPECT_RATIO);
+    if (deviation > REQUIRED_ASPECT_RATIO * ASPECT_RATIO_TOLERANCE) {
+      return {
+        error: `Image must have a 4:3 aspect ratio (got ${width}×${height})`,
+      };
+    }
+
+    return decodeResult;
+  }
+
+  protected override getEndpoint(filename: string): string {
+    return `/media/locations/${filename}`;
   }
 }
 
 export function getImageRepositories() {
   return {
     avatars: new AvatarImageResourceRepository(),
+    locations: new LocationImageResourceRepository(),
   };
 }

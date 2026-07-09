@@ -746,87 +746,95 @@ test.describe("Admin UI guest assignment", () => {
   });
 });
 
-test.describe("Admin UI location assignment", () => {
-  test("can assign and remove locations from an event", async ({ page }) => {
-    await adminLogin(page);
-    await page.goto("/admin/events");
+test.describe("Admin UI locations", () => {
+  // These tests share the locations table and affect each other's sortIndex
+  // calculations, so they must run serially.
+  test.describe.configure({ mode: "serial" });
 
-    // Create a throwaway event (seeded locations are linked to seeded events
-    // only, so a fresh event starts with none assigned)
-    const unique = Date.now();
-    const eventName = `E2E Locations ${unique}`;
-    await page.getByRole("button", { name: "New event" }).click();
-    await page.getByLabel("Name *").fill(eventName);
-    await page.getByLabel("Start *").fill("2026-10-01");
-    await page.getByLabel("End *").fill("2026-10-03");
-    await page.getByRole("button", { name: "Create event" }).click();
-    await page
-      .getByRole("listitem")
-      .filter({ hasText: eventName })
-      .getByRole("link", { name: "Manage" })
-      .click();
+  test.describe("Location assignment", () => {
+    test("can assign and remove locations from an event", async ({ page }) => {
+      await adminLogin(page);
+      await page.goto("/admin/events");
 
-    const locations = page.getByRole("region", { name: "Locations" });
-    await expect(locations).toBeVisible();
+      // Create a throwaway event (seeded locations are linked to seeded events
+      // only, so a fresh event starts with none assigned)
+      const unique = Date.now();
+      const eventName = `E2E Locations ${unique}`;
+      await page.getByRole("button", { name: "New event" }).click();
+      await page.getByLabel("Name *").fill(eventName);
+      await page.getByLabel("Start *").fill("2026-10-01");
+      await page.getByLabel("End *").fill("2026-10-03");
+      await page.getByRole("button", { name: "Create event" }).click();
+      await page
+        .getByRole("listitem")
+        .filter({ hasText: eventName })
+        .getByRole("link", { name: "Manage" })
+        .click();
 
-    // Work with fixed seeded locations. The "Admin UI locations" tests create
-    // and delete locations concurrently in other workers, so never assert on
-    // global row counts here.
-    const mainHallRow = locations
-      .getByRole("row")
-      .filter({ hasText: "Main Hall" });
-    await expect(mainHallRow.getByRole("checkbox")).not.toBeChecked();
+      const locations = page.getByRole("region", { name: "Locations" });
+      await expect(locations).toBeVisible();
 
-    // Assign Main Hall
-    await mainHallRow.getByRole("checkbox").click();
-    await expect(mainHallRow.getByRole("checkbox")).toBeChecked();
+      // Work with fixed seeded locations. The "Admin UI locations" tests create
+      // and delete locations concurrently in other workers, so never assert on
+      // global row counts here.
+      const mainHallRow = locations
+        .getByRole("row")
+        .filter({ hasText: "Main Hall" });
+      await expect(mainHallRow.getByRole("checkbox")).not.toBeChecked();
 
-    // Navigate away and back — assignment must persist. Soft navigation via
-    // the back link avoids aborting the assignment action's revalidation
-    // stream (Firefox: "TypeError: Error in input stream").
-    await page.getByRole("link", { name: "← Events" }).click();
-    await expect(page).toHaveURL(/\/admin\/events$/);
-    await page
-      .getByRole("listitem")
-      .filter({ hasText: eventName })
-      .getByRole("link", { name: "Manage" })
-      .click();
-    await expect(
-      page
-        .getByRole("region", { name: "Locations" })
-        .getByRole("checkbox", { checked: true })
-    ).toHaveCount(1);
+      // Assign Main Hall
+      await mainHallRow.getByRole("checkbox").click();
+      await expect(mainHallRow.getByRole("checkbox")).toBeChecked();
 
-    // Filter: "Assigned" shows only Main Hall (assignments are event-scoped,
-    // so parallel tests cannot add rows here); "Not assigned" hides Main Hall
-    // but still shows other seeded locations
-    const l2 = page.getByRole("region", { name: "Locations" });
-    await l2.getByRole("button", { name: "Assigned", exact: true }).click();
-    await expect(
-      l2.getByRole("row").filter({ has: page.getByRole("checkbox") })
-    ).toHaveCount(1);
-    await expect(
-      l2.getByRole("row").filter({ hasText: "Main Hall" })
-    ).toBeVisible();
+      // Navigate away and back — assignment must persist. Soft navigation via
+      // the back link avoids aborting the assignment action's revalidation
+      // stream (Firefox: "TypeError: Error in input stream").
+      await page.getByRole("link", { name: "← Events" }).click();
+      await expect(page).toHaveURL(/\/admin\/events$/);
+      await page
+        .getByRole("listitem")
+        .filter({ hasText: eventName })
+        .getByRole("link", { name: "Manage" })
+        .click();
+      await expect(
+        page
+          .getByRole("region", { name: "Locations" })
+          .getByRole("checkbox", { checked: true })
+      ).toHaveCount(1);
 
-    await l2.getByRole("button", { name: "Not assigned", exact: true }).click();
-    await expect(
-      l2.getByRole("row").filter({ hasText: "Main Hall" })
-    ).toHaveCount(0);
-    await expect(
-      l2.getByRole("row").filter({ hasText: "Workshop Room" })
-    ).toBeVisible();
+      // Filter: "Assigned" shows only Main Hall (assignments are event-scoped,
+      // so parallel tests cannot add rows here); "Not assigned" hides Main Hall
+      // but still shows other seeded locations
+      const l2 = page.getByRole("region", { name: "Locations" });
+      await l2.getByRole("button", { name: "Assigned", exact: true }).click();
+      await expect(
+        l2.getByRole("row").filter({ has: page.getByRole("checkbox") })
+      ).toHaveCount(1);
+      await expect(
+        l2.getByRole("row").filter({ hasText: "Main Hall" })
+      ).toBeVisible();
 
-    // Switch back to All and remove the assignment
-    await l2.getByRole("button", { name: "All", exact: true }).click();
-    await l2.getByRole("checkbox", { checked: true }).click();
-    await expect(l2.getByRole("checkbox", { checked: true })).toHaveCount(0);
+      await l2
+        .getByRole("button", { name: "Not assigned", exact: true })
+        .click();
+      await expect(
+        l2.getByRole("row").filter({ hasText: "Main Hall" })
+      ).toHaveCount(0);
+      await expect(
+        l2.getByRole("row").filter({ hasText: "Workshop Room" })
+      ).toBeVisible();
 
-    // Clean up
-    await page.getByRole("button", { name: "Delete event" }).click();
-    await page.getByLabel("Type the event name to confirm").fill(eventName);
-    await page.getByRole("button", { name: "Confirm delete" }).click();
-    await expect(page).toHaveURL(/\/admin\/events$/);
+      // Switch back to All and remove the assignment
+      await l2.getByRole("button", { name: "All", exact: true }).click();
+      await l2.getByRole("checkbox", { checked: true }).click();
+      await expect(l2.getByRole("checkbox", { checked: true })).toHaveCount(0);
+
+      // Clean up
+      await page.getByRole("button", { name: "Delete event" }).click();
+      await page.getByLabel("Type the event name to confirm").fill(eventName);
+      await page.getByRole("button", { name: "Confirm delete" }).click();
+      await expect(page).toHaveURL(/\/admin\/events$/);
+    });
   });
 });
 
