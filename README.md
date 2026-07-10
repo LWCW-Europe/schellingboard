@@ -29,24 +29,32 @@ docker run -d \
   -p 3000:3000 \
   -v schellingboard_data:/data \
   -e SITE_PASSWORD=changeme \
+  -e ADMIN_PASSWORD=changeme \
   -e AUTH_SECRET=$(openssl rand -hex 32) \
   schellingboard/schellingboard
 ```
 
-Or with `docker compose` — copy `docker-compose.yml` from this repo and run:
+Or with `docker compose` — copy `docker-compose.yml` and `.env.docker.example` from this
+repo into the same directory, then:
 
 ```bash
-SITE_PASSWORD=changeme AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d
+cp .env.docker.example .env
+# edit .env and fill in SITE_PASSWORD, ADMIN_PASSWORD, AUTH_SECRET, etc.
+docker compose up -d
 ```
+
+`docker compose` automatically reads a `.env` file in the same directory as
+`docker-compose.yml`, so you don't need to pass variables on the command line.
 
 ### Environment variables
 
-| Variable        | Required | Description                                                      |
-| --------------- | -------- | ---------------------------------------------------------------- |
-| `SITE_PASSWORD` | No       | Password gate for the whole site (leave unset to disable)        |
-| `AUTH_SECRET`   | Yes      | Secret key for session signing (use a random 32-byte hex string) |
-| `DATABASE_URL`  | No       | SQLite path (default: `file:/data/data.db`)                      |
-| `HOST_PORT`     | No       | Host port to bind (default: `3000`, compose only)                |
+| Variable         | Required | Description                                                      |
+| ---------------- | -------- | ---------------------------------------------------------------- |
+| `SITE_PASSWORD`  | No       | Password gate for the whole site (leave unset to disable)        |
+| `ADMIN_PASSWORD` | No       | Password for the `/admin` UI (leave unset to disable admin UI)   |
+| `AUTH_SECRET`    | Yes      | Secret key for session signing (use a random 32-byte hex string) |
+| `DATABASE_URL`   | No       | SQLite path (default: `file:/data/data.db`)                      |
+| `HOST_PORT`      | No       | Host port to bind (default: `3000`, compose only)                |
 
 ### Admin UI
 
