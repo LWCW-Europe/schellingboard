@@ -1110,28 +1110,32 @@ test.describe("Admin UI proposals", () => {
       .getByRole("button", { name: /^Edit/ })
       .click();
 
-    // Host checkboxes for the event's assigned guests are shown
-    await expect(proposals.getByLabel("Host Charlie Test")).toBeVisible();
+    // Add a host through the searchable multi-select (opens on focus).
+    await proposals.getByLabel("Hosts").click();
+    await page.keyboard.type("Alice");
+    await page.getByRole("option", { name: "Alice Test" }).click();
+    await page.keyboard.press("Escape");
 
     await proposals.getByLabel("Title *").fill(edited);
     await proposals.getByRole("button", { name: "Save", exact: true }).click();
 
-    // Server refreshes; the renamed proposal is shown
-    await expect(
-      proposals.getByRole("listitem").filter({ hasText: edited })
-    ).toBeVisible();
-
-    // Revert the title to keep the seed data clean for other tests
-    await proposals
+    // Server refreshes; the renamed proposal shows the added host
+    const editedRow = proposals
       .getByRole("listitem")
-      .filter({ hasText: edited })
-      .getByRole("button", { name: /^Edit/ })
-      .click();
+      .filter({ hasText: edited });
+    await expect(editedRow).toBeVisible();
+    await expect(editedRow).toContainText("Alice Test");
+
+    // Revert title and hosts to keep the seed data clean for other tests
+    await editedRow.getByRole("button", { name: /^Edit/ }).click();
+    await proposals.getByRole("button", { name: "Remove Alice Test" }).click();
     await proposals.getByLabel("Title *").fill(original);
     await proposals.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(
-      proposals.getByRole("listitem").filter({ hasText: original })
-    ).toBeVisible();
+    const revertedRow = proposals
+      .getByRole("listitem")
+      .filter({ hasText: original });
+    await expect(revertedRow).toBeVisible();
+    await expect(revertedRow).not.toContainText("Alice Test");
   });
 
   test("deletes a proposal via named confirm", async ({ page }) => {

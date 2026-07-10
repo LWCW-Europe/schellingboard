@@ -32,15 +32,16 @@ export function SelectHosts<T extends { id: string; name: string }>(props: {
                   className="py-1 px-2 bg-gray-100 rounded text-nowrap text-sm flex items-center gap-1"
                 >
                   {host.name}
-                  <span
+                  <button
+                    type="button"
                     onClick={(e) => {
                       setHosts(hosts.filter((h) => h.id !== host.id));
                       e.stopPropagation();
                     }}
-                    role="button"
+                    aria-label={`Remove ${host.name}`}
                   >
                     <XMarkIcon className="h-4 w-4 text-gray-400 hover:text-gray-700" />
-                  </span>
+                  </button>
                 </span>
               ))}
             </>
