@@ -19,7 +19,10 @@ export function MyListbox(props: {
   const { options, currValue, setCurrValue, placeholder, truncateText } = props;
   const currOption = options.find((option) => option.value === currValue);
   return (
-    <Listbox value={currValue} onChange={setCurrValue}>
+    // `?? ""` keeps the Listbox controlled when no option is selected (e.g.
+    // the chosen start time becomes unavailable after a day/location change);
+    // an undefined value would flip it to uncontrolled and warn.
+    <Listbox value={currValue ?? ""} onChange={setCurrValue}>
       <div className="relative mt-1">
         <Listbox.Button className="h-12 rounded-md border px-4 shadow-sm transition-colors invalid:border-red-500 invalid:text-red-900 focus:outline-none relative w-full cursor-pointer border-gray-300 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none bg-white py-2 pl-3 pr-10 text-left">
           {currValue ? (
