@@ -32,7 +32,7 @@ const profileActionSchema = profileSchema.extend({
 });
 
 export async function updateProfileAction(
-  formData: z.infer<typeof profileSchema>
+  formData: z.input<typeof profileSchema>
 ): Promise<ProfileActionResult>;
 
 export async function updateProfileAction(
@@ -43,7 +43,7 @@ export async function updateProfileAction(
     return { ok: false, error: parseResult.error.issues };
   }
 
-  const { name, aboutMe, avatar: avatarFile } = parseResult.data;
+  const { avatar: avatarFile, ...profile } = parseResult.data;
 
   const cookieStore = await cookies();
   const currentUser = cookieStore.get("user")?.value;
@@ -72,7 +72,7 @@ export async function updateProfileAction(
     );
   }
 
-  await guests.updateProfile(currentUser, { name, aboutMe, avatarUrl });
+  await guests.updateProfile(currentUser, { ...profile, avatarUrl });
 
   revalidatePath(`/guests/${currentUser}`);
   revalidatePath("/guests");

@@ -51,31 +51,38 @@ describe("updateProfileAction", () => {
     fs.rmSync(uploadsDir, { recursive: true, force: true });
   });
 
-  it("updates name and aboutMe for the current user", async () => {
+  it("updates name, pronouns and aboutMe for the current user", async () => {
     const guest = await createGuest({ name: "Old" });
     cookieJar.set("user", guest.id);
     const result = await updateProfileAction({
       name: "New Name",
       aboutMe: "Hello there",
-    });
-    expect(result).toEqual({ ok: true });
-    const updated = await getRepositories().guests.findById(guest.id);
-    expect(updated).toMatchObject({ name: "New Name", aboutMe: "Hello there" });
-  });
-
-  it("updates name, aboutMe and avatar for the current user", async () => {
-    const guest = await createGuest({ name: "Old" });
-    cookieJar.set("user", guest.id);
-    const result = await updateProfileAction({
-      name: "New Name",
-      aboutMe: "Hello there",
-      avatar: await createImageFile(256, 256, "avatar.png"),
+      pronouns: "they/them",
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
     expect(updated).toMatchObject({
       name: "New Name",
       aboutMe: "Hello there",
+      pronouns: "they/them",
+    });
+  });
+
+  it("updates name, aboutMe, pronouns and avatar for the current user", async () => {
+    const guest = await createGuest({ name: "Old" });
+    cookieJar.set("user", guest.id);
+    const result = await updateProfileAction({
+      name: "New Name",
+      aboutMe: "Hello there",
+      avatar: await createImageFile(256, 256, "avatar.png"),
+      pronouns: "they/them",
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = await getRepositories().guests.findById(guest.id);
+    expect(updated).toMatchObject({
+      name: "New Name",
+      aboutMe: "Hello there",
+      pronouns: "they/them",
     });
     expect(updated?.avatarUrl).toMatch(
       new RegExp(`^/media/avatars/${updated?.id}\\.png\\?v=\\d+$`)

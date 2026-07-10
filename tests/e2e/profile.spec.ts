@@ -48,6 +48,10 @@ test.describe("Edit profile", () => {
 
     const aboutMe = `Conference enthusiast ${Date.now()}`;
     await page.getByLabel("About me").fill(aboutMe);
+    const pronounsEntry = page.getByLabel("Pronouns");
+    await pronounsEntry.fill("She/Her");
+    // Close the suggestion dropdown; it otherwise blocks the Save button.
+    await page.keyboard.press("Escape");
     // hidden inputs aren't interactable through `getByLabel` in playwright
     await page.locator('input[type="file"]').setInputFiles({
       name: "square.png",
@@ -65,6 +69,37 @@ test.describe("Edit profile", () => {
     await expect(
       page.getByAltText("Profile avatar of Alice Test")
     ).toBeVisible();
+  });
+
+  test("pronoun combobox doesn't revert to one of the default options on enter", async ({
+    page,
+  }) => {
+    await login(page);
+    await page.goto("/Conference-Alpha/proposals");
+
+    // Identify as Alice, then reach the attendees page via the header link.
+    await selectCurrentUser(page);
+    await page.getByRole("link", { name: /Participants/i }).click();
+
+    // Edit profile always targets the current user (Alice).
+    await page.getByRole("link", { name: /Edit profile/i }).click();
+
+    // There was a bug with the combobox impl that
+    // caused the last hovered option to be selected on enter.
+    // This tests that it's worked around.
+    // pressSequentially (not fill) so real per-key keydown events fire,
+    // which is what the typing/navigation mode tracking relies on.
+    const pronounsEntry = page.getByLabel("Pronouns");
+    await pronounsEntry.click();
+    await page.getByRole("option", { name: "He/Him" }).hover();
+    await pronounsEntry.click();
+    // Clear first: the previous test left "She/Her" in the profile,
+    // and pressSequentially appends to existing content.
+    await pronounsEntry.fill("");
+    await pronounsEntry.pressSequentially("She/Her");
+    await pronounsEntry.press("Enter");
+
+    await expect(pronounsEntry).toHaveValue("She/Her");
   });
 
   test("avatar doesn't change on profile about me edit", async ({ page }) => {

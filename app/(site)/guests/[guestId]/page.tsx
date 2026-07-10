@@ -63,10 +63,17 @@ export default async function GuestProfilePage(props: {
         <Avatar name={guest.name} image={guest.avatarUrl ?? undefined} />
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">{guest.name}</h1>
-          {isSessionHost && (
-            <span className="w-fit rounded-full bg-rose-100 text-rose-700 text-xs font-semibold px-3 py-1">
-              Session host
-            </span>
+          {(guest.pronouns || isSessionHost) && (
+            <div className="flex flex-row gap-2">
+              {guest.pronouns && (
+                <p className="text-gray-700">{guest.pronouns}</p>
+              )}
+              {isSessionHost && (
+                <span className="w-fit rounded-full bg-rose-100 text-rose-700 text-xs font-semibold px-3 py-1">
+                  Session host
+                </span>
+              )}
+            </div>
           )}
         </div>
       </header>

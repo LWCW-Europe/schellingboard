@@ -16,10 +16,18 @@ import { Avatar } from "../avatar";
 import type { Guest } from "@/db/repositories/interfaces";
 import { resizeImage } from "@/utils/images-client";
 import clsx from "clsx";
-import { Path, useForm, useWatch } from "react-hook-form";
+import { Path, useController, useForm, useWatch } from "react-hook-form";
 import { profileSchema } from "@/model/guest";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import {
+  Combobox,
+  ComboboxButton,
+  ComboboxInput,
+  ComboboxOption,
+  ComboboxOptions,
+} from "@headlessui/react";
+import { ChevronUpDownIcon } from "@heroicons/react/16/solid";
 
 const profileFormSchema = profileSchema.extend({
   avatar: z.instanceof(FileList).nullable().optional(),
@@ -31,12 +39,17 @@ export function ProfileForm({ guest }: { guest: Guest }) {
     defaultValues: {
       name: guest.name,
       aboutMe: guest.aboutMe,
+      pronouns: guest.pronouns,
     },
     resolver: zodResolver(profileFormSchema),
   });
   const avatarFileList = useWatch({
     control: form.control,
     name: "avatar",
+  });
+  const pronounController = useController({
+    control: form.control,
+    name: "pronouns",
   });
   const avatar = avatarFileList === null ? null : avatarFileList?.[0];
   const [isDragging, setIsDragging] = useState(false);
@@ -197,20 +210,37 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           {form.formState.errors.avatar?.message}
         </span>
 
-        <div className="flex flex-col gap-1">
-          <label className="font-medium" htmlFor="profile-name">
-            Name
-            <span className="text-rose-500 mx-1">*</span>
-          </label>
-          <Input
-            id="profile-name"
-            className={form.formState.errors.name ? "invalid" : ""}
-            {...form.register("name")}
-            placeholder="Your name"
-          />
-          <span className="text-rose-400 text-sm">
-            {form.formState.errors.name?.message}
-          </span>
+        <div className="flex md:flex-row flex-col gap-4">
+          <div className="flex flex-1 flex-col gap-1">
+            <label className="font-medium" htmlFor="profile-name">
+              Name
+              <span className="text-rose-500 mx-1">*</span>
+            </label>
+            <Input
+              id="profile-name"
+              className={form.formState.errors.name ? "invalid" : ""}
+              {...form.register("name")}
+              placeholder="Your name"
+            />
+            <span className="text-rose-400 text-sm">
+              {form.formState.errors.name?.message}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="font-medium" htmlFor="profile-pronouns">
+              Pronouns
+            </label>
+            <PronounSelect
+              id="profile-pronouns"
+              value={pronounController.field.value}
+              onChange={pronounController.field.onChange}
+              invalid={pronounController.fieldState.invalid}
+            />
+            <span className="text-rose-400 text-sm">
+              {form.formState.errors.pronouns?.message}
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-col gap-1">
@@ -247,6 +277,88 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           {form.formState.isSubmitting ? "Saving..." : "Save"}
         </button>
       </form>
+    </div>
+  );
+}
+
+const defaultPronouns = ["He/Him", "She/Her", "They/Them"];
+
+function PronounSelect({
+  value,
+  onChange,
+  invalid = false,
+  id,
+}: {
+  id?: string;
+  value?: string | null;
+  onChange: (value: string | null) => void;
+  invalid?: boolean;
+}) {
+  const mode = useRef<"navigation" | "typing">("navigation");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Distinguish between navigation and typing to avoid "enter" changing the input's value
+  // to one of the options below.
+  // This is a bit hacky, but it works for now.
+  // Enter returns undefined, meaning "keep the previous mode".
+  const classifyKey = (key: string) => {
+    switch (key) {
+      case "ArrowUp":
+      case "ArrowDown":
+      case "Home":
+      case "End":
+      case "Escape":
+      case "Tab":
+        return "navigation";
+      case "Enter":
+        return;
+      default:
+        return "typing";
+    }
+  };
+
+  return (
+    <div className="relative">
+      <Combobox value={value ?? null} onChange={onChange} immediate>
+        <ComboboxInput
+          className={clsx(
+            "h-12 w-full rounded-md border bg-white px-4 shadow-sm transition-colors invalid:border-red-500 invalid:text-red-900 invalid:placeholder-red-300 focus:outline-none disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500",
+            invalid
+              ? "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500" // matches invalid: styles
+              : "border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
+          )}
+          id={id}
+          ref={inputRef}
+          placeholder="He/Him/His/They/etc."
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            mode.current = classifyKey(e.key) ?? mode.current;
+            if (e.key === "Enter" && mode.current === "typing") {
+              e.preventDefault();
+              inputRef.current?.blur();
+            }
+          }}
+        />
+        <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-2">
+          <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+        </ComboboxButton>
+        <ComboboxOptions className="absolute mt-1 max-h-60 z-10 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+          {defaultPronouns.map((value) => (
+            <ComboboxOption
+              key={value}
+              value={value}
+              className={({ focus }) =>
+                clsx`relative cursor-pointer select-none py-2 pl-10 pr-4 z-10
+                  ${focus ? "bg-rose-100 text-rose-900" : "text-gray-900 bg-white"}`
+              }
+            >
+              {value}
+            </ComboboxOption>
+          ))}
+        </ComboboxOptions>
+      </Combobox>
     </div>
   );
 }
