@@ -4,11 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
-import {
-  deleteLocationImage,
-  saveLocationImage,
-  validateLocationImage,
-} from "@/utils/location-images";
+import { getImageRepositories } from "@/utils/images";
 import type { Location } from "@/db/repositories/interfaces";
 import { normalizeLocationColor } from "@/utils/location-colors";
 import type { AdminActionResult } from "./admin-guests";
@@ -82,11 +78,11 @@ async function prepareImage(
   image: File
 ): Promise<{ buffer: Buffer; ext: string } | { error: string }> {
   const buffer = Buffer.from(await image.arrayBuffer());
-  const validation = await validateLocationImage(buffer);
+  const validation = await getImageRepositories().locations.validate(buffer);
   if ("error" in validation) {
     return validation;
   }
-  return { buffer, ext: validation.ext };
+  return { buffer: validation.buffer, ext: validation.ext };
 }
 
 export async function createLocationAction(
@@ -129,7 +125,7 @@ export async function createLocationAction(
   });
 
   if (prepared) {
-    const imageUrl = await saveLocationImage(
+    const imageUrl = await getImageRepositories().locations.save(
       location.id,
       prepared.buffer,
       prepared.ext
@@ -174,7 +170,11 @@ export async function updateLocationAction(
     if ("error" in prepared) {
       return { ok: false, error: prepared.error };
     }
-    imageUrl = await saveLocationImage(id, prepared.buffer, prepared.ext);
+    imageUrl = await getImageRepositories().locations.save(
+      id,
+      prepared.buffer,
+      prepared.ext
+    );
   }
 
   const data: Omit<Location, "id"> = {
@@ -203,7 +203,7 @@ export async function deleteLocationAction(input: {
   }
 
   await locations.delete(input.id);
-  await deleteLocationImage(input.id);
+  await getImageRepositories().locations.delete(input.id);
 
   revalidatePath("/admin/locations");
   return { ok: true };

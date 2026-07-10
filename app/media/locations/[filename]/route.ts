@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readLocationImage } from "@/utils/location-images";
+import { getImageRepositories } from "@/utils/images";
 
 // Serves admin-uploaded location images from UPLOADS_DIR. URLs carry a
 // ?v= cache-buster set on upload, so responses can be cached aggressively.
@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ filename: string }> }
 ) {
   const { filename } = await params;
-  const image = await readLocationImage(filename);
+  const image = await getImageRepositories().locations.read(filename);
   if (!image) {
     return new NextResponse("Not Found", { status: 404 });
   }
