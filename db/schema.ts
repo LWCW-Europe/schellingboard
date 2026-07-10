@@ -11,6 +11,7 @@ export const guests = sqliteTable("guests", {
   name: text("name").notNull(),
   email: text("email").notNull(),
   aboutMe: text("about_me"),
+  pronouns: text("pronouns"),
   avatarUrl: text("avatar_url"),
 });
 
