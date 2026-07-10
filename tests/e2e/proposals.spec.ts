@@ -126,8 +126,14 @@ test("should open proposal detail page when clicking on a proposal", async ({
   // Go to proposals list
   await page.goto("/Conference-Alpha/proposals");
 
-  // Find any existing proposal in the table (should have some from test data)
-  const firstProposalRow = page.getByRole("row").nth(1); // Skip header row
+  // Find any existing proposal in the table (should have some from test data).
+  // Exclude throwaway "Playwright ..." proposals: other tests in this file
+  // create, rename, and delete them in parallel workers, so picking one here
+  // races with their deletion and breaks the final "still in the list" check.
+  const firstProposalRow = page
+    .getByRole("row")
+    .filter({ hasNotText: "Playwright" })
+    .nth(1); // Skip header row
   await expect(firstProposalRow).toBeVisible();
 
   // Get the proposal title for verification
