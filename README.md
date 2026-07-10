@@ -48,13 +48,26 @@ docker compose up -d
 
 ### Environment variables
 
-| Variable         | Required | Description                                                      |
-| ---------------- | -------- | ---------------------------------------------------------------- |
-| `SITE_PASSWORD`  | No       | Password gate for the whole site (leave unset to disable)        |
-| `ADMIN_PASSWORD` | No       | Password for the `/admin` UI (leave unset to disable admin UI)   |
-| `AUTH_SECRET`    | Yes      | Secret key for session signing (use a random 32-byte hex string) |
-| `DATABASE_URL`   | No       | SQLite path (default: `file:/data/data.db`)                      |
-| `HOST_PORT`      | No       | Host port to bind (default: `3000`, compose only)                |
+| Variable         | Required | Description                                                |
+| ---------------- | -------- | ---------------------------------------------------------- |
+| `SITE_PASSWORD`  | No       | Password gate for the whole site (leave unset to disable)  |
+| `ADMIN_PASSWORD` | No       | Password for the `/admin` UI (leave unset to disable)      |
+| `AUTH_SECRET`    | Yes      | Secret key for session signing (random 32-byte hex string) |
+| `DATABASE_URL`   | No       | SQLite path (default: `file:/data/data.db`)                |
+| `HOST_PORT`      | No       | Host port to bind (default: `3000`, compose only)          |
+| `SMTP_FROM`      | No       | Sender address for outgoing email                          |
+| `SMTP_URL`       | No       | SMTP connection URL (see below)                            |
+| `SMTP_HOST`      | No       | SMTP server hostname (see below)                           |
+| `SMTP_PORT`      | No       | SMTP server port                                           |
+| `SMTP_USER`      | No       | SMTP username                                              |
+| `SMTP_PASSWORD`  | No       | SMTP password                                              |
+| `SMTP_SECURE`    | No       | `true`, `false`, or `requireTLS` (default)                 |
+
+Email is optional — leave the SMTP variables unset to disable it. To enable
+email, set `SMTP_FROM` plus either `SMTP_URL` (a single connection string,
+e.g. `smtp://user:pass@localhost:1025`, which already includes the host,
+port, user, password, and security settings) **or** `SMTP_HOST` together
+with `SMTP_PORT`/`SMTP_USER`/`SMTP_PASSWORD`/`SMTP_SECURE` — not both.
 
 ### Admin UI
 
