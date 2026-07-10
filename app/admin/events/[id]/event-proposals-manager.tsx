@@ -13,6 +13,7 @@ import {
   DANGER_BUTTON,
 } from "@/app/admin/buttons";
 import { DataTable } from "../../data-table";
+import { SelectHosts } from "@/app/select-hosts";
 
 export type ProposalRow = {
   id: string;
@@ -46,9 +47,7 @@ function ProposalItem({
   const [duration, setDuration] = useState(
     proposal.durationMinutes === null ? "" : String(proposal.durationMinutes)
   );
-  const [hostIds, setHostIds] = useState<string[]>(
-    proposal.hosts.map((h) => h.id)
-  );
+  const [hosts, setHosts] = useState<EventGuest[]>(proposal.hosts);
   const [isSaving, startSave] = useTransition();
   const [deleteMode, setDeleteMode] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -56,7 +55,7 @@ function ProposalItem({
 
   // Offer event-assigned guests as hosts, plus any current host that is not
   // (or no longer) assigned to the event so existing hosts are never dropped.
-  const candidates: EventGuest[] = [
+  const hostCandidates: EventGuest[] = [
     ...eventGuests,
     ...proposal.hosts.filter((h) => !eventGuests.some((g) => g.id === h.id)),
   ];
@@ -67,13 +66,8 @@ function ProposalItem({
     setDuration(
       proposal.durationMinutes === null ? "" : String(proposal.durationMinutes)
     );
-    setHostIds(proposal.hosts.map((h) => h.id));
+    setHosts(proposal.hosts);
   };
-
-  const toggleHost = (id: string) =>
-    setHostIds((prev) =>
-      prev.includes(id) ? prev.filter((h) => h !== id) : [...prev, id]
-    );
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,7 +87,7 @@ function ProposalItem({
           title,
           description,
           durationMinutes,
-          hostIds,
+          hostIds: hosts.map((h) => h.id),
         });
         if (!result.ok) {
           onError(result.error);
@@ -261,32 +255,27 @@ function ProposalItem({
           className="w-full h-10"
         />
       </div>
-      <fieldset className="flex flex-col gap-1">
-        <legend className="text-sm text-gray-600">Hosts</legend>
-        {candidates.length === 0 ? (
+      <div className="flex flex-col gap-1">
+        <label
+          htmlFor={`prop-hosts-${proposal.id}`}
+          className="text-sm text-gray-600"
+        >
+          Hosts
+        </label>
+        {hostCandidates.length === 0 ? (
           <p className="text-sm text-gray-500">
             No guests assigned to this event yet.
           </p>
         ) : (
-          <div className="flex flex-col gap-1">
-            {candidates.map((g) => (
-              <label
-                key={g.id}
-                className="flex items-center gap-2 text-sm text-gray-700"
-              >
-                <input
-                  type="checkbox"
-                  checked={hostIds.includes(g.id)}
-                  onChange={() => toggleHost(g.id)}
-                  aria-label={`Host ${g.name}`}
-                  className="h-4 w-4 cursor-pointer"
-                />
-                {g.name}
-              </label>
-            ))}
-          </div>
+          <SelectHosts
+            guests={hostCandidates}
+            hosts={hosts}
+            setHosts={setHosts}
+            id={`prop-hosts-${proposal.id}`}
+            selectMany
+          />
         )}
-      </fieldset>
+      </div>
       <div className="flex gap-2">
         <button type="submit" disabled={isSaving} className={PRIMARY_BUTTON}>
           {isSaving ? "Saving..." : "Save"}
