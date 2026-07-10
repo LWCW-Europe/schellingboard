@@ -25,6 +25,7 @@ function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
     name: row.name,
     aboutMe: row.aboutMe,
     avatarUrl: row.avatarUrl,
+    pronouns: row.pronouns,
     info: { email: row.email },
   };
 }
@@ -243,7 +244,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
 
   async updateProfile(
     id: string,
-    data: { name: string; aboutMe: string | null; avatarUrl: string | null }
+    data: Pick<Guest, "name" | "aboutMe" | "avatarUrl" | "pronouns">
   ): Promise<CompleteGuest | undefined> {
     const result = this.db
       .update(schema.guests)
@@ -251,6 +252,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
         name: data.name,
         aboutMe: data.aboutMe,
         avatarUrl: data.avatarUrl,
+        pronouns: data.pronouns,
       })
       .where(eq(schema.guests.id, id))
       .run();
