@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { eventNameToSlug } from "@/utils/utils";
+import { eventNameToSlug, RESERVED_EVENT_SLUGS } from "@/utils/utils";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import type { Event } from "@/db/repositories/interfaces";
 import type { AdminActionResult } from "./admin-guests";
@@ -107,10 +107,6 @@ function parseEventInput(input: EventInput): ParseResult {
   };
 }
 
-// Top-level route segments served by this app (see app/); an event slug
-// matching one of these would shadow or be shadowed by that route.
-const RESERVED_SLUGS = new Set(["admin", "api", "login", "media"]);
-
 // A new increment only works if every day window and every scheduled session
 // still falls on slot boundaries; otherwise sessions would silently drop out
 // of the schedule grid. The admin must fix the misaligned data first.
@@ -159,7 +155,7 @@ export async function createEventAction(
   if (!slug) {
     return { ok: false, error: "Name must contain a letter or number" };
   }
-  if (RESERVED_SLUGS.has(slug.toLowerCase())) {
+  if (RESERVED_EVENT_SLUGS.has(slug.toLowerCase())) {
     return {
       ok: false,
       error: `"${slug}" is a reserved URL and cannot be used as an event name`,

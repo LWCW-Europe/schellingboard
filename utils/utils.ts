@@ -41,6 +41,10 @@ export function eventNameToSlug(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+// Top-level route segments served by this app (see app/); an event slug
+// matching one of these would shadow or be shadowed by that route.
+export const RESERVED_EVENT_SLUGS = new Set(["admin", "api", "login", "media"]);
+
 /**
  * URL for fetching a guest's votes. Encodes both values so reserved URL
  * characters (e.g. in legacy slugs stored before sanitization, like "&")
