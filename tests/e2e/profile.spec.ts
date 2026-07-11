@@ -50,7 +50,8 @@ test.describe("Edit profile", () => {
     await page.getByLabel("About me").fill(aboutMe);
     const pronounsEntry = page.getByLabel("Pronouns");
     await pronounsEntry.fill("She/Her");
-    await pronounsEntry.blur();
+    // Close the suggestion dropdown; it otherwise blocks the Save button.
+    await page.keyboard.press("Escape");
     // hidden inputs aren't interactable through `getByLabel` in playwright
     await page.locator('input[type="file"]').setInputFiles({
       name: "square.png",
@@ -85,15 +86,20 @@ test.describe("Edit profile", () => {
 
     // There was a bug with the combobox impl that
     // caused the last hovered option to be selected on enter.
-    // This tests that it's worked around
+    // This tests that it's worked around.
+    // pressSequentially (not fill) so real per-key keydown events fire,
+    // which is what the typing/navigation mode tracking relies on.
     const pronounsEntry = page.getByLabel("Pronouns");
     await pronounsEntry.click();
     await page.getByRole("option", { name: "He/Him" }).hover();
     await pronounsEntry.click();
-    await pronounsEntry.fill("She/Her");
+    // Clear first: the previous test left "She/Her" in the profile,
+    // and pressSequentially appends to existing content.
+    await pronounsEntry.fill("");
+    await pronounsEntry.pressSequentially("She/Her");
     await pronounsEntry.press("Enter");
 
-    await expect(page.getByText("She/Her")).toBeVisible();
+    await expect(pronounsEntry).toHaveValue("She/Her");
   });
 
   test("avatar doesn't change on profile about me edit", async ({ page }) => {

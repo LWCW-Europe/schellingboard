@@ -234,7 +234,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
             <PronounSelect
               id="profile-pronouns"
               value={pronounController.field.value}
-              onChange={(value) => form.setValue("pronouns", value)}
+              onChange={pronounController.field.onChange}
               invalid={pronounController.fieldState.invalid}
             />
             <span className="text-rose-400 text-sm">
@@ -294,18 +294,14 @@ function PronounSelect({
   onChange: (value: string | null) => void;
   invalid?: boolean;
 }) {
-  const [currentValue, setCurrentValue] = useState(value ?? null);
   const mode = useRef<"navigation" | "typing">("navigation");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    onChange(currentValue);
-  }, [currentValue, onChange]);
 
   // Distinguish between navigation and typing to avoid "enter" changing the input's value
   // to one of the options below.
   // This is a bit hacky, but it works for now.
-  const handleKeyDown = (key: string) => {
+  // Enter returns undefined, meaning "keep the previous mode".
+  const classifyKey = (key: string) => {
     switch (key) {
       case "ArrowUp":
       case "ArrowDown":
@@ -322,8 +318,8 @@ function PronounSelect({
   };
 
   return (
-    <div className="md:col-start-2 md:row-start-2 relative">
-      <Combobox value={currentValue} onChange={setCurrentValue} immediate>
+    <div className="relative">
+      <Combobox value={value ?? null} onChange={onChange} immediate>
         <ComboboxInput
           className={clsx(
             "h-12 w-full rounded-md border bg-white px-4 shadow-sm transition-colors invalid:border-red-500 invalid:text-red-900 invalid:placeholder-red-300 focus:outline-none disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500",
@@ -335,10 +331,10 @@ function PronounSelect({
           ref={inputRef}
           placeholder="He/Him/His/They/etc."
           onChange={(e) => {
-            setCurrentValue(e.target.value);
+            onChange(e.target.value);
           }}
           onKeyDown={(e) => {
-            mode.current = handleKeyDown(e.key) ?? mode.current;
+            mode.current = classifyKey(e.key) ?? mode.current;
             if (e.key === "Enter" && mode.current === "typing") {
               e.preventDefault();
               inputRef.current?.blur();
