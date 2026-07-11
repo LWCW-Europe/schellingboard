@@ -1,4 +1,13 @@
-import { and, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
@@ -6,8 +15,10 @@ import type {
   CompleteGuest,
   EventGuestPage,
   Guest,
-  GuestPage,
   GuestsRepository,
+  GuestPage,
+  ParticipantPage,
+  Participant,
 } from "../interfaces";
 import { sanitizeGuest } from "@/utils/guests";
 
@@ -91,6 +102,59 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .offset(opts.offset)
       .all()
       .map(rowToGuest);
+
+    return { rows, total: totalRow?.count ?? 0 };
+  }
+
+  async searchForParticipants(opts: {
+    query?: string;
+    host?: boolean;
+    limit: number;
+    offset: number;
+  }): Promise<ParticipantPage> {
+    let where = undefined;
+    if (opts.query) {
+      const pattern = `%${escapeLike(opts.query)}%`;
+      where = sql`${schema.guests.name} like ${pattern} escape '\\'`;
+    }
+
+    const isHostExpr = exists(
+      this.db
+        .select({ one: sql`1` })
+        .from(schema.sessionHosts)
+        .where(eq(schema.sessionHosts.guestId, schema.guests.id))
+    );
+
+    if (opts.host) {
+      where = and(where, isHostExpr);
+    }
+
+    const totalRow = this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.guests)
+      .where(where)
+      .get();
+
+    const rows = this.db
+      .select({
+        id: schema.guests.id,
+        name: schema.guests.name,
+        aboutMe: schema.guests.aboutMe,
+        avatarUrl: schema.guests.avatarUrl,
+        pronouns: schema.guests.pronouns,
+        // SQLite has no boolean type; this yields 0/1 at runtime despite the
+        // sql<boolean> annotation, so coerce explicitly below.
+        isHost: opts.host ? sql<boolean>`true` : isHostExpr,
+      })
+      .from(schema.guests)
+      .where(where)
+      // id as tiebreaker: name is not unique, and without a deterministic
+      // order LIMIT/OFFSET pagination can duplicate or skip rows.
+      .orderBy(schema.guests.name, schema.guests.id)
+      .limit(opts.limit)
+      .offset(opts.offset)
+      .all()
+      .map((row) => ({ ...row, isHost: Boolean(row.isHost) }) as Participant);
 
     return { rows, total: totalRow?.count ?? 0 };
   }
