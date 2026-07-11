@@ -17,6 +17,7 @@ import {
 } from "../context";
 import { sessionsOverlap } from "../session_utils";
 import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
+import { isBookableSlot } from "@/utils/session-bookable";
 import { LockIcon } from "../lock-icon";
 import { viewSessionLinkFromOwner } from "./modal-nav";
 
@@ -27,7 +28,7 @@ export function SessionBlock(props: {
   guests: Guest[];
 }) {
   const { session, location, day, guests } = props;
-  const { rsvpdForSession, event } = useContext(EventContext);
+  const { rsvpdForSession, event, now } = useContext(EventContext);
   const eventSlug = event?.slug ?? "";
   const timezone = event?.timezone ?? "UTC";
   const { user } = useContext(UserContext);
@@ -40,13 +41,15 @@ export function SessionBlock(props: {
   const numSlots = sessionLength / 1000 / 60 / slotIncrement;
 
   const isBlank = !session.title;
-  const isBookable =
-    !!isBlank &&
-    !!location.bookable &&
-    startTime > new Date().getTime() &&
-    (!day.startBookings || startTime >= day.startBookings.getTime()) &&
-    (!day.endBookings || startTime < day.endBookings.getTime()) &&
-    !session.blocker;
+  const isBookable = isBookableSlot({
+    isBlank,
+    locationBookable: !!location.bookable,
+    blocker: !!session.blocker,
+    startTime,
+    now: now.getTime(),
+    startBookings: day.startBookings?.getTime(),
+    endBookings: day.endBookings?.getTime(),
+  });
   return isBookable ? (
     <BookableSessionCard
       eventSlug={eventSlug}
