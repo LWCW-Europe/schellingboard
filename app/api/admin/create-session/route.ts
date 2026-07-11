@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import { sessionSlotAlignmentError } from "@/utils/day-window";
 
 export const dynamic = "force-dynamic";
 
 // Admin-only session creation over plain HTTP, for external seeding scripts.
-// The middleware already enforces site auth for /api/*; here we additionally
-// require the admin cookie, matching the admin server actions.
+// Auth is enforced by the proxy (see requireAdminAuthApi); the proxy's
+// matcher covers every path, so this route is never reachable without it.
 //
 // Unlike /api/add-session this returns the created id (which the RSVP step
 // needs), takes absolute ISO times instead of the SessionParams shape, and —
@@ -19,11 +17,6 @@ export const dynamic = "force-dynamic";
 // aren't deduplicated, so a repeated request is a location conflict (409),
 // not a silent no-op. Hosts and locations are auto-assigned to the event so
 // imported sessions are fully visible without extra calls.
-async function isAdminRequest(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
-}
-
 type Body = {
   eventSlug?: string;
   title?: string;
@@ -48,10 +41,6 @@ function badRequest(error: string) {
 }
 
 export async function POST(req: Request) {
-  if (!(await isAdminRequest())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   let body: Body;
   try {
     body = ((await req.json()) ?? {}) as Body;

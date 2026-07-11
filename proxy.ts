@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   ADMIN_DISABLED_MESSAGE,
+  ADMIN_VERIFIED_HEADER,
   isAdminEnabled,
   requireAdminAuth,
+  requireAdminAuthApi,
   requireAuth,
 } from "./utils/auth";
+
+// Only requireAdminAuthApi may grant ADMIN_VERIFIED_HEADER (and only ever
+// sets it to "1"); every other forwarded request must have any
+// client-supplied copy of it removed so a route added outside /api/admin/*
+// can never be tricked into trusting a forged value.
+function forwardWithoutAdminHeader(request: NextRequest): NextResponse {
+  const headers = new Headers(request.headers);
+  headers.delete(ADMIN_VERIFIED_HEADER);
+  return NextResponse.next({ request: { headers } });
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -15,10 +27,10 @@ export async function proxy(request: NextRequest) {
     pathname === "/api/health" ||
     pathname.startsWith("/api/auth/")
   ) {
-    return NextResponse.next();
+    return forwardWithoutAdminHeader(request);
   }
 
-  // Admin routes are independent of site auth: they require only admin
+  // Admin UI routes are independent of site auth: they require only admin
   // authentication (and return 404 when the admin UI is disabled)
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     if (!isAdminEnabled()) {
@@ -30,7 +42,14 @@ export async function proxy(request: NextRequest) {
         return adminResponse;
       }
     }
-    return NextResponse.next();
+    return forwardWithoutAdminHeader(request);
+  }
+
+  // Admin API routes are likewise independent of site auth: they require
+  // only the admin cookie, checked here (route handlers trust the resulting
+  // ADMIN_VERIFIED_HEADER instead of re-checking the cookie themselves).
+  if (pathname === "/api/admin" || pathname.startsWith("/api/admin/")) {
+    return requireAdminAuthApi(request);
   }
 
   // Check authentication for all other routes
@@ -39,7 +58,7 @@ export async function proxy(request: NextRequest) {
     return authResponse;
   }
 
-  return NextResponse.next();
+  return forwardWithoutAdminHeader(request);
 }
 
 export const config = {
