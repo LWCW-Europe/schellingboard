@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- **Admin API auth hardened**: the `/api/admin/*` seeding endpoints are now authenticated in the proxy rather than in each route, so they reply with JSON (401/403/404) instead of an HTML login redirect, no longer require a site cookie alongside the admin one, and reject cross-site requests (CSRF). Scripts that only handled a 401 should also handle 403 (cross-site) and 404 (admin API disabled)
 - Documentation is built with [docmd](https://docmd.io) from `docs/public/`, which holds a single copy — the next release's documentation — with no per-version snapshots in the working tree. Published versions are reconstructed from release tags at build time, so releasing documentation is tagging the repository, and a published version can be corrected without a release by pushing a `docs-<version>` branch. Developer documentation (ADRs, design notes) moved to `docs/dev/` and stays out of the published site. See [CONTRIBUTING.md § Documentation](CONTRIBUTING.md#documentation)
 
 ## [3.1.0] - 2026-07-24
