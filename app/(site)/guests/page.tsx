@@ -4,23 +4,34 @@ import { cookies } from "next/headers";
 import { pageRequestSchema } from "@/model/page";
 import { outOfRangePageRedirect } from "@/utils/pagination";
 import { redirect } from "next/navigation";
-import { sanitizeGuest } from "@/utils/guests";
-import { GuestList } from "@/app/(site)/guests/guest-list";
+import { ParticipantList } from "@/app/(site)/guests/participant-list";
+import { z } from "zod";
 
 const PAGE_SIZE = 25;
+
+export function getFilters() {
+  return [{ value: "isHost", label: "Session host" }];
+}
 
 export default async function GuestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; filter?: string }>;
 }) {
   const params = await searchParams;
-  const { page, query } = pageRequestSchema.parse({
-    page: params.page,
-    query: params.q,
+
+  const paramSchema = pageRequestSchema.extend({
+    filter: z.enum(getFilters().map((filter) => filter.value)).optional(),
   });
 
-  const { rows, total } = await getRepositories().guests.search({
+  const { page, query, filter } = paramSchema.parse({
+    page: params.page,
+    query: params.q,
+    filter: params.filter,
+  });
+
+  const { rows, total } = await getRepositories().guests.searchForParticipants({
+    host: filter === "isHost",
     query: query || undefined,
     limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
@@ -31,7 +42,7 @@ export default async function GuestsPage({
     page,
     total,
     pageSize: PAGE_SIZE,
-    params: { q: query },
+    params: { q: query, filter: filter ?? "" },
   });
 
   if (redirectTarget) redirect(redirectTarget);
@@ -53,8 +64,10 @@ export default async function GuestsPage({
         )}
       </div>
 
-      <GuestList
-        rows={rows.map(sanitizeGuest)}
+      <ParticipantList
+        filter={filter}
+        filters={getFilters()}
+        rows={rows}
         pageSize={PAGE_SIZE}
         total={total}
         page={page}

@@ -137,6 +137,17 @@ export type GuestPage = {
   total: number;
 };
 
+/** A guest with information used in the participants list */
+export type Participant = Guest & {
+  isHost: boolean;
+};
+
+/** A page of participants plus the total count matching the same filter. */
+export type ParticipantPage = {
+  rows: Participant[];
+  total: number;
+};
+
 export interface GuestsRepository {
   list(): Promise<Guest[]>;
   /** Every user with their private info (email). For admin export/lookup. */
@@ -152,6 +163,18 @@ export interface GuestsRepository {
     limit: number;
     offset: number;
   }): Promise<GuestPage>;
+  /**
+   * Server-side paginated + searchable global user list, each row tagged
+   * with whether the guest hosts any session. Unlike `search`, `query`
+   * matches name only, not email (case-insensitive substring, LIKE
+   * metacharacters matched literally). Ordered by name with id tiebreaker.
+   */
+  searchForParticipants(opts: {
+    query?: string;
+    host?: boolean;
+    limit: number;
+    offset: number;
+  }): Promise<ParticipantPage>;
   /**
    * Assigned events for many guests in one query, ordered by event name.
    * Every requested id is present in the result; guests without assignments
