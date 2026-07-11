@@ -29,6 +29,12 @@ import {
 } from "@headlessui/react";
 import { ChevronUpDownIcon } from "@heroicons/react/16/solid";
 
+import dynamic from "next/dynamic";
+const AboutMeEditor = dynamic(
+  () => import("@/app/(site)/guests/edit/about-me-editor"),
+  { ssr: false }
+);
+
 const profileFormSchema = profileSchema.extend({
   avatar: z.instanceof(FileList).nullable().optional(),
 });
@@ -50,6 +56,10 @@ export function ProfileForm({ guest }: { guest: Guest }) {
   const pronounController = useController({
     control: form.control,
     name: "pronouns",
+  });
+  const aboutMeController = useController({
+    control: form.control,
+    name: "aboutMe",
   });
   const avatar = avatarFileList === null ? null : avatarFileList?.[0];
   const [isDragging, setIsDragging] = useState(false);
@@ -243,18 +253,18 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="font-medium" htmlFor="profile-about-me">
+        <div className="flex flex-col gap-1 items-stretch">
+          <label className="font-medium" id="profile-about-me-label">
             About me
           </label>
-          <textarea
-            id="profile-about-me"
-            {...form.register("aboutMe")}
-            placeholder="Tell others about yourself"
-            className={clsx(
-              "rounded-md text-sm resize-y h-40 border bg-white px-4 py-2 shadow-sm transition-colors focus:outline-none border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none",
-              form.formState.errors.aboutMe ? "invalid" : ""
-            )}
+          <AboutMeEditor
+            aria-labelledby="profile-about-me-label"
+            value={aboutMeController.field.value ?? ""}
+            onChange={aboutMeController.field.onChange}
+            invalid={aboutMeController.fieldState.invalid}
+            placeholder="Tell us a little bit about yourself..."
+            onBlur={aboutMeController.field.onBlur}
+            onError={(err) => form.setError("aboutMe", err)}
           />
           <span className="text-rose-400 text-sm">
             {form.formState.errors.aboutMe?.message}
