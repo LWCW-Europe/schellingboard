@@ -1,11 +1,45 @@
 import Link from "next/link";
 import { getRepositories } from "@/db/container";
-import { Avatar } from "./avatar";
 import { cookies } from "next/headers";
+import { pageRequestSchema } from "@/model/page";
+import { outOfRangePageRedirect } from "@/utils/pagination";
+import { redirect } from "next/navigation";
+import { sanitizeGuest } from "@/utils/guests";
+import { GuestList } from "@/app/(site)/guests/guest-list";
 
-export default async function GuestsPage() {
-  const guests = await getRepositories().guests.list();
-  guests.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+const PAGE_SIZE = 25;
+
+export default async function GuestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const params = await searchParams;
+  const parsedParams = pageRequestSchema.safeParse({
+    page: params.page,
+    query: params.q,
+  });
+  if (!parsedParams.success) {
+    return <p className="text-gray-600">Invalid page request {}</p>;
+  }
+
+  const { page, query } = parsedParams.data;
+
+  const { rows, total } = await getRepositories().guests.search({
+    query: query || undefined,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
+  });
+
+  const redirectTarget = outOfRangePageRedirect({
+    basePath: "/admin/users",
+    page,
+    total,
+    pageSize: PAGE_SIZE,
+    params: { q: query },
+  });
+
+  if (redirectTarget) redirect(redirectTarget);
 
   const cookieStore = await cookies();
   const currentUser = cookieStore.get("user")?.value;
@@ -24,27 +58,13 @@ export default async function GuestsPage() {
         )}
       </div>
 
-      {guests.length === 0 ? (
-        <p className="text-gray-500">No attendees yet.</p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-gray-200">
-          {guests.map((guest) => (
-            <li key={guest.id}>
-              <Link
-                href={`/guests/${guest.id}`}
-                className="flex items-center gap-4 py-3 hover:bg-gray-50 rounded-md px-2"
-              >
-                <Avatar
-                  name={guest.name}
-                  size="sm"
-                  image={guest.avatarUrl ?? undefined}
-                />
-                <span className="font-medium text-gray-900">{guest.name}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+      <GuestList
+        rows={rows.map(sanitizeGuest)}
+        pageSize={PAGE_SIZE}
+        total={total}
+        page={page}
+        searchQuery={query}
+      />
     </div>
   );
 }
