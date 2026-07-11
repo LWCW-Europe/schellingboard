@@ -18,6 +18,7 @@ import type {
 import { Vote, voteChoiceToEmoji } from "@/app/(site)/votes";
 import { DEFAULT_BREAK_MINUTES, votesApiUrl } from "@/utils/utils";
 import { DEFAULT_SLOT_INCREMENT_MINUTES } from "@/utils/slots";
+import { startNowTicker } from "@/utils/now-ticker";
 
 export type DayWithSessions = Day & { sessions: Session[] };
 
@@ -38,8 +39,10 @@ export interface EventContextType {
   locations: Location[];
   guests: Guest[];
   rsvps: Rsvp[];
-  // Captured once on the server so SSR and hydration agree on time-dependent
-  // decisions (e.g. which schedule days default to folded).
+  // Starts as the server-rendered value so SSR and hydration agree on
+  // time-dependent decisions (e.g. which schedule days default to folded),
+  // then ticks forward on the client (see startNowTicker) so long-lived
+  // pages don't treat a stale `now` as current (e.g. bookable-slot checks).
   now: Date;
   rsvpdForSession: (sessionId: string) => boolean;
   localSessions: Session[];
@@ -157,6 +160,9 @@ export function EventProvider({
   const [rsvpCountDeltas, setRsvpCountDeltas] = useState(
     () => new Map<string, number>()
   );
+  const [now, setNow] = useState(value.now);
+
+  useEffect(() => startNowTicker(setNow), []);
 
   const localSessions = serverSessions.map((session) => {
     const delta = rsvpCountDeltas.get(session.id) ?? 0;
@@ -292,6 +298,7 @@ export function EventProvider({
 
   const contextValue: EventContextType = {
     ...value,
+    now,
     rsvps,
     localSessions,
     userBusySessions,
