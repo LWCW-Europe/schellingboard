@@ -169,6 +169,7 @@ interface GuestConfig {
   name: string;
   email: string;
   aboutMe?: string;
+  pronouns?: string;
   avatar?: number; // index into scripts/seed-assets/avatars/avatar-NN.webp
 }
 
@@ -181,6 +182,7 @@ const guestConfigs: GuestConfig[] = [
     email: "alice@test.com",
     aboutMe:
       "Frontend developer from Osaka. I love talking about accessibility and design systems — find me at the coffee machine.",
+    pronouns: "She/Her",
     avatar: 1,
   },
   {
@@ -188,6 +190,7 @@ const guestConfigs: GuestConfig[] = [
     email: "bob@test.com",
     aboutMe:
       "Product manager and community organizer from Lagos. I run a local meetup on inclusive product design and I'm always looking for speakers.",
+    pronouns: "He/Him",
     avatar: 2,
   },
   {
@@ -195,11 +198,20 @@ const guestConfigs: GuestConfig[] = [
     email: "charlie@test.com",
     aboutMe:
       "Data engineer from Guadalajara. Ask me about stream processing, or better yet, about my sourdough starter.",
+    pronouns: "They/Them",
     avatar: 16,
   },
-  { name: "Yuki Tanaka", email: "yuki.tanaka@example.com" },
+  {
+    name: "Yuki Tanaka",
+    email: "yuki.tanaka@example.com",
+    pronouns: "He/Him",
+  },
   { name: "Amara Okafor", email: "amara.okafor@example.com" },
-  { name: "Sofía Martínez", email: "sofia.martinez@example.com" },
+  {
+    name: "Sofía Martínez",
+    email: "sofia.martinez@example.com",
+    pronouns: "She/Her",
+  },
   {
     name: "Wei Chen",
     email: "wei.chen@example.com",
@@ -212,6 +224,7 @@ const guestConfigs: GuestConfig[] = [
     email: "priya.sharma@example.com",
     aboutMe:
       "ML researcher from Bengaluru working on fairness in recommendation systems.\n\nFirst time at this conference — say hi if you see me wandering around looking lost!",
+    pronouns: "She/Her",
     avatar: 17,
   },
   {
@@ -219,6 +232,7 @@ const guestConfigs: GuestConfig[] = [
     email: "lars.eriksson@example.com",
     aboutMe:
       "Backend developer from Gothenburg. Rust enthusiast, reluctant Kubernetes operator, enthusiastic sauna advocate.",
+    pronouns: "He/Him",
     avatar: 6,
   },
   {
@@ -233,6 +247,7 @@ const guestConfigs: GuestConfig[] = [
     email: "kwame.mensah@example.com",
     aboutMe:
       "Founder of a small agritech company in Accra. Interested in offline-first apps and building for low-bandwidth environments.",
+    pronouns: "He/Him",
     avatar: 8,
   },
   {
@@ -247,6 +262,7 @@ const guestConfigs: GuestConfig[] = [
     email: "aisha.diallo@example.com",
     aboutMe:
       "UX researcher from Dakar, currently based in Berlin. I care deeply about research ethics and multilingual interfaces.",
+    pronouns: "She/Her",
     avatar: 10,
   },
   {
@@ -261,6 +277,7 @@ const guestConfigs: GuestConfig[] = [
     email: "meiling.wu@example.com",
     aboutMe:
       "Technical writer from Taipei. I turn engineering mumbling into documentation people actually read.",
+    pronouns: "She/Her",
     avatar: 12,
   },
   {
@@ -275,6 +292,7 @@ const guestConfigs: GuestConfig[] = [
     email: "jeanpierre.dubois@example.com",
     aboutMe:
       "Engineering manager from Lyon. Interested in sustainable pace, team topologies, and where to find decent cheese near the venue.",
+    pronouns: "He/Him",
     avatar: 14,
   },
   {
@@ -289,6 +307,7 @@ const guestConfigs: GuestConfig[] = [
     email: "anna.kowalska@example.com",
     aboutMe:
       "QA engineer from Kraków. I find the bugs you swore were impossible. Also: board game collector, 200+ and counting.",
+    pronouns: "She/Her",
     avatar: 3,
   },
   {
@@ -303,6 +322,7 @@ const guestConfigs: GuestConfig[] = [
     email: "isabella.rossi@example.com",
     aboutMe:
       "Design lead from Milan. I bridge the gap between Figma and production, one design token at a time.",
+    pronouns: "She/Her",
     avatar: 18,
   },
   {
@@ -310,6 +330,7 @@ const guestConfigs: GuestConfig[] = [
     email: "minjun.kim@example.com",
     aboutMe:
       "Game developer from Seoul, moonlighting in web tech. Fascinated by real-time collaboration and CRDTs.",
+    pronouns: "They/Them",
     avatar: 19,
   },
   {
@@ -324,6 +345,7 @@ const guestConfigs: GuestConfig[] = [
     email: "nadia.haddad@example.com",
     aboutMe:
       "Mobile developer from Beirut. Flutter by day, native by necessity. Organizer of a local women-in-tech mentoring circle.",
+    pronouns: "She/Her",
   },
   {
     name: "Freya Nielsen",
@@ -336,6 +358,7 @@ const guestConfigs: GuestConfig[] = [
     email: "arjun.nair@example.com",
     aboutMe:
       "Distributed systems engineer from Kochi. Currently obsessed with consensus protocols and filter coffee, in that order.",
+    pronouns: "He/Him",
   },
   {
     name: "Elif Yılmaz",
@@ -354,6 +377,7 @@ const guestConfigs: GuestConfig[] = [
     email: "linh.nguyen@example.com",
     aboutMe:
       "Freelance web developer from Ho Chi Minh City. Jamstack fan, static site generator connoisseur, occasional conference speaker.",
+    pronouns: "They/Them",
   },
   {
     name: "Marta Horvat",
@@ -372,6 +396,7 @@ const guestConfigs: GuestConfig[] = [
     email: "chiara.bianchi@example.com",
     aboutMe:
       "Data scientist from Bologna working in public health. Interested in reproducible research and open data.",
+    pronouns: "She/Her",
   },
   {
     name: "Zanele Khumalo",
@@ -390,6 +415,7 @@ const guestConfigs: GuestConfig[] = [
     email: "hana.kobayashi@example.com",
     aboutMe:
       "Developer advocate based in Kyoto. I write tutorials, give talks, and collect conference stickers competitively.",
+    pronouns: "She/Her",
   },
   {
     name: "Tereza Nováková",
@@ -402,6 +428,7 @@ const guestConfigs: GuestConfig[] = [
     email: "ahmad.karimi@example.com",
     aboutMe:
       "Software engineer from Tehran, now in Amsterdam. Working on developer tooling and learning Dutch, slowly.",
+    pronouns: "He/Him",
   },
   {
     name: "Maria Papadopoulou",
@@ -410,7 +437,11 @@ const guestConfigs: GuestConfig[] = [
       "Tech lead from Thessaloniki. Legacy code whisperer. Strong opinions on testing, loosely held on everything else.",
   },
   { name: "Mateo Quispe", email: "mateo.quispe@example.com" },
-  { name: "Leilani Kahale", email: "leilani.kahale@example.com" },
+  {
+    name: "Leilani Kahale",
+    email: "leilani.kahale@example.com",
+    pronouns: "She/They",
+  },
 ];
 
 const sessionTemplates = [
@@ -752,6 +783,7 @@ function seedTestData() {
       name: config.name,
       email: config.email,
       aboutMe: config.aboutMe ?? null,
+      pronouns: config.pronouns ?? null,
       avatarUrl,
     };
   });
