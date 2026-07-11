@@ -8,6 +8,7 @@
     "@headlessui/react": "^2.2.10",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.4.0",
+    "@mdxeditor/editor": "^4.0.4",
     "@react-email/render": "^2.0.10",
     "@tailwindcss/forms": "^0.5.11",
     "better-sqlite3": "^12.11.1",
@@ -26,6 +27,8 @@
     "react": "^19",
     "react-dom": "^19",
     "react-hook-form": "^7.80.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "sharp": "^0.35.3",
     "turndown": "^7.2.4",
     "zod": "^4.4.3"
@@ -33,6 +36,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.2",
+    "@tailwindcss/typography": "^0.5.20",
     "@types/better-sqlite3": "^7.6.13",
     "@types/js-cookie": "^3.0.6",
     "@types/lodash": "^4.17.24",

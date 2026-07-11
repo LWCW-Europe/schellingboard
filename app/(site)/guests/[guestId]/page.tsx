@@ -10,6 +10,8 @@ import {
   ProposalLink,
   SessionLink,
 } from "@/app/(site)/guests/[guestId]/profile-link";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default async function GuestProfilePage(props: {
   params: Promise<{ guestId: string }>;
@@ -81,9 +83,13 @@ export default async function GuestProfilePage(props: {
       {guest.aboutMe && (
         <section>
           <h2 className="text-lg font-semibold mb-2">About me</h2>
-          <p className="whitespace-pre-line text-gray-800">{guest.aboutMe}</p>
+          <div className="text-gray-800 prose prose-neutral max-w-none">
+            <Markdown remarkPlugins={[remarkGfm]}>{guest.aboutMe}</Markdown>
+          </div>
         </section>
       )}
+
+      <hr className="border-gray-200" />
 
       <ProfileList
         title="Hosting"

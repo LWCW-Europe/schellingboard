@@ -47,7 +47,9 @@ test.describe("Edit profile", () => {
     ).toBeVisible();
 
     const aboutMe = `Conference enthusiast ${Date.now()}`;
-    await page.getByLabel("About me").fill(aboutMe);
+    await page
+      .getByRole("textbox", { name: "editable markdown" })
+      .fill(aboutMe);
     const pronounsEntry = page.getByLabel("Pronouns");
     await pronounsEntry.fill("She/Her");
     // Close the suggestion dropdown; it otherwise blocks the Save button.
@@ -115,7 +117,9 @@ test.describe("Edit profile", () => {
 
     // Reset the avatar
     const aboutMe = `Conference enthusiast ${Date.now()}`;
-    await page.getByLabel("About me").fill(aboutMe);
+    await page
+      .getByRole("textbox", { name: "editable markdown" })
+      .fill(aboutMe);
     await page.getByRole("button", { name: /^Save$/ }).click();
 
     await expect(
