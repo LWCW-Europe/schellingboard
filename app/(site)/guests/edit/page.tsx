@@ -34,6 +34,14 @@ export default async function EditProfilePage() {
     );
   }
 
-  // Strip private info (email) before handing the guest to a client component.
-  return <ProfileForm guest={sanitizeGuest(guest)} />;
+  // Strip private info (email) before handing the guest to a client
+  // component. The email settings are stripped, so we pass them separately.
+  // This page is only ever the current user's own profile, so they may see
+  // them.
+  return (
+    <ProfileForm
+      guest={sanitizeGuest(guest)}
+      emailSettings={guest.info.emailSettings}
+    />
+  );
 }

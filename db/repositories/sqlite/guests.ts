@@ -11,12 +11,15 @@ import {
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
-import type {
-  CompleteGuest,
-  EventGuestPage,
-  Guest,
-  GuestsRepository,
-  GuestPage,
+import {
+  DEFAULT_EMAIL_SETTINGS,
+  type CompleteGuest,
+  type EmailSettings,
+  type EventGuestPage,
+  type Guest,
+  type GuestsRepository,
+  type GuestPage,
+  type NewGuest,
   AttendeePage,
   Attendee,
 } from "../interfaces";
@@ -37,7 +40,14 @@ function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
     aboutMe: row.aboutMe,
     avatarUrl: row.avatarUrl,
     pronouns: row.pronouns,
-    info: { email: row.email },
+    info: {
+      email: row.email,
+      emailSettings: {
+        rsvpChange: row.emailOnRsvpChange,
+        hostChange: row.emailOnHostChange,
+        cohostAdd: row.emailOnCohostAdd,
+      },
+    },
   };
 }
 
@@ -277,19 +287,24 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .map(rowToGuest);
   }
 
-  async create(data: Omit<CompleteGuest, "id">): Promise<CompleteGuest> {
+  async create(data: NewGuest): Promise<CompleteGuest> {
     const id = nanoid();
     const {
       name,
       info: { email },
     } = data;
 
+    // Email settings are left to their column defaults.
     this.db.insert(schema.guests).values({ id, name, email }).run();
-    return { id, ...data };
+    return {
+      id,
+      name,
+      info: { email, emailSettings: { ...DEFAULT_EMAIL_SETTINGS } },
+    };
   }
 
   async findOrCreateByEmail(
-    data: Omit<CompleteGuest, "id">
+    data: NewGuest
   ): Promise<{ guest: CompleteGuest; created: boolean }> {
     const id = nanoid();
     const {
@@ -320,7 +335,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
 
   async update(
     id: string,
-    data: Pick<CompleteGuest, "name" | "info">
+    data: { name: string; info: { email: string } }
   ): Promise<CompleteGuest | undefined> {
     const {
       name,
@@ -338,7 +353,13 @@ export class SqliteGuestsRepository implements GuestsRepository {
 
   async updateProfile(
     id: string,
-    data: Pick<Guest, "name" | "aboutMe" | "avatarUrl" | "pronouns">
+    data: {
+      name: string;
+      aboutMe: string | null;
+      avatarUrl: string | null;
+      pronouns: string | null;
+      emailSettings: EmailSettings;
+    }
   ): Promise<CompleteGuest | undefined> {
     const result = this.db
       .update(schema.guests)
@@ -347,6 +368,9 @@ export class SqliteGuestsRepository implements GuestsRepository {
         aboutMe: data.aboutMe,
         avatarUrl: data.avatarUrl,
         pronouns: data.pronouns,
+        emailOnRsvpChange: data.emailSettings.rsvpChange,
+        emailOnHostChange: data.emailSettings.hostChange,
+        emailOnCohostAdd: data.emailSettings.cohostAdd,
       })
       .where(eq(schema.guests.id, id))
       .run();
