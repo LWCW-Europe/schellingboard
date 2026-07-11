@@ -1,5 +1,6 @@
 import { getRepositories } from "@/db/container";
 import type {
+  EmailSettings,
   Event,
   Guest,
   Location,
@@ -88,6 +89,7 @@ export async function createEvent(opts?: {
 export async function createGuest(opts?: {
   name?: string;
   email?: string;
+  emailSettings?: EmailSettings;
   /** When set, the guest is also assigned to this event. */
   eventId?: string;
 }): Promise<Guest> {
@@ -99,6 +101,17 @@ export async function createGuest(opts?: {
       info: { email: opts?.email ?? `guest-${unique}@test.example` },
     })
     .then((g) => g && sanitizeGuest(g));
+  if (opts?.emailSettings) {
+    // Guests are created with default settings; non-default settings are
+    // applied the way a real guest would, via their profile.
+    await guests.updateProfile(guest.id, {
+      name: guest.name,
+      aboutMe: guest.aboutMe ?? null,
+      avatarUrl: guest.avatarUrl ?? null,
+      pronouns: guest.pronouns ?? null,
+      emailSettings: opts.emailSettings,
+    });
+  }
   if (opts?.eventId) {
     await guests.assignToEvent(opts.eventId, [guest.id]);
   }

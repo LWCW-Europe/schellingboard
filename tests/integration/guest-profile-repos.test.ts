@@ -8,6 +8,7 @@ import {
   createSession,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
+import { DEFAULT_EMAIL_SETTINGS } from "@/db/repositories/interfaces";
 
 describe("guest profile repositories", () => {
   beforeAll(() => setupTestDb());
@@ -53,7 +54,10 @@ describe("guest profile repositories", () => {
       const { guests } = getRepositories();
       await createGuest({ name: "A", email: "case@test.example" });
       await expect(
-        guests.create({ name: "B", info: { email: "Case@Test.Example" } })
+        guests.create({
+          name: "B",
+          info: { email: "Case@Test.Example" },
+        })
       ).rejects.toThrow(/UNIQUE constraint failed/i);
     });
   });
@@ -67,6 +71,8 @@ describe("guest profile repositories", () => {
         name: "New Name",
         aboutMe: "I love unconferences.",
         avatarUrl: "/media/uploads/avatar.png",
+        pronouns: "they/them",
+        emailSettings: DEFAULT_EMAIL_SETTINGS,
       });
 
       expect(updated).toMatchObject({

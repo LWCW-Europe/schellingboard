@@ -101,8 +101,28 @@ export interface EventsRepository {
 
 // ── Guests ────────────────────────────────────────────────────────────────────
 
+// When the guest wants to be emailed. Not consulted anywhere yet: the emails
+// themselves are not implemented.
+export type EmailSettings = {
+  /** A session the guest RSVP'd to changed time or location. */
+  rsvpChange: boolean;
+  /** A session the guest is hosting changed time or location. */
+  hostChange: boolean;
+  /** The guest was added as a co-host of a session. */
+  cohostAdd: boolean;
+};
+
+export const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
+  rsvpChange: true,
+  hostChange: true,
+  cohostAdd: true,
+};
+
 type GuestPrivateInfo = {
   email: string;
+  // These aren't very private, but still no reason to expose them to other
+  // guests.
+  emailSettings: EmailSettings;
 };
 
 export type Guest<PI extends GuestPrivateInfo | void = void> = {
@@ -116,6 +136,12 @@ export type Guest<PI extends GuestPrivateInfo | void = void> = {
 };
 
 export type CompleteGuest = Guest<GuestPrivateInfo>;
+
+/** Input for creating a guest. Everything else is filled in after creation. */
+export type NewGuest = {
+  name: string;
+  info: { email: string };
+};
 
 /** A guest paired with their email and whether they are assigned to a given event. */
 export type EventGuestRow = {
@@ -202,24 +228,32 @@ export interface GuestsRepository {
   findByEmail(email: string): Promise<CompleteGuest | undefined>;
   /** Guests whose email matches any of `emails`, compared case-insensitively. */
   findByEmails(emails: string[]): Promise<CompleteGuest[]>;
-  create(data: Omit<CompleteGuest, "id">): Promise<CompleteGuest>;
+  create(data: NewGuest): Promise<CompleteGuest>;
   /**
    * Atomically creates a guest, or returns the existing one if a guest with
    * the same email (case-insensitive) already exists. Safe under concurrent
    * calls with the same email (backed by a DB-level unique index).
    */
   findOrCreateByEmail(
-    data: Omit<CompleteGuest, "id">
+    data: NewGuest
   ): Promise<{ guest: CompleteGuest; created: boolean }>;
-  // Usage: an admin updates a user (name and private info such as email).
+  // Usage: an admin updates a user (name and email). Email settings are not
+  // touched: those belong to the guest, via updateProfile.
   update(
     id: string,
-    data: Pick<CompleteGuest, "name" | "info">
+    data: { name: string; info: { email: string } }
   ): Promise<CompleteGuest | undefined>;
-  // Usage: a user updates their own profile (name and public aboutMe).
+  // Usage: a user updates their own profile (name, public aboutMe, and their
+  // email notification settings).
   updateProfile(
     id: string,
-    data: Pick<Guest, "name" | "avatarUrl" | "aboutMe" | "pronouns">
+    data: {
+      name: string;
+      aboutMe: string | null;
+      avatarUrl: string | null;
+      pronouns: string | null;
+      emailSettings: EmailSettings;
+    }
   ): Promise<CompleteGuest | undefined>;
   /** Deletes the guest and all records referencing them (votes, RSVPs, host links, event assignments). */
   delete(id: string): Promise<void>;

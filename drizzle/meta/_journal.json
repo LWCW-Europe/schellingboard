@@ -127,6 +127,13 @@
       "when": 1783841298927,
       "tag": "0017_rsvp_capacity_hard_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1784110051953,
+      "tag": "0018_guest-email-settings",
+      "breakpoints": true
     }
   ]
 }

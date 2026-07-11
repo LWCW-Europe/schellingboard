@@ -26,6 +26,17 @@ export const guests = sqliteTable(
     email: text("email").notNull(),
     aboutMe: text("about_me"),
     pronouns: text("pronouns"),
+    // Email notification settings; see EmailSettings in
+    // repositories/interfaces.ts.
+    emailOnRsvpChange: integer("email_on_rsvp_change", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    emailOnHostChange: integer("email_on_host_change", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    emailOnCohostAdd: integer("email_on_cohost_add", { mode: "boolean" })
+      .notNull()
+      .default(true),
     avatarUrl: text("avatar_url"),
   },
   (table) => [

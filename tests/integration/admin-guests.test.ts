@@ -215,6 +215,23 @@ describe("admin guest actions", () => {
     });
   });
 
+  describe("email settings", () => {
+    it("defaults email settings to on for new guests", async () => {
+      const result = await createGuestAction({
+        name: "Alice",
+        email: "alice@test.example",
+      });
+      expect(result).toEqual({ ok: true });
+      const guest =
+        await getRepositories().guests.findByEmail("alice@test.example");
+      expect(guest?.info.emailSettings).toEqual({
+        rsvpChange: true,
+        hostChange: true,
+        cohostAdd: true,
+      });
+    });
+  });
+
   describe("deleteGuestAction", () => {
     it("deletes a guest", async () => {
       const guest = await createGuest();
