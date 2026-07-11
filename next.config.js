@@ -1,14 +1,41 @@
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 
-function getAppVersion() {
+/**
+ * @param {string} file
+ * @param {readonly string[]} args
+ */
+function runQuiet(file, args) {
   try {
-    return execSync("git describe --tags --always --dirty", {
+    return execFileSync(file, args, {
       encoding: "utf-8",
       cwd: process.cwd(),
+      stdio: ["ignore", "pipe", "ignore"],
     }).trim();
   } catch {
-    return "unknown";
+    return null;
   }
+}
+
+function getAppVersion() {
+  // Prefer jj: some workspaces (e.g. `jj workspace add`) have no `.git` dir,
+  // where git commands always fail. Fall back to git for devs without jj.
+  const jjVersion = runQuiet("jj", [
+    "log",
+    "-r",
+    "@",
+    "--no-graph",
+    "-T",
+    'commit_id.short(8) ++ if(!empty, "-dirty")',
+  ]);
+  if (jjVersion) return jjVersion;
+
+  const gitVersion = runQuiet("git", [
+    "describe",
+    "--tags",
+    "--always",
+    "--dirty",
+  ]);
+  return gitVersion ?? "unknown";
 }
 
 /** @type {import('next').NextConfig} */
