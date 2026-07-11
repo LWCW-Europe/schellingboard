@@ -84,7 +84,9 @@ function toActionInput(values: SessionFormValues, timezone: string) {
     description: values.description,
     startTime: toIsoOrNull(values.startTime, timezone),
     endTime: toIsoOrNull(values.endTime, timezone),
-    capacity: Number(values.capacity) || 0,
+    // Empty means 0; anything else passes through (NaN included) so the
+    // server's capacity validation rejects it instead of saving a silent 0.
+    capacity: values.capacity === "" ? 0 : Number(values.capacity),
     adminManaged: values.adminManaged,
     blocker: values.blocker,
     closed: values.closed,
@@ -431,28 +433,36 @@ function SessionItem({
 
   const handleSave = (values: SessionFormValues) => {
     startSave(async () => {
-      const result = await adminUpdateSessionAction({
-        id: session.id,
-        ...toActionInput(values, timezone),
-      });
-      if (!result.ok) {
-        onError(result.error);
-      } else {
-        onError(null);
-        setEditMode(false);
-        router.refresh();
+      try {
+        const result = await adminUpdateSessionAction({
+          id: session.id,
+          ...toActionInput(values, timezone),
+        });
+        if (!result.ok) {
+          onError(result.error);
+        } else {
+          onError(null);
+          setEditMode(false);
+          router.refresh();
+        }
+      } catch {
+        onError("Request failed");
       }
     });
   };
 
   const handleDelete = () => {
     startDelete(async () => {
-      const result = await adminDeleteSessionAction({ id: session.id });
-      if (!result.ok) {
-        onError(result.error);
-      } else {
-        onError(null);
-        router.refresh();
+      try {
+        const result = await adminDeleteSessionAction({ id: session.id });
+        if (!result.ok) {
+          onError(result.error);
+        } else {
+          onError(null);
+          router.refresh();
+        }
+      } catch {
+        onError("Request failed");
       }
     });
   };
@@ -607,16 +617,20 @@ function AddSession({
 
   const handleCreate = (values: SessionFormValues) => {
     startCreate(async () => {
-      const result = await adminCreateSessionAction({
-        eventId,
-        ...toActionInput(values, timezone),
-      });
-      if (!result.ok) {
-        onError(result.error);
-      } else {
-        onError(null);
-        setOpen(false);
-        router.refresh();
+      try {
+        const result = await adminCreateSessionAction({
+          eventId,
+          ...toActionInput(values, timezone),
+        });
+        if (!result.ok) {
+          onError(result.error);
+        } else {
+          onError(null);
+          setOpen(false);
+          router.refresh();
+        }
+      } catch {
+        onError("Request failed");
       }
     });
   };

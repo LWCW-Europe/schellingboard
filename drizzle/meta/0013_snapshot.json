@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4dd2ddb3-67c6-45c7-a4de-5c0e59f545d4",
+  "id": "4004c7aa-57e2-4cab-930c-c84464d58c0b",
   "prevId": "8b09aade-07c0-4ffb-b69a-316fd3911125",
   "tables": {
     "days": {
@@ -274,6 +274,14 @@
           "autoincrement": false,
           "default": 10
         },
+        "slot_increment_minutes": {
+          "name": "slot_increment_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 30
+        },
         "timezone": {
           "name": "timezone",
           "type": "text",
@@ -328,13 +336,6 @@
         },
         "about_me": {
           "name": "about_me",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "pronouns": {
-          "name": "pronouns",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

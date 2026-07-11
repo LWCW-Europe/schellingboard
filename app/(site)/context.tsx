@@ -17,6 +17,7 @@ import type {
 } from "@/db/repositories/interfaces";
 import { Vote, voteChoiceToEmoji } from "@/app/(site)/votes";
 import { DEFAULT_BREAK_MINUTES, votesApiUrl } from "@/utils/utils";
+import { DEFAULT_SLOT_INCREMENT_MINUTES } from "@/utils/slots";
 
 export type DayWithSessions = Day & { sessions: Session[] };
 
@@ -37,6 +38,9 @@ export interface EventContextType {
   locations: Location[];
   guests: Guest[];
   rsvps: Rsvp[];
+  // Captured once on the server so SSR and hydration agree on time-dependent
+  // decisions (e.g. which schedule days default to folded).
+  now: Date;
   rsvpdForSession: (sessionId: string) => boolean;
   localSessions: Session[];
   userBusySessions: () => Session[];
@@ -54,6 +58,7 @@ export const EventContext = createContext<EventContextType>({
   locations: [],
   guests: [],
   rsvps: [],
+  now: new Date(0),
   localSessions: [],
   userBusySessions: () => [],
   rsvpdForSession: () => false,
@@ -71,6 +76,16 @@ export const EventContext = createContext<EventContextType>({
 export function useBreakMinutes(): number {
   const { event } = useContext(EventContext);
   return event?.breakMinutes ?? DEFAULT_BREAK_MINUTES;
+}
+
+/**
+ * The current event's slot increment, read from EventContext like
+ * useBreakMinutes. Falls back to DEFAULT_SLOT_INCREMENT_MINUTES when no event
+ * is in context.
+ */
+export function useSlotIncrement(): number {
+  const { event } = useContext(EventContext);
+  return event?.slotIncrementMinutes ?? DEFAULT_SLOT_INCREMENT_MINUTES;
 }
 
 export interface VotesContextType {

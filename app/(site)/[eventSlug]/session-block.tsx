@@ -9,7 +9,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useContext, useState } from "react";
 import { CurrentUserModal, ConfirmationModal } from "../modals";
-import { UserContext, EventContext, useBreakMinutes } from "../context";
+import {
+  UserContext,
+  EventContext,
+  useBreakMinutes,
+  useSlotIncrement,
+} from "../context";
 import { sessionsOverlap } from "../session_utils";
 import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
 import { LockIcon } from "../lock-icon";
@@ -28,10 +33,11 @@ export function SessionBlock(props: {
   const { user } = useContext(UserContext);
   const rsvpd = rsvpdForSession(session.id + (user ? "" : ""));
 
+  const slotIncrement = useSlotIncrement();
   const startTime = session.startTime?.getTime() ?? 0;
   const endTime = session.endTime?.getTime() ?? 0;
   const sessionLength = endTime - startTime;
-  const numHalfHours = sessionLength / 1000 / 60 / 30;
+  const numSlots = sessionLength / 1000 / 60 / slotIncrement;
 
   const isBlank = !session.title;
   const isBookable =
@@ -46,7 +52,7 @@ export function SessionBlock(props: {
       eventSlug={eventSlug}
       session={session}
       location={location}
-      numHalfHours={numHalfHours}
+      numSlots={numSlots}
       timezone={timezone}
     />
   ) : (
@@ -54,16 +60,16 @@ export function SessionBlock(props: {
       {session.blocker ? (
         <BlockerSessionCard
           title={session.title || "Blocked"}
-          numHalfHours={numHalfHours}
+          numSlots={numSlots}
         />
       ) : isBlank ? (
-        <BlankSessionCard numHalfHours={numHalfHours} />
+        <BlankSessionCard numSlots={numSlots} />
       ) : (
         <RealSessionCard
           eventSlug={eventSlug}
           session={session}
           location={location}
-          numHalfHours={numHalfHours}
+          numSlots={numSlots}
           guests={guests}
           rsvpd={rsvpd}
         />
@@ -75,11 +81,11 @@ export function SessionBlock(props: {
 export function BookableSessionCard(props: {
   location: Location;
   session: Session;
-  numHalfHours: number;
+  numSlots: number;
   eventSlug: string;
   timezone: string;
 }) {
-  const { numHalfHours, session, location, eventSlug, timezone } = props;
+  const { numSlots, session, location, eventSlug, timezone } = props;
   const dayParam = DateTime.fromJSDate(session.startTime ?? new Date())
     .setZone(timezone)
     .toFormat("yyyy-MM-dd");
@@ -87,7 +93,7 @@ export function BookableSessionCard(props: {
     .setZone(timezone)
     .toFormat("HH:mm");
   return (
-    <div className={`row-span-${numHalfHours} my-0.5 min-h-10`}>
+    <div className={`row-span-${numSlots} my-0.5 min-h-10`}>
       <Link
         aria-label="Add session"
         className="rounded font-roboto h-full w-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
@@ -99,20 +105,20 @@ export function BookableSessionCard(props: {
   );
 }
 
-function BlankSessionCard(props: { numHalfHours: number }) {
-  const { numHalfHours } = props;
-  return <div className={`row-span-${numHalfHours} my-0.5 min-h-12`} />;
+function BlankSessionCard(props: { numSlots: number }) {
+  const { numSlots } = props;
+  return <div className={`row-span-${numSlots} my-0.5 min-h-12`} />;
 }
 
-function BlockerSessionCard(props: { title: string; numHalfHours: number }) {
-  const { title, numHalfHours } = props;
+function BlockerSessionCard(props: { title: string; numSlots: number }) {
+  const { title, numSlots } = props;
   return (
-    <div className={`row-span-${numHalfHours} my-0.5 overflow-hidden`}>
+    <div className={`row-span-${numSlots} my-0.5 overflow-hidden`}>
       <div className="py-1 px-1 rounded font-roboto h-full min-h-10 flex flex-col justify-center bg-gray-300 border-2 border-gray-400 text-black">
         <p
           className={clsx(
             "font-medium text-xs leading-[1.15] text-center",
-            numHalfHours > 1 ? "line-clamp-2" : "line-clamp-1"
+            numSlots > 1 ? "line-clamp-2" : "line-clamp-1"
           )}
         >
           {title}
@@ -177,12 +183,12 @@ function SessionInfoDisplay({
 export function RealSessionCard(props: {
   eventSlug: string;
   session: Session;
-  numHalfHours: number;
+  numSlots: number;
   location: Location;
   guests: Guest[];
   rsvpd: boolean;
 }) {
-  const { eventSlug, session, numHalfHours, location, guests, rsvpd } = props;
+  const { eventSlug, session, numSlots, location, guests, rsvpd } = props;
   const { user: currentUser } = useContext(UserContext);
   const { localSessions, updateRsvp, userBusySessions, event } =
     useContext(EventContext);
@@ -276,7 +282,7 @@ export function RealSessionCard(props: {
           timezone={timezone}
         />
       }
-      className={`row-span-${numHalfHours} my-0.5 overflow-hidden group`}
+      className={`row-span-${numSlots} my-0.5 overflow-hidden group`}
       noTap={true}
     >
       <div
@@ -299,7 +305,7 @@ export function RealSessionCard(props: {
           <p
             className={clsx(
               "font-medium text-xs leading-[1.15] text-left flex items-start gap-1",
-              numHalfHours >= 3 ? "line-clamp-2" : "line-clamp-1"
+              numSlots >= 3 ? "line-clamp-2" : "line-clamp-1"
             )}
           >
             {session.closed && (
@@ -308,13 +314,13 @@ export function RealSessionCard(props: {
             <span className="flex-1">{session.title}</span>
           </p>
         </Link>
-        {numHalfHours > 1 && (
+        {numSlots > 1 && (
           <p
             className={clsx(
               "text-[10px] leading-tight text-left",
-              numHalfHours >= 4
+              numSlots >= 4
                 ? "line-clamp-3"
-                : numHalfHours >= 3
+                : numSlots >= 3
                   ? "line-clamp-2"
                   : "line-clamp-1"
             )}

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import { sessionContainedInWindow } from "@/utils/day-window";
+import { isSlotAligned } from "@/utils/slots";
 import type { AdminActionResult } from "./admin-guests";
 
 async function isAdminRequest(): Promise<boolean> {
@@ -74,6 +75,21 @@ function parseDayInput(
   };
 }
 
+// The schedule grid anchors its slots at the day start, so the day end and
+// both booking boundaries must sit a whole number of slots from it.
+function dayAlignmentError(
+  day: ParsedDay,
+  incrementMinutes: number
+): string | null {
+  const aligned =
+    isSlotAligned(day.end, day.start, incrementMinutes) &&
+    isSlotAligned(day.startBookings, day.start, incrementMinutes) &&
+    isSlotAligned(day.endBookings, day.start, incrementMinutes);
+  return aligned
+    ? null
+    : `Day and bookings windows must be aligned to the event's ${incrementMinutes}-minute slots`;
+}
+
 function daysOverlap(
   aStart: Date,
   aEnd: Date,
@@ -105,6 +121,14 @@ export async function createDayAction(
   const event = await repos.events.findById(input.eventId);
   if (!event) {
     return { ok: false, error: "Event not found" };
+  }
+
+  const alignmentError = dayAlignmentError(
+    parsed.data,
+    event.slotIncrementMinutes
+  );
+  if (alignmentError) {
+    return { ok: false, error: alignmentError };
   }
 
   const existingDays = await repos.days.listByEvent(input.eventId);
@@ -143,6 +167,19 @@ export async function updateDayAction(
   }
 
   const { start, end, startBookings, endBookings } = parsed.data;
+
+  const event = await getRepositories().events.findById(existing.eventId);
+  if (!event) {
+    return { ok: false, error: "Event not found" };
+  }
+
+  const alignmentError = dayAlignmentError(
+    parsed.data,
+    event.slotIncrementMinutes
+  );
+  if (alignmentError) {
+    return { ok: false, error: alignmentError };
+  }
 
   const existingDays = await getRepositories().days.listByEvent(
     existing.eventId

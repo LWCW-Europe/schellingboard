@@ -15,6 +15,7 @@ import {
   durationMinusBreak,
   TIME_FORMAT,
 } from "@/utils/utils";
+import { slotDurationOptions, snapDurationToSlots } from "@/utils/slots";
 import { MyListbox, type Option } from "./select";
 import { viewProposalLinkFromElsewhere } from "./modal-nav";
 import type {
@@ -120,6 +121,7 @@ export function SessionForm(props: {
     session,
     maxSessionDuration,
     event.breakMinutes,
+    event.slotIncrementMinutes,
     timezone,
     locationId
   );
@@ -140,10 +142,18 @@ export function SessionForm(props: {
   const maxDuration =
     startTimes.find((st) => st.minutesFromMidnight === effectiveStartTime)
       ?.maxDuration ?? maxSessionDuration;
+  // Proposal durations are free-form, so they get snapped to the nearest
+  // selectable slot multiple; an existing session's duration already sits on
+  // the grid and passes through unchanged.
   const [duration, setDuration] = useState<number>(
-    initialProposal?.durationMinutes ??
-      sessionDuration ??
-      Math.min(maxDuration, 60)
+    initialProposal?.durationMinutes
+      ? snapDurationToSlots(
+          initialProposal.durationMinutes,
+          event.slotIncrementMinutes,
+          maxDuration
+        )
+      : (sessionDuration ??
+          snapDurationToSlots(60, event.slotIncrementMinutes, maxDuration))
   );
   // Derived: clamp duration to maxDuration. Preserves user-set value so it
   // restores when the limit widens again.
@@ -157,7 +167,13 @@ export function SessionForm(props: {
       setDescription(next.description ?? "");
       setHosts(guests.filter((g) => next.hosts.some((h) => h.id === g.id)));
       if (next.durationMinutes) {
-        setDuration(next.durationMinutes);
+        setDuration(
+          snapDurationToSlots(
+            next.durationMinutes,
+            event.slotIncrementMinutes,
+            maxDuration
+          )
+        );
       }
       setUsedProposal(true);
     } else if (usedProposal) {
@@ -481,6 +497,7 @@ export function SessionForm(props: {
           setDuration={setDuration}
           maxDuration={maxDuration}
           breakMinutes={event.breakMinutes}
+          slotIncrementMinutes={event.slotIncrementMinutes}
         />
       </div>
       {sessionID && session.proposalId && (
@@ -553,6 +570,7 @@ function getAvailableStartTimes(
   currentSession: Session,
   maxSessionDuration: number,
   breakMinutes: number,
+  slotIncrementMinutes: number,
   timezone: string,
   locationId?: string
 ) {
@@ -573,7 +591,7 @@ function getAvailableStartTimes(
   for (
     let t = day.startBookings.getTime();
     t < day.endBookings.getTime();
-    t += 30 * 60 * 1000
+    t += slotIncrementMinutes * 60 * 1000
   ) {
     const dt = DateTime.fromMillis(t).setZone(timezone);
     // The break sits at the start of each slot, so the displayed start is
@@ -633,13 +651,15 @@ function SelectDuration(props: {
   setDuration: (duration: number) => void;
   maxDuration?: number;
   breakMinutes: number;
+  slotIncrementMinutes: number;
 }) {
   const { duration, setDuration, maxDuration, breakMinutes } = props;
   const limit = maxDuration ?? 180;
-  const availableDurations = Array.from(
-    { length: Math.floor(limit / 30) },
-    (_, i) => (i + 1) * 30
+  const availableDurations = slotDurationOptions(
+    props.slotIncrementMinutes,
+    limit
   );
+
   return (
     <fieldset>
       <div className="space-y-4">

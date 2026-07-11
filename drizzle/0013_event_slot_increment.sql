@@ -1,0 +1,1 @@
+ALTER TABLE `events` ADD `slot_increment_minutes` integer DEFAULT 30 NOT NULL;

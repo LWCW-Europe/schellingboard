@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import { isSlotAligned } from "@/utils/slots";
+import { sessionOverlapsWindow } from "@/utils/day-window";
 import type { AdminActionResult } from "./admin-guests";
 
 async function isAdminRequest(): Promise<boolean> {
@@ -41,6 +43,52 @@ function parseTimeRange(
   return { start, end };
 }
 
+// Scheduled times must land on the slot grid of the day they fall in, anchored
+// to that day's start; the grid silently drops misaligned sessions. Sessions
+// overlapping no day window are exempt — there is no grid to align to. Mirrors
+// slotIncrementChangeError in admin-events.ts.
+async function slotAlignmentError(
+  eventId: string,
+  incrementMinutes: number,
+  start: Date | undefined,
+  end: Date | undefined
+): Promise<string | null> {
+  if (!start || !end) return null;
+  const days = await getRepositories().days.listByEvent(eventId);
+  const day = days.find((d) =>
+    sessionOverlapsWindow({ startTime: start, endTime: end }, d.start, d.end)
+  );
+  if (!day) return null;
+  if (
+    !isSlotAligned(start, day.start, incrementMinutes) ||
+    !isSlotAligned(end, day.start, incrementMinutes)
+  ) {
+    return `Session times must align to the event's ${incrementMinutes}-minute slots; misaligned sessions do not appear in the schedule grid`;
+  }
+  return null;
+}
+
+// Mirrors the user-facing rule (validateSession in app/api/session-form-utils.ts):
+// two sessions conflict when they share a location and their times overlap.
+async function findLocationConflict(
+  eventId: string,
+  range: { start?: Date; end?: Date },
+  locationIds: string[],
+  excludeId?: string
+): Promise<string | null> {
+  const { start, end } = range;
+  if (!start || !end || locationIds.length === 0) return null;
+  const { sessions } = getRepositories();
+  const conflict = await sessions.findLocationConflict(
+    eventId,
+    start,
+    end,
+    locationIds,
+    excludeId
+  );
+  return conflict ? `Overlaps "${conflict.title}" in the same location` : null;
+}
+
 // The attendee-facing schedule fetches the session list in the shared
 // [eventSlug] layout (see app/(site)/[eventSlug]/session-actions.ts), so the
 // public layout must be revalidated alongside the admin pages.
@@ -73,6 +121,21 @@ export async function adminCreateSessionAction(
   const { sessions, events } = getRepositories();
   const event = await events.findById(input.eventId);
   if (!event) return { ok: false, error: "Event not found" };
+
+  const alignmentError = await slotAlignmentError(
+    event.id,
+    event.slotIncrementMinutes,
+    range.start,
+    range.end
+  );
+  if (alignmentError) return { ok: false, error: alignmentError };
+
+  const conflict = await findLocationConflict(
+    input.eventId,
+    range,
+    input.locationIds
+  );
+  if (conflict) return { ok: false, error: conflict };
 
   try {
     await sessions.create({
@@ -110,9 +173,28 @@ export async function adminUpdateSessionAction(
   if (!Number.isInteger(input.capacity) || input.capacity < 0)
     return { ok: false, error: "Capacity must be a non-negative whole number" };
 
-  const { sessions } = getRepositories();
+  const { sessions, events } = getRepositories();
   const session = await sessions.findById(input.id);
   if (!session) return { ok: false, error: "Session not found" };
+
+  const event = await events.findById(session.eventId);
+  if (!event) return { ok: false, error: "Event not found" };
+
+  const alignmentError = await slotAlignmentError(
+    event.id,
+    event.slotIncrementMinutes,
+    range.start,
+    range.end
+  );
+  if (alignmentError) return { ok: false, error: alignmentError };
+
+  const conflict = await findLocationConflict(
+    session.eventId,
+    range,
+    input.locationIds,
+    input.id
+  );
+  if (conflict) return { ok: false, error: conflict };
 
   try {
     await sessions.update(input.id, {

@@ -5,6 +5,8 @@ import {
   CalendarIcon,
   LinkIcon,
   ClipboardDocumentListIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { DateTime } from "luxon";
 import { useSearchParams } from "next/navigation";
@@ -14,18 +16,34 @@ import { useState, useContext } from "react";
 import { EventContext } from "../context";
 import { hasPhases } from "@/app/(site)/utils/events";
 import Link from "next/link";
+import { getDefaultFoldedDayIds } from "@/utils/schedule-fold";
 import { SessionModal } from "./session-modal";
+import type { DayWithSessions } from "../context";
 
 export function EventDisplay() {
-  const { event, days, locations, guests, rsvps } = useContext(EventContext);
+  const { event, days, locations, guests, rsvps, now } =
+    useContext(EventContext);
   const searchParams = useSearchParams();
   const view = searchParams.get("view") ?? "grid";
   const viewSession = searchParams.get("viewSession");
   const [search, setSearch] = useState("");
+  const [unfoldedDayIds, setUnfoldedDayIds] = useState<Set<string>>(
+    () => new Set()
+  );
 
   if (!event) return <div>No event data available</div>;
 
   const daysForEvent = days.filter((day) => day.eventId === event.id);
+  const defaultFoldedDayIds = getDefaultFoldedDayIds(daysForEvent, now);
+  const isFolded = (dayId: string) =>
+    defaultFoldedDayIds.has(dayId) && !unfoldedDayIds.has(dayId);
+  const toggleDayFold = (dayId: string) =>
+    setUnfoldedDayIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(dayId)) next.delete(dayId);
+      else next.add(dayId);
+      return next;
+    });
   const locationsForEvent = locations;
   const multipleDays = event.start.getTime() !== event.end.getTime();
 
@@ -92,28 +110,56 @@ export function EventDisplay() {
         // - `dvh` (not `vh`) so the mobile address bar showing/hiding doesn't change the height.
         <div
           data-testid="schedule-scroll"
-          className="w-full overflow-auto sticky top-16 max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-8rem)] rounded-lg border border-gray-200"
+          // `grid` with a single max-content column (rather than block flow)
+          // so the fold bar's `w-full` stretches to match the widest day's
+          // grid instead of the container's own (viewport-bound) width —
+          // otherwise its background falls short when scrolled horizontally.
+          className="w-full overflow-auto sticky top-16 max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-8rem)] rounded-lg border border-gray-200 grid"
+          style={{ gridTemplateColumns: "max-content" }}
         >
           {daysForEvent.map((day) => (
-            <DayGrid
-              key={day.id}
-              day={day}
-              locations={locationsForEvent}
-              guests={guests}
-            />
+            <div key={day.id} className="contents">
+              {defaultFoldedDayIds.has(day.id) && (
+                <DayFoldBar
+                  day={day}
+                  timezone={event.timezone}
+                  folded={isFolded(day.id)}
+                  onToggle={() => toggleDayFold(day.id)}
+                />
+              )}
+              {!isFolded(day.id) && (
+                <DayGrid
+                  day={day}
+                  locations={locationsForEvent}
+                  guests={guests}
+                />
+              )}
+            </div>
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-12 w-full">
           {daysForEvent.map((day) => (
             <div key={day.id}>
-              <DayText
-                day={day}
-                search={search}
-                locations={locationsForEvent}
-                rsvps={view === "rsvp" ? rsvps : []}
-                eventSlug={event.slug}
-              />
+              {defaultFoldedDayIds.has(day.id) && (
+                <div className="max-w-3xl mx-auto">
+                  <DayFoldBar
+                    day={day}
+                    timezone={event.timezone}
+                    folded={isFolded(day.id)}
+                    onToggle={() => toggleDayFold(day.id)}
+                  />
+                </div>
+              )}
+              {!isFolded(day.id) && (
+                <DayText
+                  day={day}
+                  search={search}
+                  locations={locationsForEvent}
+                  rsvps={view === "rsvp" ? rsvps : []}
+                  eventSlug={event.slug}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -122,5 +168,32 @@ export function EventDisplay() {
         <SessionModal sessionId={viewSession} eventSlug={event.slug} />
       )}
     </div>
+  );
+}
+
+// Collapsed/expandable header for a day that has already passed. In the grid
+// view the label sticks to the left edge so it stays readable while the wide
+// grid is scrolled horizontally.
+function DayFoldBar(props: {
+  day: DayWithSessions;
+  timezone: string;
+  folded: boolean;
+  onToggle: () => void;
+}) {
+  const { day, timezone, folded, onToggle } = props;
+  const date = DateTime.fromJSDate(day.start).setZone(timezone);
+  const Chevron = folded ? ChevronRightIcon : ChevronDownIcon;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="block w-full bg-gray-50 hover:bg-gray-100 transition-colors border-b border-gray-200 text-left"
+    >
+      <span className="sticky left-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-500">
+        <Chevron className="h-3.5 w-3.5 stroke-2" />
+        <span className="font-medium">{date.toFormat("EEEE, MMMM d")}</span>
+        <span>· day has passed · {folded ? "show" : "hide"}</span>
+      </span>
+    </button>
   );
 }

@@ -2,14 +2,15 @@
 import { LocationCol } from "./location-col";
 import clsx from "clsx";
 import { useSearchParams } from "next/navigation";
-import { getNumHalfHours, TIME_FORMAT } from "@/utils/utils";
+import { TIME_FORMAT } from "@/utils/utils";
+import { getNumSlots } from "@/utils/slots";
 import { useContext } from "react";
 import Image from "next/image";
 import { Tooltip } from "./tooltip";
 import { DateTime } from "luxon";
 import type { Guest, Location } from "@/db/repositories/interfaces";
 import type { DayWithSessions } from "@/app/(site)/context";
-import { EventContext } from "@/app/(site)/context";
+import { EventContext, useSlotIncrement } from "@/app/(site)/context";
 
 // Width of the left time-axis gutter. The body rows show `HH:mm` labels and the
 // header corner shows the day's date, so it has to fit a short date.
@@ -36,7 +37,8 @@ export function DayGrid(props: {
   const includedLocations =
     locationsFromParams.length === 0 ? locations : locationsFromParams;
   const numLocations = includedLocations.length;
-  const numHalfHours = getNumHalfHours(day.start, day.end);
+  const slotIncrement = useSlotIncrement();
+  const numSlots = getNumSlots(day.start, day.end, slotIncrement);
   const hasImages = includedLocations.some((loc) => loc.imageUrl);
   const date = DateTime.fromJSDate(day.start).setZone(timezone);
 
@@ -115,15 +117,17 @@ export function DayGrid(props: {
       <div
         className={clsx(
           "sticky left-0 z-20 grid bg-white border-r border-gray-100",
-          `grid-rows-[repeat(${numHalfHours},44px)]`
+          `grid-rows-[repeat(${numSlots},44px)]`
         )}
       >
-        {Array.from({ length: numHalfHours }).map((_, i) => (
+        {Array.from({ length: numSlots }).map((_, i) => (
           <div
             key={i}
             className="border-b border-gray-100 text-[10px] p-1 h-[44px]"
           >
-            {DateTime.fromMillis(day.start.getTime() + i * 30 * 60 * 1000)
+            {DateTime.fromMillis(
+              day.start.getTime() + i * slotIncrement * 60 * 1000
+            )
               .setZone(timezone)
               .toFormat(TIME_FORMAT)}
           </div>
