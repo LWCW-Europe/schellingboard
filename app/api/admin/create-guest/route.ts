@@ -1,23 +1,18 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import { requireProxyVerifiedAdmin } from "@/utils/auth";
 
 export const dynamic = "force-dynamic";
 
 // Admin-only guest creation over plain HTTP, for external seeding scripts.
-// The middleware already enforces site auth for /api/*; here we additionally
-// require the admin cookie, matching the admin server actions.
-async function isAdminRequest(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
-}
-
+// Auth is decided by the proxy (see requireAdminAuthApi), which forwards a
+// header this route re-checks so it fails closed if the proxy didn't run.
 type Body = { name?: string; email?: string; eventSlug?: string };
 
 export async function POST(req: Request) {
-  if (!(await isAdminRequest())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const unverified = requireProxyVerifiedAdmin(req);
+  if (unverified) {
+    return unverified;
   }
 
   let body: Body;

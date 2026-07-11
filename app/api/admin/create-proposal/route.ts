@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import { requireProxyVerifiedAdmin } from "@/utils/auth";
 
 export const dynamic = "force-dynamic";
 
 // Admin-only proposal creation over plain HTTP, for external seeding scripts.
 // Unlike the site's createProposal server action this has no phase gate: an
 // admin seeds proposals regardless of the event phase.
-async function isAdminRequest(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
-}
-
+// Auth is decided by the proxy (see requireAdminAuthApi), which forwards a
+// header this route re-checks so it fails closed if the proxy didn't run.
 type Body = {
   eventSlug?: string;
   title?: string;
@@ -22,8 +18,9 @@ type Body = {
 };
 
 export async function POST(req: Request) {
-  if (!(await isAdminRequest())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const unverified = requireProxyVerifiedAdmin(req);
+  if (unverified) {
+    return unverified;
   }
 
   let body: Body;

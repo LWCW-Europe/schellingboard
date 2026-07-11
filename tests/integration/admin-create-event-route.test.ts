@@ -8,41 +8,29 @@ import {
   vi,
 } from "vitest";
 
-const cookieJar = new Map<string, string>();
-
-vi.mock("next/headers", () => ({
-  cookies: () =>
-    Promise.resolve({
-      get: (name: string) => {
-        const value = cookieJar.get(name);
-        return value === undefined ? undefined : { name, value };
-      },
-    }),
-}));
-
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { getRepositories } from "@/db/container";
-import { createAdminAuthCookie } from "@/utils/auth";
+import { callThroughProxy } from "../helpers/through-proxy";
 import { POST } from "@/app/api/admin/create-event/route";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef"; // 32 chars
+const PATH = "/api/admin/create-event";
 
-function makeReq(body: unknown): Request {
-  return new Request("http://test/api/admin/create-event", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+function post(rawBody: string, opts?: { authed?: boolean }): Promise<Response> {
+  return callThroughProxy(POST, PATH, { method: "POST", body: rawBody }, opts);
+}
+
+function postJson(
+  body: unknown,
+  opts?: { authed?: boolean }
+): Promise<Response> {
+  return post(JSON.stringify(body), opts);
 }
 
 async function readJson(
   res: Response
 ): Promise<{ id: string; slug: string } | { error: string }> {
   return (await res.json()) as { id: string; slug: string } | { error: string };
-}
-
-async function loginAsAdmin() {
-  const c = await createAdminAuthCookie();
-  cookieJar.set(c.name, c.value);
 }
 
 const VALID_BODY = {
@@ -54,25 +42,22 @@ const VALID_BODY = {
 describe("POST /api/admin/create-event", () => {
   beforeAll(() => setupTestDb());
 
-  beforeEach(async () => {
+  beforeEach(() => {
     resetTestDb();
-    cookieJar.clear();
     vi.stubEnv("ADMIN_PASSWORD", "admin-pw");
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
-    await loginAsAdmin();
   });
 
   afterEach(() => vi.unstubAllEnvs());
 
   it("rejects the request without an admin cookie", async () => {
-    cookieJar.clear();
-    const res = await POST(makeReq(VALID_BODY));
+    const res = await postJson(VALID_BODY, { authed: false });
     expect(res.status).toBe(401);
     expect(await getRepositories().events.list()).toEqual([]);
   });
 
   it("creates an event with defaults and returns id and slug", async () => {
-    const res = await POST(makeReq(VALID_BODY));
+    const res = await postJson(VALID_BODY);
     expect(res.status).toBe(201);
     const body = (await readJson(res)) as { id: string; slug: string };
     expect(body.slug).toBe("Summer-Camp");
@@ -92,36 +77,32 @@ describe("POST /api/admin/create-event", () => {
   });
 
   it("adds an https:// scheme to a bare website domain", async () => {
-    const res = await POST(makeReq({ ...VALID_BODY, website: "example.com" }));
+    const res = await postJson({ ...VALID_BODY, website: "example.com" });
     expect(res.status).toBe(201);
     const event = await getRepositories().events.findBySlug("Summer-Camp");
     expect(event?.website).toBe("https://example.com");
   });
 
   it("keeps an already-schemed website URL unchanged", async () => {
-    const res = await POST(
-      makeReq({
-        ...VALID_BODY,
-        website: "https://example.com",
-      })
-    );
+    const res = await postJson({
+      ...VALID_BODY,
+      website: "https://example.com",
+    });
     expect(res.status).toBe(201);
     const event = await getRepositories().events.findBySlug("Summer-Camp");
     expect(event?.website).toBe("https://example.com");
   });
 
   it("accepts explicit timezone, durations and scheduling phase", async () => {
-    const res = await POST(
-      makeReq({
-        ...VALID_BODY,
-        timezone: "Europe/Berlin",
-        maxSessionDuration: 90,
-        breakMinutes: 0,
-        slotIncrementMinutes: 15,
-        schedulingPhaseStart: "2026-08-01T00:00:00Z",
-        schedulingPhaseEnd: "2026-09-03T00:00:00Z",
-      })
-    );
+    const res = await postJson({
+      ...VALID_BODY,
+      timezone: "Europe/Berlin",
+      maxSessionDuration: 90,
+      breakMinutes: 0,
+      slotIncrementMinutes: 15,
+      schedulingPhaseStart: "2026-08-01T00:00:00Z",
+      schedulingPhaseEnd: "2026-09-03T00:00:00Z",
+    });
     expect(res.status).toBe(201);
     const { id } = (await readJson(res)) as { id: string; slug: string };
 
@@ -137,13 +118,15 @@ describe("POST /api/admin/create-event", () => {
   });
 
   it("rejects with 409 when the slug already exists", async () => {
-    const first = (await readJson(await POST(makeReq(VALID_BODY)))) as {
+    const first = (await readJson(await postJson(VALID_BODY))) as {
       id: string;
       slug: string;
     };
-    const res = await POST(
-      makeReq({ ...VALID_BODY, name: "Summer Camp", breakMinutes: 42 })
-    );
+    const res = await postJson({
+      ...VALID_BODY,
+      name: "Summer Camp",
+      breakMinutes: 42,
+    });
     expect(res.status).toBe(409);
     const body = (await readJson(res)) as { error: string };
     expect(body.error).toMatch(/already exists/);
@@ -153,12 +136,7 @@ describe("POST /api/admin/create-event", () => {
   });
 
   it("rejects a malformed JSON body with 400", async () => {
-    const res = await POST(
-      new Request("http://test/api/admin/create-event", {
-        method: "POST",
-        body: "{not json",
-      })
-    );
+    const res = await post("{not json");
     expect(res.status).toBe(400);
   });
 
@@ -185,7 +163,7 @@ describe("POST /api/admin/create-event", () => {
       },
     ],
   ])("rejects %s with 400", async (_label, body) => {
-    const res = await POST(makeReq(body));
+    const res = await postJson(body);
     expect(res.status).toBe(400);
     expect(await getRepositories().events.list()).toEqual([]);
   });
