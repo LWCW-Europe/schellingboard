@@ -4,6 +4,7 @@
 // day-creation entry points (admin action and admin API route) all agree.
 
 import { isSlotAligned } from "@/utils/slots";
+import type { Day } from "@/db/repositories/interfaces";
 
 type ScheduledTimes = {
   startTime?: Date | null;
@@ -60,4 +61,28 @@ export function dayAlignmentError(
   return aligned
     ? null
     : `Day and bookings windows must be aligned to the event's ${incrementMinutes}-minute slots`;
+}
+
+// Scheduled times must land on the slot grid of the day they fall in, anchored
+// to that day's start; the grid silently drops misaligned sessions. Sessions
+// overlapping no day window are exempt — there is no grid to align to. Shared
+// by adminCreateSessionAction/adminUpdateSessionAction and the create-session
+// admin API route.
+export function sessionSlotAlignmentError(
+  days: Day[],
+  incrementMinutes: number,
+  start: Date,
+  end: Date
+): string | null {
+  const day = days.find((d) =>
+    sessionOverlapsWindow({ startTime: start, endTime: end }, d.start, d.end)
+  );
+  if (!day) return null;
+  if (
+    !isSlotAligned(start, day.start, incrementMinutes) ||
+    !isSlotAligned(end, day.start, incrementMinutes)
+  ) {
+    return `Session times must align to the event's ${incrementMinutes}-minute slots; misaligned sessions do not appear in the schedule grid`;
+  }
+  return null;
 }

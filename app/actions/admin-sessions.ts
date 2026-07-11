@@ -4,8 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
-import { isSlotAligned } from "@/utils/slots";
-import { sessionOverlapsWindow } from "@/utils/day-window";
+import { sessionSlotAlignmentError } from "@/utils/day-window";
 import type { AdminActionResult } from "./admin-guests";
 
 async function isAdminRequest(): Promise<boolean> {
@@ -43,10 +42,6 @@ function parseTimeRange(
   return { start, end };
 }
 
-// Scheduled times must land on the slot grid of the day they fall in, anchored
-// to that day's start; the grid silently drops misaligned sessions. Sessions
-// overlapping no day window are exempt — there is no grid to align to. Mirrors
-// slotIncrementChangeError in admin-events.ts.
 async function slotAlignmentError(
   eventId: string,
   incrementMinutes: number,
@@ -55,17 +50,7 @@ async function slotAlignmentError(
 ): Promise<string | null> {
   if (!start || !end) return null;
   const days = await getRepositories().days.listByEvent(eventId);
-  const day = days.find((d) =>
-    sessionOverlapsWindow({ startTime: start, endTime: end }, d.start, d.end)
-  );
-  if (!day) return null;
-  if (
-    !isSlotAligned(start, day.start, incrementMinutes) ||
-    !isSlotAligned(end, day.start, incrementMinutes)
-  ) {
-    return `Session times must align to the event's ${incrementMinutes}-minute slots; misaligned sessions do not appear in the schedule grid`;
-  }
-  return null;
+  return sessionSlotAlignmentError(days, incrementMinutes, start, end);
 }
 
 // Mirrors the user-facing rule (validateSession in app/api/session-form-utils.ts):
