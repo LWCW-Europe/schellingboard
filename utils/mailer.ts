@@ -136,6 +136,13 @@ function getMailer(): Mailer | null {
   return state.configured ? state.mailer : null;
 }
 
+// What the factories in `emails/` return: everything an email needs except
+// the recipient.
+export type EmailMessage = {
+  subject: string;
+  body: ReactElement;
+};
+
 // Send an email. Requires `initMailer` to have been called first. If email
 // sending is disabled, logs a warning, with no way for the caller to tell.
 //
@@ -144,11 +151,9 @@ function getMailer(): Mailer | null {
 // rendered to html, and a plain-text version (markdown) is derived from that
 // and sent alongside. Links must be absolute; relative links are passed
 // through as-is, which mail clients can't resolve.
-export async function sendMail(options: {
-  to: string;
-  subject: string;
-  body: ReactElement;
-}): Promise<void> {
+export async function sendMail(
+  options: { to: string } & EmailMessage
+): Promise<void> {
   const mailer = getMailer();
   if (!mailer) {
     // Don't include details of the email, to avoid putting PII in logs.
