@@ -8,26 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 > **Breaking change**: the database backend has switched from Airtable to SQLite. There is no automated migration path — data must be re-entered manually or migrated via a custom script.
 
-### Changed
-
-- **Project renamed to SchellingBoard**: playful nod to Schelling points (coordination without communication), ironically applied to a tool that enables explicit coordination
-
 ### Added
 
 - **SQLite replaces Airtable**: the database backend is now SQLite (via Drizzle ORM); no Airtable account is needed. `DATABASE_URL` defaults to `./data.db` and migrations run automatically on startup
-- **Interactive admin CLI**: terminal UI (`bun run dev:admin`) for creating and managing events, guests, and locations — bridges the gap until a web-based admin UI exists
-- **Per-event timezone**: each event stores its own timezone; hardcoded offsets are gone
+- **Full admin web UI**: create, edit, and delete events, locations, guests, users, sessions, and proposals at `/admin`, with search, pagination, and bulk actions throughout
+- **Dedicated admin password**: `/admin` requires its own `ADMIN_PASSWORD`, separate from the site-wide password, so admin access can be granted independently
+- **Kiosk mode** (`?kiosk=1`): an unattended schedule view for screens at the venue — auto-scrolls back to the current time (marked with a red line), refreshes itself so it never goes stale, and keeps the display awake, while staying fully interactive for RSVPs
+- **Markdown support**: profile bios and session/proposal/event/site descriptions can now use markdown formatting
+- **Editable user profiles**: attendees can add an avatar and pronouns to their profile, with inline validation on the form
+- **Configurable break time and schedule increment**: the break time between sessions and the schedule's time grid (15/30/45/60 min) are now configurable per event
+- Admins can send an email directly to a user from the admin panel (requires SMTP configuration)
+- The schedule folds past days by default, keeping the view focused on what's coming up
+- **Per-event timezone**: each event stores its own timezone, selectable from a dropdown; hardcoded offsets are gone
 - **Configurable maximum session duration**: set per event; duration buttons in forms are generated dynamically (30-minute increments up to the configured limit)
-- **Location images**: images can be attached to locations via the admin CLI
+- **Location images**: images can be attached to locations via the admin UI
 - **Dynamic navigation from database**: nav items are generated from events stored in the database, with an optional icon per event
 - **Configurable site settings**: the site title, description, and an optional venue map are stored in the database and editable at `/admin/settings`; the map modal appears only when a map has been uploaded
 - **Production Docker Compose setup**: `compose.yml`, `Dockerfile`, and `.env.example` for running the app in production
 - **MIT License**: the project is now explicitly MIT-licensed
+- Sticky schedule header for a cleaner mobile view
 
 ### Changed
 
+- **Project renamed to SchellingBoard**: playful nod to Schelling points (coordination without communication), ironically applied to a tool that enables explicit coordination
 - Upgraded to Next.js 16, React 19, Tailwind CSS v4, and headlessui v2
 - Times now display in 24-hour format
+- Session details now open in a modal directly from the schedule, with real, shareable links, and open instantly instead of waiting on the server
 
 ### Fixed
 
@@ -36,6 +42,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Several Next.js 15/16 compatibility issues (params and searchParams are now async)
 - React 19 compatibility: `useFormState` replaced with `useActionState`
 - Empty location `imageUrl` causing a render error
+- RSVPing twice on the same session no longer creates duplicate entries or inflates the attendee count
+- Voting twice in quick succession no longer creates duplicate votes
+- Vote and RSVP counts could show outdated numbers due to caching; responses are no longer cached
+- Header no longer overlays page content when only one event exists
+- Various mobile layout issues fixed (footer, overscroll, sticky headers, stretching grid cells)
+- Login sessions last longer before requiring re-authentication
+- Proposal form no longer shows a stray error message after a successful submit
+- Event URLs are now guaranteed unique and no longer misresolve for events with similar names
 
 ### Security
 
@@ -43,9 +57,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
-- Unit tests with Vitest (60% line-coverage floor enforced in CI)
-- Integration tests for session API routes
+- Unit tests with Vitest (coverage floor enforced in CI)
+- Integration tests for API routes
 - E2E tests on Firefox added to CI alongside Chromium
+- E2E suite now also runs against a production build, not just dev mode
 - ESLint now covers all files (previously only `app/`, `db/`, `utils/`)
 - CONTRIBUTING.md added with architecture overview and development workflow
 - Dependabot update grouping with cooldown to reduce PR noise
