@@ -236,6 +236,29 @@ bun set-env.ts dev bun x playwright test
 
 Each E2E run starts from a clean database with 3 events (Alpha/Beta/Gamma) in different phases, plus pre-created proposals, sessions, users, and auth. See `tests/reset-database.ts` for details. Auth helpers: `tests/helpers/auth.ts` (`login`, `loginAndGoto`).
 
+## Changelog
+
+Update `CHANGELOG.md` under `[Unreleased]` alongside any user-facing change.
+
+**Audience**: event organizers, not developers. Plain language, no jargon (framework names, file/function names, library versions) — describe what changed for them, not how it was implemented.
+
+**Sections** (Keep a Changelog order; use only what applies):
+
+- `Added` — new features
+- `Changed` — changes to existing behavior
+- `Deprecated` — features being phased out
+- `Removed` — removed features
+- `Fixed` — bug fixes
+- `Security` — vulnerability fixes
+- `Internal` — dev-only changes (tooling, tests, refactors, CI) with no visible effect on organizers
+
+**Conventions**:
+
+- One bullet per change: short **bold** phrase naming the feature/area, then a plain-language explanation
+- Order bullets within a section roughly by importance
+- Breaking changes: `> **Breaking change**: ...` blockquote at the top of the release
+- Skip internal refactors/tests unless they materially affect the dev workflow — then use `Internal`
+
 ## Version Control
 
 - Use conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, etc.)
