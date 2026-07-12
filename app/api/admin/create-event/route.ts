@@ -130,30 +130,46 @@ export async function POST(req: Request) {
   }
 
   const { events } = getRepositories();
-  // Best-effort: a concurrent request between this check and the create()
-  // below can still race and fail on the slug's unique constraint.
   const existing = await events.findBySlug(slug);
   if (existing) {
-    return NextResponse.json({
-      id: existing.id,
-      slug: existing.slug,
-      created: false,
-    });
+    return NextResponse.json(
+      {
+        error: `An event with the URL "${slug}" already exists ("${existing.name}")`,
+      },
+      { status: 409 }
+    );
   }
 
-  const event = await events.create({
-    name,
-    description: (body.description ?? "").trim(),
-    website: (body.website ?? "").trim(),
-    start,
-    end,
-    timezone,
-    maxSessionDuration,
-    breakMinutes,
-    slotIncrementMinutes,
-    schedulingPhaseStart,
-    schedulingPhaseEnd,
-  });
+  let event;
+  try {
+    event = await events.create({
+      name,
+      description: (body.description ?? "").trim(),
+      website: (body.website ?? "").trim(),
+      start,
+      end,
+      timezone,
+      maxSessionDuration,
+      breakMinutes,
+      slotIncrementMinutes,
+      schedulingPhaseStart,
+      schedulingPhaseEnd,
+    });
+  } catch (e) {
+    // A concurrent create can win the race between the findBySlug check
+    // above and this insert; translate the constraint violation into the
+    // same conflict response instead of surfacing a 500.
+    if (
+      e instanceof Error &&
+      e.message.includes("UNIQUE constraint failed: events.slug")
+    ) {
+      return NextResponse.json(
+        { error: `An event with the URL "${slug}" already exists` },
+        { status: 409 }
+      );
+    }
+    throw e;
+  }
 
-  return NextResponse.json({ id: event.id, slug: event.slug, created: true });
+  return NextResponse.json({ id: event.id, slug: event.slug });
 }
