@@ -38,7 +38,12 @@ export function SessionBlock(props: {
   const startTime = session.startTime?.getTime() ?? 0;
   const endTime = session.endTime?.getTime() ?? 0;
   const sessionLength = endTime - startTime;
-  const numSlots = sessionLength / 1000 / 60 / slotIncrement;
+  // Ceil (not raw division) so a misaligned/legacy session still spans a
+  // whole number of grid rows instead of producing an invalid Tailwind class.
+  const numSlots = Math.max(
+    1,
+    Math.ceil(sessionLength / 1000 / 60 / slotIncrement)
+  );
 
   const isBlank = !session.title;
   const isBookable = isBookableSlot({
