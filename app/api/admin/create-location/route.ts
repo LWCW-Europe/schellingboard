@@ -99,5 +99,5 @@ export async function POST(req: Request) {
     await locations.assignToEvent(eventId, [location.id]);
   }
 
-  return NextResponse.json({ id: location.id });
+  return NextResponse.json({ id: location.id }, { status: 201 });
 }

@@ -95,5 +95,5 @@ export async function POST(req: Request) {
     durationMinutes: duration ?? undefined,
   });
 
-  return NextResponse.json({ id: proposal.id });
+  return NextResponse.json({ id: proposal.id }, { status: 201 });
 }

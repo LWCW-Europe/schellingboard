@@ -73,7 +73,7 @@ describe("POST /api/admin/create-event", () => {
 
   it("creates an event with defaults and returns id and slug", async () => {
     const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const body = (await readJson(res)) as { id: string; slug: string };
     expect(body.slug).toBe("Summer-Camp");
 
@@ -103,7 +103,7 @@ describe("POST /api/admin/create-event", () => {
         schedulingPhaseEnd: "2026-09-03T00:00:00Z",
       })
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const { id } = (await readJson(res)) as { id: string; slug: string };
 
     const event = await getRepositories().events.findById(id);

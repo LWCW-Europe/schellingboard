@@ -159,5 +159,5 @@ export async function POST(req: Request) {
     await repos.locations.assignToEvent(event.id, locationIds);
   }
 
-  return NextResponse.json({ id: session.id });
+  return NextResponse.json({ id: session.id }, { status: 201 });
 }

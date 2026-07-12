@@ -67,7 +67,7 @@ describe("POST /api/admin/create-location", () => {
 
   it("creates a location with defaults and returns its id", async () => {
     const res = await POST(makeReq({ name: "Main Hall" }));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const body = await readJson(res);
 
     const location = await getRepositories().locations.findById(body.id);

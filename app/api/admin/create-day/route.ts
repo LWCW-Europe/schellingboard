@@ -122,5 +122,5 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ id: day.id });
+  return NextResponse.json({ id: day.id }, { status: 201 });
 }

@@ -74,7 +74,7 @@ describe("POST /api/admin/create-proposal", () => {
         hostIds: [host.id],
       })
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const { id } = (await res.json()) as { id: string };
 
     const proposal = await getRepositories().sessionProposals.findById(id);

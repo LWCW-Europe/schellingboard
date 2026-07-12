@@ -70,5 +70,8 @@ export async function POST(req: Request) {
     await guests.assignToEvent(eventId, [guest.id]);
   }
 
-  return NextResponse.json({ id: guest.id, created });
+  return NextResponse.json(
+    { id: guest.id, created },
+    { status: created ? 201 : 200 }
+  );
 }
