@@ -94,6 +94,7 @@ export default async function AdminEventSessionsPage({
       eventGuests={eventGuests}
       eventLocations={eventLocations}
       timezone={event.timezone}
+      slotIncrementMinutes={event.slotIncrementMinutes}
       total={total}
       page={page}
       pageSize={PAGE_SIZE}

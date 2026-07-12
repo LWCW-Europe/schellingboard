@@ -184,6 +184,7 @@ function SessionForm({
   initial,
   idPrefix,
   timezone,
+  slotIncrementMinutes,
   hostCandidates,
   locationCandidates,
   submitLabel,
@@ -195,6 +196,7 @@ function SessionForm({
   initial: SessionFormValues;
   idPrefix: string;
   timezone: string;
+  slotIncrementMinutes: number;
   hostCandidates: EventGuest[];
   locationCandidates: EventLocation[];
   submitLabel: string;
@@ -275,6 +277,7 @@ function SessionForm({
           <Input
             id={`${idPrefix}-start`}
             type="datetime-local"
+            step={slotIncrementMinutes * 60}
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
             className="w-full h-10"
@@ -287,6 +290,7 @@ function SessionForm({
           <Input
             id={`${idPrefix}-end`}
             type="datetime-local"
+            step={slotIncrementMinutes * 60}
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
             className="w-full h-10"
@@ -403,12 +407,14 @@ function SessionItem({
   eventGuests,
   eventLocations,
   timezone,
+  slotIncrementMinutes,
   onError,
 }: {
   session: SessionRow;
   eventGuests: EventGuest[];
   eventLocations: EventLocation[];
   timezone: string;
+  slotIncrementMinutes: number;
   onError: (e: string | null) => void;
 }) {
   const router = useRouter();
@@ -569,6 +575,7 @@ function SessionItem({
       }}
       idPrefix={`sess-${session.id}`}
       timezone={timezone}
+      slotIncrementMinutes={slotIncrementMinutes}
       hostCandidates={hostCandidates}
       locationCandidates={locationCandidates}
       submitLabel="Save"
@@ -603,12 +610,14 @@ function AddSession({
   eventGuests,
   eventLocations,
   timezone,
+  slotIncrementMinutes,
   onError,
 }: {
   eventId: string;
   eventGuests: EventGuest[];
   eventLocations: EventLocation[];
   timezone: string;
+  slotIncrementMinutes: number;
   onError: (e: string | null) => void;
 }) {
   const router = useRouter();
@@ -650,6 +659,7 @@ function AddSession({
         initial={EMPTY_SESSION}
         idPrefix="sess-new"
         timezone={timezone}
+        slotIncrementMinutes={slotIncrementMinutes}
         hostCandidates={eventGuests}
         locationCandidates={eventLocations}
         submitLabel="Create"
@@ -671,6 +681,7 @@ export function EventSessionsManager({
   eventGuests,
   eventLocations,
   timezone,
+  slotIncrementMinutes,
   total,
   page,
   pageSize,
@@ -681,6 +692,7 @@ export function EventSessionsManager({
   eventGuests: EventGuest[];
   eventLocations: EventLocation[];
   timezone: string;
+  slotIncrementMinutes: number;
   total: number;
   page: number;
   pageSize: number;
@@ -701,6 +713,7 @@ export function EventSessionsManager({
         eventGuests={eventGuests}
         eventLocations={eventLocations}
         timezone={timezone}
+        slotIncrementMinutes={slotIncrementMinutes}
         onError={setError}
       />
 
@@ -719,6 +732,7 @@ export function EventSessionsManager({
             eventGuests={eventGuests}
             eventLocations={eventLocations}
             timezone={timezone}
+            slotIncrementMinutes={slotIncrementMinutes}
             onError={setError}
           />
         )}
