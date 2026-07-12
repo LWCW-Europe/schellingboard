@@ -36,8 +36,8 @@ function makeReq(body: unknown): Request {
 
 async function readJson(
   res: Response
-): Promise<{ id: string; slug: string; created: boolean }> {
-  return (await res.json()) as { id: string; slug: string; created: boolean };
+): Promise<{ id: string; slug: string } | { error: string }> {
+  return (await res.json()) as { id: string; slug: string } | { error: string };
 }
 
 async function loginAsAdmin() {
@@ -74,8 +74,7 @@ describe("POST /api/admin/create-event", () => {
   it("creates an event with defaults and returns id and slug", async () => {
     const res = await POST(makeReq(VALID_BODY));
     expect(res.status).toBe(200);
-    const body = await readJson(res);
-    expect(body.created).toBe(true);
+    const body = (await readJson(res)) as { id: string; slug: string };
     expect(body.slug).toBe("Summer-Camp");
 
     const event = await getRepositories().events.findBySlug("Summer-Camp");
@@ -105,7 +104,7 @@ describe("POST /api/admin/create-event", () => {
       })
     );
     expect(res.status).toBe(200);
-    const { id } = await readJson(res);
+    const { id } = (await readJson(res)) as { id: string; slug: string };
 
     const event = await getRepositories().events.findById(id);
     expect(event?.timezone).toBe("Europe/Berlin");
@@ -118,16 +117,18 @@ describe("POST /api/admin/create-event", () => {
     expect(event?.schedulingPhaseEnd).toEqual(new Date("2026-09-03T00:00:00Z"));
   });
 
-  it("returns the existing event with created=false when the slug already exists", async () => {
-    const first = await readJson(await POST(makeReq(VALID_BODY)));
+  it("rejects with 409 when the slug already exists", async () => {
+    const first = (await readJson(await POST(makeReq(VALID_BODY)))) as {
+      id: string;
+      slug: string;
+    };
     const res = await POST(
       makeReq({ ...VALID_BODY, name: "Summer Camp", breakMinutes: 42 })
     );
-    expect(res.status).toBe(200);
-    const body = await readJson(res);
-    expect(body.created).toBe(false);
-    expect(body.id).toBe(first.id);
-    // Create-if-absent: the existing event is not updated.
+    expect(res.status).toBe(409);
+    const body = (await readJson(res)) as { error: string };
+    expect(body.error).toMatch(/already exists/);
+    // The existing event is not updated.
     const event = await getRepositories().events.findById(first.id);
     expect(event?.breakMinutes).toBe(10);
   });
