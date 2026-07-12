@@ -20,6 +20,7 @@ import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
 import { isBookableSlot } from "@/utils/session-bookable";
 import { LockIcon } from "../lock-icon";
 import { viewSessionLinkFromOwner } from "./modal-nav";
+import { stripMarkdown } from "@/utils/markdown";
 
 export function SessionBlock(props: {
   session: Session;
@@ -148,6 +149,7 @@ function SessionInfoDisplay({
   timezone: string;
 }) {
   const breakMinutes = useBreakMinutes();
+  const plainDescription = stripMarkdown(session.description);
   return (
     <>
       <h1 className="text-lg font-bold leading-tight flex items-center gap-1">
@@ -160,9 +162,9 @@ function SessionInfoDisplay({
         Hosted by {formattedHostNames}
       </p>
       <p className="text-sm whitespace-pre-line">
-        {session.description?.length > 210
-          ? session.description.substring(0, 200) + "..."
-          : session.description}
+        {plainDescription.length > 210
+          ? plainDescription.substring(0, 200) + "..."
+          : plainDescription}
       </p>
       <div className="flex justify-between mt-2 gap-4 text-xs text-gray-500">
         <div className="flex gap-1">

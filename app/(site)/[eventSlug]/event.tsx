@@ -20,6 +20,7 @@ import { getDefaultFoldedDayIds } from "@/utils/schedule-fold";
 import { KioskController, useKioskMode } from "./kiosk";
 import { SessionModal } from "./session-modal";
 import type { DayWithSessions } from "../context";
+import { Markdown } from "@/app/(site)/markdown";
 
 export function EventDisplay() {
   const { event, days, locations, guests, rsvps, now } =
@@ -82,7 +83,9 @@ export function EventDisplay() {
             <span>{event.website}</span>
           </a>
         </div>
-        <p className="text-gray-900 mt-3 mb-5">{event.description}</p>
+        <div className="text-gray-900 mt-3 mb-5">
+          <Markdown>{event.description}</Markdown>
+        </div>
         {hasPhases(event) && (
           <div className="mb-5">
             <Link

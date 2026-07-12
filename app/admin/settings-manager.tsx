@@ -7,6 +7,7 @@ import type { SiteSettings } from "@/db/repositories/interfaces";
 import { MAP_REQUIREMENTS_HINT } from "@/utils/map-image-constraints";
 import { updateSettingsAction } from "../actions/admin-settings";
 import { PRIMARY_BUTTON } from "./buttons";
+import { MarkdownHint } from "@/app/(site)/markdown";
 
 export function SettingsManager({ settings }: { settings: SiteSettings }) {
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +66,7 @@ export function SettingsManager({ settings }: { settings: SiteSettings }) {
           rows={3}
           className="rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
         />
+        <MarkdownHint />
       </div>
 
       <div className="flex flex-col gap-1">

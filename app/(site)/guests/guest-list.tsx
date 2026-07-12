@@ -4,6 +4,7 @@ import { Guest } from "@/db/repositories/interfaces";
 import { DataTable } from "@/app/admin/data-table";
 import Link from "next/link";
 import { Avatar } from "@/app/(site)/guests/avatar";
+import { stripMarkdown } from "@/utils/markdown";
 
 function GuestRow({
   guest: { id, avatarUrl, name, aboutMe },
@@ -18,7 +19,9 @@ function GuestRow({
       <Avatar name={name} size="sm" image={avatarUrl ?? undefined} />
       <div className="flex flex-col gap-1">
         <span className="font-medium text-gray-900">{name}</span>
-        <span className="text-sm text-gray-500 line-clamp-1">{aboutMe}</span>
+        <span className="text-sm text-gray-500 line-clamp-1">
+          {stripMarkdown(aboutMe)}
+        </span>
       </div>
     </Link>
   );

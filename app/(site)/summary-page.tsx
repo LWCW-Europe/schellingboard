@@ -7,6 +7,7 @@ import {
 import { DateTime } from "luxon";
 import Link from "next/link";
 import type { Event } from "@/db/repositories/interfaces";
+import { Markdown } from "@/app/(site)/markdown";
 
 export default function SummaryPage(props: {
   events: Event[];
@@ -21,7 +22,9 @@ export default function SummaryPage(props: {
     <Suspense fallback={<div>Loading...</div>}>
       <div className="mx-auto max-w-2xl">
         <h1 className="text-4xl font-bold mt-5">{title}</h1>
-        <p className="mt-3">{description}</p>
+        <div className="mt-3">
+          <Markdown>{description}</Markdown>
+        </div>
         <div className="flex flex-col gap-8 sm:pl-5 mt-10">
           {sortedEvents.map((event) => (
             <div key={event.name}>
@@ -47,7 +50,9 @@ export default function SummaryPage(props: {
                   <span>{event.website}</span>
                 </a>
               </div>
-              <p className="text-gray-900 mt-2">{event.description}</p>
+              <div className="text-gray-900 mt-2">
+                <Markdown>{event.description}</Markdown>
+              </div>
               <Link
                 href={`/${event.slug}`}
                 className="font-semibold text-rose-400 hover:text-rose-500 flex gap-1 items-center text-sm justify-end mt-2"

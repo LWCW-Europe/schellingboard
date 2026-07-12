@@ -16,6 +16,7 @@ import { SelectHosts } from "@/app/select-hosts";
 import { ConfirmDeletionModal } from "../modals";
 import { formatDuration, durationMinusBreak } from "@/utils/utils";
 import { slotDurationOptions } from "@/utils/slots";
+import { MarkdownHint } from "@/app/(site)/markdown";
 
 export function SessionProposalForm(props: {
   eventID: string;
@@ -155,6 +156,7 @@ export function SessionProposalForm(props: {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe what your session will cover"
           />
+          <MarkdownHint />
         </div>
 
         <div className="flex flex-col gap-1">
