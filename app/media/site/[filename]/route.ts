@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readMapImage } from "@/utils/map-image";
 
-// Serves the admin-uploaded site map from UPLOADS_DIR. URLs carry a ?v=
+// Serves the admin-uploaded site map from SB_UPLOADS_DIR. URLs carry a ?v=
 // cache-buster set on upload, so responses can be cached aggressively.
 export async function GET(
   _request: NextRequest,

@@ -155,14 +155,14 @@ function generateEventDates() {
 }
 
 // Committed CC0 avatar images (see scripts/seed-assets/avatars/README.md);
-// copied into UPLOADS_DIR at seed time like real uploads.
+// copied into SB_UPLOADS_DIR at seed time like real uploads.
 const seedAvatarsDir = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "seed-assets/avatars"
 );
 
 function uploadedAvatarsDir(): string {
-  return path.join(process.env.UPLOADS_DIR ?? "./uploads", "avatars");
+  return path.join(process.env.SB_UPLOADS_DIR ?? "./uploads", "avatars");
 }
 
 interface GuestConfig {
@@ -752,7 +752,7 @@ function clearAll() {
   // repeated seeding doesn't accumulate orphaned uploads. Likewise the map
   // upload belongs to the site-settings row just cleared.
   fs.rmSync(uploadedAvatarsDir(), { recursive: true, force: true });
-  fs.rmSync(path.join(process.env.UPLOADS_DIR ?? "./uploads", "site"), {
+  fs.rmSync(path.join(process.env.SB_UPLOADS_DIR ?? "./uploads", "site"), {
     recursive: true,
     force: true,
   });

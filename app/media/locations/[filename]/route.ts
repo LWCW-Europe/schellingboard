@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getImageRepositories } from "@/utils/images";
 
-// Serves admin-uploaded location images from UPLOADS_DIR. URLs carry a
+// Serves admin-uploaded location images from SB_UPLOADS_DIR. URLs carry a
 // ?v= cache-buster set on upload, so responses can be cached aggressively.
 export async function GET(
   _request: NextRequest,

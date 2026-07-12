@@ -43,7 +43,7 @@ describe("updateProfileAction", () => {
     resetTestDb();
     cookieJar.clear();
     uploadsDir = fs.mkdtempSync(path.join(os.tmpdir(), "uploads-test-"));
-    vi.stubEnv("UPLOADS_DIR", uploadsDir);
+    vi.stubEnv("SB_UPLOADS_DIR", uploadsDir);
   });
 
   afterEach(() => {

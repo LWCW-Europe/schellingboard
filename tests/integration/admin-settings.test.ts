@@ -64,7 +64,7 @@ describe("admin settings actions", () => {
     uploadsDir = fs.mkdtempSync(path.join(os.tmpdir(), "uploads-test-"));
     vi.stubEnv("ADMIN_PASSWORD", "admin-pw");
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
-    vi.stubEnv("UPLOADS_DIR", uploadsDir);
+    vi.stubEnv("SB_UPLOADS_DIR", uploadsDir);
     await loginAsAdmin();
   });
 
