@@ -73,46 +73,18 @@ has its own layout and only requires the admin password (not `SITE_PASSWORD`).
 
 ## Environment Variables
 
-### Required
+See [README.md](README.md#environment-variables) for the full list and descriptions.
 
-| Variable       | Description                                       |
-| -------------- | ------------------------------------------------- |
-| `DATABASE_URL` | SQLite database file path (e.g. `file:./data.db`) |
-
-### Optional
-
-| Variable         | Description                                                                                                                                               |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SITE_PASSWORD`  | Enables site-wide password protection. Omit to disable.                                                                                                   |
-| `ADMIN_PASSWORD` | Enables the admin UI at `/admin`. Omit to disable (admin routes return a diagnostic message).                                                             |
-| `AUTH_SECRET`    | HMAC secret used to sign auth cookies. Required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Use ≥32 random bytes.                                    |
-| `SB_UPLOADS_DIR` | Directory for admin-uploaded files (location images, avatars, the site map). Defaults to `./uploads`; in Docker it is `/data/uploads` so uploads persist. |
-| `SMTP_*`         | See "email variables" below.                                                                                                                              |
-
-`NEXT_PUBLIC_` variables are exposed to the browser; all others are server-side only.
-
-Generate a fresh `AUTH_SECRET`:
+For local development, `DATABASE_URL` is the only required variable — unlike
+Docker, no default is provided (e.g. `file:./data.db`). `AUTH_SECRET` is
+additionally required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set;
+generate one with:
 
 ```bash
 openssl rand -base64 32
 ```
 
-### Email variables
-
-If you don't want to send email from the app, leave all of these options blank
-(unset or empty string). If you do want to send email, set `SMTP_FROM` and
-exactly one of `SMTP_URL` and `SMTP_HOST`. If you set `HOST`, you may optionally
-set `PORT`/`USER`/`PASSWORD`/`SECURE`.
-
-| Variable        | Description                                                                                                                                                                                  |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SMTP_FROM`     | Sender address for outgoing email (e.g. `SchellingBoard <noreply@example.org>`).                                                                                                             |
-| `SMTP_URL`      | SMTP connection URL (e.g. `smtp://localhost:1025`) used to send email. Supports [nodemailer URL options](https://nodemailer.com/smtp/) as query parameters.                                  |
-| `SMTP_HOST`     | SMTP server hostname.                                                                                                                                                                        |
-| `SMTP_PORT`     | SMTP server port (defaults to 465 with `SECURE=true` or 587 otherwise).                                                                                                                      |
-| `SMTP_USER`     | SMTP username.                                                                                                                                                                               |
-| `SMTP_PASSWORD` | SMTP password.                                                                                                                                                                               |
-| `SMTP_SECURE`   | One of `true` (wrap SMTP inside TLS), `false` (upgrade to TLS after connecting, if supported by the server), or `requireTLS` (default; upgrade after connecting, and fail if not supported). |
+`NEXT_PUBLIC_` variables are exposed to the browser; all others are server-side only.
 
 ## Development Commands
 
