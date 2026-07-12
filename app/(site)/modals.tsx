@@ -192,6 +192,36 @@ export function ConfirmationModal(props: {
   );
 }
 
+export function AlertModal(props: {
+  open: boolean;
+  close: () => void;
+  message: string;
+  zIndex?: string;
+  portal?: boolean; // For nested modal contexts
+}) {
+  const { open, close, message, zIndex, portal } = props;
+  return (
+    <Modal
+      open={open}
+      setOpen={close}
+      hideClose={true}
+      zIndex={zIndex}
+      portal={portal}
+    >
+      <p role="alert">{message}</p>
+      <div className="mt-4">
+        <button
+          type="button"
+          className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-rose-400 font-medium text-white hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400"
+          onClick={close}
+        >
+          OK
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 export function Modal(props: {
   open: boolean;
   setOpen: (value: boolean) => void;
