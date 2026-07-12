@@ -29,6 +29,7 @@ type Body = {
   maxSessionDuration?: number;
   breakMinutes?: number;
   slotIncrementMinutes?: number;
+  rsvpCapacityHardLimit?: boolean;
   schedulingPhaseStart?: string;
   schedulingPhaseEnd?: string;
 };
@@ -103,6 +104,11 @@ export async function POST(req: Request) {
     );
   }
 
+  const rsvpCapacityHardLimit = body.rsvpCapacityHardLimit ?? false;
+  if (typeof rsvpCapacityHardLimit !== "boolean") {
+    return badRequest("RSVP capacity hard limit must be a boolean");
+  }
+
   // Omitting both leaves the event phase-less, so admin seeding and RSVPs
   // work immediately (inSchedPhase treats no phases as always-on).
   const schedulingPhaseStart = parseDate(body.schedulingPhaseStart);
@@ -152,6 +158,7 @@ export async function POST(req: Request) {
       maxSessionDuration,
       breakMinutes,
       slotIncrementMinutes,
+      rsvpCapacityHardLimit,
       schedulingPhaseStart,
       schedulingPhaseEnd,
     });

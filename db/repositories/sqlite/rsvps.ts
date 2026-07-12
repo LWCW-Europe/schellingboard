@@ -65,6 +65,34 @@ export class SqliteRsvpsRepository implements RsvpsRepository {
     return rowToRsvp(row);
   }
 
+  // Runs as a synchronous better-sqlite3 transaction: since Node is
+  // single-threaded and none of the calls below await, no other request can
+  // interleave between the capacity check and the insert.
+  async createIfUnderCapacity(data: {
+    sessionId: string;
+    guestId: string;
+    capacity: number;
+  }): Promise<Rsvp | null> {
+    return this.db.transaction((tx) => {
+      const rows = tx
+        .select()
+        .from(schema.rsvps)
+        .where(eq(schema.rsvps.sessionId, data.sessionId))
+        .all();
+      const existing = rows.find((row) => row.guestId === data.guestId);
+      if (existing) return rowToRsvp(existing);
+      if (rows.length >= data.capacity) return null;
+
+      const row = {
+        id: nanoid(),
+        sessionId: data.sessionId,
+        guestId: data.guestId,
+      };
+      tx.insert(schema.rsvps).values(row).run();
+      return rowToRsvp(row);
+    });
+  }
+
   async deleteBySessionAndGuest(
     sessionId: string,
     guestId: string

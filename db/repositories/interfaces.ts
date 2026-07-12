@@ -75,6 +75,8 @@ export type Event = {
   breakMinutes: number;
   slotIncrementMinutes: number;
   timezone: string;
+  /** When true, a session's capacity (> 0) rejects further RSVPs once reached. */
+  rsvpCapacityHardLimit: boolean;
   icon?: string | null;
 };
 
@@ -399,6 +401,16 @@ export interface RsvpsRepository {
    */
   listBySessions(sessionIds: string[]): Promise<Map<string, Rsvp[]>>;
   create(data: { sessionId: string; guestId: string }): Promise<Rsvp>;
+  /**
+   * Atomically creates an RSVP unless the session already holds `capacity`
+   * RSVPs from other guests. A guest re-adding their own existing RSVP always
+   * succeeds. Returns null when the session is full.
+   */
+  createIfUnderCapacity(data: {
+    sessionId: string;
+    guestId: string;
+    capacity: number;
+  }): Promise<Rsvp | null>;
   deleteBySessionAndGuest(sessionId: string, guestId: string): Promise<void>;
   deleteBySessionAndGuests(
     sessionId: string,

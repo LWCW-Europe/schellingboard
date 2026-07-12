@@ -71,6 +71,13 @@ export function ViewSession(props: {
   const isHost = currentUser && session.hosts.some((h) => h.id === currentUser);
   const isEditable = !!isHost && !session.adminManaged;
 
+  // session.numRsvps comes from localSessions, so it tracks optimistic RSVP
+  // toggles; the fetched attendee list can be stale after a user switch.
+  const sessionFull =
+    event.rsvpCapacityHardLimit &&
+    session.capacity > 0 &&
+    session.numRsvps >= session.capacity;
+
   const guestMap = new Map(guests.map((guest) => [guest.id, guest]));
   const attendees =
     optimisticRsvps === null
@@ -218,10 +225,16 @@ export function ViewSession(props: {
         {!isHost && (
           <button
             onClick={handleRsvp}
-            disabled={isRsvping}
+            disabled={isRsvping || (!rsvpd && sessionFull)}
             className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors disabled:opacity-50"
           >
-            {isRsvping ? "..." : rsvpd ? "Un-RSVP" : "RSVP"}
+            {isRsvping
+              ? "..."
+              : rsvpd
+                ? "Un-RSVP"
+                : sessionFull
+                  ? "Session full"
+                  : "RSVP"}
           </button>
         )}
 

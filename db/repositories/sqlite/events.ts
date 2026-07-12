@@ -40,6 +40,7 @@ function rowToEvent(row: typeof schema.events.$inferSelect): Event {
     breakMinutes: row.breakMinutes,
     slotIncrementMinutes: row.slotIncrementMinutes,
     timezone: row.timezone,
+    rsvpCapacityHardLimit: row.rsvpCapacityHardLimit,
     icon: row.icon ?? undefined,
   };
 }
@@ -101,6 +102,7 @@ export class SqliteEventsRepository implements EventsRepository {
         breakMinutes: data.breakMinutes,
         slotIncrementMinutes: data.slotIncrementMinutes,
         timezone: data.timezone,
+        rsvpCapacityHardLimit: data.rsvpCapacityHardLimit,
         icon: data.icon ?? null,
       })
       .run();
@@ -139,6 +141,8 @@ export class SqliteEventsRepository implements EventsRepository {
     if (patch.slotIncrementMinutes !== undefined)
       set.slotIncrementMinutes = patch.slotIncrementMinutes;
     if (patch.timezone !== undefined) set.timezone = patch.timezone;
+    if (patch.rsvpCapacityHardLimit !== undefined)
+      set.rsvpCapacityHardLimit = patch.rsvpCapacityHardLimit;
     if ("icon" in patch) set.icon = patch.icon ?? null;
 
     this.db

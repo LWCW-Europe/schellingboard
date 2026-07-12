@@ -35,9 +35,23 @@ export async function POST(req: Request) {
   }
 
   if (!remove) {
+    const enforceCapacity = event.rsvpCapacityHardLimit && session.capacity > 0;
     try {
-      const rsvp = await repos.rsvps.create({ sessionId, guestId });
-      console.log(rsvp.id);
+      if (enforceCapacity) {
+        const rsvp = await repos.rsvps.createIfUnderCapacity({
+          sessionId,
+          guestId,
+          capacity: session.capacity,
+        });
+        if (!rsvp) {
+          return Response.json(
+            { error: "This session is full" },
+            { status: 409 }
+          );
+        }
+      } else {
+        await repos.rsvps.create({ sessionId, guestId });
+      }
     } catch (err) {
       console.error(err);
       return Response.error();

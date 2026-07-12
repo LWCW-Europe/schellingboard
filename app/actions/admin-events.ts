@@ -30,6 +30,7 @@ export type EventInput = {
   maxSessionDuration: string;
   breakMinutes: string;
   slotIncrementMinutes: string;
+  rsvpCapacityHardLimit?: boolean;
   icon?: string;
 };
 
@@ -102,6 +103,7 @@ function parseEventInput(input: EventInput): ParseResult {
       maxSessionDuration,
       breakMinutes,
       slotIncrementMinutes,
+      rsvpCapacityHardLimit: input.rsvpCapacityHardLimit ?? false,
       icon,
     },
   };
