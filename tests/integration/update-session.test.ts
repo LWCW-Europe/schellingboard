@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import { NextRequest } from "next/server";
+
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
+
+import { render } from "@react-email/render";
+import { sendMail } from "@/utils/mailer";
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import {
   createEvent,
@@ -19,10 +27,17 @@ function makeAddReq(payload: unknown): Request {
   });
 }
 
-function makeUpdateReq(payload: unknown): Request {
-  return new Request("http://test/api/update-session", {
+function makeUpdateReq(
+  payload: unknown,
+  opts?: { editorGuestId?: string }
+): NextRequest {
+  return new NextRequest("http://test/api/update-session", {
     method: "POST",
     body: JSON.stringify(payload),
+    // The `user` cookie identifies the acting guest, like the site sets it.
+    headers: opts?.editorGuestId
+      ? { cookie: `user=${opts.editorGuestId}` }
+      : undefined,
   });
 }
 
@@ -65,7 +80,82 @@ async function createScheduledSession(
 
 describe("POST /api/update-session", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => resetTestDb());
+  beforeEach(() => {
+    resetTestDb();
+    vi.mocked(sendMail).mockReset();
+  });
+
+  it("emails RSVP'd guests when the session time changes", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const rsvper = await createGuest({
+      email: "rsvper@test.example",
+      eventId: event.id,
+    });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day, {
+      startTimeMinutes: 10 * 60,
+    });
+    await getRepositories().rsvps.create({
+      sessionId: id,
+      guestId: rsvper.id,
+    });
+
+    const res = await POST(
+      makeUpdateReq(
+        {
+          ...basePayload(host, location, day, { startTimeMinutes: 12 * 60 }),
+          id,
+        },
+        // The host makes the change, so only the RSVP'd guest is emailed.
+        { editorGuestId: host.id }
+      )
+    );
+    expect(res.ok).toBe(true);
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect(vi.mocked(sendMail).mock.calls[0][0].to).toBe("rsvper@test.example");
+  });
+
+  it("emails a guest promoted to host as a host, not as an attendee", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const rsvper = await createGuest({
+      email: "promoted@test.example",
+      eventId: event.id,
+    });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day, {
+      startTimeMinutes: 10 * 60,
+    });
+    await getRepositories().rsvps.create({
+      sessionId: id,
+      guestId: rsvper.id,
+    });
+
+    const res = await POST(
+      makeUpdateReq(
+        {
+          ...basePayload(host, location, day, {
+            startTimeMinutes: 12 * 60,
+            hosts: [host, rsvper],
+          }),
+          id,
+        },
+        { editorGuestId: host.id }
+      )
+    );
+    expect(res.ok).toBe(true);
+    // Their RSVP was removed with the promotion, so the one email they get
+    // is the hosts' variant.
+    expect(sendMail).toHaveBeenCalledOnce();
+    const message = vi.mocked(sendMail).mock.calls[0][0];
+    expect(message.to).toBe("promoted@test.example");
+    const html = await render(message.body);
+    expect(html).toContain("hosting");
+    expect(html).not.toContain("RSVP’d to");
+  });
 
   it("changes time without conflict; re-fetched session reflects new time", async () => {
     const event = await createEvent({ phase: "scheduling" });

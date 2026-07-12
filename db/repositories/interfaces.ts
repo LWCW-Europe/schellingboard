@@ -101,8 +101,7 @@ export interface EventsRepository {
 
 // ── Guests ────────────────────────────────────────────────────────────────────
 
-// When the guest wants to be emailed. Not consulted anywhere yet: the emails
-// themselves are not implemented.
+// When the guest wants to be emailed.
 export type EmailSettings = {
   /** A session the guest RSVP'd to changed time or location. */
   rsvpChange: boolean;

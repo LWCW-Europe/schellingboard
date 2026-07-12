@@ -1,11 +1,13 @@
+import type { NextRequest } from "next/server";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import { notifySessionChanged } from "@/utils/notifications";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
 export const dynamic = "force-dynamic"; // defaults to auto
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const params = (await req.json()) as SessionParams;
   if (!params.id) {
     console.error("Session ID is required for update.");
@@ -43,13 +45,20 @@ export async function POST(req: Request) {
   const existingSessions = allSessions.filter((ses) => ses.id !== params.id);
   const sessionValid = validateSession(input, existingSessions);
   if (sessionValid) {
+    let updated;
     try {
-      const updated = await repos.sessions.update(params.id, input);
+      updated = await repos.sessions.update(params.id, input);
       console.log(updated.id);
     } catch (err) {
       console.error(err);
       return Response.error();
     }
+
+    await notifySessionChanged({
+      before: prevSession,
+      after: updated,
+      changedById: req.cookies.get("user")?.value ?? null,
+    });
     return Response.json({ success: true });
   } else {
     return Response.error();
