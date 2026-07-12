@@ -8,7 +8,7 @@ import {
   REQUIRED_ASPECT_RATIO,
 } from "@/utils/location-image-constraints";
 
-// Images are stored on the filesystem under UPLOADS_DIR
+// Images are stored on the filesystem under SB_UPLOADS_DIR
 // (a persistent volume in production), not in public/,
 // because public/ is baked into the build and lost on redeploy.
 
@@ -34,7 +34,7 @@ export abstract class BaseImageResourceRepository<
     // turbopackIgnore: paths point at a runtime uploads volume, not build
     // assets; without it Turbopack traces the whole project into the bundle.
     return path.join(
-      /*turbopackIgnore: true*/ process.env.UPLOADS_DIR ?? "./uploads",
+      /*turbopackIgnore: true*/ process.env.SB_UPLOADS_DIR ?? "./uploads",
       this.directory
     );
   }

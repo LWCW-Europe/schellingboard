@@ -3,7 +3,7 @@ import path from "path";
 import sharp from "sharp";
 
 // The site map is uploaded through the admin UI and stored on the filesystem
-// under UPLOADS_DIR (a persistent volume in production), not in public/, because
+// under SB_UPLOADS_DIR (a persistent volume in production), not in public/, because
 // public/ is baked into the build and lost on redeploy. It is served by
 // app/media/site/[filename]/route.ts.
 //
@@ -19,7 +19,7 @@ const FORMAT_EXTENSIONS: Record<string, string> = {
 };
 
 function mapDir(): string {
-  return path.join(process.env.UPLOADS_DIR ?? "./uploads", "site");
+  return path.join(process.env.SB_UPLOADS_DIR ?? "./uploads", "site");
 }
 
 /**

@@ -1,4 +1,4 @@
-// Serves user-uploaded location images from UPLOADS_DIR. URLs carry a
+// Serves user-uploaded location images from SB_UPLOADS_DIR. URLs carry a
 // ?v= cache-buster set on upload, so responses can be cached aggressively.
 import { NextRequest, NextResponse } from "next/server";
 import { getImageRepositories } from "@/utils/images";

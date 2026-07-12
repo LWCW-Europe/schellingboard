@@ -44,7 +44,7 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV DATABASE_URL=file:/data/data.db
 # Uploaded files must live on the persistent /data volume
-ENV UPLOADS_DIR=/data/uploads
+ENV SB_UPLOADS_DIR=/data/uploads
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD node -e "fetch('http://localhost:3000/api/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
