@@ -11,18 +11,16 @@ function GuestRow({
   guest: Guest;
 }) {
   return (
-    <li key={id}>
-      <Link
-        href={`/guests/${id}`}
-        className="flex items-center gap-4 py-3 hover:bg-gray-50 rounded-md px-2"
-      >
-        <Avatar name={name} size="sm" image={avatarUrl ?? undefined} />
-        <div className="flex flex-col gap-1">
-          <span className="font-medium text-gray-900">{name}</span>
-          <span className="text-sm text-gray-500 line-clamp-1">{aboutMe}</span>
-        </div>
-      </Link>
-    </li>
+    <Link
+      href={`/guests/${id}`}
+      className="flex items-center gap-4 hover:bg-gray-50 rounded-md px-2"
+    >
+      <Avatar name={name} size="sm" image={avatarUrl ?? undefined} />
+      <div className="flex flex-col gap-1">
+        <span className="font-medium text-gray-900">{name}</span>
+        <span className="text-sm text-gray-500 line-clamp-1">{aboutMe}</span>
+      </div>
+    </Link>
   );
 }
 
