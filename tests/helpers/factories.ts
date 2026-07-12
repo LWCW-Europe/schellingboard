@@ -178,6 +178,7 @@ export async function createSession(
   eventId: string,
   opts?: {
     title?: string;
+    description?: string;
     locationIds?: string[];
     hostIds?: string[];
     startTime?: Date;
@@ -188,7 +189,7 @@ export async function createSession(
   const { sessions } = getRepositories();
   return sessions.create({
     title: opts?.title ?? `Test Session ${Date.now()}`,
-    description: "",
+    description: opts?.description ?? "",
     startTime: opts?.startTime,
     endTime: opts?.endTime,
     capacity: opts?.capacity ?? 30,

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import { sessionSlotAlignmentError } from "@/utils/day-window";
+import { notifySessionChanged } from "@/utils/notifications";
 import type { AdminActionResult } from "./admin-guests";
 
 async function isAdminRequest(): Promise<boolean> {
@@ -181,8 +182,9 @@ export async function adminUpdateSessionAction(
   );
   if (conflict) return { ok: false, error: conflict };
 
+  let updated;
   try {
-    await sessions.update(input.id, {
+    updated = await sessions.update(input.id, {
       title,
       description: input.description.trim(),
       startTime: range.start,
@@ -199,6 +201,12 @@ export async function adminUpdateSessionAction(
   }
 
   await revalidateEventPaths(session.eventId);
+  // Admins aren't guests, so there is no editor to exclude.
+  await notifySessionChanged({
+    before: session,
+    after: updated,
+    changedById: null,
+  });
   return { ok: true };
 }
 

@@ -24,6 +24,11 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
+
+import { sendMail } from "@/utils/mailer";
 import { revalidatePath } from "next/cache";
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import {
@@ -523,6 +528,40 @@ describe("adminUpdateSessionAction", () => {
     expect(updated?.endTime?.toISOString()).toBe("2030-01-01T11:00:00.000Z");
     expect(updated?.hosts.map((h) => h.id)).toEqual([h2.id]);
     expect(updated?.locations.map((l) => l.id)).toEqual([loc.id]);
+  });
+
+  it("emails RSVP'd guests when the session time changes", async () => {
+    vi.mocked(sendMail).mockReset();
+    const event = await createEvent();
+    const rsvper = await createGuest({ email: "rsvper@test.example" });
+    const loc = await createLocation();
+    const session = await createSession(event.id, {
+      title: "Workshop",
+      locationIds: [loc.id],
+      startTime: new Date("2030-01-01T10:00:00.000Z"),
+      endTime: new Date("2030-01-01T11:00:00.000Z"),
+    });
+    await getRepositories().rsvps.create({
+      sessionId: session.id,
+      guestId: rsvper.id,
+    });
+
+    const result = await adminUpdateSessionAction({
+      id: session.id,
+      title: "Workshop",
+      description: "",
+      startTime: "2030-01-01T12:00:00.000Z",
+      endTime: "2030-01-01T13:00:00.000Z",
+      capacity: 30,
+      adminManaged: false,
+      blocker: false,
+      closed: false,
+      hostIds: [],
+      locationIds: [loc.id],
+    });
+    expect(result.ok).toBe(true);
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect(vi.mocked(sendMail).mock.calls[0][0].to).toBe("rsvper@test.example");
   });
 
   it("clears the time when startTime and endTime are null", async () => {
