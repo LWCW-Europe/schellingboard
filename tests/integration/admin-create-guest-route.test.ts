@@ -72,7 +72,7 @@ describe("POST /api/admin/create-guest", () => {
     const res = await POST(
       makeReq({ name: "Tom Tailor", email: "tom.tailor@foocorp.com" })
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const body = await readJson(res);
     expect(body.created).toBe(true);
     expect(body.id).toBeTruthy();
@@ -91,6 +91,7 @@ describe("POST /api/admin/create-guest", () => {
     const res = await POST(
       makeReq({ name: "Tom Different", email: "tom@foocorp.com" })
     );
+    expect(res.status).toBe(200);
     const body = await readJson(res);
     expect(body.created).toBe(false);
     expect(body.id).toBe(first.id);

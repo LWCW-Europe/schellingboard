@@ -91,7 +91,7 @@ describe("POST /api/admin/create-session", () => {
 
   it("creates a session and returns its id", async () => {
     const res = await POST(makeReq(validBody()));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const body = await readJson(res);
 
     const session = await getRepositories().sessions.findById(body.id);
@@ -148,7 +148,7 @@ describe("POST /api/admin/create-session", () => {
     const res = await POST(
       makeReq({ ...validBody(), locationIds: [otherRoom.id] })
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const body = await readJson(res);
     expect(body.id).not.toBe(first.id);
     expect(await getRepositories().sessions.listByEvent(event.id)).toHaveLength(

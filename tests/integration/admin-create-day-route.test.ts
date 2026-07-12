@@ -80,7 +80,7 @@ describe("POST /api/admin/create-day", () => {
 
   it("creates a day and returns its id", async () => {
     const res = await POST(makeReq(validBody(event)));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const body = await readJson(res);
 
     const days = await getRepositories().days.listByEvent(event.id);
@@ -103,7 +103,7 @@ describe("POST /api/admin/create-day", () => {
         endBookings: "2026-09-02T17:00:00Z",
       })
     );
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect(await getRepositories().days.listByEvent(event.id)).toHaveLength(2);
   });
 

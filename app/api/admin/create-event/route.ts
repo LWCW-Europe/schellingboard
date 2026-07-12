@@ -178,5 +178,5 @@ export async function POST(req: Request) {
     throw e;
   }
 
-  return NextResponse.json({ id: event.id, slug: event.slug });
+  return NextResponse.json({ id: event.id, slug: event.slug }, { status: 201 });
 }
