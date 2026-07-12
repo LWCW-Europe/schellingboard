@@ -8,7 +8,7 @@ import { DateTime } from "luxon";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useContext, useState } from "react";
-import { CurrentUserModal, ConfirmationModal } from "../modals";
+import { CurrentUserModal, ConfirmationModal, AlertModal } from "../modals";
 import {
   UserContext,
   EventContext,
@@ -208,6 +208,7 @@ export function RealSessionCard(props: {
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [clashingSession, setClashingSession] = useState<Session | null>(null);
   const [confirmRSVPModalOpen, setConfirmRSVPModalOpen] = useState(false);
+  const [rsvpError, setRsvpError] = useState<string | null>(null);
 
   const hostStatus =
     currentUser && session.hosts.some((h) => h.id === currentUser);
@@ -255,6 +256,7 @@ export function RealSessionCard(props: {
     if (!currentUser || isRsvping) return;
 
     setIsRsvping(true);
+    setRsvpError(null);
 
     const currentRsvpStatus = rsvpd;
 
@@ -264,8 +266,10 @@ export function RealSessionCard(props: {
         session.id,
         currentRsvpStatus
       );
-      if (!result) {
-        console.error("Failed to update RSVP");
+      if (!result.ok) {
+        setRsvpError(
+          result.error ?? "Failed to update RSVP. Please try again."
+        );
       }
     } finally {
       setIsRsvping(false);
@@ -379,6 +383,13 @@ export function RealSessionCard(props: {
             : "This session conflicts with another session you're attending. Do you want to RSVP anyway?"
         }
         confirm={handleConfirmRSVP}
+        portal={true}
+      />
+
+      <AlertModal
+        open={rsvpError !== null}
+        close={() => setRsvpError(null)}
+        message={rsvpError ?? ""}
         portal={true}
       />
     </Tooltip>

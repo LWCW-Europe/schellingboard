@@ -66,6 +66,7 @@ export function ViewSession(props: {
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [clashingSession, setClashingSession] = useState<Session | null>(null);
   const [confirmRSVPModalOpen, setConfirmRSVPModalOpen] = useState(false);
+  const [rsvpError, setRsvpError] = useState<string | null>(null);
 
   const rsvpd = currentUser ? rsvpdForSession(session.id) : false;
   const isHost = currentUser && session.hosts.some((h) => h.id === currentUser);
@@ -114,13 +115,16 @@ export function ViewSession(props: {
     }
 
     setIsRsvping(true);
+    setRsvpError(null);
 
     const currentRsvpStatus = rsvpdForSession(session.id);
 
     void updateRsvp(currentUser, session.id, currentRsvpStatus)
       .then((result) => {
-        if (!result) {
-          console.error("Failed to update RSVP");
+        if (!result.ok) {
+          setRsvpError(
+            result.error ?? "Failed to update RSVP. Please try again."
+          );
         }
       })
       .finally(() => {
@@ -221,32 +225,39 @@ export function ViewSession(props: {
           </p>
         </div>
       )}
-      <div className="mt-2 mb-6 flex gap-2 flex-wrap">
-        {!isHost && (
-          <button
-            onClick={handleRsvp}
-            disabled={isRsvping || (!rsvpd && sessionFull)}
-            className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors disabled:opacity-50"
-          >
-            {isRsvping
-              ? "..."
-              : rsvpd
-                ? "Un-RSVP"
-                : sessionFull
-                  ? "Session full"
-                  : "RSVP"}
-          </button>
-        )}
+      <div className="mt-2 mb-6">
+        <div className="flex gap-2 flex-wrap">
+          {!isHost && (
+            <button
+              onClick={handleRsvp}
+              disabled={isRsvping || (!rsvpd && sessionFull)}
+              className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors disabled:opacity-50"
+            >
+              {isRsvping
+                ? "..."
+                : rsvpd
+                  ? "Un-RSVP"
+                  : sessionFull
+                    ? "Session full"
+                    : "RSVP"}
+            </button>
+          )}
 
-        {isEditable && (
-          <Link
-            href={`/${eventSlug}/edit-session?sessionID=${session.id}`}
-            className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors"
-            onClick={handleEditClick}
-          >
-            <PencilIcon className="h-3 w-3 mr-1" />
-            Edit
-          </Link>
+          {isEditable && (
+            <Link
+              href={`/${eventSlug}/edit-session?sessionID=${session.id}`}
+              className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors"
+              onClick={handleEditClick}
+            >
+              <PencilIcon className="h-3 w-3 mr-1" />
+              Edit
+            </Link>
+          )}
+        </div>
+        {rsvpError && (
+          <p role="alert" className="mt-2 text-xs text-red-600">
+            {rsvpError}
+          </p>
         )}
       </div>
       <div className="space-y-2 mb-6 text-sm text-gray-700">

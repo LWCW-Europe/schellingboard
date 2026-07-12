@@ -51,7 +51,7 @@ export interface EventContextType {
     guestId: string,
     sessionId: string,
     remove: boolean
-  ) => Promise<boolean>;
+  ) => Promise<{ ok: true } | { ok: false; error?: string }>;
 }
 
 export const EventContext = createContext<EventContextType>({
@@ -67,7 +67,7 @@ export const EventContext = createContext<EventContextType>({
   rsvpdForSession: () => false,
   updateRsvp: async () => {
     await Promise.resolve();
-    return false;
+    return { ok: false };
   },
 });
 
@@ -285,14 +285,18 @@ export function EventProvider({
         // Revert optimistic update on failure
         setRsvps(rsvpsBeforeUpdate);
         setRsvpCountDeltas(rsvpCountDeltasBeforeUpdate);
+        const body = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        return { ok: false, error: body?.error };
       }
-      return response.ok;
+      return { ok: true };
     } catch (error: unknown) {
       // Revert optimistic update on error
       console.error("Error updating RSVP:", error);
       setRsvps(rsvpsBeforeUpdate);
       setRsvpCountDeltas(rsvpCountDeltasBeforeUpdate);
-      return false;
+      return { ok: false };
     }
   };
 

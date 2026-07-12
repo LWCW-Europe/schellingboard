@@ -128,6 +128,9 @@ describe("POST /api/toggle-rsvp", () => {
         makeToggleReq({ sessionId: session.id, guestId: bob.id })
       );
       expect(second.status).toBe(409);
+      // The client surfaces this message directly to the user, so its
+      // wording is part of the API contract, not just an implementation detail.
+      expect(await second.json()).toEqual({ error: "This session is full" });
       expect(await rsvpsForGuest(bob.id)).toHaveLength(0);
 
       // Removal must still work on a full session.
