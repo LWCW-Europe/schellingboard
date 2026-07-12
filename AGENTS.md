@@ -45,6 +45,10 @@ jj squash --from <commit> --to @ -m "message" -- <path>
 ## Testing
 
 - Always run tests with `make test` (not `bun test`); E2E tests with `make test-e2e`
+- Run a single E2E spec/test instead of the whole suite:
+  - `bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts` (one file)
+  - `bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts:42` (one test by line)
+  - `bun set-env.ts test bun x playwright test -g "creates a proposal"` (by title substring)
 - Full test strategy and TDD rules are in [CONTRIBUTING.md § Testing](CONTRIBUTING.md#testing) — read it before writing any test
 
 ### Test tiers (short form)

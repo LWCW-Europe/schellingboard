@@ -240,10 +240,12 @@ Install Playwright browsers before first use:
 make install-playwright
 ```
 
-Run a single E2E spec:
+Run a single E2E spec, or filter by test title with `-g`:
 
 ```bash
 bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts
+bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts:42   # single test by line
+bun set-env.ts test bun x playwright test -g "creates a proposal"          # by title substring
 ```
 
 Run against a different environment (e.g. dev database — still resets it):
