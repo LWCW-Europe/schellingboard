@@ -57,7 +57,6 @@ export async function POST(req: Request) {
       return Response.error();
     }
   } else {
-    console.log("REMOVING RSVP", { sessionId, guestId });
     try {
       await repos.rsvps.deleteBySessionAndGuest(sessionId, guestId);
     } catch (err) {
