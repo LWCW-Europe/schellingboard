@@ -9,6 +9,7 @@ import { DateTime } from "luxon";
 import * as schema from "@/db/schema";
 import { resolveDbPath, runMigrations } from "@/db/migrate";
 import { eventNameToSlug } from "@/utils/utils";
+import { uploadsDir } from "@/utils/uploads-dir";
 import { VoteChoice } from "@/db/repositories/interfaces";
 
 const TZ = "Europe/Berlin";
@@ -161,12 +162,8 @@ const seedAvatarsDir = path.join(
   "seed-assets/avatars"
 );
 
-function uploadsBaseDir(): string {
-  return process.env.SB_UPLOADS_DIR ?? "./uploads";
-}
-
 function uploadedAvatarsDir(): string {
-  return path.join(uploadsBaseDir(), "avatars");
+  return path.join(uploadsDir(), "avatars");
 }
 
 // clearAll() recursively deletes subdirectories of the uploads dir. Guard
@@ -753,7 +750,7 @@ const gammaSessionConfigs: GammaSessionConfig[] = [
 function clearAll() {
   console.log("🧹 Clearing all tables...");
   // Validate the uploads dir before opening the DB or deleting anything.
-  const uploadsDir = assertSafeUploadsDir(uploadsBaseDir());
+  const uploadsBase = assertSafeUploadsDir(uploadsDir());
   const db = openDb();
   db.delete(schema.votes).run();
   db.delete(schema.rsvps).run();
@@ -772,8 +769,11 @@ function clearAll() {
   // Avatar files belong to the guest rows just deleted; remove them too so
   // repeated seeding doesn't accumulate orphaned uploads. Likewise the map
   // upload belongs to the site-settings row just cleared.
-  fs.rmSync(path.join(uploadsDir, "avatars"), { recursive: true, force: true });
-  fs.rmSync(path.join(uploadsDir, "site"), { recursive: true, force: true });
+  fs.rmSync(path.join(uploadsBase, "avatars"), {
+    recursive: true,
+    force: true,
+  });
+  fs.rmSync(path.join(uploadsBase, "site"), { recursive: true, force: true });
   console.log("  ✅ All tables cleared");
 }
 

@@ -7,6 +7,7 @@ import {
   MIN_IMAGE_WIDTH,
   REQUIRED_ASPECT_RATIO,
 } from "@/utils/location-image-constraints";
+import { uploadsDir } from "@/utils/uploads-dir";
 
 // Images are stored on the filesystem under SB_UPLOADS_DIR
 // (a persistent volume in production), not in public/,
@@ -31,12 +32,10 @@ export abstract class BaseImageResourceRepository<
   abstract readonly directory: string;
 
   get dirPath() {
-    // turbopackIgnore: paths point at a runtime uploads volume, not build
-    // assets; without it Turbopack traces the whole project into the bundle.
-    return path.join(
-      /*turbopackIgnore: true*/ process.env.SB_UPLOADS_DIR ?? "./uploads",
-      this.directory
-    );
+    // These paths point at a runtime uploads volume, not build assets. The
+    // fs calls below carry /*turbopackIgnore: true*/ so the standalone build's
+    // file tracer doesn't sweep the whole project into the bundle.
+    return path.join(/*turbopackIgnore: true*/ uploadsDir(), this.directory);
   }
 
   protected abstract getEndpoint(filename: string): string;

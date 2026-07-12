@@ -11,6 +11,7 @@ import sharp from "sharp";
 // ratio, so we validate only format and size.
 
 import { MAX_MAP_BYTES } from "./map-image-constraints";
+import { uploadsDir } from "./uploads-dir";
 
 const FORMAT_EXTENSIONS: Record<string, string> = {
   jpeg: "jpg",
@@ -19,7 +20,7 @@ const FORMAT_EXTENSIONS: Record<string, string> = {
 };
 
 function mapDir(): string {
-  return path.join(process.env.SB_UPLOADS_DIR ?? "./uploads", "site");
+  return path.join(uploadsDir(), "site");
 }
 
 /**
