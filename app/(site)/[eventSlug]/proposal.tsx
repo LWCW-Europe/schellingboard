@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { SessionProposal } from "@/db/repositories/interfaces";
 import { formatDuration, durationMinusBreak } from "@/utils/utils";
 import { useBreakMinutes } from "@/app/(site)/context";
+import { Markdown } from "@/app/(site)/markdown";
 
 export function Proposal(props: { proposal: SessionProposal }) {
   const { proposal } = props;
@@ -24,7 +25,9 @@ export function Proposal(props: { proposal: SessionProposal }) {
           </span>
         ))}
       </p>
-      <p className="mb-3 whitespace-pre-line">{proposal.description}</p>
+      <div className="mb-3">
+        <Markdown>{proposal.description}</Markdown>
+      </div>
       {proposal.durationMinutes && (
         <p className="text-sm text-gray-600 mb-4">
           Duration:{" "}

@@ -14,6 +14,7 @@ import {
 } from "@/app/admin/buttons";
 import { DataTable } from "../../data-table";
 import { SelectHosts } from "@/app/select-hosts";
+import { MarkdownHint } from "@/app/(site)/markdown";
 
 export type ProposalRow = {
   id: string;
@@ -237,6 +238,7 @@ function ProposalItem({
           onChange={(e) => setDescription(e.target.value)}
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
         />
+        <MarkdownHint />
       </div>
       <div className="flex flex-col gap-1">
         <label

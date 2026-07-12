@@ -17,6 +17,7 @@ import {
 import { DataTable } from "../../data-table";
 import { SelectHosts } from "@/app/select-hosts";
 import { utcToZonedInput, zonedInputToUtc } from "@/utils/admin-datetime";
+import { MarkdownHint } from "@/app/(site)/markdown";
 
 export type SessionRow = {
   id: string;
@@ -265,6 +266,7 @@ function SessionForm({
           onChange={(e) => setDescription(e.target.value)}
           className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
         />
+        <MarkdownHint />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">

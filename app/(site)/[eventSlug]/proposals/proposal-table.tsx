@@ -28,6 +28,7 @@ import { formatDuration, durationMinusBreak } from "@/utils/utils";
 import { VotingButtons } from "./voting-buttons";
 import { VoteChoice } from "@/app/(site)/votes";
 import { viewProposalLinkFromOwner } from "../modal-nav";
+import { stripMarkdown } from "@/utils/markdown";
 
 const ITEMS_PER_PAGE = 1000;
 
@@ -484,235 +485,76 @@ export function ProposalTable({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {currentPageProposals.map((proposal) => (
-              <tr key={proposal.id} className="hover:bg-gray-200">
-                <td className="px-4 lg:px-6 py-4" title={proposal.title}>
-                  <Link
-                    {...viewProposalLinkFromOwner(eventSlug, proposal.id)}
-                    className="block w-full"
-                  >
-                    <div className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
-                      {proposal.title}
-                    </div>
-                  </Link>
-                </td>
-                <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="truncate">
-                    {proposal.hosts.length === 0
-                      ? "-"
-                      : proposal.hosts.map((h, i) => (
-                          <span key={h.id}>
-                            {i > 0 && ", "}
-                            <Link
-                              href={`/guests/${h.id}`}
-                              className="hover:text-blue-600 transition-colors"
-                            >
-                              {h.name}
-                            </Link>
-                          </span>
-                        ))}
-                  </div>
-                </td>
-                <td className="px-4 lg:px-6 py-4" title={proposal.description}>
-                  <div className="text-sm text-gray-500 line-clamp-2 leading-tight">
-                    {proposal.description || "-"}
-                  </div>
-                </td>
-                <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    {proposal.durationMinutes ? (
-                      <>
-                        <ClockIcon className="h-4 w-4 mr-1 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm text-gray-500 truncate">
-                          {formatDuration(
-                            durationMinusBreak(
-                              proposal.durationMinutes,
-                              event.breakMinutes
-                            )
-                          )}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-sm text-gray-500">-</span>
-                    )}
-                  </div>
-                </td>
-                {!schedEnabled && (
-                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                    {currentUserId &&
-                      !proposal.hosts.some((h) => h.id === currentUserId) && (
-                        <VotingButtons
-                          proposalId={proposal.id}
-                          votingEnabled={votingEnabled}
-                          votingDisabledText={votingDisabledText}
-                        />
-                      )}
+            {currentPageProposals.map((proposal) => {
+              const plainDescription = stripMarkdown(proposal.description);
+              return (
+                <tr key={proposal.id} className="hover:bg-gray-200">
+                  <td className="px-4 lg:px-6 py-4" title={proposal.title}>
+                    <Link
+                      {...viewProposalLinkFromOwner(eventSlug, proposal.id)}
+                      className="block w-full"
+                    >
+                      <div className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
+                        {proposal.title}
+                      </div>
+                    </Link>
                   </td>
-                )}
-                {schedEnabled && (
-                  <>
-                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                      <span
-                        title={(() => {
-                          const vote = votes.find(
-                            (v) =>
-                              v.proposalId === proposal.id &&
-                              v.guestId === currentUserId
-                          );
-                          if (!vote) return "No vote";
-                          switch (vote.choice) {
-                            case VoteChoice.interested:
-                              return "Interested";
-                            case VoteChoice.maybe:
-                              return "Maybe";
-                            case VoteChoice.skip:
-                              return "Skip";
-                            default:
-                              return "No vote";
-                          }
-                        })()}
-                      >
-                        {proposalVoteEmoji(proposal.id)}
-                      </span>
-                    </td>
-                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <span
-                          title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
-                          className="flex items-center gap-1 text-sm text-gray-500"
-                        >
-                          ❤️&nbsp;{proposal.interestedVotesCount}
-                        </span>
-                        <span
-                          title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
-                          className="flex items-center gap-1 text-sm text-gray-500"
-                        >
-                          ⭐&nbsp;{proposal.maybeVotesCount}
-                        </span>
-                      </div>
-                    </td>
-                  </>
-                )}
-                <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                  <div className="flex gap-1 flex-col sm:flex-row">
-                    {canEdit(proposal.hosts) && (
-                      <div className="relative inline-block group">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(
-                              `/${eventSlug}/proposals/${proposal.id}/edit`
-                            );
-                          }}
-                          className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors"
-                        >
-                          <PencilIcon className="h-3 w-3 mr-1" />
-                          Edit
-                        </button>
-                      </div>
-                    )}
-                    {canEdit(proposal.hosts) && (
-                      <HoverTooltip
-                        text={schedDisabledText}
-                        visible={!schedEnabled}
-                      >
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/${eventSlug}/add-session?proposalID=${proposal.id}`
-                            )
-                          }
-                          className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 hover:bg-rose-50 transition-colors ${
-                            schedEnabled ? "" : "opacity-50 cursor-not-allowed"
-                          }`}
-                          disabled={!schedEnabled}
-                        >
-                          <CalendarIcon className="h-3 w-3 mr-1" />
-                          Schedule
-                        </button>
-                      </HoverTooltip>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {searchResults.length === 0 && (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 lg:px-6 py-4 text-center text-sm text-gray-500"
-                >
-                  No proposals found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile Card View */}
-      <div className="block md:hidden space-y-4">
-        {currentPageProposals.map((proposal) => (
-          <div
-            key={proposal.id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 relative"
-          >
-            <div className="space-y-3">
-              <div>
-                <h3 className="text-base font-medium text-gray-900">
-                  <Link
-                    {...viewProposalLinkFromOwner(eventSlug, proposal.id)}
-                    className="hover:text-blue-600 transition-colors after:absolute after:inset-0"
-                  >
-                    {proposal.title}
-                  </Link>
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  Host(s): {proposal.hosts.map((h) => h.name).join(", ") || "-"}
-                </p>
-              </div>
-
-              {proposal.description ? (
-                <p className="text-sm text-gray-600 line-clamp-3">
-                  {proposal.description}
-                </p>
-              ) : (
-                <p className="text-sm text-gray-500">-</p>
-              )}
-
-              {proposal.durationMinutes ? (
-                <div className="flex items-center">
-                  <ClockIcon className="h-4 w-4 mr-1 text-gray-400" />
-                  <span className="text-sm text-gray-500">
-                    {formatDuration(
-                      durationMinusBreak(
-                        proposal.durationMinutes,
-                        event.breakMinutes
-                      )
-                    )}
-                  </span>
-                </div>
-              ) : (
-                <div className="text-sm text-gray-500">-</div>
-              )}
-
-              <div className="pt-2 border-t border-gray-100 space-y-3">
-                {currentUserId &&
-                  !proposal.hosts.some((h) => h.id === currentUserId) &&
-                  !schedEnabled && (
-                    <div className="relative z-10">
-                      <VotingButtons
-                        proposalId={proposal.id}
-                        votingEnabled={votingEnabled}
-                        votingDisabledText={votingDisabledText}
-                      />
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="truncate">
+                      {proposal.hosts.length === 0
+                        ? "-"
+                        : proposal.hosts.map((h, i) => (
+                            <span key={h.id}>
+                              {i > 0 && ", "}
+                              <Link
+                                href={`/guests/${h.id}`}
+                                className="hover:text-blue-600 transition-colors"
+                              >
+                                {h.name}
+                              </Link>
+                            </span>
+                          ))}
                     </div>
+                  </td>
+                  <td className="px-4 lg:px-6 py-4" title={plainDescription}>
+                    <div className="text-sm text-gray-500 line-clamp-2 leading-tight">
+                      {plainDescription || "-"}
+                    </div>
+                  </td>
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {proposal.durationMinutes ? (
+                        <>
+                          <ClockIcon className="h-4 w-4 mr-1 text-gray-400 flex-shrink-0" />
+                          <span className="text-sm text-gray-500 truncate">
+                            {formatDuration(
+                              durationMinusBreak(
+                                proposal.durationMinutes,
+                                event.breakMinutes
+                              )
+                            )}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-sm text-gray-500">-</span>
+                      )}
+                    </div>
+                  </td>
+                  {!schedEnabled && (
+                    <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                      {currentUserId &&
+                        !proposal.hosts.some((h) => h.id === currentUserId) && (
+                          <VotingButtons
+                            proposalId={proposal.id}
+                            votingEnabled={votingEnabled}
+                            votingDisabledText={votingDisabledText}
+                          />
+                        )}
+                    </td>
                   )}
-                {schedEnabled && (
-                  <>
-                    {!canEdit(proposal.hosts) && (
-                      <div>
-                        Your vote:
+                  {schedEnabled && (
+                    <>
+                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <span
                           title={(() => {
                             const vote = votes.find(
@@ -732,74 +574,242 @@ export function ProposalTable({
                                 return "No vote";
                             }
                           })()}
-                          className="ml-1"
                         >
                           {proposalVoteEmoji(proposal.id)}
                         </span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      Total votes:
-                      <span
-                        title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
-                        className="flex items-center gap-1 text-sm text-gray-500"
-                      >
-                        ❤️&nbsp;{proposal.interestedVotesCount}
-                      </span>
-                      <span
-                        title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
-                        className="flex items-center gap-1 text-sm text-gray-500"
-                      >
-                        ⭐&nbsp;{proposal.maybeVotesCount}
-                      </span>
+                      </td>
+                      <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span
+                            title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
+                            className="flex items-center gap-1 text-sm text-gray-500"
+                          >
+                            ❤️&nbsp;{proposal.interestedVotesCount}
+                          </span>
+                          <span
+                            title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
+                            className="flex items-center gap-1 text-sm text-gray-500"
+                          >
+                            ⭐&nbsp;{proposal.maybeVotesCount}
+                          </span>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                  <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
+                    <div className="flex gap-1 flex-col sm:flex-row">
+                      {canEdit(proposal.hosts) && (
+                        <div className="relative inline-block group">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(
+                                `/${eventSlug}/proposals/${proposal.id}/edit`
+                              );
+                            }}
+                            className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors"
+                          >
+                            <PencilIcon className="h-3 w-3 mr-1" />
+                            Edit
+                          </button>
+                        </div>
+                      )}
+                      {canEdit(proposal.hosts) && (
+                        <HoverTooltip
+                          text={schedDisabledText}
+                          visible={!schedEnabled}
+                        >
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/${eventSlug}/add-session?proposalID=${proposal.id}`
+                              )
+                            }
+                            className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 hover:bg-rose-50 transition-colors ${
+                              schedEnabled
+                                ? ""
+                                : "opacity-50 cursor-not-allowed"
+                            }`}
+                            disabled={!schedEnabled}
+                          >
+                            <CalendarIcon className="h-3 w-3 mr-1" />
+                            Schedule
+                          </button>
+                        </HoverTooltip>
+                      )}
                     </div>
-                  </>
+                  </td>
+                </tr>
+              );
+            })}
+            {searchResults.length === 0 && (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 lg:px-6 py-4 text-center text-sm text-gray-500"
+                >
+                  No proposals found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="block md:hidden space-y-4">
+        {currentPageProposals.map((proposal) => {
+          const plainDescription = stripMarkdown(proposal.description);
+          return (
+            <div
+              key={proposal.id}
+              className="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50 relative"
+            >
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-base font-medium text-gray-900">
+                    <Link
+                      {...viewProposalLinkFromOwner(eventSlug, proposal.id)}
+                      className="hover:text-blue-600 transition-colors after:absolute after:inset-0"
+                    >
+                      {proposal.title}
+                    </Link>
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Host(s):{" "}
+                    {proposal.hosts.map((h) => h.name).join(", ") || "-"}
+                  </p>
+                </div>
+
+                {plainDescription ? (
+                  <p className="text-sm text-gray-600 line-clamp-3">
+                    {plainDescription}
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-500">-</p>
                 )}
 
-                <div className="flex gap-2 relative z-10">
-                  {canEdit(proposal.hosts) && (
-                    <div className="relative inline-block group">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(
-                            `/${eventSlug}/proposals/${proposal.id}/edit`
-                          );
-                        }}
-                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors"
-                      >
-                        <PencilIcon className="h-4 w-4 mr-1" />
-                        Edit
-                      </button>
-                    </div>
+                {proposal.durationMinutes ? (
+                  <div className="flex items-center">
+                    <ClockIcon className="h-4 w-4 mr-1 text-gray-400" />
+                    <span className="text-sm text-gray-500">
+                      {formatDuration(
+                        durationMinusBreak(
+                          proposal.durationMinutes,
+                          event.breakMinutes
+                        )
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">-</div>
+                )}
+
+                <div className="pt-2 border-t border-gray-100 space-y-3">
+                  {currentUserId &&
+                    !proposal.hosts.some((h) => h.id === currentUserId) &&
+                    !schedEnabled && (
+                      <div className="relative z-10">
+                        <VotingButtons
+                          proposalId={proposal.id}
+                          votingEnabled={votingEnabled}
+                          votingDisabledText={votingDisabledText}
+                        />
+                      </div>
+                    )}
+                  {schedEnabled && (
+                    <>
+                      {!canEdit(proposal.hosts) && (
+                        <div>
+                          Your vote:
+                          <span
+                            title={(() => {
+                              const vote = votes.find(
+                                (v) =>
+                                  v.proposalId === proposal.id &&
+                                  v.guestId === currentUserId
+                              );
+                              if (!vote) return "No vote";
+                              switch (vote.choice) {
+                                case VoteChoice.interested:
+                                  return "Interested";
+                                case VoteChoice.maybe:
+                                  return "Maybe";
+                                case VoteChoice.skip:
+                                  return "Skip";
+                                default:
+                                  return "No vote";
+                              }
+                            })()}
+                            className="ml-1"
+                          >
+                            {proposalVoteEmoji(proposal.id)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2">
+                        Total votes:
+                        <span
+                          title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
+                          className="flex items-center gap-1 text-sm text-gray-500"
+                        >
+                          ❤️&nbsp;{proposal.interestedVotesCount}
+                        </span>
+                        <span
+                          title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
+                          className="flex items-center gap-1 text-sm text-gray-500"
+                        >
+                          ⭐&nbsp;{proposal.maybeVotesCount}
+                        </span>
+                      </div>
+                    </>
                   )}
-                  {canEdit(proposal.hosts) && (
-                    <HoverTooltip
-                      text={schedDisabledText}
-                      visible={!schedEnabled}
-                    >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(
-                            `/${eventSlug}/add-session?proposalID=${proposal.id}`
-                          );
-                        }}
-                        className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-rose-400 text-rose-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 hover:bg-rose-50 transition-colors ${
-                          schedEnabled ? "" : "opacity-50 cursor-not-allowed"
-                        }`}
-                        disabled={!schedEnabled}
+
+                  <div className="flex gap-2 relative z-10">
+                    {canEdit(proposal.hosts) && (
+                      <div className="relative inline-block group">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(
+                              `/${eventSlug}/proposals/${proposal.id}/edit`
+                            );
+                          }}
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors"
+                        >
+                          <PencilIcon className="h-4 w-4 mr-1" />
+                          Edit
+                        </button>
+                      </div>
+                    )}
+                    {canEdit(proposal.hosts) && (
+                      <HoverTooltip
+                        text={schedDisabledText}
+                        visible={!schedEnabled}
                       >
-                        <CalendarIcon className="h-4 w-4 mr-1" />
-                        Schedule
-                      </button>
-                    </HoverTooltip>
-                  )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(
+                              `/${eventSlug}/add-session?proposalID=${proposal.id}`
+                            );
+                          }}
+                          className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-rose-400 text-rose-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 hover:bg-rose-50 transition-colors ${
+                            schedEnabled ? "" : "opacity-50 cursor-not-allowed"
+                          }`}
+                          disabled={!schedEnabled}
+                        >
+                          <CalendarIcon className="h-4 w-4 mr-1" />
+                          Schedule
+                        </button>
+                      </HoverTooltip>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {searchResults.length === 0 && (
           <div className="text-center py-8 text-sm text-gray-500">
             No proposals found

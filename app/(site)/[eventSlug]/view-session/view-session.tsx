@@ -15,6 +15,7 @@ import { sessionsOverlap } from "../../session_utils";
 import { LockIcon } from "../../lock-icon";
 import { LocationTag } from "../session-text";
 import { viewProposalLinkFromElsewhere } from "../modal-nav";
+import { Markdown } from "@/app/(site)/markdown";
 
 export function ViewSession(props: {
   session: Session;
@@ -299,7 +300,7 @@ export function ViewSession(props: {
       </div>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Description</h3>
-        <p className="whitespace-pre-line">{session.description}</p>
+        <Markdown>{session.description}</Markdown>
       </div>
       {session.proposalId && (
         <p className="text-sm text-gray-600">

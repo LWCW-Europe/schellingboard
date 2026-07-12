@@ -4,6 +4,7 @@ import { getRepositories } from "@/db/container";
 import { eventNameToSlug } from "@/utils/utils";
 import { sanitizeGuest } from "@/utils/guests";
 import { Avatar } from "../avatar";
+import { Markdown } from "@/app/(site)/markdown";
 import { JSX, PropsWithChildren } from "react";
 import {
   ProfileItem,
@@ -81,7 +82,9 @@ export default async function GuestProfilePage(props: {
       {guest.aboutMe && (
         <section>
           <h2 className="text-lg font-semibold mb-2">About me</h2>
-          <p className="whitespace-pre-line text-gray-800">{guest.aboutMe}</p>
+          <div className="text-gray-800">
+            <Markdown>{guest.aboutMe}</Markdown>
+          </div>
         </section>
       )}
 

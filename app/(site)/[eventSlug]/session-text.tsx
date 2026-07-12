@@ -9,6 +9,8 @@ import { UserContext, EventContext, useBreakMinutes } from "../context";
 import { CheckCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 import { LockIcon } from "../lock-icon";
 import { viewSessionLinkFromOwner } from "./modal-nav";
+import { Markdown } from "@/app/(site)/markdown";
+import { stripMarkdown } from "@/utils/markdown";
 
 export function SessionText(props: {
   session: Session;
@@ -27,11 +29,8 @@ export function SessionText(props: {
   const isHost = currentUser && session.hosts.some((h) => h.id === currentUser);
 
   const description = session.description || "";
-  const isLongDescription = description.length > 200;
-  const displayDescription =
-    isLongDescription && !showFullDescription
-      ? description.substring(0, 200) + "..."
-      : description;
+  const plainDescription = stripMarkdown(description);
+  const isLongDescription = plainDescription.length > 200;
 
   const linkProps = viewSessionLinkFromOwner(
     searchParams,
@@ -114,17 +113,23 @@ export function SessionText(props: {
           ))}
         </div>
       </div>
-      <p className="text-sm whitespace-pre-line mt-2">
-        {displayDescription}
+      <div className="text-sm mt-2">
+        {isLongDescription && !showFullDescription ? (
+          <p className="whitespace-pre-line">
+            {plainDescription.substring(0, 200) + "..."}
+          </p>
+        ) : (
+          <Markdown>{description}</Markdown>
+        )}
         {isLongDescription && (
           <button
             onClick={() => setShowFullDescription(!showFullDescription)}
-            className="ml-2 text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+            className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
           >
             {showFullDescription ? "Show less" : "Show more"}
           </button>
         )}
-      </p>
+      </div>
     </div>
   );
 }

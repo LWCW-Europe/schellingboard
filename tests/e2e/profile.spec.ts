@@ -123,6 +123,46 @@ test.describe("Edit profile", () => {
     ).toBeVisible();
   });
 
+  test("renders markdown in About me, safely", async ({ page }) => {
+    await login(page);
+    await page.goto("/Conference-Alpha/proposals");
+
+    await selectCurrentUser(page);
+    await page.getByRole("link", { name: /Participants/i }).click();
+    await page.getByRole("link", { name: /Edit profile/i }).click();
+
+    await page
+      .getByLabel("About me")
+      .fill(
+        "# Big header\n\n**Bold statement** and [my site](https://example.com)\n\n<script>alert(1)</script>"
+      );
+    await page.getByRole("button", { name: /^Save$/ }).click();
+    await expect(page).toHaveURL(/\/guests\/[^/]+$/);
+
+    // Markdown renders: bold text and a real link.
+    await expect(
+      page.locator("strong", { hasText: "Bold statement" })
+    ).toBeVisible();
+    const link = page.getByRole("link", { name: "my site" });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute("href", "https://example.com");
+
+    // Headings are capped: text shows but not as a heading element.
+    await expect(page.getByText("Big header")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Big header" })).toHaveCount(
+      0
+    );
+
+    // Raw HTML is escaped and displayed as literal text, not executed.
+    await expect(page.getByText("<script>alert(1)</script>")).toBeVisible();
+
+    // The attendees list preview shows plain text, not raw markdown syntax.
+    await page.getByRole("link", { name: /Participants/i }).click();
+    await expect(page).toHaveURL(/\/guests$/);
+    await expect(page.getByText("Big header Bold statement")).toBeVisible();
+    await expect(page.getByText("**Bold statement**")).toHaveCount(0);
+  });
+
   test("shows no image when the user avatar is reset", async ({ page }) => {
     await login(page);
     await page.goto("/Conference-Alpha/proposals");

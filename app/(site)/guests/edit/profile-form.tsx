@@ -28,6 +28,7 @@ import {
   ComboboxOptions,
 } from "@headlessui/react";
 import { ChevronUpDownIcon } from "@heroicons/react/16/solid";
+import { MarkdownHint } from "@/app/(site)/markdown";
 
 const profileFormSchema = profileSchema.extend({
   avatar: z.instanceof(FileList).nullable().optional(),
@@ -256,6 +257,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
               form.formState.errors.aboutMe ? "invalid" : ""
             )}
           />
+          <MarkdownHint />
           <span className="text-rose-400 text-sm">
             {form.formState.errors.aboutMe?.message}
           </span>
