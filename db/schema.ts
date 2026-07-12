@@ -58,6 +58,12 @@ export const events = sqliteTable(
       .notNull()
       .default(30),
     timezone: text("timezone").notNull().default("UTC"),
+    // When set, a session's capacity (> 0) rejects further RSVPs once reached.
+    rsvpCapacityHardLimit: integer("rsvp_capacity_hard_limit", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(false),
     icon: text("icon"),
   },
   (table) => [uniqueIndex("events_slug_unique").on(table.slug)]

@@ -36,6 +36,7 @@ export function EventDetailForm({ event }: { event: Event }) {
     maxSessionDuration: String(event.maxSessionDuration),
     breakMinutes: String(event.breakMinutes),
     slotIncrementMinutes: String(event.slotIncrementMinutes),
+    rsvpCapacityHardLimit: event.rsvpCapacityHardLimit,
     icon: normalizeEventIconName(event.icon),
   });
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export function EventDetailForm({ event }: { event: Event }) {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [isDeleting, startDelete] = useTransition();
 
-  const set = (key: keyof EventInput, value: string) => {
+  const set = <K extends keyof EventInput>(key: K, value: EventInput[K]) => {
     setSaveSuccess(false);
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -200,6 +201,19 @@ export function EventDetailForm({ event }: { event: Event }) {
               ))}
             </select>
           </div>
+        </div>
+        <div className="flex items-start gap-2">
+          <input
+            id="ev-rsvp-hard-limit"
+            type="checkbox"
+            checked={form.rsvpCapacityHardLimit ?? false}
+            onChange={(e) => set("rsvpCapacityHardLimit", e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-rose-500 focus:ring-rose-400"
+          />
+          <label htmlFor="ev-rsvp-hard-limit" className="text-sm text-gray-600">
+            Enforce session capacity as a hard limit — reject RSVPs once a
+            session is full (capacity 0 means unlimited)
+          </label>
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-sm text-gray-600">Icon</span>

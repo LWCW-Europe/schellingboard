@@ -1,0 +1,1 @@
+ALTER TABLE `events` ADD `rsvp_capacity_hard_limit` integer DEFAULT false NOT NULL;

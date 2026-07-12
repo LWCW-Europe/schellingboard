@@ -480,6 +480,25 @@ describe("event actions", () => {
       );
     });
 
+    it("updates the RSVP capacity hard limit", async () => {
+      const event = await createEvent();
+      expect(
+        (await getRepositories().events.findById(event.id))
+          ?.rsvpCapacityHardLimit
+      ).toBe(false);
+
+      const result = await updateEventAction({
+        id: event.id,
+        ...VALID_EVENT_INPUT,
+        rsvpCapacityHardLimit: true,
+      });
+      expect(result.ok).toBe(true);
+      expect(
+        (await getRepositories().events.findById(event.id))
+          ?.rsvpCapacityHardLimit
+      ).toBe(true);
+    });
+
     it("updates the break", async () => {
       const event = await createEvent({ name: "Breaky" });
       const result = await updateEventAction({

@@ -105,6 +105,127 @@ describe("POST /api/toggle-rsvp", () => {
     expect(await rsvpsForGuest(guest.id)).toHaveLength(0);
   });
 
+  describe("capacity hard limit", () => {
+    it("rejects a new RSVP when the session is full and the event enforces capacity", async () => {
+      const event = await createEvent({
+        phase: "scheduling",
+        rsvpCapacityHardLimit: true,
+      });
+      const alice = await createGuest({ name: "Alice" });
+      const bob = await createGuest({ name: "Bob" });
+      const session = await createSession(event.id, { capacity: 1 });
+      await getRepositories().guests.assignToEvent(event.id, [
+        alice.id,
+        bob.id,
+      ]);
+
+      const first = await toggleRsvp(
+        makeToggleReq({ sessionId: session.id, guestId: alice.id })
+      );
+      expect(first.ok).toBe(true);
+
+      const second = await toggleRsvp(
+        makeToggleReq({ sessionId: session.id, guestId: bob.id })
+      );
+      expect(second.status).toBe(409);
+      expect(await rsvpsForGuest(bob.id)).toHaveLength(0);
+
+      // Removal must still work on a full session.
+      const remove = await toggleRsvp(
+        makeToggleReq({
+          sessionId: session.id,
+          guestId: alice.id,
+          remove: true,
+        })
+      );
+      expect(remove.ok).toBe(true);
+      expect(await rsvpsForGuest(alice.id)).toHaveLength(0);
+    });
+
+    it("allows exceeding capacity when the event does not enforce it", async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const alice = await createGuest({ name: "Alice" });
+      const bob = await createGuest({ name: "Bob" });
+      const session = await createSession(event.id, { capacity: 1 });
+      await getRepositories().guests.assignToEvent(event.id, [
+        alice.id,
+        bob.id,
+      ]);
+
+      for (const guest of [alice, bob]) {
+        const res = await toggleRsvp(
+          makeToggleReq({ sessionId: session.id, guestId: guest.id })
+        );
+        expect(res.ok).toBe(true);
+        expect(await rsvpsForGuest(guest.id)).toHaveLength(1);
+      }
+    });
+
+    it("treats capacity 0 as unlimited even when enforcement is on", async () => {
+      const event = await createEvent({
+        phase: "scheduling",
+        rsvpCapacityHardLimit: true,
+      });
+      const alice = await createGuest({ name: "Alice" });
+      const bob = await createGuest({ name: "Bob" });
+      const session = await createSession(event.id, { capacity: 0 });
+      await getRepositories().guests.assignToEvent(event.id, [
+        alice.id,
+        bob.id,
+      ]);
+
+      for (const guest of [alice, bob]) {
+        const res = await toggleRsvp(
+          makeToggleReq({ sessionId: session.id, guestId: guest.id })
+        );
+        expect(res.ok).toBe(true);
+        expect(await rsvpsForGuest(guest.id)).toHaveLength(1);
+      }
+    });
+
+    it("re-adding an existing RSVP on a full session succeeds", async () => {
+      const event = await createEvent({
+        phase: "scheduling",
+        rsvpCapacityHardLimit: true,
+      });
+      const alice = await createGuest({ name: "Alice" });
+      const session = await createSession(event.id, { capacity: 1 });
+      await getRepositories().guests.assignToEvent(event.id, [alice.id]);
+
+      for (let i = 0; i < 2; i++) {
+        const res = await toggleRsvp(
+          makeToggleReq({ sessionId: session.id, guestId: alice.id })
+        );
+        expect(res.ok).toBe(true);
+      }
+      expect(await rsvpsForGuest(alice.id)).toHaveLength(1);
+    });
+
+    it("enforces capacity atomically for concurrent requests", async () => {
+      const event = await createEvent({
+        phase: "scheduling",
+        rsvpCapacityHardLimit: true,
+      });
+      const alice = await createGuest({ name: "Alice" });
+      const bob = await createGuest({ name: "Bob" });
+      const session = await createSession(event.id, { capacity: 1 });
+      await getRepositories().guests.assignToEvent(event.id, [
+        alice.id,
+        bob.id,
+      ]);
+
+      const [first, second] = await Promise.all([
+        toggleRsvp(makeToggleReq({ sessionId: session.id, guestId: alice.id })),
+        toggleRsvp(makeToggleReq({ sessionId: session.id, guestId: bob.id })),
+      ]);
+
+      const oks = [first, second].filter((res) => res.ok);
+      expect(oks).toHaveLength(1);
+      const rsvps = await getRepositories().rsvps.listBySession(session.id);
+      expect(rsvps).toHaveLength(1);
+    });
+  });
+
   it("GET /api/rsvps lists by guest or by session and rejects missing params", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const alice = await createGuest({ name: "Alice" });

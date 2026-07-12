@@ -19,6 +19,7 @@ function makeEvent(overrides: Partial<Event>): Event {
     breakMinutes: 10,
     slotIncrementMinutes: 30,
     timezone: "UTC",
+    rsvpCapacityHardLimit: false,
     ...overrides,
   };
 }
