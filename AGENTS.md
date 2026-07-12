@@ -20,6 +20,28 @@ Next.js scheduling app for managing conference/event sessions with three phases:
 - Pre-commit: run `make precommit` to format, lint, type check, and run tests
 - Check [CONTRIBUTING.md](CONTRIBUTING.md) for resolving `drizzle` migration conflicts
 
+### jj paths with special characters
+
+Paths like `app/(site)/[eventSlug]/...` break jj's default parsing: `()` are fileset grouping
+operators, and `[eventSlug]` is read as a glob character class (matches nothing). Fix: use `file:`
+(exact match) and quote it:
+
+```
+jj commit -m "message" -- 'file:"app/(site)/[eventSlug]/session-block.tsx"'
+```
+
+### Splitting commits
+
+Don't use `jj split` (opens an interactive editor, breaks non-interactive shells). Instead:
+
+- **Uncommitted changes**: `jj commit -m "message" -- <path>` once per group of paths.
+- **Already-committed commit**: insert an empty commit after it, then squash paths into it:
+
+```
+jj new -A <commit>
+jj squash --from <commit> --to @ -m "message" -- <path>
+```
+
 ## Testing
 
 - Always run tests with `make test` (not `bun test`); E2E tests with `make test-e2e`
