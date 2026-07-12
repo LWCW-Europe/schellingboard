@@ -128,7 +128,10 @@ function generateEventDates() {
     },
     {
       name: "Conference Beta",
-      description: "Event currently in voting phase",
+      // Markdown: seeded descriptions mix markdown and plain text so both
+      // render paths stay exercised in dev and e2e environments.
+      description:
+        "Event currently in **voting** phase — cast your votes and check the [event website](https://test-event-2.example.com) for updates.",
       icon: "BeakerIcon",
       start: e2Start,
       end: e2End,
@@ -141,7 +144,8 @@ function generateEventDates() {
     },
     {
       name: "Conference Gamma",
-      description: "Event currently in scheduling phase",
+      description:
+        "Event currently in **scheduling phase**.\n\n### Quick links\n\n- [Venue map](https://test-event-3.example.com/map)\n- [Code of conduct](https://test-event-3.example.com/coc)",
       icon: "GlobeAltIcon",
       start: e3Start,
       end: e3End,
@@ -197,7 +201,7 @@ const guestConfigs: GuestConfig[] = [
     name: "Alice Test",
     email: "alice@test.com",
     aboutMe:
-      "Frontend developer from Osaka. I love talking about accessibility and design systems — find me at the coffee machine.",
+      "Frontend developer from Osaka. I love talking about **accessibility** and design systems — find me at the coffee machine.",
     pronouns: "She/Her",
     avatar: 1,
   },
@@ -232,14 +236,14 @@ const guestConfigs: GuestConfig[] = [
     name: "Wei Chen",
     email: "wei.chen@example.com",
     aboutMe:
-      "Platform engineer focused on developer experience. Previously built CI tooling at a fintech startup in Shanghai.",
+      "Platform engineer focused on developer experience.\n\nPreviously built CI tooling at a fintech startup in Shanghai. Ask me about `pipeline caching`.",
     avatar: 4,
   },
   {
     name: "Priya Sharma",
     email: "priya.sharma@example.com",
     aboutMe:
-      "ML researcher from Bengaluru working on fairness in recommendation systems.\n\nFirst time at this conference — say hi if you see me wandering around looking lost!",
+      "ML researcher from Bengaluru working on **fairness in recommendation systems**.\n\n*First time at this conference* — say hi if you see me wandering around looking lost!",
     pronouns: "She/Her",
     avatar: 17,
   },
@@ -247,7 +251,7 @@ const guestConfigs: GuestConfig[] = [
     name: "Lars Eriksson",
     email: "lars.eriksson@example.com",
     aboutMe:
-      "Backend developer from Gothenburg. Rust enthusiast, reluctant Kubernetes operator, enthusiastic sauna advocate.",
+      "Backend developer from Gothenburg. In rough order of enthusiasm:\n\n- Rust\n- saunas\n- Kubernetes (reluctantly)",
     pronouns: "He/Him",
     avatar: 6,
   },
@@ -255,7 +259,7 @@ const guestConfigs: GuestConfig[] = [
     name: "Fatima Al-Farsi",
     email: "fatima.alfarsi@example.com",
     aboutMe:
-      "Security engineer from Muscat. I break things professionally and fix them as a hobby. Happy to chat about threat modeling for small teams.",
+      "Security engineer from Muscat. I break things *professionally* and fix them as a hobby. Happy to chat about threat modeling for small teams.",
     avatar: 7,
   },
   {
@@ -322,7 +326,7 @@ const guestConfigs: GuestConfig[] = [
     name: "Anna Kowalska",
     email: "anna.kowalska@example.com",
     aboutMe:
-      "QA engineer from Kraków. I find the bugs you swore were impossible. Also: board game collector, 200+ and counting.",
+      "QA engineer from Kraków. I find the bugs you swore were impossible.\n\nAlso: board game collector, **200+ and counting**.",
     pronouns: "She/Her",
     avatar: 3,
   },
@@ -424,20 +428,20 @@ const guestConfigs: GuestConfig[] = [
     name: "Rafael Souza",
     email: "rafael.souza@example.com",
     aboutMe:
-      "Engineering lead from São Paulo. I care about mentoring junior devs and building teams where questions are welcome.",
+      "Engineering lead from São Paulo. I care about:\n\n1. Mentoring junior devs\n2. Building teams where questions are welcome\n3. Coffee, not necessarily in that order",
   },
   {
     name: "Hana Kobayashi",
     email: "hana.kobayashi@example.com",
     aboutMe:
-      "Developer advocate based in Kyoto. I write tutorials, give talks, and collect conference stickers competitively.",
+      "# Hi, I'm Hana!\n\nDeveloper advocate based in Kyoto. I write tutorials, give talks, and collect conference stickers *competitively*.",
     pronouns: "She/Her",
   },
   {
     name: "Tereza Nováková",
     email: "tereza.novakova@example.com",
     aboutMe:
-      "Open source maintainer from Prague. Ask me about sustainable maintainership — or just send help, either works.",
+      "Open source maintainer from Prague — see [my projects](https://github.example.com/tereza). Ask me about sustainable maintainership, or just send `git help`, either works.",
   },
   {
     name: "Ahmad Karimi",
@@ -469,12 +473,12 @@ const sessionTemplates = [
   {
     title: "The Future of AI: Transforming Industries Through Machine Learning",
     description:
-      "Artificial Intelligence is reshaping every industry from healthcare to finance. In this comprehensive session, we'll explore the current state of AI technology, emerging trends, and practical applications that are driving innovation.\n\nWe'll discuss real-world case studies, ethical considerations, and the skills needed to thrive in an AI-driven world. Whether you're a beginner or experienced professional, you'll gain valuable insights into how AI can transform your work and industry.\n\nTopics covered include natural language processing, computer vision, predictive analytics, and the intersection of AI with other emerging technologies like blockchain and IoT.",
+      "Artificial Intelligence is reshaping every industry from healthcare to finance. In this comprehensive session, we'll explore the current state of AI technology, emerging trends, and practical applications that are driving innovation.\n\n## What you'll learn\n\nWe'll discuss real-world case studies, ethical considerations, and the skills needed to thrive in an AI-driven world. Whether you're a beginner or experienced professional, you'll gain valuable insights into how AI can transform your work and industry.\n\n## Topics\n\n- Natural language processing\n- Computer vision\n- Predictive analytics\n- The intersection of AI with blockchain and IoT",
   },
   {
     title: "Workshop: Hands-on Docker and Kubernetes",
     description:
-      "A practical workshop on containerization and orchestration. Bring your laptop and get ready to deploy!",
+      "A practical workshop on containerization and orchestration. **Bring your laptop** and get ready to deploy!\n\nPrerequisites:\n\n- Docker installed and working (`docker run hello-world`)\n- A free container registry account\n- Basic command-line comfort",
   },
   {
     title: "Design Systems: Creating Consistency at Scale",
@@ -485,7 +489,7 @@ const sessionTemplates = [
     title:
       "Cybersecurity in the Age of Remote Work: Protecting Your Digital Assets",
     description:
-      "The shift to remote work has fundamentally changed the cybersecurity landscape. Traditional perimeter-based security models are no longer sufficient when employees access company resources from home networks, coffee shops, and co-working spaces.\n\nThis session will provide a comprehensive overview of modern cybersecurity challenges and solutions. We'll explore zero-trust architecture, endpoint protection strategies, and the human element of cybersecurity. Attendees will learn practical techniques for securing remote work environments, implementing multi-factor authentication, and creating security awareness programs.\n\nWe'll also discuss emerging threats like sophisticated phishing attacks, ransomware targeting remote workers, and supply chain vulnerabilities. Real-world examples and case studies will illustrate both successful security implementations and costly breaches, providing actionable insights for organizations of all sizes.",
+      "The shift to remote work has fundamentally changed the cybersecurity landscape. Traditional perimeter-based security models are no longer sufficient when employees access company resources from home networks, coffee shops, and co-working spaces.\n\n## Session outline\n\nThis session will provide a comprehensive overview of modern cybersecurity challenges and solutions. We'll explore **zero-trust architecture**, endpoint protection strategies, and the human element of cybersecurity. Attendees will learn practical techniques for:\n\n- Securing remote work environments\n- Implementing multi-factor authentication\n- Creating security awareness programs\n\nWe'll also discuss emerging threats like sophisticated phishing attacks, ransomware targeting remote workers, and supply chain vulnerabilities. Real-world examples and case studies will illustrate both successful security implementations and costly breaches, providing actionable insights for organizations of all sizes.",
   },
   {
     title: "Microservices Architecture: Lessons from the Trenches",
@@ -526,7 +530,7 @@ const sessionTemplates = [
   {
     title: "Open Source Sustainability: Funding and Community Building",
     description:
-      "The open source ecosystem faces sustainability challenges as projects grow in complexity and importance. This session examines successful funding models, from corporate sponsorship to foundation grants to innovative approaches like GitHub Sponsors.\n\nWe'll discuss community building strategies, maintainer burnout prevention, and the economic realities of supporting critical infrastructure projects. Case studies will include successful projects that have achieved sustainable funding and community growth.",
+      "The open source ecosystem faces sustainability challenges as projects grow in complexity and importance. This session examines successful funding models, from corporate sponsorship to foundation grants to innovative approaches like [GitHub Sponsors](https://github.com/sponsors).\n\nWe'll discuss community building strategies, *maintainer burnout prevention*, and the economic realities of supporting critical infrastructure projects. Case studies will include successful projects that have achieved sustainable funding and community growth.",
   },
   {
     title: "DevOps Culture: Breaking Down Silos",
@@ -682,7 +686,7 @@ const gammaSessionConfigs: GammaSessionConfig[] = [
     title: "Hallway Track: CRDT Show & Tell",
     fromProposal: false,
     description:
-      "Impromptu session: I'll demo a small real-time collaborative editor built on CRDTs and we can poke at the edge cases together. Bring your laptop if you want to pair on it.\n\nAdded straight to the schedule because the hallway conversation got out of hand — that's what open scheduling is for!",
+      "Impromptu session: I'll demo a small real-time collaborative editor built on [CRDTs](https://crdt.tech) and we can poke at the edge cases together. Bring your laptop if you want to pair on it.\n\nAdded straight to the schedule because the hallway conversation got out of hand — *that's what open scheduling is for!*",
     day: 1,
     start: [16, 0],
     end: [16, 30],
@@ -736,7 +740,7 @@ const gammaSessionConfigs: GammaSessionConfig[] = [
     title: "Closing Session & Farewell",
     fromProposal: false,
     description:
-      "Wrap-up of Conference Gamma: community announcements, a look back at the highlights of the last three days, thank-yous to volunteers and speakers, and a preview of next year's edition. We close with a group photo in front of the Main Hall.",
+      "Wrap-up of Conference Gamma:\n\n- Community announcements\n- A look back at the highlights of the last three days\n- Thank-yous to volunteers and speakers\n- A preview of next year's edition\n\nWe close with a group photo in front of the **Main Hall**.",
     day: 2,
     start: [16, 0],
     end: [17, 0],
@@ -981,7 +985,7 @@ function seedTestData() {
     const eventSpecific = [
       {
         title: `${eventName} Lightning Talks: Community Showcase`,
-        description: `A fast-paced session featuring 5-minute lightning talks from ${eventName} attendees. This is your chance to share a quick tip, tool, or technique with the community.\n\nWe'll have 8-10 speakers covering diverse topics chosen by community vote. Past lightning talks have covered everything from productivity hacks to cutting-edge research findings. Whether you're a first-time speaker or seasoned presenter, lightning talks provide a low-pressure environment to share your expertise.\n\nSubmit your lightning talk proposal during the event - we'll be accepting submissions right up until the session begins!`,
+        description: `A fast-paced session featuring **5-minute lightning talks** from ${eventName} attendees. This is your chance to share a quick tip, tool, or technique with the community.\n\nWe'll have 8-10 speakers covering diverse topics chosen by community vote. Past lightning talks have covered everything from productivity hacks to cutting-edge research findings. Whether you're a first-time speaker or seasoned presenter, lightning talks provide a low-pressure environment to share your expertise.\n\n> Submit your lightning talk proposal during the event — we'll be accepting submissions right up until the session begins!`,
       },
       {
         title: `Networking & Coffee Chat: Connect with ${eventName} Peers`,
