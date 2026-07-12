@@ -161,8 +161,27 @@ const seedAvatarsDir = path.join(
   "seed-assets/avatars"
 );
 
+function uploadsBaseDir(): string {
+  return process.env.SB_UPLOADS_DIR ?? "./uploads";
+}
+
 function uploadedAvatarsDir(): string {
-  return path.join(process.env.SB_UPLOADS_DIR ?? "./uploads", "avatars");
+  return path.join(uploadsBaseDir(), "avatars");
+}
+
+// clearAll() recursively deletes subdirectories of the uploads dir. Guard
+// against a misconfigured SB_UPLOADS_DIR (a stray absolute path, a shared
+// volume) by refusing to delete anything that isn't strictly inside the
+// project directory. Returns the validated, resolved base path.
+function assertSafeUploadsDir(dir: string): string {
+  const resolved = path.resolve(dir);
+  const root = path.resolve(process.cwd());
+  if (resolved === root || !resolved.startsWith(root + path.sep)) {
+    throw new Error(
+      `🚨 SAFETY: refusing to clear uploads dir outside the project: ${resolved}`
+    );
+  }
+  return resolved;
 }
 
 interface GuestConfig {
@@ -733,6 +752,8 @@ const gammaSessionConfigs: GammaSessionConfig[] = [
 
 function clearAll() {
   console.log("🧹 Clearing all tables...");
+  // Validate the uploads dir before opening the DB or deleting anything.
+  const uploadsDir = assertSafeUploadsDir(uploadsBaseDir());
   const db = openDb();
   db.delete(schema.votes).run();
   db.delete(schema.rsvps).run();
@@ -751,11 +772,8 @@ function clearAll() {
   // Avatar files belong to the guest rows just deleted; remove them too so
   // repeated seeding doesn't accumulate orphaned uploads. Likewise the map
   // upload belongs to the site-settings row just cleared.
-  fs.rmSync(uploadedAvatarsDir(), { recursive: true, force: true });
-  fs.rmSync(path.join(process.env.SB_UPLOADS_DIR ?? "./uploads", "site"), {
-    recursive: true,
-    force: true,
-  });
+  fs.rmSync(path.join(uploadsDir, "avatars"), { recursive: true, force: true });
+  fs.rmSync(path.join(uploadsDir, "site"), { recursive: true, force: true });
   console.log("  ✅ All tables cleared");
 }
 
