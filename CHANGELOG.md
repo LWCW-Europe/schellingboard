@@ -53,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Event URLs are now guaranteed unique and no longer misresolve for events with similar names
 - Session details now show max capacity (previously only visible on hover from the schedule overview)
 - Session description field couldn't be resized, making it hard to edit longer text
+- The schedule now shows only the locations assigned to that event, instead of every location across all events
 
 ### Security
 

@@ -284,7 +284,8 @@ export interface LocationsRepository {
       offset: number;
     }
   ): Promise<EventLocationPage>;
-  listVisible(): Promise<Location[]>;
+  /** Visible locations assigned to the given event, ordered by sortIndex. */
+  listVisibleByEvent(eventId: string): Promise<Location[]>;
   listBookable(): Promise<Location[]>;
   findById(id: string): Promise<Location | undefined>;
   create(data: Omit<Location, "id">): Promise<Location>;
@@ -307,13 +308,22 @@ export interface LocationsRepository {
   listEventIdsByLocations(ids: string[]): Promise<Map<string, string[]>>;
   /** IDs of locations assigned to the given event. */
   listLocationIdsByEvent(eventId: string): Promise<string[]>;
-  /** Replaces the location's event assignments. */
+  /**
+   * Replaces the location's event assignments. Does not touch session_locations:
+   * a session already scheduled at this location keeps that link even if its
+   * event is dropped here, so it stops appearing in that event's schedule grid
+   * (see listVisibleByEvent) while the underlying link is untouched.
+   */
   setEventIds(id: string, eventIds: string[]): Promise<void>;
   /** Returns the subset of `ids` that exist in the locations table. */
   findExistingIds(ids: string[]): Promise<string[]>;
   /** Atomically adds the location to the given events (idempotent). */
   assignToEvent(eventId: string, locationIds: string[]): Promise<void>;
-  /** Atomically removes the location from the given events. */
+  /**
+   * Atomically removes the location from the given events. Does not touch
+   * session_locations, so sessions already scheduled there stop appearing in
+   * the event's schedule grid (see listVisibleByEvent) but keep the stale link.
+   */
   removeFromEvent(eventId: string, locationIds: string[]): Promise<void>;
   /**
    * Moves the location one position up or down in the sort order.

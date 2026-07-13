@@ -103,6 +103,8 @@ export async function createLocation(opts?: {
   name?: string;
   capacity?: number;
   bookable?: boolean;
+  hidden?: boolean;
+  sortIndex?: number;
 }): Promise<Location> {
   const { locations } = getRepositories();
   return locations.create({
@@ -111,9 +113,9 @@ export async function createLocation(opts?: {
     description: "",
     capacity: opts?.capacity ?? 30,
     color: "blue",
-    hidden: false,
+    hidden: opts?.hidden ?? false,
     bookable: opts?.bookable ?? true,
-    sortIndex: 0,
+    sortIndex: opts?.sortIndex ?? 0,
   });
 }
 
