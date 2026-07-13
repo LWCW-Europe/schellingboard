@@ -39,7 +39,7 @@ describe("voting API", () => {
 
   it("add-vote creates a vote visible via GET /api/votes", async () => {
     const event = await createEvent({ name: "Vote Event", phase: "voting" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const proposal = await createProposal(event.id, []);
 
     const res = await addVote(
@@ -60,9 +60,25 @@ describe("voting API", () => {
     });
   });
 
+  it("rejects a voter who is not part of the event", async () => {
+    const event = await createEvent({ name: "Vote Event", phase: "voting" });
+    const outsider = await createGuest(); // not assigned to the event
+    const proposal = await createProposal(event.id, []);
+
+    const res = await addVote(
+      makeAddReq({
+        proposalId: proposal.id,
+        guestId: outsider.id,
+        choice: VoteChoice.interested,
+      })
+    );
+    expect(res.status).toBe(403);
+    expect(await votesFor(outsider.id, "Vote-Event")).toHaveLength(0);
+  });
+
   it("repeated add-vote for the same (guest, proposal) replaces instead of duplicating", async () => {
     const event = await createEvent({ name: "Vote Event", phase: "voting" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const proposal = await createProposal(event.id, []);
 
     for (const choice of [
@@ -83,7 +99,7 @@ describe("voting API", () => {
 
   it("database rejects duplicate votes for the same (guest, proposal)", async () => {
     const event = await createEvent({ name: "Vote Event", phase: "voting" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const proposal = await createProposal(event.id, []);
     const repos = getRepositories();
 
@@ -103,7 +119,7 @@ describe("voting API", () => {
 
   it("upsert atomically replaces an existing vote", async () => {
     const event = await createEvent({ name: "Vote Event", phase: "voting" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const proposal = await createProposal(event.id, []);
     const repos = getRepositories();
 
@@ -125,8 +141,8 @@ describe("voting API", () => {
 
   it("delete-vote removes only the deleting guest's vote", async () => {
     const event = await createEvent({ name: "Vote Event", phase: "voting" });
-    const alice = await createGuest({ name: "Alice" });
-    const bob = await createGuest({ name: "Bob" });
+    const alice = await createGuest({ name: "Alice", eventId: event.id });
+    const bob = await createGuest({ name: "Bob", eventId: event.id });
     const proposal = await createProposal(event.id, []);
 
     for (const guest of [alice, bob]) {
@@ -151,7 +167,7 @@ describe("voting API", () => {
   it("delete-vote is rejected outside the voting phase", async () => {
     // Create the vote while voting is open...
     const event = await createEvent({ name: "Vote Event", phase: "voting" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const proposal = await createProposal(event.id, []);
     await addVote(
       makeAddReq({
@@ -180,9 +196,10 @@ describe("voting API", () => {
   });
 
   it("delete-vote returns 404 for a missing proposal", async () => {
-    const guest = await createGuest();
+    // Membership is never reached: the missing proposal short-circuits first.
+    const orphan = await createGuest();
     const res = await deleteVote(
-      makeDeleteReq({ guestId: guest.id, proposalId: "does-not-exist" })
+      makeDeleteReq({ guestId: orphan.id, proposalId: "does-not-exist" })
     );
     expect(res.status).toBe(404);
   });
@@ -190,7 +207,8 @@ describe("voting API", () => {
   it("GET /api/votes scopes votes to the given guest and event", async () => {
     const eventA = await createEvent({ name: "Event A", phase: "voting" });
     const eventB = await createEvent({ name: "Event B", phase: "voting" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: eventA.id });
+    await getRepositories().guests.assignToEvent(eventB.id, [guest.id]);
     const proposalA = await createProposal(eventA.id, []);
     const proposalB = await createProposal(eventB.id, []);
 
@@ -219,7 +237,7 @@ describe("voting API", () => {
       name: "Vote-Event 2026",
       phase: "voting",
     });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const proposal = await createProposal(event.id, []);
 
     await addVote(
@@ -249,10 +267,10 @@ describe("voting API", () => {
   it("proposal tallies reflect mixed interested/maybe/skip votes", async () => {
     const event = await createEvent({ name: "Vote Event", phase: "voting" });
     const guests = await Promise.all([
-      createGuest({ name: "G1" }),
-      createGuest({ name: "G2" }),
-      createGuest({ name: "G3" }),
-      createGuest({ name: "G4" }),
+      createGuest({ name: "G1", eventId: event.id }),
+      createGuest({ name: "G2", eventId: event.id }),
+      createGuest({ name: "G3", eventId: event.id }),
+      createGuest({ name: "G4", eventId: event.id }),
     ]);
     const proposal = await createProposal(event.id, []);
     const other = await createProposal(event.id, []);

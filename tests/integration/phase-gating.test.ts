@@ -32,7 +32,7 @@ function makeReq(url: string, payload: unknown): Request {
 
 async function voteOnProposalIn(phase: "proposal" | "voting" | "scheduling") {
   const event = await createEvent({ phase });
-  const guest = await createGuest();
+  const guest = await createGuest({ eventId: event.id });
   const proposal = await createProposalFixture(event.id, []);
 
   const res = await addVote(
@@ -51,7 +51,7 @@ async function voteOnProposalIn(phase: "proposal" | "voting" | "scheduling") {
 
 async function addSessionIn(phase: "proposal" | "voting" | "scheduling") {
   const event = await createEvent({ phase });
-  const guest = await createGuest();
+  const guest = await createGuest({ eventId: event.id });
   const location = await createLocation();
   const day = await createDay(event.id);
 
@@ -89,10 +89,9 @@ async function toggleRsvpIn(
   opts?: { remove?: boolean }
 ) {
   const event = await createEvent({ phase });
-  const guest = await createGuest();
+  const guest = await createGuest({ eventId: event.id });
   const session = await createSession(event.id);
   const repos = getRepositories();
-  await repos.guests.assignToEvent(event.id, [guest.id]);
   if (opts?.remove) {
     await repos.rsvps.create({ sessionId: session.id, guestId: guest.id });
   }

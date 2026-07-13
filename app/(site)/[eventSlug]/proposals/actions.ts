@@ -29,6 +29,13 @@ export async function createProposal(formData: FormData) {
       return { error: "The proposal phase is over" };
     }
 
+    const eventGuestIds = new Set(
+      (await getRepositories().guests.listByEvent(eventId)).map((g) => g.id)
+    );
+    if (!hostIds.every((id) => eventGuestIds.has(id))) {
+      return { error: "A host is not part of this event" };
+    }
+
     await getRepositories().sessionProposals.create({
       eventId,
       title,
@@ -64,6 +71,20 @@ export async function updateProposal(id: string, formData: FormData) {
   }
 
   try {
+    const proposal = await getRepositories().sessionProposals.findById(id);
+    if (!proposal) {
+      return { error: "Proposal not found" };
+    }
+
+    const eventGuestIds = new Set(
+      (await getRepositories().guests.listByEvent(proposal.eventId)).map(
+        (g) => g.id
+      )
+    );
+    if (!hostIds.every((hostId) => eventGuestIds.has(hostId))) {
+      return { error: "A host is not part of this event" };
+    }
+
     await getRepositories().sessionProposals.update(id, {
       title,
       description: description || undefined,

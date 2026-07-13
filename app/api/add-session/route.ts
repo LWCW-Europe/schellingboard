@@ -16,6 +16,15 @@ export async function POST(req: Request) {
       { status: 403 }
     );
   }
+  const eventGuestIds = new Set(
+    (await repos.guests.listByEvent(event.id)).map((g) => g.id)
+  );
+  if (!input.hostIds.every((id) => eventGuestIds.has(id))) {
+    return Response.json(
+      { error: "A host is not part of this event" },
+      { status: 403 }
+    );
+  }
   const existingSessions = (await repos.sessions.listScheduled()).filter(
     (s) => s.eventId === input.eventId
   );

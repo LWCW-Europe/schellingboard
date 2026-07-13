@@ -19,6 +19,13 @@ export async function POST(req: Request) {
     return Response.json({ error: "Proposal not found" }, { status: 404 });
   }
   const event = await repos.events.findById(proposal.eventId);
+  const eventGuests = event ? await repos.guests.listByEvent(event.id) : [];
+  if (!eventGuests.some((g) => g.id === guestId)) {
+    return Response.json(
+      { error: "Guest is not part of this event" },
+      { status: 403 }
+    );
+  }
   if (!event || !inVotingPhase(event)) {
     return Response.json(
       { error: "Voting is only allowed during the voting phase" },

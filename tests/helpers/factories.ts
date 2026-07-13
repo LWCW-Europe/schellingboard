@@ -88,15 +88,21 @@ export async function createEvent(opts?: {
 export async function createGuest(opts?: {
   name?: string;
   email?: string;
+  /** When set, the guest is also assigned to this event. */
+  eventId?: string;
 }): Promise<Guest> {
   const { guests } = getRepositories();
   const unique = ++guestCounter;
-  return guests
+  const guest = await guests
     .create({
       name: opts?.name ?? `Test Guest ${unique}`,
       info: { email: opts?.email ?? `guest-${unique}@test.example` },
     })
-    .then((guest) => guest && sanitizeGuest(guest));
+    .then((g) => g && sanitizeGuest(g));
+  if (opts?.eventId) {
+    await guests.assignToEvent(opts.eventId, [guest.id]);
+  }
+  return guest;
 }
 
 export async function createLocation(opts?: {

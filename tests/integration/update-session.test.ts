@@ -69,7 +69,7 @@ describe("POST /api/update-session", () => {
 
   it("changes time without conflict; re-fetched session reflects new time", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const day = await createDay(event.id);
 
@@ -94,7 +94,7 @@ describe("POST /api/update-session", () => {
 
   it("rejects move to colliding slot; session remains unchanged", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const day = await createDay(event.id);
 
@@ -132,7 +132,7 @@ describe("POST /api/update-session", () => {
 
   it("does not collide with itself when re-saved with the same slot", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const day = await createDay(event.id);
 
@@ -146,7 +146,7 @@ describe("POST /api/update-session", () => {
 
   it("rejects update outside the scheduling phase", async () => {
     const event = await createEvent({ phase: "voting" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const day = await createDay(event.id);
 
@@ -181,10 +181,28 @@ describe("POST /api/update-session", () => {
     expect(unchanged.title).toBe("Existing");
   });
 
+  it("rejects a host who is not part of the event", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+
+    const id = await createScheduledSession(event.id, guest, location, day);
+    const outsider = await createGuest(); // not assigned to the event
+
+    const res = await POST(
+      makeUpdateReq({ ...basePayload(outsider, location, day), id })
+    );
+    expect(res.status).toBe(403);
+
+    const unchanged = (await getRepositories().sessions.findById(id))!;
+    expect(unchanged.hosts[0].id).toBe(guest.id);
+  });
+
   it("updates location, hosts, and capacity; re-fetched session reflects each", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const host1 = await createGuest({ name: "Host 1" });
-    const host2 = await createGuest({ name: "Host 2" });
+    const host1 = await createGuest({ name: "Host 1", eventId: event.id });
+    const host2 = await createGuest({ name: "Host 2", eventId: event.id });
     const loc1 = await createLocation({ name: "Workshop Room", capacity: 20 });
     const loc2 = await createLocation({ name: "Garden Terrace", capacity: 50 });
     const day = await createDay(event.id);

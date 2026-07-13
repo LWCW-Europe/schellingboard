@@ -34,7 +34,7 @@ describe("createProposal", () => {
 
   it("creates a proposal with hosts and duration, readable via listByEvent", async () => {
     const event = await createEvent();
-    const host = await createGuest({ name: "Host" });
+    const host = await createGuest({ name: "Host", eventId: event.id });
 
     const result = await createProposal(
       proposalForm({
@@ -58,6 +58,26 @@ describe("createProposal", () => {
       durationMinutes: 60,
     });
     expect(proposals[0].hosts.map((h) => h.id)).toEqual([host.id]);
+  });
+
+  it("rejects a host who is not part of the event", async () => {
+    const event = await createEvent();
+    const outsider = await createGuest({ name: "Outsider" }); // not assigned
+
+    const result = await createProposal(
+      proposalForm({
+        event: event.id,
+        eventSlug: "test-event",
+        title: "My Proposal",
+        hosts: [outsider.id],
+      })
+    );
+    expect(result).toHaveProperty("error");
+
+    const proposals = await getRepositories().sessionProposals.listByEvent(
+      event.id
+    );
+    expect(proposals).toHaveLength(0);
   });
 
   it("rejects a missing title and leaves the event's proposals unchanged", async () => {
@@ -88,8 +108,8 @@ describe("updateProposal", () => {
 
   it("updates title, description, hosts, and duration", async () => {
     const event = await createEvent();
-    const alice = await createGuest({ name: "Alice" });
-    const bob = await createGuest({ name: "Bob" });
+    const alice = await createGuest({ name: "Alice", eventId: event.id });
+    const bob = await createGuest({ name: "Bob", eventId: event.id });
     const proposal = await createProposalFixture(event.id, [alice.id], {
       title: "Original",
       durationMinutes: 30,
@@ -160,5 +180,27 @@ describe("updateProposal", () => {
       proposal.id
     );
     expect(after?.title).toBe("Keep Me");
+  });
+
+  it("rejects a host who is not part of the event", async () => {
+    const event = await createEvent();
+    const alice = await createGuest({ name: "Alice", eventId: event.id });
+    const outsider = await createGuest({ name: "Outsider" }); // not assigned
+    const proposal = await createProposalFixture(event.id, [alice.id]);
+
+    const result = await updateProposal(
+      proposal.id,
+      proposalForm({
+        eventSlug: "test-event",
+        title: proposal.title,
+        hosts: [outsider.id],
+      })
+    );
+    expect(result).toHaveProperty("error");
+
+    const after = await getRepositories().sessionProposals.findById(
+      proposal.id
+    );
+    expect(after?.hosts.map((h) => h.id)).toEqual([alice.id]);
   });
 });

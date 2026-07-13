@@ -44,7 +44,7 @@ describe("POST /api/add-session", () => {
 
   it("creates a session and returns success", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const day = await createDay(event.id);
 
@@ -67,7 +67,7 @@ describe("POST /api/add-session", () => {
 
   it("rejects overlap in same location; only the pre-existing session remains", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const day = await createDay(event.id);
 
@@ -94,7 +94,7 @@ describe("POST /api/add-session", () => {
 
   it("accepts overlap in different location; both sessions are listed", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const locA = await createLocation({ name: "Workshop Room" });
     const locB = await createLocation({ name: "Garden Terrace" });
     const day = await createDay(event.id);
@@ -114,7 +114,7 @@ describe("POST /api/add-session", () => {
 
   it("rejects session with start time in the past", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const pastDay = await createDay(event.id, {
       start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
@@ -129,7 +129,7 @@ describe("POST /api/add-session", () => {
 
   it("rejects session with empty title", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const day = await createDay(event.id);
 
@@ -141,7 +141,7 @@ describe("POST /api/add-session", () => {
 
   it("rejects session with no hosts", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const day = await createDay(event.id);
 
@@ -153,7 +153,7 @@ describe("POST /api/add-session", () => {
 
   it("rejects session with missing location id", async () => {
     const event = await createEvent({ phase: "scheduling" });
-    const guest = await createGuest();
+    const guest = await createGuest({ eventId: event.id });
     const location = await createLocation();
     const day = await createDay(event.id);
 
@@ -161,6 +161,19 @@ describe("POST /api/add-session", () => {
       makeReq(buildPayload(guest, { ...location, id: "" }, day))
     );
     expect(res.ok).toBe(false);
+  });
+
+  it("rejects a host who is not part of the event", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const outsider = await createGuest(); // not assigned to the event
+    const location = await createLocation();
+    const day = await createDay(event.id);
+
+    const res = await POST(makeReq(buildPayload(outsider, location, day)));
+    expect(res.status).toBe(403);
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(0);
   });
 
   // Route does not guard req.json() — parse errors surface as a thrown SyntaxError

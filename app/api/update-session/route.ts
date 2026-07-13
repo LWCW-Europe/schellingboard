@@ -31,6 +31,15 @@ export async function POST(req: Request) {
   if (prevSession.adminManaged || prevSession.blocker) {
     return new Response("Cannot edit via web app", { status: 400 });
   }
+  const eventGuestIds = new Set(
+    (await repos.guests.listByEvent(event.id)).map((g) => g.id)
+  );
+  if (!input.hostIds.every((id) => eventGuestIds.has(id))) {
+    return Response.json(
+      { error: "A host is not part of this event" },
+      { status: 403 }
+    );
+  }
   const existingSessions = allSessions.filter((ses) => ses.id !== params.id);
   const newHostIds = input.hostIds;
   const sessionValid = validateSession(input, existingSessions);
