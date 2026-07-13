@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **MIT License**: the project is now explicitly MIT-licensed
 - Sticky schedule header for a cleaner mobile view
 - **Optional hard RSVP capacity limit**: admins can enable a per-event setting that closes RSVPs once a session's capacity is reached, instead of only using capacity as a soft suggestion
+- **HTTP API for scripting**: sessions, votes, and RSVPs can be created, updated, or removed over plain HTTP (`/api/*`), and an admin-authenticated API (`/api/admin/*`) supports seeding events, days, locations, guests, users, proposals, sessions, and RSVPs from external scripts
 
 ### Changed
 
