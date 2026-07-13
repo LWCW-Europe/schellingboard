@@ -296,7 +296,9 @@ export function ViewSession(props: {
         <div className="flex gap-2">
           <span className="font-medium">
             Attendees (
-            {attendees === null ? session.numRsvps : attendees.length}):
+            {attendees === null ? session.numRsvps : attendees.length}
+            {session.capacity > 0 ? ` / ${session.capacity}` : ""}
+            ):
           </span>
           {/* TODO: If the list of attendees spans multiple lines, the layout will jump on load.
           Ideas:

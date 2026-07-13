@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Login sessions last longer before requiring re-authentication
 - Proposal form no longer shows a stray error message after a successful submit
 - Event URLs are now guaranteed unique and no longer misresolve for events with similar names
+- Session details now show max capacity (previously only visible on hover from the schedule overview)
 - Session description field couldn't be resized, making it hard to edit longer text
 
 ### Security
