@@ -107,20 +107,4 @@ export class SqliteRsvpsRepository implements RsvpsRepository {
       )
       .run();
   }
-
-  async deleteBySessionAndGuests(
-    sessionId: string,
-    guestIds: string[]
-  ): Promise<void> {
-    if (guestIds.length === 0) return;
-    this.db
-      .delete(schema.rsvps)
-      .where(
-        and(
-          eq(schema.rsvps.sessionId, sessionId),
-          inArray(schema.rsvps.guestId, guestIds)
-        )
-      )
-      .run();
-  }
 }

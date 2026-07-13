@@ -41,7 +41,6 @@ export async function POST(req: Request) {
     );
   }
   const existingSessions = allSessions.filter((ses) => ses.id !== params.id);
-  const newHostIds = input.hostIds;
   const sessionValid = validateSession(input, existingSessions);
   if (sessionValid) {
     try {
@@ -51,10 +50,6 @@ export async function POST(req: Request) {
       console.error(err);
       return Response.error();
     }
-
-    // Corner case: someone RSVPs to a session and is later added as a host
-    // In this case, remove their RSVP
-    void repos.rsvps.deleteBySessionAndGuests(params.id, newHostIds);
     return Response.json({ success: true });
   } else {
     return Response.error();

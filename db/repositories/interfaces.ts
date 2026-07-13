@@ -401,6 +401,10 @@ export interface SessionsRepository {
   ): Promise<SessionPage>;
   findById(id: string): Promise<Session | undefined>;
   create(data: SessionCreateInput): Promise<Session>;
+  /**
+   * When `hostIds` is given, any RSVPs by the new hosts are removed in the
+   * same transaction: hosts don't RSVP to their own session.
+   */
   update(id: string, patch: SessionUpdateInput): Promise<Session>;
   delete(id: string): Promise<void>;
   /**
@@ -445,10 +449,6 @@ export interface RsvpsRepository {
     capacity: number;
   }): Promise<Rsvp | null>;
   deleteBySessionAndGuest(sessionId: string, guestId: string): Promise<void>;
-  deleteBySessionAndGuests(
-    sessionId: string,
-    guestIds: string[]
-  ): Promise<void>;
 }
 
 // ── Session Proposals ─────────────────────────────────────────────────────────
