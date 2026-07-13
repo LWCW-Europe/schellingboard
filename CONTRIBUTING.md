@@ -259,6 +259,42 @@ Update `CHANGELOG.md` under `[Unreleased]` alongside any user-facing change.
 - Breaking changes: `> **Breaking change**: ...` blockquote at the top of the release
 - Skip internal refactors/tests unless they materially affect the dev workflow — then use `Internal`
 
+## Releasing a New Version
+
+1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header) and add a fresh empty `## [Unreleased]` section above it. Update the compare links at the bottom of the file: the new version's link should point from the previous release's endpoint to the new tag (`vX.Y.Z`), and `[Unreleased]` should point from the new tag to `HEAD`. Commit and merge this like any other change.
+2. **Tag the resulting commit on `main`**. jj cannot push tags to a Git remote, so use `git` for this step:
+   ```bash
+   git fetch origin main
+   git tag vX.Y.Z origin/main
+   git push origin vX.Y.Z
+   ```
+3. **Publish the Docker images** — see below.
+
+### Publishing Docker Images
+
+Image: `schellingboard/schellingboard` on Docker Hub.
+
+For a release, push four tags: the full version, `major.minor`, `major`, and `latest`. Skip `latest` when publishing a patch for an older major/minor (i.e. when it wouldn't be the newest release).
+
+```bash
+VERSION=v3.0.0   # must match the git tag / CHANGELOG entry for this release
+MINOR=${VERSION%.*}   # v3.0
+MAJOR=${MINOR%.*}     # v3
+
+docker login
+git checkout $VERSION
+make docker-build   # builds and locally tags :latest and :$VERSION (via git describe)
+docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MINOR
+docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MAJOR
+
+docker push schellingboard/schellingboard:$VERSION
+docker push schellingboard/schellingboard:$MINOR
+docker push schellingboard/schellingboard:$MAJOR
+docker push schellingboard/schellingboard:latest   # omit if not the newest release
+```
+
+`make docker-build` derives `$VERSION` from `git describe --tags`, so the release commit must already be tagged with the exact version (e.g. `v3.0.0`) before running it.
+
 ## Version Control
 
 - Use conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, etc.)
