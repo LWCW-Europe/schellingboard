@@ -68,7 +68,7 @@ export default function NavBar({
                   {showGuestsLink && (
                     <Link
                       href="/guests"
-                      className="group flex gap-1 cursor-pointer items-center rounded-md px-3 py-2 text-sm font-medium text-gray-400 hover:bg-gray-100"
+                      className="hidden sm:flex group gap-1 cursor-pointer items-center rounded-md px-3 py-2 text-sm font-medium text-gray-400 hover:bg-gray-100"
                     >
                       <UserGroupIcon className="block h-5 w-auto" />
                       Attendees
@@ -89,6 +89,16 @@ export default function NavBar({
                   highlightCurrent={navItems.length > 1}
                 />
               ))}
+              {showGuestsLink && (
+                <Disclosure.Button
+                  as="a"
+                  href="/guests"
+                  className="flex gap-2 items-center rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-gray-100"
+                >
+                  <UserGroupIcon className="block h-5 w-auto" />
+                  Attendees
+                </Disclosure.Button>
+              )}
               {showLogout && (
                 <div className="px-1 pt-2 border-t border-gray-200">
                   <LogoutButton className="w-full justify-start" />
