@@ -1,15 +1,15 @@
 "use client";
 
-import { Participant } from "@/db/repositories/interfaces";
+import { Attendee } from "@/db/repositories/interfaces";
 import { DataTable, useTableParams } from "@/app/admin/data-table";
 import Link from "next/link";
 import { Avatar } from "@/app/(site)/guests/avatar";
 import { stripMarkdown } from "@/utils/markdown";
 
-function ParticipantRow({
-  participant: { id, avatarUrl, name, aboutMe, isHost },
+function AttendeeRow({
+  attendee: { id, avatarUrl, name, aboutMe, isHost },
 }: {
-  participant: Participant;
+  attendee: Attendee;
 }) {
   return (
     <Link
@@ -34,8 +34,8 @@ function ParticipantRow({
   );
 }
 
-export function ParticipantList(props: {
-  rows: Participant[];
+export function AttendeeList(props: {
+  rows: Attendee[];
   total: number;
   page: number;
   pageSize: number;
@@ -86,7 +86,7 @@ export function ParticipantList(props: {
         searchQuery={props.searchQuery}
         searchPlaceholder="Search attendees…"
         emptyMessage="No attendees match."
-        listItem={(u) => <ParticipantRow participant={u} />}
+        listItem={(u) => <AttendeeRow attendee={u} />}
       />
     </div>
   );

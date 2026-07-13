@@ -421,7 +421,7 @@ export function SessionForm(props: {
           Closed session
         </label>
         <p className="text-sm text-gray-500 ml-6">
-          Check this if participants can at most arrive 5 minutes late. If they
+          Check this if attendees can at most arrive 5 minutes late. If they
           arrive later they may not join and should not knock or otherwise
           disrupt the session.
         </p>

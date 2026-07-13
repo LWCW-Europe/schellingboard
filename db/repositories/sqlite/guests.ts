@@ -17,8 +17,8 @@ import type {
   Guest,
   GuestsRepository,
   GuestPage,
-  ParticipantPage,
-  Participant,
+  AttendeePage,
+  Attendee,
 } from "../interfaces";
 import { sanitizeGuest } from "@/utils/guests";
 
@@ -106,12 +106,12 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return { rows, total: totalRow?.count ?? 0 };
   }
 
-  async searchForParticipants(opts: {
+  async searchForAttendees(opts: {
     query?: string;
     host?: boolean;
     limit: number;
     offset: number;
-  }): Promise<ParticipantPage> {
+  }): Promise<AttendeePage> {
     let where = undefined;
     if (opts.query) {
       const pattern = `%${escapeLike(opts.query)}%`;
@@ -154,7 +154,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .limit(opts.limit)
       .offset(opts.offset)
       .all()
-      .map((row) => ({ ...row, isHost: Boolean(row.isHost) }) as Participant);
+      .map((row) => ({ ...row, isHost: Boolean(row.isHost) }) as Attendee);
 
     return { rows, total: totalRow?.count ?? 0 };
   }

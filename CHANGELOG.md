@@ -35,7 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Upgraded to Next.js 16, React 19, Tailwind CSS v4, and headlessui v2
 - Times now display in 24-hour format
 - Session details now open in a modal directly from the schedule, with real, shareable links, and open instantly instead of waiting on the server
-- The nav bar now shows the event icon and name even when there is only one event, so it's easy to jump back to the event's main page (e.g. from the participants list)
+- The nav bar now shows the event icon and name even when there is only one event, so it's easy to jump back to the event's main page (e.g. from the attendees list)
 
 ### Fixed
 
@@ -52,6 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Login sessions last longer before requiring re-authentication
 - Proposal form no longer shows a stray error message after a successful submit
 - Event URLs are now guaranteed unique and no longer misresolve for events with similar names
+- "Attendees" nav link is now reachable from the mobile menu instead of being squeezed out of the header
 - Session details now show max capacity (previously only visible on hover from the schedule overview)
 - Session description field couldn't be resized, making it hard to edit longer text
 - The schedule now shows only the locations assigned to that event, instead of every location across all events

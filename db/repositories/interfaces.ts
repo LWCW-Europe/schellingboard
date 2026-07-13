@@ -137,14 +137,14 @@ export type GuestPage = {
   total: number;
 };
 
-/** A guest with information used in the participants list */
-export type Participant = Guest & {
+/** A guest with information used in the attendees list */
+export type Attendee = Guest & {
   isHost: boolean;
 };
 
-/** A page of participants plus the total count matching the same filter. */
-export type ParticipantPage = {
-  rows: Participant[];
+/** A page of attendees plus the total count matching the same filter. */
+export type AttendeePage = {
+  rows: Attendee[];
   total: number;
 };
 
@@ -169,12 +169,12 @@ export interface GuestsRepository {
    * matches name only, not email (case-insensitive substring, LIKE
    * metacharacters matched literally). Ordered by name with id tiebreaker.
    */
-  searchForParticipants(opts: {
+  searchForAttendees(opts: {
     query?: string;
     host?: boolean;
     limit: number;
     offset: number;
-  }): Promise<ParticipantPage>;
+  }): Promise<AttendeePage>;
   /**
    * Assigned events for many guests in one query, ordered by event name.
    * Every requested id is present in the result; guests without assignments

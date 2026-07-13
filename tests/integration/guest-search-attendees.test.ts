@@ -4,7 +4,7 @@ import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent, createGuest, createSession } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 
-describe("guests.searchForParticipants", () => {
+describe("guests.searchForAttendees", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());
 
@@ -15,7 +15,7 @@ describe("guests.searchForParticipants", () => {
     await createSession(event.id, { hostIds: [host.id] });
     const repos = getRepositories();
 
-    const { rows } = await repos.guests.searchForParticipants({
+    const { rows } = await repos.guests.searchForAttendees({
       limit: 50,
       offset: 0,
     });
@@ -32,7 +32,7 @@ describe("guests.searchForParticipants", () => {
     await createSession(event.id, { hostIds: [host.id] });
     const repos = getRepositories();
 
-    const { rows, total } = await repos.guests.searchForParticipants({
+    const { rows, total } = await repos.guests.searchForAttendees({
       host: true,
       limit: 50,
       offset: 0,
@@ -47,7 +47,7 @@ describe("guests.searchForParticipants", () => {
     await createGuest({ name: "Alice Smith", email: "findme@test.example" });
     const repos = getRepositories();
 
-    const { rows } = await repos.guests.searchForParticipants({
+    const { rows } = await repos.guests.searchForAttendees({
       query: "findme",
       limit: 50,
       offset: 0,
@@ -62,14 +62,14 @@ describe("guests.searchForParticipants", () => {
     }
     const repos = getRepositories();
 
-    const firstPage = await repos.guests.searchForParticipants({
+    const firstPage = await repos.guests.searchForAttendees({
       limit: 2,
       offset: 0,
     });
     expect(firstPage.total).toBe(5);
     expect(firstPage.rows.map((r) => r.name)).toEqual(["A", "B"]);
 
-    const secondPage = await repos.guests.searchForParticipants({
+    const secondPage = await repos.guests.searchForAttendees({
       limit: 2,
       offset: 2,
     });

@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { pageRequestSchema } from "@/model/page";
 import { outOfRangePageRedirect } from "@/utils/pagination";
 import { redirect } from "next/navigation";
-import { ParticipantList } from "@/app/(site)/guests/participant-list";
+import { AttendeeList } from "@/app/(site)/guests/attendee-list";
 import { z } from "zod";
 
 const PAGE_SIZE = 25;
@@ -30,7 +30,7 @@ export default async function GuestsPage({
     filter: params.filter,
   });
 
-  const { rows, total } = await getRepositories().guests.searchForParticipants({
+  const { rows, total } = await getRepositories().guests.searchForAttendees({
     host: filter === "isHost",
     query: query || undefined,
     limit: PAGE_SIZE,
@@ -64,7 +64,7 @@ export default async function GuestsPage({
         )}
       </div>
 
-      <ParticipantList
+      <AttendeeList
         filter={filter}
         filters={getFilters()}
         rows={rows}

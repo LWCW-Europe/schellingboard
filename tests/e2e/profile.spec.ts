@@ -29,7 +29,7 @@ test.describe("Edit profile", () => {
 
     // Identify as Alice, then reach the attendees page via the header link.
     await selectCurrentUser(page);
-    await page.getByRole("link", { name: /Participants/i }).click();
+    await page.getByRole("link", { name: "Attendees", exact: true }).click();
     await expect(page).toHaveURL(/\/guests$/);
 
     // All guests are listed.
@@ -79,7 +79,7 @@ test.describe("Edit profile", () => {
 
     // Identify as Alice, then reach the attendees page via the header link.
     await selectCurrentUser(page);
-    await page.getByRole("link", { name: /Participants/i }).click();
+    await page.getByRole("link", { name: "Attendees", exact: true }).click();
 
     // Edit profile always targets the current user (Alice).
     await page.getByRole("link", { name: /Edit profile/i }).click();
@@ -108,7 +108,7 @@ test.describe("Edit profile", () => {
 
     // Identify as Alice, then reach the attendees page via the header link.
     await selectCurrentUser(page);
-    await page.getByRole("link", { name: /Participants/i }).click();
+    await page.getByRole("link", { name: "Attendees", exact: true }).click();
 
     // Edit profile always targets the current user (Alice).
     await page.getByRole("link", { name: /Edit profile/i }).click();
@@ -128,7 +128,7 @@ test.describe("Edit profile", () => {
     await page.goto("/Conference-Alpha/proposals");
 
     await selectCurrentUser(page);
-    await page.getByRole("link", { name: /Participants/i }).click();
+    await page.getByRole("link", { name: "Attendees", exact: true }).click();
     await page.getByRole("link", { name: /Edit profile/i }).click();
 
     await page
@@ -157,7 +157,7 @@ test.describe("Edit profile", () => {
     await expect(page.getByText("<script>alert(1)</script>")).toBeVisible();
 
     // The attendees list preview shows plain text, not raw markdown syntax.
-    await page.getByRole("link", { name: /Participants/i }).click();
+    await page.getByRole("link", { name: "Attendees", exact: true }).click();
     await expect(page).toHaveURL(/\/guests$/);
     await expect(page.getByText("Big header Bold statement")).toBeVisible();
     await expect(page.getByText("**Bold statement**")).toHaveCount(0);
@@ -169,7 +169,7 @@ test.describe("Edit profile", () => {
 
     // Identify as Alice, then reach the attendees page via the header link.
     await selectCurrentUser(page);
-    await page.getByRole("link", { name: /Participants/i }).click();
+    await page.getByRole("link", { name: "Attendees", exact: true }).click();
 
     // Edit profile always targets the current user (Alice).
     await page.getByRole("link", { name: /Edit profile/i }).click();

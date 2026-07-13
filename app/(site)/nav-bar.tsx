@@ -71,7 +71,7 @@ export default function NavBar({
                       className="group flex gap-1 cursor-pointer items-center rounded-md px-3 py-2 text-sm font-medium text-gray-400 hover:bg-gray-100"
                     >
                       <UserGroupIcon className="block h-5 w-auto" />
-                      Participants
+                      Attendees
                     </Link>
                   )}
                   {mapImageUrl && <MapModal mapImageUrl={mapImageUrl} />}
