@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Upgraded to Next.js 16, React 19, Tailwind CSS v4, and headlessui v2
 - Times now display in 24-hour format
 - Session details now open in a modal directly from the schedule, with real, shareable links, and open instantly instead of waiting on the server
+- The nav bar now shows the event icon and name even when there is only one event, so it's easy to jump back to the event's main page (e.g. from the participants list)
 
 ### Fixed
 

@@ -55,7 +55,11 @@ export default function NavBar({
                   <div className="hidden sm:block">
                     <div className="flex space-x-4">
                       {navItems.map((item) => (
-                        <NavBarItem key={item.name} item={item} />
+                        <NavBarItem
+                          key={item.name}
+                          item={item}
+                          highlightCurrent={navItems.length > 1}
+                        />
                       ))}
                     </div>
                   </div>
@@ -79,7 +83,11 @@ export default function NavBar({
           <Disclosure.Panel className="sm:hidden">
             <div className="space-y-1 px-2 pb-3 pt-2">
               {navItems.map((item) => (
-                <SmallNavBarItem key={item.name} item={item} />
+                <SmallNavBarItem
+                  key={item.name}
+                  item={item}
+                  highlightCurrent={navItems.length > 1}
+                />
               ))}
               {showLogout && (
                 <div className="px-1 pt-2 border-t border-gray-200">
@@ -94,9 +102,11 @@ export default function NavBar({
   );
 }
 
-function NavBarItem(props: { item: NavItem }) {
-  const { item } = props;
-  const isCurrentPage = usePathname().includes(item.href) && item.href != null;
+function NavBarItem(props: { item: NavItem; highlightCurrent: boolean }) {
+  const { item, highlightCurrent } = props;
+  const pathname = usePathname();
+  const isCurrentPage =
+    highlightCurrent && pathname.includes(item.href) && item.href != null;
   const Icon = item.icon ? EVENT_ICONS[item.icon] : null;
   return (
     <Link
@@ -115,9 +125,11 @@ function NavBarItem(props: { item: NavItem }) {
   );
 }
 
-function SmallNavBarItem(props: { item: NavItem }) {
-  const { item } = props;
-  const isCurrentPage = usePathname().includes(item.href) && item.href != null;
+function SmallNavBarItem(props: { item: NavItem; highlightCurrent: boolean }) {
+  const { item, highlightCurrent } = props;
+  const pathname = usePathname();
+  const isCurrentPage =
+    highlightCurrent && pathname.includes(item.href) && item.href != null;
   const Icon = item.icon ? EVENT_ICONS[item.icon] : null;
   return (
     <Disclosure.Button

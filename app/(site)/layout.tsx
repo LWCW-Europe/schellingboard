@@ -1,7 +1,6 @@
 import NavBar from "./nav-bar";
 import Footer from "../footer";
 import { UserProvider } from "./context";
-import clsx from "clsx";
 import { getRepositories } from "@/db/container";
 import { cookies } from "next/headers";
 import {
@@ -23,7 +22,6 @@ export default async function SiteLayout({
     ? (cookieStore.get("user")?.value ?? null)
     : null;
   const events = isAuthenticated ? await getRepositories().events.list() : [];
-  const multipleEvents = events.length > 1;
   const navItems = events.map((e) => ({
     name: e.name,
     href: `/${e.slug}`,
@@ -36,17 +34,12 @@ export default async function SiteLayout({
   return (
     <UserProvider initialUser={initialUser}>
       <NavBar
-        navItems={multipleEvents ? navItems : []}
+        navItems={navItems}
         showLogout={passwordProtected && isAuthenticated}
         showGuestsLink={isAuthenticated}
         mapImageUrl={mapImageUrl}
       />
-      <main
-        className={clsx(
-          "lg:px-24 sm:p-3 flex-1",
-          multipleEvents ? "sm:py-24 lg:pb-16" : "pt-20 sm:pt-24 lg:pb-16"
-        )}
-      >
+      <main className="lg:px-24 sm:p-3 flex-1 pt-20 sm:pt-24 lg:pb-16">
         {children}
       </main>
       <Footer />
