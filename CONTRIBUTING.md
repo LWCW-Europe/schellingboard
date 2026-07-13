@@ -73,7 +73,7 @@ has its own layout and only requires the admin password (not `SITE_PASSWORD`).
 
 ## Environment Variables
 
-See [README.md](README.md#environment-variables) for the full list and descriptions.
+See [docs/hosting](docs/hosting/README.md#environment-variables) for the full list and descriptions.
 
 For local development, `DATABASE_URL` is the only required variable — unlike
 Docker, no default is provided (e.g. `file:./data.db`). `AUTH_SECRET` is
