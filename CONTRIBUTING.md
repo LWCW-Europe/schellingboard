@@ -264,9 +264,13 @@ Update `CHANGELOG.md` under `[Unreleased]` alongside any user-facing change.
 1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header) and add a fresh empty `## [Unreleased]` section above it. Update the compare links at the bottom of the file: the new version's link should point from the previous release's endpoint to the new tag (`vX.Y.Z`), and `[Unreleased]` should point from the new tag to `HEAD`. Commit and merge this like any other change.
 2. **Tag the resulting commit on `main`**. jj cannot push tags to a Git remote, so use `git` for this step:
    ```bash
+   VERSION=v3.0.0
+   MINOR=${VERSION%.*}   # v3.0
+   MAJOR=${MINOR%.*}     # v3
+
    git fetch origin main
-   git tag vX.Y.Z origin/main
-   git push origin vX.Y.Z
+   git tag $VERSION origin/main
+   git push origin $VERSION
    ```
 3. **Publish the Docker images** — see below.
 
@@ -277,10 +281,6 @@ Image: `schellingboard/schellingboard` on Docker Hub.
 For a release, push four tags: the full version, `major.minor`, `major`, and `latest`. Skip `latest` when publishing a patch for an older major/minor (i.e. when it wouldn't be the newest release).
 
 ```bash
-VERSION=v3.0.0   # must match the git tag / CHANGELOG entry for this release
-MINOR=${VERSION%.*}   # v3.0
-MAJOR=${MINOR%.*}     # v3
-
 docker login
 git checkout $VERSION
 make docker-build   # builds and locally tags :latest and :$VERSION (via git describe)
