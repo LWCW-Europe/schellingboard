@@ -11,6 +11,7 @@ export function sessionChangedEmail(props: {
   oldTime?: string;
   newLocation: string;
   oldLocation?: string;
+  sessionUrl: string;
 }): EmailMessage {
   const changed =
     props.oldTime && props.oldLocation
@@ -40,6 +41,9 @@ export function sessionChangedEmail(props: {
           {props.oldLocation && <> (was {props.oldLocation})</>}
         </p>
         {props.description && <p>{props.description}</p>}
+        <p>
+          <a href={props.sessionUrl}>View the session</a>
+        </p>
       </>
     ),
   };

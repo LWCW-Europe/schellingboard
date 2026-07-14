@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import type { ReactElement } from "react";
 
 vi.mock("@/utils/mailer", () => ({
@@ -76,7 +84,10 @@ describe("notifySessionChanged", () => {
   beforeEach(() => {
     resetTestDb();
     vi.mocked(sendMail).mockReset();
+    vi.stubEnv("SITE_URL", "https://site.example");
   });
+
+  afterEach(() => vi.unstubAllEnvs());
 
   // React separates adjacent text nodes with `<!-- -->` comments in the
   // rendered html, which would break substring assertions.
@@ -106,7 +117,7 @@ describe("notifySessionChanged", () => {
   }
 
   it("emails RSVP'd guests the new and old time when the time changes", async () => {
-    const { session } = await setup();
+    const { event, session } = await setup();
     const after = await getRepositories().sessions.update(session.id, {
       startTime: new Date("2026-08-01T15:00:00Z"),
       endTime: new Date("2026-08-01T16:00:00Z"),
@@ -127,6 +138,38 @@ describe("notifySessionChanged", () => {
     expect(html).toContain("Room A");
     // The location did not change, so no old location is given.
     expect(html.match(/\(was /g)).toHaveLength(1);
+    // Links to the session, prefixed with SITE_URL.
+    expect(html).toContain(
+      `href="https://site.example/${event.slug}?viewSession=${session.id}"`
+    );
+  });
+
+  it("sends nothing when SITE_URL is not set (email is disabled then too)", async () => {
+    vi.stubEnv("SITE_URL", "");
+    const { session } = await setup();
+    const after = await getRepositories().sessions.update(session.id, {
+      startTime: new Date("2026-08-01T15:00:00Z"),
+      endTime: new Date("2026-08-01T16:00:00Z"),
+    });
+
+    await notifySessionChanged({ before: session, after, changedById: null });
+
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("does not throw, and sends nothing, when SITE_URL is invalid", async () => {
+    vi.stubEnv("SITE_URL", "not-a-valid-url");
+    const { session } = await setup();
+    const after = await getRepositories().sessions.update(session.id, {
+      startTime: new Date("2026-08-01T15:00:00Z"),
+      endTime: new Date("2026-08-01T16:00:00Z"),
+    });
+
+    await expect(
+      notifySessionChanged({ before: session, after, changedById: null })
+    ).resolves.toBeUndefined();
+
+    expect(sendMail).not.toHaveBeenCalled();
   });
 
   it("emails hosts, addressing them as hosts", async () => {

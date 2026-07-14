@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 import { getRepositories } from "@/db/container";
 import type { EmailSettings, Session } from "@/db/repositories/interfaces";
 import { sendMail, type EmailMessage } from "@/utils/mailer";
+import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
 
 // Send `message` to the guest, iff they have opted in to emails for
@@ -38,9 +39,22 @@ async function tryNotifyGuest(
 // change (`changedById`; null when unknown or not a guest, e.g. an admin) is
 // not told about their own edit.
 //
-// Never throws: a failed send is logged and must not break the session
-// update it trails, nor the sends to the other guests.
-export async function notifySessionChanged({
+// Never throws: any failure (including a bad SITE_URL, or a lookup error) is
+// logged and must not break the session update it trails, nor the sends to
+// the other guests.
+export async function notifySessionChanged(args: {
+  before: Session;
+  after: Session;
+  changedById: string | null;
+}): Promise<void> {
+  try {
+    await notifySessionChangedUnsafe(args);
+  } catch (err) {
+    console.error("Failed to send session-changed notifications:", err);
+  }
+}
+
+async function notifySessionChangedUnsafe({
   before,
   after,
   changedById,
@@ -59,7 +73,21 @@ export async function notifySessionChanged({
   const event = await events.findById(after.eventId);
   if (!event) return;
 
+  // No SITE_URL means SMTP is not configured either (initMailer enforces
+  // that), so no email could be sent anyway.
+  const base = siteUrl();
+  if (base === null) {
+    console.warn(
+      "SITE_URL is not set - not sending session change notifications"
+    );
+    return;
+  }
+  // Deep link to the session, same shape as modal-nav's
+  // viewSessionLinkFromElsewhere.
+  const sessionUrl = `${base}/${event.slug}?viewSession=${after.id}`;
+
   const messageProps = {
+    sessionUrl,
     title: after.title,
     description: after.description,
     newTime: formatSessionTime(after, event.timezone),

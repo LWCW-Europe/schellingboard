@@ -3,6 +3,7 @@ import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import TurndownService from "turndown";
 import { render } from "@react-email/render";
 import type { ReactElement } from "react";
+import { siteUrl } from "@/utils/site-url";
 
 const turndown = new TurndownService();
 
@@ -109,6 +110,12 @@ export function initMailer(): void {
   }
   if (!transportConfig) {
     throw new Error("SMTP_URL or SMTP_HOST must be set when SMTP_FROM is set");
+  }
+  // siteUrl() also throws here when SITE_URL is set but not a valid URL.
+  if (!siteUrl()) {
+    throw new Error(
+      "SITE_URL must be set when SMTP is configured, so emails can link back to the site"
+    );
   }
   g.__mailerState = {
     configured: true,
