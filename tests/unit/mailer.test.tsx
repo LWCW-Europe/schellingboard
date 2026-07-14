@@ -138,6 +138,7 @@ describe("mailer", () => {
     resetMailer();
     vi.stubEnv("SMTP_URL", "smtp://localhost:1025");
     vi.stubEnv("SMTP_FROM", "SchellingBoard <noreply@test.example>");
+    vi.stubEnv("SITE_URL", "https://site.example");
     // Ensure individual SMTP_* variables from the developer's environment
     // don't leak into these tests.
     vi.stubEnv("SMTP_HOST", "");
@@ -158,6 +159,23 @@ describe("mailer", () => {
     it("throws when SMTP_FROM is set but SMTP_URL is not", () => {
       vi.stubEnv("SMTP_URL", "");
       expect(() => initMailer()).toThrow("must be set");
+    });
+
+    it("throws when SMTP is configured but SITE_URL is not", () => {
+      vi.stubEnv("SITE_URL", "");
+      expect(() => initMailer()).toThrow("SITE_URL");
+    });
+
+    it("throws on an invalid SITE_URL", () => {
+      vi.stubEnv("SITE_URL", "site.example");
+      expect(() => initMailer()).toThrow("SITE_URL");
+    });
+
+    it("does not require SITE_URL when SMTP is not configured", () => {
+      vi.stubEnv("SMTP_URL", "");
+      vi.stubEnv("SMTP_FROM", "");
+      vi.stubEnv("SITE_URL", "");
+      expect(() => initMailer()).not.toThrow();
     });
 
     it("creates the transport using SMTP_URL", () => {

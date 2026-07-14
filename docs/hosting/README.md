@@ -50,12 +50,16 @@ docker compose up -d
 | `SMTP_USER`      | No       | SMTP username                                                                  |
 | `SMTP_PASSWORD`  | No       | SMTP password                                                                  |
 | `SMTP_SECURE`    | No       | `true`, `false`, or `requireTLS` (default)                                     |
+| `SITE_URL`       | No\*     | Public base URL of the site, e.g. `https://sessions.example.org`               |
 
 Email is optional — leave the SMTP variables unset to disable it. To enable
 email, set `SMTP_FROM` plus either `SMTP_URL` (a single connection string,
 e.g. `smtp://user:pass@localhost:1025`, which already includes the host,
 port, user, password, and security settings) **or** `SMTP_HOST` together
 with `SMTP_PORT`/`SMTP_USER`/`SMTP_PASSWORD`/`SMTP_SECURE` — not both.
+
+\* `SITE_URL` is required when email is enabled, so that emails can link back
+to the site.
 
 ## Administration
 
