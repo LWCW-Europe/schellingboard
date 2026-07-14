@@ -104,7 +104,7 @@ describe("notifySessionChanged", () => {
     const guest = await createGuest({ email: "rsvper@test.example" });
     const session = await createSession(event.id, {
       title: "Fun Workshop",
-      description: "A hands-on session.",
+      description: "A *hands-on* session.",
       locationIds: [roomA.id],
       startTime: new Date("2026-08-01T10:00:00Z"),
       endTime: new Date("2026-08-01T11:00:00Z"),
@@ -132,7 +132,8 @@ describe("notifySessionChanged", () => {
     const html = await renderWithoutComments(message.body);
     expect(html).toContain("Fun Workshop");
     expect(html).toContain("A session you RSVP’d to");
-    expect(html).toContain("A hands-on session.");
+    // The description is markdown, rendered to html.
+    expect(html).toContain("A <em>hands-on</em> session.");
     expect(html).toContain("Saturday 1 August, 15:00–16:00");
     expect(html).toContain("(was Saturday 1 August, 10:00–11:00)");
     expect(html).toContain("Room A");

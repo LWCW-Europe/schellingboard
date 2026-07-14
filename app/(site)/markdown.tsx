@@ -1,20 +1,11 @@
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
+import { MARKDOWN_DISALLOWED_ELEMENTS } from "@/utils/markdown";
 
 // User-provided content: raw HTML is never parsed (react-markdown default)
 // and unsafe URL schemes like javascript: are stripped by the default URL
-// transform. Images stay disabled so viewers' IPs never hit arbitrary URLs.
-const DISALLOWED = [
-  "img",
-  "table",
-  "thead",
-  "tbody",
-  "tr",
-  "th",
-  "td",
-  "input",
-];
+// transform.
 
 // Headings render as bold paragraphs sized relative to the surrounding text
 // (em units), so user content can never out-shout the page's own headings,
@@ -80,7 +71,7 @@ export function Markdown({
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkBreaks]}
-      disallowedElements={DISALLOWED}
+      disallowedElements={MARKDOWN_DISALLOWED_ELEMENTS}
       unwrapDisallowed
       components={components}
     >
