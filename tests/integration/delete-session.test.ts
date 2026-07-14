@@ -1,4 +1,10 @@
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import { NextRequest } from "next/server";
+
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
+
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import {
   createEvent,
@@ -12,8 +18,8 @@ import { POST } from "@/app/api/delete-session/route";
 import type { SessionParams } from "@/app/api/session-form-utils";
 import type { Day, Guest, Location } from "@/db/repositories/interfaces";
 
-function makeAddReq(payload: unknown): Request {
-  return new Request("http://test/api/add-session", {
+function makeAddReq(payload: unknown): NextRequest {
+  return new NextRequest("http://test/api/add-session", {
     method: "POST",
     body: JSON.stringify(payload),
   });

@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import { NextRequest } from "next/server";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+}));
+
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
@@ -26,8 +31,11 @@ import { createProposal } from "@/app/(site)/[eventSlug]/proposals/actions";
 // creation during the proposal *and* voting phases (the UI's "Add Proposal"
 // button is disabled only once scheduling starts).
 
-function makeReq(url: string, payload: unknown): Request {
-  return new Request(url, { method: "POST", body: JSON.stringify(payload) });
+function makeReq(url: string, payload: unknown): NextRequest {
+  return new NextRequest(url, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 async function voteOnProposalIn(phase: "proposal" | "voting" | "scheduling") {

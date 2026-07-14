@@ -1,7 +1,10 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
-import { notifySessionChanged } from "@/utils/notifications";
+import {
+  notifyCohostsAdded,
+  notifySessionChanged,
+} from "@/utils/notifications";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
@@ -54,10 +57,16 @@ export async function POST(req: NextRequest) {
       return Response.error();
     }
 
+    const changedById = req.cookies.get("user")?.value ?? null;
+    await notifyCohostsAdded({
+      session: updated,
+      previousHostIds: prevSession.hosts.map((h) => h.id),
+      changedById,
+    });
     await notifySessionChanged({
       before: prevSession,
       after: updated,
-      changedById: req.cookies.get("user")?.value ?? null,
+      changedById,
     });
     return Response.json({ success: true });
   } else {

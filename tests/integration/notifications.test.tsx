@@ -23,7 +23,11 @@ import {
 import { getRepositories } from "@/db/container";
 import { render } from "@react-email/render";
 import { sendMail } from "@/utils/mailer";
-import { notifyGuest, notifySessionChanged } from "@/utils/notifications";
+import {
+  notifyCohostsAdded,
+  notifyGuest,
+  notifySessionChanged,
+} from "@/utils/notifications";
 
 const MESSAGE = {
   subject: "Session moved",
@@ -310,5 +314,139 @@ describe("notifySessionChanged", () => {
 
     expect(sendMail).toHaveBeenCalledOnce();
     expect(vi.mocked(sendMail).mock.calls[0][0].to).toBe("rsvper@test.example");
+  });
+
+  it("sends the change email to hosts added by the same change too", async () => {
+    const { session } = await setup();
+    const newHost = await createGuest({ email: "new-host@test.example" });
+    const after = await getRepositories().sessions.update(session.id, {
+      hostIds: [newHost.id],
+      startTime: new Date("2026-08-01T15:00:00Z"),
+      endTime: new Date("2026-08-01T16:00:00Z"),
+    });
+
+    await notifySessionChanged({ before: session, after, changedById: null });
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
+    expect(recipients.sort()).toEqual([
+      "new-host@test.example",
+      "rsvper@test.example",
+    ]);
+  });
+});
+
+describe("notifyCohostsAdded", () => {
+  beforeAll(() => setupTestDb());
+
+  beforeEach(() => {
+    resetTestDb();
+    vi.mocked(sendMail).mockReset();
+    vi.stubEnv("SITE_URL", "https://site.example");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  async function renderWithoutComments(body: ReactElement): Promise<string> {
+    return (await render(body)).replace(/<!--.*?-->/g, "");
+  }
+
+  // Same shape as the notifySessionChanged setup: a scheduled session in
+  // "Room A" with one RSVP'd guest, plus a guest just added as co-host.
+  async function setupWithCohost() {
+    const event = await createEvent({ phase: "scheduling" });
+    const roomA = await createLocation({ name: "Room A" });
+    const rsvper = await createGuest({ email: "rsvper@test.example" });
+    const cohost = await createGuest({ email: "cohost@test.example" });
+    const session = await createSession(event.id, {
+      title: "Fun Workshop",
+      description: "A *hands-on* session.",
+      locationIds: [roomA.id],
+      startTime: new Date("2026-08-01T10:00:00Z"),
+      endTime: new Date("2026-08-01T11:00:00Z"),
+      hostIds: [cohost.id],
+    });
+    await getRepositories().rsvps.create({
+      sessionId: session.id,
+      guestId: rsvper.id,
+    });
+    return { event, cohost, session };
+  }
+
+  it("does not throw, and sends nothing, when SITE_URL is invalid", async () => {
+    vi.stubEnv("SITE_URL", "not-a-valid-url");
+    const { session } = await setupWithCohost();
+
+    await expect(
+      notifyCohostsAdded({ session, previousHostIds: [], changedById: null })
+    ).resolves.toBeUndefined();
+
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("emails newly added co-hosts the session details", async () => {
+    const { event, session } = await setupWithCohost();
+
+    await notifyCohostsAdded({
+      session,
+      previousHostIds: [],
+      changedById: null,
+    });
+
+    // Only the new co-host; RSVP'd guests are not involved.
+    expect(sendMail).toHaveBeenCalledOnce();
+    const message = vi.mocked(sendMail).mock.calls[0][0];
+    expect(message.to).toBe("cohost@test.example");
+    expect(message.subject).toContain("Fun Workshop");
+    const html = await renderWithoutComments(message.body);
+    expect(html).toContain("co-host");
+    expect(html).toContain("A <em>hands-on</em> session.");
+    expect(html).toContain("Saturday 1 August, 10:00–11:00");
+    expect(html).toContain("Room A");
+    expect(html).toContain(
+      `href="https://site.example/${event.slug}?viewSession=${session.id}"`
+    );
+  });
+
+  it("does not email guests who were hosts already", async () => {
+    const { cohost, session } = await setupWithCohost();
+
+    await notifyCohostsAdded({
+      session,
+      previousHostIds: [cohost.id],
+      changedById: null,
+    });
+
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("does not email a guest who added themselves", async () => {
+    const { cohost, session } = await setupWithCohost();
+
+    await notifyCohostsAdded({
+      session,
+      previousHostIds: [],
+      changedById: cohost.id,
+    });
+
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("skips guests who opted out of co-host emails", async () => {
+    const { session } = await setupWithCohost();
+    const optedOut = await createGuest({
+      email: "opted-out@test.example",
+      emailSettings: { rsvpChange: true, hostChange: true, cohostAdd: false },
+    });
+    const after = await getRepositories().sessions.update(session.id, {
+      hostIds: [optedOut.id],
+    });
+
+    await notifyCohostsAdded({
+      session: after,
+      previousHostIds: [],
+      changedById: null,
+    });
+
+    expect(sendMail).not.toHaveBeenCalled();
   });
 });
