@@ -34,6 +34,20 @@ describe("getCurrentPhase with implicit phase ends", () => {
     expect(getCurrentPhase(event)).toBe(EventPhase.VOTING);
   });
 
+  it("ends an open-ended proposal phase at voting start even when scheduling is also configured", () => {
+    // proposalPhaseEnd is unset, and BOTH votingPhaseStart and
+    // schedulingPhaseStart are set. The implicit proposal end must be the
+    // *earliest* successor (voting start), not scheduling start; otherwise an
+    // open-ended proposal phase would mask the voting phase.
+    const event = makeEvent({
+      proposalPhaseStart: ago(3),
+      // no proposalPhaseEnd
+      votingPhaseStart: ago(1),
+      schedulingPhaseStart: ahead(1),
+    });
+    expect(getCurrentPhase(event)).toBe(EventPhase.VOTING);
+  });
+
   it("ends an open-ended voting phase when scheduling starts", () => {
     const event = makeEvent({
       proposalPhaseStart: ago(5),
