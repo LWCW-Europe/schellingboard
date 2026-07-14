@@ -206,6 +206,8 @@ make test-e2e-headed     # Run E2E tests (headed, for local dev)
 
 By default, `make test` tests that we can successfully send email to a local [mailpit](https://mailpit.axllent.org/) (start it with `docker compose up mailpit`). You can skip that test by setting `MAILPIT_API_URL` to blank in `.env.test.local`.
 
+Some e2e tests (`make test-e2e`) also require mailpit. These ones fail if it's unreachable.
+
 Install Playwright browsers before first use:
 
 ```bash

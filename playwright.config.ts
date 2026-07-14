@@ -57,6 +57,12 @@ const port = process.env.E2E_PORT
 process.env.E2E_PORT = String(port);
 const baseURL = `http://localhost:${port}`;
 
+// Emails link back to the site via SITE_URL. Point it at this run's server —
+// the web server command inherits this process's environment, and real
+// environment variables beat the .env.test value in set-env.ts — so
+// emails.spec.ts can follow the links it finds in sent emails.
+process.env.SITE_URL = baseURL;
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
