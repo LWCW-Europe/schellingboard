@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import { NextRequest } from "next/server";
+
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
+
+import { sendMail } from "@/utils/mailer";
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import {
   createEvent,
@@ -11,10 +18,17 @@ import { POST } from "@/app/api/add-session/route";
 import type { SessionParams } from "@/app/api/session-form-utils";
 import type { Day, Guest, Location } from "@/db/repositories/interfaces";
 
-function makeReq(payload: unknown): Request {
-  return new Request("http://test/api/add-session", {
+function makeReq(
+  payload: unknown,
+  opts?: { editorGuestId?: string }
+): NextRequest {
+  return new NextRequest("http://test/api/add-session", {
     method: "POST",
     body: JSON.stringify(payload),
+    // The `user` cookie identifies the acting guest, like the site sets it.
+    headers: opts?.editorGuestId
+      ? { cookie: `user=${opts.editorGuestId}` }
+      : undefined,
   });
 }
 
@@ -40,7 +54,32 @@ function buildPayload(
 
 describe("POST /api/add-session", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => resetTestDb());
+  beforeEach(() => {
+    resetTestDb();
+    vi.mocked(sendMail).mockReset();
+  });
+
+  it("emails co-hosts of the new session, but not its creator", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const creator = await createGuest({ eventId: event.id });
+    const cohost = await createGuest({
+      email: "cohost@test.example",
+      eventId: event.id,
+    });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+
+    const res = await POST(
+      makeReq(
+        buildPayload(creator, location, day, { hosts: [creator, cohost] }),
+        { editorGuestId: creator.id }
+      )
+    );
+
+    expect(res.ok).toBe(true);
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect(vi.mocked(sendMail).mock.calls[0][0].to).toBe("cohost@test.example");
+  });
 
   it("creates a session and returns success", async () => {
     const event = await createEvent({ phase: "scheduling" });
@@ -178,7 +217,7 @@ describe("POST /api/add-session", () => {
 
   // Route does not guard req.json() — parse errors surface as a thrown SyntaxError
   it("malformed JSON causes a SyntaxError", async () => {
-    const req = new Request("http://test/api/add-session", {
+    const req = new NextRequest("http://test/api/add-session", {
       method: "POST",
       body: "not json",
       headers: { "content-type": "application/json" },

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Email notifications**: attendees are emailed when a session they've RSVP'd to changes time or location, hosts are emailed when a session they're hosting changes time or location, and guests are emailed when they're added as a co-host of a session. Each notification can be turned on or off individually from the profile page (requires SMTP and `SITE_URL` to be configured)
+
 ### Fixed
 
 - **Host RSVPs cleared on edit**: adding an attendee as a session host now removes their RSVP to that session, including when an organizer edits the session from the admin panel

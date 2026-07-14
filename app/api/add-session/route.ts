@@ -1,11 +1,13 @@
+import type { NextRequest } from "next/server";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import { notifyCohostsAdded } from "@/utils/notifications";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
 export const dynamic = "force-dynamic"; // defaults to auto
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const params = (await req.json()) as SessionParams;
   const repos = getRepositories();
   const input = prepareToInsert(params);
@@ -30,13 +32,20 @@ export async function POST(req: Request) {
   );
   const sessionValid = validateSession(input, existingSessions);
   if (sessionValid) {
+    let session;
     try {
-      const session = await repos.sessions.create(input);
+      session = await repos.sessions.create(input);
       console.log(session.id);
     } catch (err) {
       console.error(err);
       return Response.error();
     }
+
+    await notifyCohostsAdded({
+      session,
+      previousHostIds: [],
+      changedById: req.cookies.get("user")?.value ?? null,
+    });
     return Response.json({ success: true });
   } else {
     return Response.error();

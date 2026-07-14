@@ -20,8 +20,8 @@ import { POST } from "@/app/api/update-session/route";
 import type { SessionParams } from "@/app/api/session-form-utils";
 import type { Day, Guest, Location } from "@/db/repositories/interfaces";
 
-function makeAddReq(payload: unknown): Request {
-  return new Request("http://test/api/add-session", {
+function makeAddReq(payload: unknown): NextRequest {
+  return new NextRequest("http://test/api/add-session", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -101,6 +101,8 @@ describe("POST /api/update-session", () => {
       sessionId: id,
       guestId: rsvper.id,
     });
+    // Creating the event might have sent email, which we don't want to test.
+    vi.mocked(sendMail).mockClear();
 
     const res = await POST(
       makeUpdateReq(
@@ -133,6 +135,8 @@ describe("POST /api/update-session", () => {
       sessionId: id,
       guestId: rsvper.id,
     });
+    // Creating the event might have sent email, which we don't want to test.
+    vi.mocked(sendMail).mockClear();
 
     const res = await POST(
       makeUpdateReq(
@@ -147,14 +151,14 @@ describe("POST /api/update-session", () => {
       )
     );
     expect(res.ok).toBe(true);
-    // Their RSVP was removed with the promotion, so the one email they get
-    // is the hosts' variant.
-    expect(sendMail).toHaveBeenCalledOnce();
-    const message = vi.mocked(sendMail).mock.calls[0][0];
-    expect(message.to).toBe("promoted@test.example");
-    const html = await render(message.body);
-    expect(html).toContain("hosting");
-    expect(html).not.toContain("RSVP’d to");
+    // Their RSVP was removed with the promotion, so they are told as a
+    // co-host and as a host of a changed session — never as an attendee.
+    const messages = vi.mocked(sendMail).mock.calls.map((c) => c[0]);
+    expect(messages).toHaveLength(2);
+    for (const message of messages) {
+      expect(message.to).toBe("promoted@test.example");
+      expect(await render(message.body)).not.toContain("RSVP’d to");
+    }
   });
 
   it("changes time without conflict; re-fetched session reflects new time", async () => {

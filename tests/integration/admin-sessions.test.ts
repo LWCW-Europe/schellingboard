@@ -101,6 +101,29 @@ describe("adminCreateSessionAction", () => {
     expect(created.locations.map((l) => l.id)).toEqual([loc.id]);
   });
 
+  it("emails the hosts of a newly created session", async () => {
+    vi.mocked(sendMail).mockReset();
+    const event = await createEvent();
+    const cohost = await createGuest({ email: "cohost@test.example" });
+
+    const result = await adminCreateSessionAction({
+      eventId: event.id,
+      title: "Workshop",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 30,
+      adminManaged: false,
+      blocker: false,
+      closed: false,
+      hostIds: [cohost.id],
+      locationIds: [],
+    });
+    expect(result.ok).toBe(true);
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect(vi.mocked(sendMail).mock.calls[0][0].to).toBe("cohost@test.example");
+  });
+
   it("creates an unscheduled session without hosts or locations", async () => {
     const event = await createEvent();
 
@@ -528,6 +551,30 @@ describe("adminUpdateSessionAction", () => {
     expect(updated?.endTime?.toISOString()).toBe("2030-01-01T11:00:00.000Z");
     expect(updated?.hosts.map((h) => h.id)).toEqual([h2.id]);
     expect(updated?.locations.map((l) => l.id)).toEqual([loc.id]);
+  });
+
+  it("emails newly added co-hosts", async () => {
+    vi.mocked(sendMail).mockReset();
+    const event = await createEvent();
+    const cohost = await createGuest({ email: "cohost@test.example" });
+    const session = await createSession(event.id, { title: "Workshop" });
+
+    const result = await adminUpdateSessionAction({
+      id: session.id,
+      title: "Workshop",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 30,
+      adminManaged: false,
+      blocker: false,
+      closed: false,
+      hostIds: [cohost.id],
+      locationIds: [],
+    });
+    expect(result.ok).toBe(true);
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect(vi.mocked(sendMail).mock.calls[0][0].to).toBe("cohost@test.example");
   });
 
   it("emails RSVP'd guests when the session time changes", async () => {

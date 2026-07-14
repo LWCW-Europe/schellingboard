@@ -5,7 +5,10 @@ import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import { sessionSlotAlignmentError } from "@/utils/day-window";
-import { notifySessionChanged } from "@/utils/notifications";
+import {
+  notifyCohostsAdded,
+  notifySessionChanged,
+} from "@/utils/notifications";
 import type { AdminActionResult } from "./admin-guests";
 
 async function isAdminRequest(): Promise<boolean> {
@@ -123,8 +126,9 @@ export async function adminCreateSessionAction(
   );
   if (conflict) return { ok: false, error: conflict };
 
+  let created;
   try {
-    await sessions.create({
+    created = await sessions.create({
       title,
       description: input.description.trim(),
       startTime: range.start,
@@ -142,6 +146,12 @@ export async function adminCreateSessionAction(
   }
 
   await revalidateEventPaths(input.eventId);
+
+  await notifyCohostsAdded({
+    session: created,
+    previousHostIds: [],
+    changedById: null,
+  });
   return { ok: true };
 }
 
@@ -201,7 +211,12 @@ export async function adminUpdateSessionAction(
   }
 
   await revalidateEventPaths(session.eventId);
-  // Admins aren't guests, so there is no editor to exclude.
+
+  await notifyCohostsAdded({
+    session: updated,
+    previousHostIds: session.hosts.map((h) => h.id),
+    changedById: null,
+  });
   await notifySessionChanged({
     before: session,
     after: updated,

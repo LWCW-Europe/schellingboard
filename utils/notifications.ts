@@ -4,6 +4,7 @@ import type { EmailSettings, Session } from "@/db/repositories/interfaces";
 import { sendMail, type EmailMessage } from "@/utils/mailer";
 import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
+import { cohostAddedEmail } from "@/emails/cohost-added";
 
 // Send `message` to the guest, iff they have opted in to emails for
 // `setting` (see EmailSettings).
@@ -82,12 +83,8 @@ async function notifySessionChangedUnsafe({
     );
     return;
   }
-  // Deep link to the session, same shape as modal-nav's
-  // viewSessionLinkFromElsewhere.
-  const sessionUrl = `${base}/${event.slug}?viewSession=${after.id}`;
-
   const messageProps = {
-    sessionUrl,
+    sessionUrl: sessionUrl(base, event.slug, after.id),
     title: after.title,
     description: after.description,
     newTime: formatSessionTime(after, event.timezone),
@@ -110,6 +107,10 @@ async function notifySessionChangedUnsafe({
   // guest ever be both host and RSVP'd.
   const done = new Set(changedById === null ? [] : [changedById]);
 
+  // We could exclude hosts who were already hosts before the change, since they
+  // also get an email for being added. But that email might not make it clear
+  // the session has changed, if they were previously RSVP'd; and they might
+  // have that email disabled but not this one.
   for (const host of after.hosts) {
     if (done.has(host.id)) continue;
     done.add(host.id);
@@ -120,6 +121,72 @@ async function notifySessionChangedUnsafe({
     done.add(rsvp.guestId);
     await tryNotifyGuest(rsvp.guestId, "rsvpChange", attendeeMessage);
   }
+}
+
+// Email the guests newly added as co-hosts of the session (who have opted
+// in). `previousHostIds` are the session's hosts from before the change —
+// empty for a freshly created session. The guest who made the change
+// (`changedById`; null when unknown or not a guest) isn't emailed about
+// adding themselves.
+//
+// Never throws: any failure (including a bad SITE_URL, or a lookup error) is
+// logged and must not break the change it trails, nor the sends to the other
+// guests.
+export async function notifyCohostsAdded(args: {
+  session: Session;
+  previousHostIds: string[];
+  changedById: string | null;
+}): Promise<void> {
+  try {
+    await notifyCohostsAddedUnsafe(args);
+  } catch (err) {
+    console.error("Failed to send co-host-added notifications:", err);
+  }
+}
+
+async function notifyCohostsAddedUnsafe({
+  session,
+  previousHostIds,
+  changedById,
+}: {
+  session: Session;
+  previousHostIds: string[];
+  changedById: string | null;
+}): Promise<void> {
+  const previous = new Set(previousHostIds);
+  const added = session.hosts.filter(
+    (h) => !previous.has(h.id) && h.id !== changedById
+  );
+  if (added.length === 0) return;
+
+  const event = await getRepositories().events.findById(session.eventId);
+  if (!event) return;
+
+  // No SITE_URL means SMTP is not configured either (initMailer enforces
+  // that), so no email could be sent anyway.
+  const base = siteUrl();
+  if (base === null) {
+    console.warn("SITE_URL is not set - not sending co-host notifications");
+    return;
+  }
+
+  const message = cohostAddedEmail({
+    title: session.title,
+    description: session.description,
+    time: formatSessionTime(session, event.timezone),
+    location: formatLocations(session),
+    sessionUrl: sessionUrl(base, event.slug, session.id),
+  });
+
+  for (const host of added) {
+    await tryNotifyGuest(host.id, "cohostAdd", message);
+  }
+}
+
+// Deep link to the session, same shape as modal-nav's
+// viewSessionLinkFromElsewhere.
+function sessionUrl(base: string, eventSlug: string, sessionId: string) {
+  return `${base}/${eventSlug}?viewSession=${sessionId}`;
 }
 
 function sameLocations(a: { id: string }[], b: { id: string }[]): boolean {
