@@ -1,35 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { initMailer, resetMailer, sendMail } from "@/utils/mailer";
+import {
+  MAILPIT_API_URL,
+  getMessage,
+  searchBySubject,
+} from "../helpers/mailpit";
 
 // This suite runs only when MAILPIT_API_URL points at a mailpit instance (e.g.
 // http://localhost:8025 via `docker compose up mailpit`). Skips when
 // MAILPIT_API_URL is unset or empty; fails when it's set but mailpit is
 // unreachable.
-const MAILPIT_API_URL = process.env.MAILPIT_API_URL ?? "";
-
-type MessageSummary = {
-  ID: string;
-  From: { Name: string; Address: string };
-  To: { Address: string }[];
-  Subject: string;
-};
-
-async function mailpitGet(path: string): Promise<unknown> {
-  const res = await fetch(new URL(path, MAILPIT_API_URL));
-  if (!res.ok) {
-    throw new Error(`Mailpit API ${path} returned ${res.status}`);
-  }
-  return res.json();
-}
-
-async function searchBySubject(subject: string): Promise<MessageSummary[]> {
-  const query = encodeURIComponent(`subject:"${subject}"`);
-  const result = (await mailpitGet(`/api/v1/search?query=${query}`)) as {
-    messages: MessageSummary[];
-  };
-  return result.messages;
-}
-
 describe.skipIf(!MAILPIT_API_URL)("sendMail via mailpit", () => {
   beforeEach(() => {
     // Fix the sender rather than using the environment's SMTP_FROM, whose
@@ -76,10 +56,7 @@ describe.skipIf(!MAILPIT_API_URL)("sendMail via mailpit", () => {
       expect.objectContaining({ Address: "recipient@test.example" }),
     ]);
 
-    const message = (await mailpitGet(`/api/v1/message/${summary.ID}`)) as {
-      Text: string;
-      HTML: string;
-    };
+    const message = await getMessage(summary.ID);
 
     // Check that both the html and the derived text parts arrive. This assumes
     // the HTML isn't formatted too much. For text, note that SMTP encodes

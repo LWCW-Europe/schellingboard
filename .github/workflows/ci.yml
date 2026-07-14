@@ -108,6 +108,20 @@ jobs:
   test-e2e:
     runs-on: ubuntu-latest
 
+    services:
+      # e2e tests send real email to mailpit (see CONTRIBUTING.md § Running
+      # tests). Same pinned image as docker-compose.yml.
+      mailpit:
+        image: axllent/mailpit@sha256:956d688cbd13dca36c72d8e94c34d6d1cdf4a005aa6aa4ff6edaaac56c34d8df
+        ports:
+          - 1025:1025
+          - 8025:8025
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v7.0.0
