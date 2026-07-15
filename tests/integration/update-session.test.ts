@@ -199,6 +199,34 @@ describe("POST /api/update-session", () => {
     expect(unchanged.hosts[0].id).toBe(guest.id);
   });
 
+  it("removes a guest's RSVP when they are added as a host, leaving other RSVPs untouched", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const rsvper = await createGuest({ eventId: event.id });
+    const otherRsvper = await createGuest({ eventId: event.id });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+    await getRepositories().rsvps.create({
+      sessionId: id,
+      guestId: rsvper.id,
+    });
+    await getRepositories().rsvps.create({
+      sessionId: id,
+      guestId: otherRsvper.id,
+    });
+
+    const res = await POST(
+      makeUpdateReq({
+        ...basePayload(host, location, day, { hosts: [host, rsvper] }),
+        id,
+      })
+    );
+    expect(res.ok).toBe(true);
+    const remaining = await getRepositories().rsvps.listBySession(id);
+    expect(remaining.map((r) => r.guestId)).toEqual([otherRsvper.id]);
+  });
+
   it("updates location, hosts, and capacity; re-fetched session reflects each", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host1 = await createGuest({ name: "Host 1", eventId: event.id });

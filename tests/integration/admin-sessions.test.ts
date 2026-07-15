@@ -455,6 +455,38 @@ describe("adminUpdateSessionAction", () => {
 
   afterEach(() => vi.unstubAllEnvs());
 
+  it("removes a guest's RSVP when they are added as a host, leaving other RSVPs untouched", async () => {
+    const event = await createEvent();
+    const rsvper = await createGuest();
+    const otherRsvper = await createGuest();
+    const session = await createSession(event.id, { title: "Workshop" });
+    await getRepositories().rsvps.create({
+      sessionId: session.id,
+      guestId: rsvper.id,
+    });
+    await getRepositories().rsvps.create({
+      sessionId: session.id,
+      guestId: otherRsvper.id,
+    });
+
+    const result = await adminUpdateSessionAction({
+      id: session.id,
+      title: "Workshop",
+      description: "",
+      startTime: null,
+      endTime: null,
+      capacity: 30,
+      adminManaged: false,
+      blocker: false,
+      closed: false,
+      hostIds: [rsvper.id],
+      locationIds: [],
+    });
+    expect(result.ok).toBe(true);
+    const remaining = await getRepositories().rsvps.listBySession(session.id);
+    expect(remaining.map((r) => r.guestId)).toEqual([otherRsvper.id]);
+  });
+
   it("updates title, description, capacity, flags, time, host and location", async () => {
     const event = await createEvent();
     const h1 = await createGuest({ name: "Host One" });
