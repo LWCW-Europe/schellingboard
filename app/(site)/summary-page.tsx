@@ -57,7 +57,7 @@ export default function SummaryPage(props: {
                 href={`/${event.slug}`}
                 className="font-semibold text-rose-400 hover:text-rose-500 flex gap-1 items-center text-sm justify-end mt-2"
               >
-                View schedule
+                View event
                 <ArrowRightIcon className="h-4 w-4" />
               </Link>
             </div>
