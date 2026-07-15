@@ -196,6 +196,16 @@ describe("admin location actions", () => {
       });
     });
 
+    it("accepts a capacity of 0", async () => {
+      const result = await createLocationAction(
+        locationFormData({ capacity: "0" })
+      );
+      expect(result).toEqual({ ok: true });
+
+      const [created] = await getRepositories().locations.list();
+      expect(created.capacity).toBe(0);
+    });
+
     it("stores a valid image and sets the imageUrl", async () => {
       const formData = locationFormData({
         image: await makeImageFile(800, 600),
@@ -336,6 +346,24 @@ describe("admin location actions", () => {
 
       await deleteLocationAction({ id: created.id });
       expect(fs.existsSync(imagePath)).toBe(false);
+    });
+
+    it("keeps the image file if deleting the location record fails", async () => {
+      const formData = locationFormData({
+        image: await makeImageFile(800, 600),
+      });
+      await createLocationAction(formData);
+      const [created] = await getRepositories().locations.list();
+      const imagePath = path.join(uploadsDir, "locations", `${created.id}.png`);
+      expect(fs.existsSync(imagePath)).toBe(true);
+
+      const { locations } = getRepositories();
+      vi.spyOn(locations, "delete").mockRejectedValueOnce(new Error("boom"));
+
+      await expect(deleteLocationAction({ id: created.id })).rejects.toThrow(
+        "boom"
+      );
+      expect(fs.existsSync(imagePath)).toBe(true);
     });
   });
 
