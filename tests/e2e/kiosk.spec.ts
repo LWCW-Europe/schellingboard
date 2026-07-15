@@ -29,10 +29,8 @@ async function openGammaScheduleDuringEvent(page: Page, path: string) {
   await page.clock.install();
   await login(page);
   await page.goto(path);
-  await expect(
-    page.getByRole("heading", { name: /Conference Gamma Schedule/ })
-  ).toBeVisible();
-  // The heading comes from server-rendered HTML, so the page may still be
+  await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
+  // The toolbar comes from server-rendered HTML, so the page may still be
   // hydrating. Only hydrated React reacts to the view toggle by rewriting the
   // URL — once that works, hydration is done and the clock can jump safely.
   await expect(async () => {

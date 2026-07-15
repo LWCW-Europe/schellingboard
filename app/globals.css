@@ -17,3 +17,16 @@
 html {
   scrollbar-gutter: stable;
 }
+
+/*
+ * The schedule's grid view owns the viewport (see EventDisplay): while a
+ * [data-schedule-frame] element is mounted, the window must not scroll and
+ * the site-wide footer is hidden — the schedule renders its own copy at the
+ * bottom of its scroll content instead.
+ */
+body:has([data-schedule-frame]) {
+  overflow: hidden;
+}
+body:has([data-schedule-frame]) > footer {
+  display: none;
+}

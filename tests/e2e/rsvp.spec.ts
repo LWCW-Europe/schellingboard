@@ -1,13 +1,9 @@
 import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
-
-async function selectUser(page: Page, name: RegExp) {
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name }).click();
-}
 
 // The add-session form's labels are not wired to their inputs, so locate each
 // listbox through its labelled section (same approach as scheduling.spec.ts).
@@ -32,8 +28,7 @@ test("RSVP to a session persists across reloads and can be removed again", async
   await page.goto("/Conference-Gamma");
 
   // Bob is not a host of the seeded keynote, so he gets an RSVP button
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name: /Bob Test/i }).click();
+  await selectUser(page, /Bob Test/i);
 
   await page
     .getByRole("link", { name: /Opening Keynote/ })

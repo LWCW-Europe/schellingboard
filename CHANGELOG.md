@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Email notifications**: attendees are emailed when a session they've RSVP'd to changes time or location, hosts are emailed when a session they're hosting changes time or location, and guests are emailed when they're added as a co-host of a session. Each notification can be turned on or off individually from the profile page (requires SMTP and `SITE_URL` to be configured)
 
+### Changed
+
+- **Your name is always visible**: the attendee you're acting as now shows as a chip in the header on every page — proposals, voting, and schedule — so it's always clear who "you" are, and you can switch attendee from there (handy for a shared device)
+- **Smoother schedule scrolling**: the grid view now has a single scroll area instead of nested scrollbars, and wide schedules can be dragged sideways with the mouse. The view controls (Grid, Text, RSVP'd) sit on one bar alongside an "Event details" popup and a "Proposals" link; the bar scrolls away with the schedule while the room headers stay pinned. The redundant schedule title is gone, since the header already shows the current event
+
 ### Fixed
 
 - **Host RSVPs cleared on edit**: adding an attendee as a session host now removes their RSVP to that session, including when an organizer edits the session from the admin panel

@@ -1,6 +1,7 @@
 import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
 import {
   MAILPIT_API_URL,
   getMessage,
@@ -9,11 +10,6 @@ import {
 
 // Form idioms shared with scheduling.spec.ts: the form's labels are not wired
 // to their inputs, so locate each listbox through its labelled section.
-async function selectUser(page: Page, name: RegExp) {
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name }).click();
-}
-
 function listboxButton(page: Page, section: RegExp) {
   return page
     .locator("div")

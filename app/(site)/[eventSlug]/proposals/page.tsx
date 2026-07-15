@@ -3,7 +3,6 @@ import Link from "next/link";
 import { getRepositories } from "@/db/container";
 import { ProposalActionBar } from "./proposal-action-bar";
 import { ProposalTable } from "./proposal-table";
-import { UserSelect } from "@/app/(site)/user-select";
 import { ProposalModal } from "./proposal-modal";
 
 export const dynamic = "force-dynamic";
@@ -25,8 +24,7 @@ export default async function ProposalsPage({
     return <div>Event not found</div>;
   }
 
-  const [guests, proposals, sessions] = await Promise.all([
-    repos.guests.list(),
+  const [proposals, sessions] = await Promise.all([
     repos.sessionProposals.listByEvent(event.id),
     viewProposal ? repos.sessions.listByEvent(event.id) : Promise.resolve([]),
   ]);
@@ -36,13 +34,7 @@ export default async function ProposalsPage({
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="user-selection" className="text-gray-500">
-          My name is:
-        </label>
-        <UserSelect guests={guests} />
-      </div>
-      <div className="mb-6 mt-6">
+      <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
           <div>
             <h1 className="text-3xl font-bold">

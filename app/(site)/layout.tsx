@@ -27,6 +27,9 @@ export default async function SiteLayout({
     href: `/${e.slug}`,
     icon: e.icon ?? null,
   }));
+  // Global attendee list backs the header name selector, which is shown on
+  // every page (guests are global, not per-event).
+  const guests = isAuthenticated ? await getRepositories().guests.list() : [];
   const mapImageUrl = isAuthenticated
     ? (await getRepositories().settings.get()).mapImageUrl
     : "";
@@ -35,6 +38,7 @@ export default async function SiteLayout({
     <UserProvider initialUser={initialUser}>
       <NavBar
         navItems={navItems}
+        guests={guests}
         showLogout={passwordProtected && isAuthenticated}
         showGuestsLink={isAuthenticated}
         mapImageUrl={mapImageUrl}

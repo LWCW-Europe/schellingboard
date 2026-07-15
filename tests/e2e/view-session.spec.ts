@@ -7,9 +7,7 @@ test("hard-navigating to a session URL renders the modal without hydration error
   await login(page);
 
   await page.goto("/Conference-Gamma");
-  await expect(
-    page.getByRole("heading", { name: /Conference Gamma Schedule/ })
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
 
   await page
     .getByRole("link", { name: /Opening Keynote/ })

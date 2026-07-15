@@ -13,8 +13,8 @@ export default async function EditProfilePage() {
       <div className="max-w-2xl mx-auto flex flex-col gap-4">
         <p className="text-gray-700">
           You need to select who you are before editing your profile. Pick your
-          name from the &ldquo;My name is&rdquo; selector on the proposals or
-          schedule page.
+          name via the &ldquo;Select your name&rdquo; chip in the header at the
+          top of the page.
         </p>
         <Link
           href="/guests"

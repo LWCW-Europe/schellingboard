@@ -1450,6 +1450,9 @@ test.describe("Admin UI sessions", () => {
     // is used by no other spec (Bob Test's keynote slot belongs to
     // rsvp.spec.ts).
     await loginAndGoto(page, "/Conference-Gamma");
+    // Open the header name picker, then filter to Yuki (who sorts last and
+    // would otherwise fall outside the combobox's visible options).
+    await page.getByRole("button", { name: /your name/i }).click();
     await page.getByLabel("My name is:").click();
     await page.keyboard.type("Yuki Tanaka");
     await page.getByRole("option", { name: /Yuki Tanaka/i }).click();
