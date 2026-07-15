@@ -7,9 +7,7 @@ test("a newly added session appears on the overview and can be opened", async ({
   await login(page);
 
   await page.goto("/Conference-Gamma");
-  await expect(
-    page.getByRole("heading", { name: /Conference Gamma Schedule/ })
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
 
   // Reach the form the way a real user does: click a free "+" slot in the grid.
   // We don't care which slot, so take the first.
@@ -43,9 +41,7 @@ test("a newly added session appears on the overview and can be opened", async ({
   // Click the in-app "Back to schedule" link. This is the client-side
   // navigation that previously served a stale (pre-mutation) overview.
   await page.getByRole("link", { name: /Back to schedule/i }).click();
-  await expect(
-    page.getByRole("heading", { name: /Conference Gamma Schedule/ })
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
 
   // The new session must be visible WITHOUT reloading (see #253).
   const newSessionLink = page.getByRole("link", { name: sessionTitle });

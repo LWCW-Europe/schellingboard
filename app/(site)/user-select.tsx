@@ -7,9 +7,11 @@ import { UserContext } from "./context";
 export function UserSelect({
   guests,
   showOnlyWhenUserSet,
+  onSelect,
 }: {
   guests: Guest[];
   showOnlyWhenUserSet?: boolean;
+  onSelect?: () => void;
 }) {
   const { user: currentUser, setUser } = useContext(UserContext);
 
@@ -21,6 +23,7 @@ export function UserSelect({
         hosts={guests.filter((guest) => guest.id === currentUser)}
         setHosts={(hosts) => {
           setUser?.(hosts?.at(-1)?.id || null);
+          onSelect?.();
         }}
         selectMany={false}
       />

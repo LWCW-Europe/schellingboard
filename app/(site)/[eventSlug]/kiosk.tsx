@@ -17,8 +17,6 @@ const INITIAL_SCROLL_DELAY_MS = 1000;
 const INTERACTION_IDLE_MS = 60 * 1000;
 /** How often the event data is refetched so the display never goes stale. */
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-/** The scroll container's `sticky top-16` offset (see EventDisplay). */
-const STICKY_TOP_PX = 64;
 
 export function useKioskMode(): boolean {
   const searchParams = useSearchParams();
@@ -86,9 +84,10 @@ export function KioskController() {
     };
   }, []);
 
-  // Periodically bring the now line back into view: scroll the window so the
-  // grid is at its sticky resting position and the grid so the line sits a
-  // third from the top. Paused while someone is interacting with the display.
+  // Periodically bring the now line back into view: scroll the grid — pinned
+  // below the toolbar, it is the page's only scroll surface — so the line
+  // sits a third from the top. Paused while someone is interacting with the
+  // display.
   useEffect(() => {
     let lastInteraction = -Infinity;
     const markInteraction = () => {
@@ -112,10 +111,6 @@ export function KioskController() {
       const line = document.querySelector('[data-testid="now-line"]');
       if (!container || !line) return;
       const containerTop = container.getBoundingClientRect().top;
-      window.scrollTo({
-        top: window.scrollY + containerTop - STICKY_TOP_PX,
-        behavior: "smooth",
-      });
       container.scrollTo({
         top:
           container.scrollTop +

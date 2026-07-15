@@ -1,5 +1,6 @@
 import { test, expect } from "./helpers/fixtures";
 import { loginAndGoto, login } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
 
 test("should allow voting on proposals with different choices", async ({
   page,
@@ -9,9 +10,8 @@ test("should allow voting on proposals with different choices", async ({
   // Go to proposals list for Conference Beta (voting phase)
   await page.goto("/Conference-Beta/proposals");
 
-  // Select a user from the "My name is:" dropdown
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name: /Alice Test/i }).click();
+  // Select a user via the header name picker
+  await selectUser(page, /Alice Test/i);
 
   // Choose a proposal created by Charlie Test
   const proposalRow = page.getByRole("row", {
@@ -54,9 +54,8 @@ test("should navigate to quick voting and allow voting on proposals", async ({
   // Go to proposals list for Conference Beta (voting phase)
   await page.goto("/Conference-Beta/proposals");
 
-  // Select a user from the "My name is:" dropdown
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name: /Bob Test/i }).click();
+  // Select a user via the header name picker
+  await selectUser(page, /Bob Test/i);
 
   // Click on "Go to Quick Voting!" link
   await page.getByRole("link", { name: /Go to Quick Voting!/i }).click();
@@ -123,8 +122,7 @@ test("votes from two users persist independently across reloads", async ({
   ]);
 
   // Vote as Alice
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name: /Alice Test/i }).click();
+  await selectUser(page, /Alice Test/i);
 
   const row = page.getByRole("row", { name: new RegExp(title) });
   await expect(row).toBeVisible();
@@ -149,8 +147,7 @@ test("votes from two users persist independently across reloads", async ({
   // (There is no visible aggregate tally during the voting phase, so the
   // combined count is asserted per-user here; tally aggregation is covered
   // by tests/integration/voting.test.ts.)
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name: /Charlie Test/i }).click();
+  await selectUser(page, /Charlie Test/i);
   await expect(row.getByRole("button", { name: "❤️" })).not.toHaveClass(
     /bg-blue-200/
   );
@@ -167,8 +164,7 @@ test("votes from two users persist independently across reloads", async ({
   await expect(row.getByRole("button", { name: "⭐" })).toHaveClass(
     /bg-blue-200/
   );
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name: /Alice Test/i }).click();
+  await selectUser(page, /Alice Test/i);
   await expect(row.getByRole("button", { name: "❤️" })).toHaveClass(
     /bg-blue-200/
   );

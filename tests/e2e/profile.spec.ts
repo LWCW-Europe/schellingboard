@@ -3,11 +3,12 @@ import { login } from "./helpers/auth";
 import sharp from "sharp";
 
 async function selectCurrentUser(page: import("@playwright/test").Page) {
-  // The proposals page has a "My name is:" selector backed by a combobox.
+  // The current identity lives in the header: a chip (accessible name starts
+  // with "Your name") opens a modal with the "My name is:" combobox.
+  await page.getByRole("button", { name: /your name/i }).click();
   await page.getByRole("combobox", { name: /My name is/i }).click();
   await page.getByRole("combobox", { name: /My name is/i }).fill("Alice Test");
   await page.getByRole("option", { name: /Alice Test/i }).click();
-  await page.keyboard.press("Escape");
 }
 
 async function makeImage(width: number, height: number): Promise<Buffer> {

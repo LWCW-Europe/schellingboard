@@ -10,7 +10,9 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { MapModal } from "./modals";
 import { LogoutButton } from "./logout-button";
+import { HeaderUserSelect } from "./header-user-select";
 import { EVENT_ICONS } from "@/app/event-icons";
+import type { Guest } from "@/db/repositories/interfaces";
 
 export type NavItem = {
   name: string;
@@ -20,11 +22,13 @@ export type NavItem = {
 
 export default function NavBar({
   navItems,
+  guests,
   showLogout,
   showGuestsLink,
   mapImageUrl,
 }: {
   navItems: NavItem[];
+  guests: Guest[];
   showLogout: boolean;
   showGuestsLink: boolean;
   mapImageUrl: string;
@@ -64,7 +68,7 @@ export default function NavBar({
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   {showGuestsLink && (
                     <Link
                       href="/guests"
@@ -75,6 +79,7 @@ export default function NavBar({
                     </Link>
                   )}
                   {mapImageUrl && <MapModal mapImageUrl={mapImageUrl} />}
+                  {guests.length > 0 && <HeaderUserSelect guests={guests} />}
                   {showLogout && <LogoutButton />}
                 </div>
               </div>

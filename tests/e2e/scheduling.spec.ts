@@ -1,16 +1,12 @@
 import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
 
 // All tests run in Conference Gamma (scheduling phase). Each test creates its
 // own uniquely-titled session on the LAST event day at a fixed location and
 // start time, so parallel tests (including add-session.spec.ts, which takes
 // the first free "+" slot on day 1) never compete for the same slot.
-
-async function selectUser(page: Page, name: RegExp) {
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name }).click();
-}
 
 // The form's labels are not wired to their inputs, so locate each listbox
 // through its labelled section (same approach as the hosts combobox in
@@ -118,9 +114,7 @@ test("a host can delete a session and it disappears from the grid", async ({
   ).toBeVisible();
 
   await page.getByRole("link", { name: /Back to schedule/i }).click();
-  await expect(
-    page.getByRole("heading", { name: /Conference Gamma Schedule/ })
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
   await expect(page.getByRole("link", { name: title })).toHaveCount(0);
 
   // Still gone after a full reload

@@ -1,26 +1,19 @@
 "use client";
-import { ScheduleSettings } from "./schedule-settings";
+import { ScheduleToolbar } from "./schedule-toolbar";
 import { DayGrid } from "./day-grid";
-import {
-  CalendarIcon,
-  LinkIcon,
-  ClipboardDocumentListIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/outline";
+import { ChevronRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { DateTime } from "luxon";
 import { useSearchParams } from "next/navigation";
 import { DayText } from "./day-text";
 import { Input } from "@/app/input";
-import { useState, useContext } from "react";
+import { useState, useContext, useRef } from "react";
 import { EventContext } from "../context";
-import { hasPhases } from "@/app/(site)/utils/events";
-import Link from "next/link";
 import { getDefaultFoldedDayIds } from "@/utils/schedule-fold";
 import { KioskController, useKioskMode } from "./kiosk";
 import { SessionModal } from "./session-modal";
 import type { DayWithSessions } from "../context";
-import { Markdown } from "@/app/(site)/markdown";
+import { useDragToPan } from "./use-drag-to-pan";
+import Footer from "@/app/footer";
 
 export function EventDisplay() {
   const { event, days, locations, guests, rsvps, now } =
@@ -33,6 +26,8 @@ export function EventDisplay() {
   const [unfoldedDayIds, setUnfoldedDayIds] = useState<Set<string>>(
     () => new Set()
   );
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  useDragToPan(scrollerRef, view === "grid");
 
   if (!event) return <div>No event data available</div>;
 
@@ -48,101 +43,66 @@ export function EventDisplay() {
       return next;
     });
   const locationsForEvent = locations;
-  const multipleDays = event.start.getTime() !== event.end.getTime();
 
-  return (
-    <div className="flex flex-col items-start w-full">
-      <div className="mx-2">
-        <h1 className="sm:text-4xl text-3xl font-bold mt-20">
-          {event.name} Schedule
-        </h1>
-        <div className="flex text-gray-500 text-sm mt-1 gap-5 font-medium">
-          <span className="flex gap-1 items-center">
-            <CalendarIcon className="h-4 w-4 stroke-2" />
-            <span>
-              {DateTime.fromJSDate(event.start)
-                .setZone(event.timezone)
-                .toFormat("LLL d")}
-              {multipleDays && (
-                <>
-                  {" - "}
-                  {DateTime.fromJSDate(event.end)
-                    .setZone(event.timezone)
-                    .toFormat("LLL d")}
-                </>
-              )}
-              {" · "}
-              {event.timezone}
-            </span>
-          </span>
-          <a
-            className="flex gap-1 items-center hover:underline"
-            href={`https://${event.website}`}
-          >
-            <LinkIcon className="h-4 w-4 stroke-2" />
-            <span>{event.website}</span>
-          </a>
-        </div>
-        <div className="text-gray-900 mt-3 mb-5">
-          <Markdown>{event.description}</Markdown>
-        </div>
-        {hasPhases(event) && (
-          <div className="mb-5">
-            <Link
-              href={`/${event.slug}/proposals`}
-              className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 max-w-fit`}
-            >
-              <ClipboardDocumentListIcon className="h-4 w-4" />
-              View Session Proposals
-            </Link>
+  const toolbar = <ScheduleToolbar event={event} />;
+
+  // Both views own the viewport below the nav bar via the same fixed frame, so
+  // the toolbar rests in the same spot and doesn't jump when switching views.
+  // The frame's inner container is the only scroll surface; the toolbar lives
+  // inside it (as the first item) so it scrolls away with the content, leaving
+  // only the sticky room headers pinned in the grid view. globals.css locks
+  // window scrolling and hides the site footer while [data-schedule-frame] is
+  // mounted; a footer copy ends the schedule content instead.
+  const scheduleBody =
+    view === "grid" ? (
+      <div
+        data-testid="schedule-scroll"
+        ref={scrollerRef}
+        // `grid` with a single minmax(max-content, 1fr) column (rather than
+        // block flow) so the toolbar, fold bars and footer stretch to the
+        // widest day's grid when it overflows — instead of falling short when
+        // scrolled horizontally — yet still fill the viewport when the grid is
+        // narrower than it.
+        // `cursor` inherits, so links/buttons (session cells, fold toggles, …)
+        // are reset to their normal cursor rather than showing the grab hand.
+        className="flex-1 w-full overflow-auto cursor-grab grid content-start [&_a]:cursor-pointer [&_button]:cursor-pointer"
+        style={{ gridTemplateColumns: "minmax(max-content, 1fr)" }}
+      >
+        {toolbar}
+        {daysForEvent.map((day) => (
+          <div key={day.id} className="contents">
+            {defaultFoldedDayIds.has(day.id) && (
+              <DayFoldBar
+                day={day}
+                timezone={event.timezone}
+                folded={isFolded(day.id)}
+                onToggle={() => toggleDayFold(day.id)}
+              />
+            )}
+            {!isFolded(day.id) && (
+              <DayGrid
+                day={day}
+                locations={locationsForEvent}
+                guests={guests}
+              />
+            )}
           </div>
-        )}
+        ))}
+        <Footer inline />
       </div>
-      <div className="mb-10 w-full">
-        <ScheduleSettings guests={guests} />
-      </div>
-      {view !== "grid" && (
+    ) : (
+      <div
+        data-testid="schedule-scroll"
+        ref={scrollerRef}
+        className="flex-1 w-full overflow-auto flex flex-col items-stretch"
+      >
+        {toolbar}
         <Input
-          className="max-w-3xl w-full mb-5 mx-auto"
+          className="max-w-3xl w-full my-5 mx-auto"
           placeholder="Search sessions"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-      )}
-      {view === "grid" ? (
-        // One large scroll container for everything:
-        // Time, room name and day are sticky, and every new day day+room names get replaced.
-        // - `dvh` (not `vh`) so the mobile address bar showing/hiding doesn't change the height.
-        <div
-          data-testid="schedule-scroll"
-          // `grid` with a single max-content column (rather than block flow)
-          // so the fold bar's `w-full` stretches to match the widest day's
-          // grid instead of the container's own (viewport-bound) width —
-          // otherwise its background falls short when scrolled horizontally.
-          className="w-full overflow-auto sticky top-16 max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-8rem)] rounded-lg border border-gray-200 grid"
-          style={{ gridTemplateColumns: "max-content" }}
-        >
-          {daysForEvent.map((day) => (
-            <div key={day.id} className="contents">
-              {defaultFoldedDayIds.has(day.id) && (
-                <DayFoldBar
-                  day={day}
-                  timezone={event.timezone}
-                  folded={isFolded(day.id)}
-                  onToggle={() => toggleDayFold(day.id)}
-                />
-              )}
-              {!isFolded(day.id) && (
-                <DayGrid
-                  day={day}
-                  locations={locationsForEvent}
-                  guests={guests}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      ) : (
         <div className="flex flex-col gap-12 w-full">
           {daysForEvent.map((day) => (
             <div key={day.id}>
@@ -168,12 +128,23 @@ export function EventDisplay() {
             </div>
           ))}
         </div>
-      )}
+        <Footer inline />
+      </div>
+    );
+
+  return (
+    <>
+      <div
+        data-schedule-frame
+        className="fixed inset-x-0 top-16 bottom-0 flex flex-col bg-white"
+      >
+        {scheduleBody}
+      </div>
       {viewSession && (
         <SessionModal sessionId={viewSession} eventSlug={event.slug} />
       )}
       {kiosk && <KioskController />}
-    </div>
+    </>
   );
 }
 

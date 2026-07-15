@@ -1,6 +1,6 @@
-import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
 
 // Phase-dependent UI, one seeded event per phase:
 //   Conference Alpha — proposal phase
@@ -8,11 +8,6 @@ import { login } from "./helpers/auth";
 //   Conference Gamma — scheduling phase
 // Assertions target the deterministic event-specific "Lightning Talks" seed
 // proposals, which other parallel tests never modify.
-
-async function selectUser(page: Page, name: RegExp) {
-  await page.getByLabel("My name is:").click();
-  await page.getByRole("option", { name }).click();
-}
 
 test("proposal phase: proposing is open, voting is not yet available", async ({
   page,
@@ -72,9 +67,7 @@ test("scheduling phase: grid is interactive, proposing and voting are over", asy
 }) => {
   await login(page);
   await page.goto("/Conference-Gamma");
-  await expect(
-    page.getByRole("heading", { name: /Conference Gamma Schedule/ })
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
   // The grid offers free slots for adding sessions
   await expect(
     page.getByRole("link", { name: "Add session" }).first()

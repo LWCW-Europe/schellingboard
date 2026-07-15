@@ -85,9 +85,7 @@ test.describe("Basic Sanity Checks", () => {
       .getByRole("link", { name: "View event" })
       .click();
 
-    await expect(
-      page.getByRole("heading", { name: /Conference Gamma Schedule/ })
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
     await expect(
       page.getByText("Opening Keynote - Conference Gamma")
     ).toBeVisible();
