@@ -44,7 +44,7 @@ test.describe("Basic Sanity Checks", () => {
     await page
       .locator("text=Conference Alpha")
       .locator("..")
-      .getByRole("link", { name: "View Schedule" })
+      .getByRole("link", { name: "View event" })
       .click();
 
     await expect(
@@ -63,7 +63,7 @@ test.describe("Basic Sanity Checks", () => {
     await page
       .locator("text=Conference Beta")
       .locator("..")
-      .getByRole("link", { name: "View Schedule" })
+      .getByRole("link", { name: "View event" })
       .click();
 
     await expect(
@@ -82,7 +82,7 @@ test.describe("Basic Sanity Checks", () => {
     await page
       .locator("text=Conference Gamma")
       .locator("..")
-      .getByRole("link", { name: "View Schedule" })
+      .getByRole("link", { name: "View event" })
       .click();
 
     await expect(
