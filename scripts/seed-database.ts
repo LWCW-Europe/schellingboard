@@ -869,6 +869,71 @@ function seedTestData() {
       areaDescription: "Outdoor, South Courtyard",
       hidden: false,
     },
+    {
+      id: "loc-library",
+      name: "Reading Room",
+      capacity: 40,
+      bookable: true,
+      sortIndex: 4,
+      color: "amber",
+      imageUrl: "/locations/loc-library.jpg",
+      description:
+        "A quiet, book-lined room with a grand skylight and long communal tables. Great for focused breakout sessions or attendees who need a calm space to work between talks.",
+      areaDescription: "2nd floor, North Wing",
+      hidden: false,
+    },
+    {
+      id: "loc-boardroom",
+      name: "Boardroom",
+      capacity: 10,
+      bookable: true,
+      sortIndex: 5,
+      color: "indigo",
+      imageUrl: "/locations/loc-boardroom.jpg",
+      description:
+        "A compact meeting room with a glass-walled conference table and video conferencing setup. Well suited for small-group discussions, interviews, or sponsor meetings.",
+      areaDescription: "1st floor, East Wing",
+      hidden: false,
+    },
+    {
+      id: "loc-auditorium",
+      name: "Auditorium",
+      capacity: 200,
+      bookable: true,
+      sortIndex: 6,
+      color: "orange",
+      imageUrl: "/locations/loc-auditorium.jpg",
+      description:
+        "A tiered lecture theatre with fixed seating and a large presentation screen. Best for high-attendance keynotes and formal talks that don't need audience interaction.",
+      areaDescription: "Ground floor, West Wing",
+      hidden: false,
+    },
+    {
+      id: "loc-courtyard",
+      name: "Courtyard",
+      capacity: 50,
+      bookable: true,
+      sortIndex: 7,
+      color: "sky",
+      imageUrl: "/locations/loc-courtyard.jpg",
+      description:
+        "A dramatic covered courtyard framed by stone arches, open to the sky above. Works well as a striking gathering point between sessions or a quiet spot to reflect.",
+      areaDescription: "Ground floor, Central Courtyard",
+      hidden: false,
+    },
+    {
+      id: "loc-rooftop",
+      name: "Rooftop Terrace",
+      capacity: 20,
+      bookable: true,
+      sortIndex: 8,
+      color: "teal",
+      imageUrl: "/locations/loc-rooftop.jpg",
+      description:
+        "An open-air rooftop space with skyline views and casual seating. Ideal for informal chats, evening socials, or breakout conversations away from the main venue.",
+      areaDescription: "Rooftop, East Wing",
+      hidden: false,
+    },
   ];
   db.insert(schema.locations).values(locationRows).run();
   console.log(`  ✅ Created ${locationRows.length} locations`);

@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Host RSVPs cleared on edit**: adding an attendee as a session host now removes their RSVP to that session, including when an organizer edits the session from the admin panel
 
+### Internal
+
+- **More seed locations**: dev seed data now includes 5 additional locations (reading room, boardroom, auditorium, courtyard, rooftop terrace) with photos, for a more realistic local dev environment
+
 ## [3.0.0] - 2026-07-13
 
 > **Breaking change**: the database backend has switched from Airtable to SQLite. There is no automated migration path — data must be re-entered manually or migrated via a custom script.
