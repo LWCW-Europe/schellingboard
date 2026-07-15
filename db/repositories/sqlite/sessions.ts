@@ -320,8 +320,8 @@ export class SqliteSessionsRepository implements SessionsRepository {
             .values({ sessionId: id, guestId })
             .run();
         }
-        // Hosts don't RSVP to their own session, so an RSVP'd guest who
-        // becomes a host loses their RSVP.
+        // Hosts don't RSVP to their own session, so any of the new hosts'
+        // existing RSVPs are removed here too.
         if (patch.hostIds.length > 0) {
           tx.delete(schema.rsvps)
             .where(

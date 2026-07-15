@@ -402,8 +402,8 @@ export interface SessionsRepository {
   findById(id: string): Promise<Session | undefined>;
   create(data: SessionCreateInput): Promise<Session>;
   /**
-   * When `hostIds` is given, any RSVPs by the new hosts are removed in the
-   * same transaction: hosts don't RSVP to their own session.
+   * When `hostIds` is given, any RSVPs by the session's hosts are removed
+   * in the same transaction: hosts don't RSVP to their own session.
    */
   update(id: string, patch: SessionUpdateInput): Promise<Session>;
   delete(id: string): Promise<void>;
