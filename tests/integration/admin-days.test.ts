@@ -230,6 +230,56 @@ describe("day actions", () => {
       expect(!result.ok && result.error).toMatch(/bookings.*within.*day/i);
     });
 
+    it("rejects when only the bookings start is before the day start", async () => {
+      const event = await createEvent();
+      const result = await createDayAction({
+        eventId: event.id,
+        start: "2026-10-01T09:00",
+        end: "2026-10-01T18:00",
+        startBookings: "2026-10-01T08:00",
+        endBookings: "2026-10-01T17:00",
+      });
+      expect(!result.ok && result.error).toMatch(/bookings.*within.*day/i);
+    });
+
+    it("rejects when only the bookings end is after the day end", async () => {
+      const event = await createEvent();
+      const result = await createDayAction({
+        eventId: event.id,
+        start: "2026-10-01T09:00",
+        end: "2026-10-01T18:00",
+        startBookings: "2026-10-01T09:30",
+        endBookings: "2026-10-01T19:00",
+      });
+      expect(!result.ok && result.error).toMatch(/bookings.*within.*day/i);
+    });
+
+    it("rejects when the day end equals the day start", async () => {
+      const event = await createEvent();
+      const result = await createDayAction({
+        eventId: event.id,
+        start: "2026-10-01T09:00",
+        end: "2026-10-01T09:00",
+        startBookings: "2026-10-01T09:00",
+        endBookings: "2026-10-01T09:00",
+      });
+      expect(!result.ok && result.error).toMatch(/end.*after.*start/i);
+    });
+
+    it("rejects when the bookings end equals the bookings start", async () => {
+      const event = await createEvent();
+      const result = await createDayAction({
+        eventId: event.id,
+        start: "2026-10-01T09:00",
+        end: "2026-10-01T18:00",
+        startBookings: "2026-10-01T10:00",
+        endBookings: "2026-10-01T10:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /bookings end.*after.*bookings start/i
+      );
+    });
+
     it("rejects when new day overlaps an existing day", async () => {
       const event = await createEvent();
       await createDay(event.id, {
@@ -291,6 +341,20 @@ describe("day actions", () => {
         endBookings: "2026-10-01T17:30",
       });
       expect(!result.ok && result.error).toBe("Day not found");
+    });
+
+    it("looks up the event via the day's own eventId, not the input", async () => {
+      const event = await createEvent();
+      const day = await createDay(event.id);
+      const result = await updateDayAction({
+        id: day.id,
+        eventId: "no-such-event-id",
+        start: "2026-10-01T09:00",
+        end: "2026-10-01T18:00",
+        startBookings: "2026-10-01T09:00",
+        endBookings: "2026-10-01T17:30",
+      });
+      expect(result.ok).toBe(true);
     });
 
     it("cannot move a day to a different event", async () => {
