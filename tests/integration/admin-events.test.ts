@@ -305,6 +305,17 @@ describe("event actions", () => {
       );
     });
 
+    it("rejects an event whose end equals its start", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        start: "2026-09-05",
+        end: "2026-09-05",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /end.*after.*start|start.*before.*end/i
+      );
+    });
+
     it("persists the configured break", async () => {
       const result = await createEventAction({
         ...VALID_EVENT_INPUT,
@@ -433,6 +444,13 @@ describe("event actions", () => {
       });
       expect(!result.ok && result.error).toMatch(/icon/i);
     });
+
+    it("defaults the RSVP capacity hard limit to false when unset", async () => {
+      const result = await createEventAction(VALID_EVENT_INPUT);
+      expect(result.ok).toBe(true);
+      const event = await getRepositories().events.findByName("Test Event");
+      expect(event?.rsvpCapacityHardLimit).toBe(false);
+    });
   });
 
   describe("updateEventAction", () => {
@@ -559,6 +577,29 @@ describe("event actions", () => {
         ).toBe(30);
       });
 
+      it("blocks the change when only one of several days is misaligned", async () => {
+        const event = await createEvent();
+        await createDay(event.id, alignedDayOpts);
+        // Second day's 8h window (480 minutes) is not a multiple of 45.
+        await createDay(event.id, {
+          ...alignedDayOpts,
+          start: new Date("2026-10-02T09:00:00Z"),
+          end: new Date("2026-10-02T17:00:00Z"),
+          startBookings: new Date("2026-10-02T09:45:00Z"),
+          endBookings: new Date("2026-10-02T16:15:00Z"),
+        });
+        const result = await updateEventAction({
+          id: event.id,
+          ...VALID_EVENT_INPUT,
+          slotIncrementMinutes: "45",
+        });
+        expect(!result.ok && result.error).toMatch(/day.*align|align.*day/i);
+        expect(
+          (await getRepositories().events.findById(event.id))
+            ?.slotIncrementMinutes
+        ).toBe(30);
+      });
+
       it("blocks the change when a scheduled session is misaligned", async () => {
         const event = await createEvent();
         await createDay(event.id, alignedDayOpts);
@@ -573,6 +614,48 @@ describe("event actions", () => {
           slotIncrementMinutes: "45",
         });
         expect(!result.ok && result.error).toContain("Off Grid");
+        expect(
+          (await getRepositories().events.findById(event.id))
+            ?.slotIncrementMinutes
+        ).toBe(30);
+      });
+
+      it("blocks the change when only a session's start is misaligned", async () => {
+        const event = await createEvent();
+        await createDay(event.id, alignedDayOpts);
+        await createSession(event.id, {
+          title: "Bad Start",
+          // Start is 30min off a 45-min grid; end (11:15) is aligned.
+          startTime: new Date("2026-10-01T09:30:00Z"),
+          endTime: new Date("2026-10-01T11:15:00Z"),
+        });
+        const result = await updateEventAction({
+          id: event.id,
+          ...VALID_EVENT_INPUT,
+          slotIncrementMinutes: "45",
+        });
+        expect(!result.ok && result.error).toContain("Bad Start");
+        expect(
+          (await getRepositories().events.findById(event.id))
+            ?.slotIncrementMinutes
+        ).toBe(30);
+      });
+
+      it("blocks the change when only a session's end is misaligned", async () => {
+        const event = await createEvent();
+        await createDay(event.id, alignedDayOpts);
+        await createSession(event.id, {
+          title: "Bad End",
+          // Start (9:45) is aligned; end is 30min off a 45-min grid.
+          startTime: new Date("2026-10-01T09:45:00Z"),
+          endTime: new Date("2026-10-01T11:00:00Z"),
+        });
+        const result = await updateEventAction({
+          id: event.id,
+          ...VALID_EVENT_INPUT,
+          slotIncrementMinutes: "45",
+        });
+        expect(!result.ok && result.error).toContain("Bad End");
         expect(
           (await getRepositories().events.findById(event.id))
             ?.slotIncrementMinutes
@@ -626,6 +709,18 @@ describe("event actions", () => {
       const result = await updateEventPhasesAction({
         id: event.id,
         proposalPhaseStart: "2026-09-15T18:00",
+        proposalPhaseEnd: "2026-09-01T08:00",
+      });
+      expect(!result.ok && result.error).toMatch(
+        /proposal.*end.*after.*start/i
+      );
+    });
+
+    it("rejects when proposal phase end equals its start", async () => {
+      const event = await createEvent();
+      const result = await updateEventPhasesAction({
+        id: event.id,
+        proposalPhaseStart: "2026-09-01T08:00",
         proposalPhaseEnd: "2026-09-01T08:00",
       });
       expect(!result.ok && result.error).toMatch(
