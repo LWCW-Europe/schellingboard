@@ -1,5 +1,5 @@
-// Talking to Mailpit's API (docker compose up mailpit), for tests that check
-// real email delivery.
+// Talking to Mailpit's API (make mailpit), for tests that check real email
+// delivery.
 export const MAILPIT_API_URL = process.env.MAILPIT_API_URL ?? "";
 
 export type MessageSummary = {

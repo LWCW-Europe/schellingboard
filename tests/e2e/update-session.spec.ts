@@ -33,7 +33,7 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
 }) => {
   expect(
     MAILPIT_API_URL,
-    "MAILPIT_API_URL must be set: this test needs Mailpit (docker compose up mailpit) and fails rather than skips without it"
+    "MAILPIT_API_URL must be set: this test needs Mailpit (make mailpit) and fails rather than skips without it"
   ).toBeTruthy();
 
   await login(page);
