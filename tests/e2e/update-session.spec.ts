@@ -3,9 +3,9 @@ import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
 import {
-  MAILPIT_API_URL,
   getMessage,
   searchBySubject,
+  skipWithoutMailpit,
 } from "../helpers/mailpit";
 
 // Form idioms shared with scheduling.spec.ts: the form's labels are not wired
@@ -27,10 +27,10 @@ const dayRadios = (page: Page) =>
 test("updating a session emails the RSVP'd guest and the added co-host", async ({
   page,
 }) => {
-  expect(
-    MAILPIT_API_URL,
-    "MAILPIT_API_URL must be set: this test needs Mailpit (make mailpit) and fails rather than skips without it"
-  ).toBeTruthy();
+  test.skip(
+    skipWithoutMailpit(),
+    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see CONTRIBUTING.md § Running tests)"
+  );
 
   await login(page);
   // The title doubles as the unique token for finding this test's emails

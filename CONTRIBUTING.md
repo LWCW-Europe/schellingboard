@@ -101,7 +101,7 @@ make format   # Format code
 Before committing or pushing, run:
 
 ```bash
-make precommit  # Format, lint, type check, and run tests
+make precommit  # Format, lint, type check, and run all tests (incl. e2e)
 ```
 
 ## Running Multiple Instances
@@ -112,10 +112,10 @@ ports in its two local env files, rather than leaning on defaults or automatic
 port selection — then nothing depends on which instance you happened to start
 first. Neither file is committed:
 
-| File              | Read by                      | Sets                                         |
-| ----------------- | ---------------------------- | -------------------------------------------- |
-| `.env.dev.local`  | `make dev`, `make mailpit`   | dev server port, mailpit's host ports, email |
-| `.env.test.local` | `make test`, `make test-e2e` | email (wins over `.env.test`)                |
+| File              | Read by                      | Sets                                                |
+| ----------------- | ---------------------------- | --------------------------------------------------- |
+| `.env.dev.local`  | `make dev`, `make mailpit`   | dev server port, mailpit's host ports, email        |
+| `.env.test.local` | `make test`, `make test-e2e` | email (opt-in, see [Running tests](#running-tests)) |
 
 Start mailpit with `make mailpit` rather than `docker compose up mailpit`: on its
 own, compose reads only a file literally named `.env`, so the make target points
@@ -142,6 +142,7 @@ SMTP_URL=smtp://localhost:1025
 # .env.test.local
 SMTP_URL=smtp://localhost:1025
 MAILPIT_API_URL=http://localhost:8025
+SMTP_FROM='Test <mailer-test@test.example>'
 ```
 
 Clone B in `~/src/sb-b` shifts every port by one:
@@ -163,6 +164,7 @@ SMTP_URL=smtp://localhost:1026
 # .env.test.local
 SMTP_URL=smtp://localhost:1026
 MAILPIT_API_URL=http://localhost:8026
+SMTP_FROM='Test <mailer-test@test.example>'
 ```
 
 Each clone can now run `make mailpit`, `make dev`, `make test`, and
@@ -307,9 +309,22 @@ make test-e2e-headed     # Run E2E tests (headed, for local dev)
 
 **Warning**: E2E tests reset the test database before each run. Do not run against production data.
 
-By default, `make test` tests that we can successfully send email to a local [mailpit](https://mailpit.axllent.org/) (start it with `make mailpit`). You can skip that test by setting `MAILPIT_API_URL` to blank in `.env.test.local`.
+Tests that send real email (in `make test` and `make test-e2e`) are opt-in:
+they need a local [mailpit](https://mailpit.axllent.org/) (start it with
+`make mailpit`) and the mail variables set in `.env.test.local`:
 
-Some e2e tests (`make test-e2e`) also require mailpit. These ones fail if it's unreachable.
+```bash
+# .env.test.local
+MAILPIT_API_URL=http://localhost:8025
+SMTP_URL=smtp://localhost:1025
+SMTP_FROM='Test <mailer-test@test.example>'
+```
+
+When these are unset (the default on a fresh checkout), the email tests are
+reported as skipped; when they are set but mailpit is unreachable, the tests
+fail. CI always sets them (in `.github/workflows/ci.yml`, alongside a mailpit
+service container) and the tests fail there if the variables go missing, so
+they can never be silently skipped in CI.
 
 Running another clone or workspace of this project alongside this one? See [Running Multiple Instances](#running-multiple-instances) for the ports that have to be kept apart.
 

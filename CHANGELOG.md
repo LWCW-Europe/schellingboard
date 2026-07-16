@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **More seed locations**: dev seed data now includes 5 additional locations (reading room, boardroom, auditorium, courtyard, rooftop terrace) with photos, for a more realistic local dev environment
 - **Configurable mailpit ports**: mailpit's host ports can now be overridden with `MAILPIT_SMTP_PORT`/`MAILPIT_UI_PORT`, so multiple project instances (e.g. separate clones or workspaces) can run on one machine without port clashes. New `make mailpit` target starts it, reading these from `.env.dev.local`; CONTRIBUTING.md documents the recommended per-clone setup
+- **Email tests are opt-in locally**: tests that need mailpit are skipped (and reported as skipped) unless the mail variables are set in `.env.test.local`, so a fresh checkout passes without Docker. CI sets the variables explicitly and the tests fail there if they go missing, so they can never be silently skipped in CI. `make precommit` now includes the e2e tests
 
 ## [3.0.0] - 2026-07-13
 
