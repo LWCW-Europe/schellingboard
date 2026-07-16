@@ -35,8 +35,15 @@ services:
   # We give it a profile[2] so that plain `docker compose up` doesn't start it.
   # You can do either
   #
+  #     make mailpit                     # only starts mailpit (preferred)
   #     docker compose --profile dev up  # starts `app` too
-  #     docker compose up mailpit        # only starts mailpit
+  #
+  # MAILPIT_SMTP_PORT/MAILPIT_UI_PORT let you run multiple instances of this
+  # project (e.g. separate clones or workspaces) on the same machine without
+  # port clashes. Not relevant for production. `make mailpit` is preferred over
+  # `docker compose up mailpit` because it feeds compose the per-clone values
+  # from `.env.dev.local`, which compose does not read on its own. See
+  # CONTRIBUTING.md#running-multiple-instances.
   #
   # [1]: https://mailpit.axllent.org/
   # [2]: https://docs.docker.com/compose/how-tos/profiles/
@@ -47,8 +54,8 @@ services:
     profiles:
       - dev
     ports:
-      - "1025:1025" # SMTP
-      - "8025:8025" # web UI
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP
+      - "${MAILPIT_UI_PORT:-8025}:8025" # web UI
 
 volumes:
   data:

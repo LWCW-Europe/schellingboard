@@ -1,4 +1,4 @@
-.PHONY: help dev build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci
+.PHONY: help dev mailpit build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci
 
 SHELL := /usr/bin/env bash
 
@@ -6,6 +6,7 @@ help:
 	@printf "Available commands:\n"
 	@printf "\nDevelopment:\n"
 	@printf "  %-28s %s\n" "make dev"                "Start development server"
+	@printf "  %-28s %s\n" "make mailpit"            "Start local mail server (for email in dev and tests)"
 	@printf "  %-28s %s\n" "make precommit"          "Format, lint, typecheck, and run all tests (incl. e2e)"
 	@printf "\nBuilding:\n"
 	@printf "  %-28s %s\n" "make build"              "Build for production"
@@ -46,6 +47,13 @@ install-playwright: install
 
 dev: dev-migrate-up install
 	bun set-env.ts dev bun x next dev
+
+# `docker compose` only auto-reads `.env`, so point it at `.env.dev.local`
+# instead — that way one file per clone carries MAILPIT_SMTP_PORT/MAILPIT_UI_PORT
+# (and COMPOSE_PROJECT_NAME), letting several clones run mailpit side by side.
+# The flag is conditional because compose errors out on a missing --env-file.
+mailpit:
+	docker compose $(if $(wildcard .env.dev.local),--env-file .env.dev.local,) up mailpit
 
 build: install
 	bun x next build
