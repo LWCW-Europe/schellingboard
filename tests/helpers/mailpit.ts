@@ -2,6 +2,19 @@
 // delivery.
 export const MAILPIT_API_URL = process.env.MAILPIT_API_URL ?? "";
 
+// Skip-condition for mail tests. Locally they are opt-in: unset mail vars mean
+// skip, so a fresh checkout passes without Mailpit. In CI they must never be
+// silently skipped, so a missing MAILPIT_API_URL throws instead.
+export function skipWithoutMailpit(): boolean {
+  if (MAILPIT_API_URL) return false;
+  if (process.env.CI) {
+    throw new Error(
+      "MAILPIT_API_URL is unset in CI — mail tests must always run there. Check the mailpit service and env vars in .github/workflows/ci.yml."
+    );
+  }
+  return true;
+}
+
 export type MessageSummary = {
   ID: string;
   From: { Name: string; Address: string };

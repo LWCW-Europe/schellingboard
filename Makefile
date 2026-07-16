@@ -99,9 +99,7 @@ format: install
 format-check: install
 	bun x prettier --check .
 
-# We don't run test-e2e here, because it fails if mailpit isn't running and we
-# don't want to require devs to run it.
-precommit: format lint typecheck test-coverage
+precommit: format lint typecheck test-coverage test-e2e
 
 clean:
 	rm -rf .next

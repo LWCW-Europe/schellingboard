@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { initMailer, resetMailer, sendMail } from "@/utils/mailer";
 import {
-  MAILPIT_API_URL,
   getMessage,
   searchBySubject,
+  skipWithoutMailpit,
 } from "../helpers/mailpit";
 
-// This suite runs only when MAILPIT_API_URL points at a mailpit instance (e.g.
-// http://localhost:8025 via `docker compose up mailpit`). Skips when
-// MAILPIT_API_URL is unset or empty; fails when it's set but mailpit is
-// unreachable.
-describe.skipIf(!MAILPIT_API_URL)("sendMail via mailpit", () => {
+// This suite runs only when MAILPIT_API_URL points at a mailpit instance
+// (start one with `make mailpit`, see CONTRIBUTING.md § Running tests). Skips
+// when MAILPIT_API_URL is unset (throws instead in CI); fails when it's set
+// but mailpit is unreachable.
+describe.skipIf(skipWithoutMailpit())("sendMail via mailpit", () => {
   beforeEach(() => {
     // Fix the sender rather than using the environment's SMTP_FROM, whose
     // format (bare address or `Name <address>`) the assertions would
@@ -18,9 +18,6 @@ describe.skipIf(!MAILPIT_API_URL)("sendMail via mailpit", () => {
     vi.stubEnv("SMTP_FROM", "Test Sender <sender@test.example>");
     resetMailer();
     initMailer();
-    console.warn(
-      "This test fails if you don't have Mailpit running. If you want to skip the test instead of running Mailpit, set `MAILPIT_API_URL=''`."
-    );
   });
 
   afterEach(() => vi.unstubAllEnvs());
