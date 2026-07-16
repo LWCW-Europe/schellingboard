@@ -27,6 +27,9 @@ yarn-error.log*
 
 # local env files
 .env*.local
+# not used by the dev setup, but `.env.docker.example` is meant to be copied
+# here as `.env`, and it holds secrets
+/.env
 
 # vercel
 .vercel
