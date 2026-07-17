@@ -1,6 +1,7 @@
 # SchellingBoard
 
 test1
+test2
 
 A web app for managing event scheduling — attendees can propose sessions, vote on them, and view the final schedule. Built with Next.js and SQLite.
 
