@@ -68,6 +68,11 @@ test("RSVP to a session persists across reloads and can be removed again", async
 test("a full session blocks further RSVPs when the event enforces capacity", async ({
   page,
 }) => {
+  // Flipping an admin setting, hosting a session, capping it, and then walking
+  // three guests through the RSVP flow adds up to just over the 30s default
+  // once parallel workers compete for the server.
+  test.slow();
+
   // Admin: enable the capacity hard limit on Conference Gamma.
   await page.goto("/admin");
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);
