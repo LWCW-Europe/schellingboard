@@ -6,6 +6,12 @@ the attendee site and vice versa. Without `ADMIN_PASSWORD` set, `/admin`
 returns a 404 rather than a login prompt. There's a single shared admin
 password, not per-admin accounts.
 
+Both gates also need `AUTH_SECRET` — it signs the login cookies. Changing
+`AUTH_SECRET` logs everyone out (attendees included); changing
+`SITE_PASSWORD` or `ADMIN_PASSWORD` does **not** — existing sessions stay
+valid for up to a week. If you need to revoke access immediately, rotate
+`AUTH_SECRET` as well.
+
 ## Site settings
 
 One global row shown when there's more than one event (see
@@ -70,6 +76,22 @@ assignment on the event's "Guests" tab.
 - **Send test email** — see [How it works § Email](how-it-works.md#email).
 - Attendees edit their own About me/Pronouns/Avatar from a profile page once
   they've picked their name; admins don't set these.
+
+### Attendees who protect their name
+
+Any attendee can opt into
+[name protection](how-it-works.md#attendee-identity) from their own settings,
+turning the name picker into a real login for them. There is no admin control
+over this: you can't require it, and you can't turn it off for someone.
+
+The one thing you _can_ do is fix a lockout. Protection is anchored to the
+guest's email address, so an attendee who's lost both their password and
+their mailbox is stuck until you **change their email address here** — codes
+then go to the new address and they can unlock themselves. Verify who you're
+talking to first; this is effectively a password reset.
+
+Deleting and recreating the guest also clears protection, but discards their
+votes, RSVPs, and profile — prefer changing the email.
 
 ## Proposals
 

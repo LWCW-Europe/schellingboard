@@ -265,6 +265,21 @@ the conflicted JSON; regenerate it instead:
 - Tailwind CSS for all styling
 - All UI must be mobile-responsive
 
+## Authorization
+
+**Every handler that modifies data must resolve the acting guest first —
+before validation — and refuse to act as a protected guest without a
+verified session.** This applies to REST routes, server actions, and server
+components alike. Read-only surfaces are exempt.
+
+Gating an action in the UI is never sufficient. Hiding an Edit button stops
+the honest path only; the handler behind it is reachable directly. Where the
+UI restricts an operation to certain guests (e.g. hosts), the handler must
+enforce the same rule independently.
+
+Helpers live in `utils/acting-guest.ts` (they hit the database, so they
+can't live in `utils/auth.ts`, which must stay importable from the proxy).
+
 ## Testing
 
 ### Test strategy
@@ -386,6 +401,7 @@ Update `CHANGELOG.md` under `[Unreleased]` alongside any user-facing change.
 
 1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header) and add a fresh empty `## [Unreleased]` section above it. Update the compare links at the bottom of the file: the new version's link should point from the previous release's endpoint to the new tag (`vX.Y.Z`), and `[Unreleased]` should point from the new tag to `HEAD`. Commit and merge this like any other change.
 2. **Tag the resulting commit on `main`**. jj cannot push tags to a Git remote, so use `git` for this step:
+
    ```bash
    VERSION=v3.0.0
    MINOR=${VERSION%.*}   # v3.0
@@ -395,6 +411,7 @@ Update `CHANGELOG.md` under `[Unreleased]` alongside any user-facing change.
    git tag $VERSION origin/main
    git push origin $VERSION
    ```
+
 3. **Publish the Docker images** — see below.
 
 ### Publishing Docker Images

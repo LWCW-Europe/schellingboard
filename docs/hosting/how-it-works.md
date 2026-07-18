@@ -2,11 +2,44 @@
 
 ## Attendee identity
 
-There's no per-attendee login. After entering the site password (if set),
-attendees pick their own name from the guest list assigned to that event.
-This is a convenience selector, **not authentication** — anyone who knows the
-site password can select any attendee's name and vote/RSVP/edit proposals as
-them. Don't rely on it for anything sensitive.
+By default there's no per-attendee login. After entering the site password
+(if set), attendees pick their own name from the guest list assigned to that
+event. This is a convenience selector, **not authentication** — anyone who
+knows the site password can select any attendee's name and vote/RSVP/edit
+proposals as them.
+
+Any attendee who wants more can **protect their name** from their own
+settings page (see the [attendee guide](../attendee-guide.md#protect-your-name)).
+Protection is opt-in and per-person; there is no way to require it
+event-wide. Once a name is protected:
+
+- Picking it from the name list asks for a password or an emailed code.
+- Acting as that person — voting, RSVPing, editing their profile, creating
+  or changing sessions — requires that verified browser session.
+- Turning protection off, or changing the password, needs either the current
+  password or an emailed code. The code path means a forgotten password is
+  never a dead end.
+
+Protection needs `AUTH_SECRET`, and enabling it needs working email
+([SMTP settings](README.md#environment-variables)) so the attendee can
+receive a code.
+
+## Who can change a session or proposal
+
+Only its hosts. Editing and deleting a session or proposal is restricted to
+the people listed as hosts, with two exceptions: a proposal with no hosts at
+all can be edited by anyone (so unclaimed ideas can be picked up), and an
+admin-managed session can only be changed from the admin UI, not by its
+hosts.
+
+Name protection doesn't change _who_ may edit — it changes how hard it is to
+_be_ that person. If a host hasn't protected their name, anyone can select it
+and edit as them; that's the same trade-off as everywhere else in the app. If
+a host has protected their name, editing as them requires their login.
+
+So a session whose hosts are all unprotected is still effectively open to
+anyone willing to pick one of their names. Attendees who want their sessions
+to really be theirs need to protect their name.
 
 ## The three phases
 
@@ -67,7 +100,20 @@ guest pool and the picked name.
 
 ## Email
 
-The only email SchellingBoard ever sends is the admin's "Send test email"
-button next to a guest in the Users admin page. There are **no automatic
-notifications** — nothing is emailed on votes, RSVPs, session changes, or
-phase transitions. Don't assume attendees get notified of schedule changes.
+Email is optional. With SMTP unconfigured, SchellingBoard sends nothing at
+all and the features below are simply unavailable. When it is configured,
+these are the only messages ever sent:
+
+| Email                | Sent to                                                               | Opt-out                         |
+| -------------------- | --------------------------------------------------------------------- | ------------------------------- |
+| **Login code**       | An attendee who asked to protect or unlock their name                 | None — it's requested on demand |
+| **Session moved**    | Hosts and RSVP'd attendees, when a session's time or location changes | Per-attendee, in their settings |
+| **Added as co-host** | Attendees newly added as a co-host of a session                       | Per-attendee, in their settings |
+| **Test email**       | One guest, from the admin Users page                                  | n/a                             |
+
+Nothing is emailed on votes, RSVPs, phase transitions, or edits to a
+session's title or description. Whoever made a change is never emailed about
+their own change.
+
+Enabling email requires `SITE_URL` as well as the SMTP settings, so the
+messages can link back to the site.
