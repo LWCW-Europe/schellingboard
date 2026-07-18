@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { SettingsForm } from "./settings-form";
+import { AccountSecurity } from "./account-security";
 
 export default async function SettingsPage() {
   const cookieStore = await cookies();
-  const currentUser = cookieStore.get("user")?.value;
+  // verifiedCurrentUser: a stale plain `user` cookie naming a protected
+  // guest must not grant access to that guest's settings.
+  const currentUser = await verifiedCurrentUser(cookieStore);
 
   if (!currentUser) {
     return (
@@ -35,5 +39,15 @@ export default async function SettingsPage() {
 
   // Never render the stored email address here: switching the current user
   // is unauthenticated, so anyone could impersonate a guest and read it.
-  return <SettingsForm emailSettings={guest.info.emailSettings} />;
+  return (
+    <div className="flex flex-col gap-8">
+      <SettingsForm emailSettings={guest.info.emailSettings} />
+      <div className="max-w-2xl mx-auto w-full px-4 sm:px-0">
+        <AccountSecurity
+          guestId={guest.id}
+          authProtected={guest.authProtected ?? false}
+        />
+      </div>
+    </div>
+  );
 }
