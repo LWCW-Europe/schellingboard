@@ -44,7 +44,7 @@
    AUTH_SECRET=<generated via openssl rand -base64 32>
    ```
 
-   See [Environment Variables](#environment-variables) for all options. Note: `AUTH_SECRET` is required only when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set. Omitting this file uses sensible defaults.
+   See [Environment Variables](#environment-variables) for all options. Note: `AUTH_SECRET` is required only when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set or guests protect their name (it signs their session cookies). Omitting this file uses sensible defaults.
 
 3. (Optional) Seed the database with test data:
 
@@ -77,8 +77,9 @@ See [docs/hosting](docs/hosting/README.md#environment-variables) for the full li
 
 For local development, `DATABASE_URL` is the only required variable — unlike
 Docker, no default is provided (e.g. `file:./data.db`). `AUTH_SECRET` is
-additionally required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set;
-generate one with:
+additionally required when `SITE_PASSWORD` or `ADMIN_PASSWORD` is set or
+guests protect their name (it signs their session cookies); generate one
+with:
 
 ```bash
 openssl rand -base64 32

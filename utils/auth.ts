@@ -2,11 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const AUTH_COOKIE_NAME = "site-auth";
 export const ADMIN_COOKIE_NAME = "admin-auth";
+// Proves "I am this guest" for auth-protected guests (issue #370). Separate
+// from the plain `user` cookie, which merely selects the current name and
+// stays client-writable for unprotected guests.
+export const USER_AUTH_COOKIE_NAME = "user-auth";
 export const ADMIN_DISABLED_MESSAGE =
   "Admin UI is disabled: set the ADMIN_PASSWORD environment variable on the server to enable it. See the project documentation.";
 const ADMIN_SCOPE = "admin";
 const COOKIE_MAX_AGE_SEC = 7 * 24 * 60 * 60;
 const COOKIE_MAX_AGE_MS = COOKIE_MAX_AGE_SEC * 1000;
+
+// The guest id becomes part of the signed scope, so a cookie issued for one
+// guest can never validate for another. Guest ids are nanoids (no dots), so
+// the existing dot-delimited payload format stays parseable.
+function userScope(guestId: string): string {
+  return `user.${guestId}`;
+}
 
 /**
  * Returns a safe same-origin redirect path, or `fallback` if `value` could
@@ -78,7 +89,7 @@ function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET;
   if (!secret) {
     throw new Error(
-      "AUTH_SECRET environment variable must be set when SITE_PASSWORD or ADMIN_PASSWORD is set"
+      "AUTH_SECRET environment variable must be set when SITE_PASSWORD or ADMIN_PASSWORD is set or guests protect their name"
     );
   }
   if (secret.length < MIN_AUTH_SECRET_LENGTH) {
@@ -214,6 +225,29 @@ export function createLogoutCookie() {
     value: "",
     ...cookieOptions(0),
   };
+}
+
+export async function createUserAuthCookie(guestId: string) {
+  return {
+    name: USER_AUTH_COOKIE_NAME,
+    value: await signCookieValue(userScope(guestId)),
+    ...cookieOptions(COOKIE_MAX_AGE_SEC),
+  };
+}
+
+export function createUserAuthLogoutCookie() {
+  return {
+    name: USER_AUTH_COOKIE_NAME,
+    value: "",
+    ...cookieOptions(0),
+  };
+}
+
+export async function isUserAuthCookieValidFor(
+  guestId: string,
+  value: string | undefined
+): Promise<boolean> {
+  return isSignedCookieValid(value, userScope(guestId));
 }
 
 export async function createAdminAuthCookie() {
