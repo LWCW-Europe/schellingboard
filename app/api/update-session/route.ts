@@ -5,6 +5,7 @@ import {
   notifyCohostsAdded,
   notifySessionChanged,
 } from "@/utils/notifications";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
@@ -57,7 +58,9 @@ export async function POST(req: NextRequest) {
       return Response.error();
     }
 
-    const changedById = req.cookies.get("user")?.value ?? null;
+    // Verified so notifications can't attribute the change to a protected
+    // guest someone merely claims to be.
+    const changedById = await verifiedCurrentUser(req.cookies);
     await notifyCohostsAdded({
       session: updated,
       previousHostIds: prevSession.hosts.map((h) => h.id),

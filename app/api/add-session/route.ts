@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
 import { notifyCohostsAdded } from "@/utils/notifications";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
@@ -44,7 +45,9 @@ export async function POST(req: NextRequest) {
     await notifyCohostsAdded({
       session,
       previousHostIds: [],
-      changedById: req.cookies.get("user")?.value ?? null,
+      // Verified so notifications can't attribute the change to a protected
+      // guest someone merely claims to be.
+      changedById: await verifiedCurrentUser(req.cookies),
     });
     return Response.json({ success: true });
   } else {

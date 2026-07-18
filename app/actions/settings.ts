@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { emailSettingsSchema } from "@/model/guest";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { z } from "zod";
 
 export type SettingsActionResult =
@@ -20,8 +21,7 @@ export async function updateEmailSettingsAction(
     return { ok: false, error: parseResult.error.issues };
   }
 
-  const cookieStore = await cookies();
-  const currentUser = cookieStore.get("user")?.value;
+  const currentUser = await verifiedCurrentUser(await cookies());
   if (!currentUser) {
     return { ok: false, error: "No user is logged in" };
   }

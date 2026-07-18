@@ -1,5 +1,9 @@
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import {
+  guestProtectionError,
+  isRequestVerifiedAsGuest,
+} from "@/utils/acting-guest";
 
 type RSVPParams = {
   sessionId: string;
@@ -12,6 +16,10 @@ export const dynamic = "force-dynamic"; // defaults to auto
 export async function POST(req: Request) {
   const { sessionId, guestId, remove } = (await req.json()) as RSVPParams;
   const repos = getRepositories();
+
+  if (!(await isRequestVerifiedAsGuest(req, guestId))) {
+    return guestProtectionError();
+  }
 
   const session = await repos.sessions.findById(sessionId);
   if (!session) {

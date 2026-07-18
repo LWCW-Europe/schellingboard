@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { getImageRepositories } from "@/utils/images";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { profileSchema } from "@/model/guest";
 import { z } from "zod";
 
@@ -45,8 +46,7 @@ export async function updateProfileAction(
 
   const { avatar: avatarFile, ...profile } = parseResult.data;
 
-  const cookieStore = await cookies();
-  const currentUser = cookieStore.get("user")?.value;
+  const currentUser = await verifiedCurrentUser(await cookies());
   if (!currentUser) {
     return { ok: false, error: "No user is logged in" };
   }

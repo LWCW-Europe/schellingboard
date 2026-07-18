@@ -1,5 +1,9 @@
 import { getRepositories } from "@/db/container";
 import { inVotingPhase } from "@/app/(site)/utils/events";
+import {
+  guestProtectionError,
+  isRequestVerifiedAsGuest,
+} from "@/utils/acting-guest";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +14,9 @@ export async function POST(req: Request) {
   };
 
   const repos = getRepositories();
+  if (!(await isRequestVerifiedAsGuest(req, guestId))) {
+    return guestProtectionError();
+  }
   const proposal = await repos.sessionProposals.findById(proposalId);
   if (!proposal) {
     return Response.json({ error: "Proposal not found" }, { status: 404 });

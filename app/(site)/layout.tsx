@@ -8,6 +8,7 @@ import {
   isAuthCookieValid,
   isPasswordProtectionEnabledServer,
 } from "@/utils/auth";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 
 export default async function SiteLayout({
   children,
@@ -18,8 +19,10 @@ export default async function SiteLayout({
   const cookieStore = await cookies();
   const authCookieValue = cookieStore.get(AUTH_COOKIE_NAME)?.value;
   const isAuthenticated = await isAuthCookieValid(authCookieValue);
+  // verifiedCurrentUser: a stale plain `user` cookie naming a protected
+  // guest must not render the UI as that guest.
   const initialUser = isAuthenticated
-    ? (cookieStore.get("user")?.value ?? null)
+    ? await verifiedCurrentUser(cookieStore)
     : null;
   const events = isAuthenticated ? await getRepositories().events.list() : [];
   const navItems = events.map((e) => ({

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepositories } from "@/db/container";
+import { isRequestVerifiedAsGuest } from "@/utils/acting-guest";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { error: "User and event parameters are required" },
       { ...NO_STORE, status: 400 }
+    );
+  }
+
+  // Votes are private to their owner once the guest is protected; RSVPs
+  // stay openly readable (they are displayed per session).
+  if (!(await isRequestVerifiedAsGuest(request, user))) {
+    return NextResponse.json(
+      { error: "This user's votes are private" },
+      { ...NO_STORE, status: 403 }
     );
   }
 
