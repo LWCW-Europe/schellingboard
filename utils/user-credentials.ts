@@ -11,6 +11,7 @@ import {
 // lives in utils/auth.ts, which must stay free of node:crypto.
 
 export const AUTH_CODE_LENGTH = 8;
+export const AUTH_CODE_VALID_MINUTES = 10;
 // No I, O, 0, 1: codes are meant to be read from an email on one device and
 // typed on another.
 const AUTH_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

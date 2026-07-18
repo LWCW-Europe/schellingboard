@@ -135,6 +135,17 @@ export function resetMailer(): void {
   delete g.__mailerState;
 }
 
+// Whether sending email can work at all. Lets flows that depend on a
+// delivered email (e.g. login codes) fail up front instead of pretending
+// the email went out (sendMail silently no-ops when unconfigured).
+export function isMailerConfigured(): boolean {
+  const state = g.__mailerState;
+  if (!state) {
+    throw new Error("Mailer has not been initialized");
+  }
+  return state.configured;
+}
+
 function getMailer(): Mailer | null {
   const state = g.__mailerState;
   if (!state) {
