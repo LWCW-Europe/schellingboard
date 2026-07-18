@@ -43,12 +43,40 @@ export const guests = sqliteTable(
       .notNull()
       .default(true),
     avatarUrl: text("avatar_url"),
+    // Account security (issue #370): when set, acting as this guest requires
+    // a verified session (password or emailed code) instead of the open
+    // name-switcher.
+    authProtected: integer("auth_protected", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    // The guest's optional permanent password, stored as a self-describing
+    // scrypt string that embeds its own per-guest random salt (and KDF
+    // parameters) — hence no separate salt column, unlike auth_codes below.
+    // The salt is mandatory: never derive this without one. Never leaves the
+    // server.
+    passwordHash: text("password_hash"),
   },
   (table) => [
     // Case-insensitive: two guests must never share an email up to case.
     uniqueIndex("guests_email_unique").on(sql`lower(${table.email})`),
   ]
 );
+
+// Temporary login codes emailed to guests ("8-character temporary password").
+// At most one valid code per guest: issuing a new one replaces the old.
+// A code stays usable until it expires (multi-use within its window).
+export const authCodes = sqliteTable("auth_codes", {
+  id: text("id").primaryKey(),
+  guestId: text("guest_id")
+    .notNull()
+    .references(() => guests.id, { onDelete: "cascade" }),
+  // Per-code random salt; codeHash is sha256(salt + code), never the code.
+  salt: text("salt").notNull(),
+  codeHash: text("code_hash").notNull(),
+  createdAt: text("created_at").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+});
 
 export const events = sqliteTable(
   "events",

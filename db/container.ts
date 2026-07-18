@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import path from "path";
 import * as schema from "./schema";
 import { resolveDbPath, runMigrations } from "./migrate";
+import { SqliteAuthCodesRepository } from "./repositories/sqlite/auth-codes";
 import { SqliteDaysRepository } from "./repositories/sqlite/days";
 import { SqliteEventsRepository } from "./repositories/sqlite/events";
 import { SqliteGuestsRepository } from "./repositories/sqlite/guests";
@@ -13,6 +14,7 @@ import { SqliteSessionProposalsRepository } from "./repositories/sqlite/session-
 import { SqliteSessionsRepository } from "./repositories/sqlite/sessions";
 import { SqliteVotesRepository } from "./repositories/sqlite/votes";
 import type {
+  AuthCodesRepository,
   DaysRepository,
   EventsRepository,
   GuestsRepository,
@@ -25,6 +27,7 @@ import type {
 } from "./repositories/interfaces";
 
 export type Repositories = {
+  authCodes: AuthCodesRepository;
   days: DaysRepository;
   events: EventsRepository;
   guests: GuestsRepository;
@@ -42,6 +45,7 @@ let _repositories: Repositories | null = null;
 function buildRepositories(sqlite: Database.Database): Repositories {
   const db = drizzle(sqlite, { schema });
   return {
+    authCodes: new SqliteAuthCodesRepository(db),
     days: new SqliteDaysRepository(db),
     events: new SqliteEventsRepository(db),
     guests: new SqliteGuestsRepository(db),

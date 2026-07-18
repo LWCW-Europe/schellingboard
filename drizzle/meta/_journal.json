@@ -141,6 +141,13 @@
       "when": 1784367197755,
       "tag": "0019_guest_profile_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1784389404349,
+      "tag": "0020_user-auth-protection",
+      "breakpoints": true
     }
   ]
 }

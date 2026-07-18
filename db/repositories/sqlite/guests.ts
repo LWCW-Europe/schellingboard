@@ -17,6 +17,7 @@ import {
   type EmailSettings,
   type EventGuestPage,
   type Guest,
+  type GuestAuthCredentials,
   type GuestsRepository,
   type GuestPage,
   type NewGuest,
@@ -45,6 +46,7 @@ function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
     prompts: row.prompts,
     languages: row.languages,
     contacts: row.contacts,
+    authProtected: row.authProtected,
     info: {
       email: row.email,
       emailSettings: {
@@ -66,14 +68,17 @@ export class SqliteGuestsRepository implements GuestsRepository {
     // UI actually shows them.
     return (await this.listFull())
       .map(sanitizeGuest)
-      .map(({ id, name, aboutMe, avatarUrl, pronouns, info }) => ({
-        id,
-        name,
-        aboutMe,
-        avatarUrl,
-        pronouns,
-        info,
-      }));
+      .map(
+        ({ id, name, aboutMe, avatarUrl, pronouns, authProtected, info }) => ({
+          id,
+          name,
+          aboutMe,
+          avatarUrl,
+          pronouns,
+          authProtected,
+          info,
+        })
+      );
   }
 
   async listFull(): Promise<CompleteGuest[]> {
@@ -285,6 +290,33 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .map(rowToGuest);
   }
 
+  async getAuthCredentials(id: string): Promise<GuestAuthCredentials | null> {
+    const row = this.db
+      .select({
+        authProtected: schema.guests.authProtected,
+        passwordHash: schema.guests.passwordHash,
+      })
+      .from(schema.guests)
+      .where(eq(schema.guests.id, id))
+      .get();
+    return row ?? null;
+  }
+
+  async setAuthProtection(
+    id: string,
+    creds: GuestAuthCredentials
+  ): Promise<boolean> {
+    const result = this.db
+      .update(schema.guests)
+      .set({
+        authProtected: creds.authProtected,
+        passwordHash: creds.passwordHash,
+      })
+      .where(eq(schema.guests.id, id))
+      .run();
+    return result.changes > 0;
+  }
+
   async create(data: NewGuest): Promise<CompleteGuest> {
     const id = nanoid();
     const {
@@ -297,6 +329,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return {
       id,
       name,
+      authProtected: false,
       info: { email, emailSettings: { ...DEFAULT_EMAIL_SETTINGS } },
     };
   }

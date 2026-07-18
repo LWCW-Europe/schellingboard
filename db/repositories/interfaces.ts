@@ -161,8 +161,51 @@ export type Guest<PI extends GuestPrivateInfo | void = void> = {
   prompts?: ProfilePrompt[] | null;
   languages?: string[] | null;
   contacts?: ProfileContact[] | null;
+  // Public (the name switcher must know to ask for credentials); the
+  // password hash itself is server-only, see GuestAuthCredentials.
+  authProtected?: boolean;
   info: PI;
 };
+
+/** Server-only auth state of a guest; never send to the client. */
+export type GuestAuthCredentials = {
+  authProtected: boolean;
+  passwordHash: string | null;
+};
+
+/**
+ * An emailed temporary login code. `codeHash` is a digest of `salt + code`,
+ * never the code.
+ */
+export type AuthCode = {
+  id: string;
+  guestId: string;
+  salt: string;
+  codeHash: string;
+  createdAt: Date;
+  expiresAt: Date;
+  attempts: number;
+};
+
+/** Input for issuing a code; `id` and `attempts` are filled in on insert. */
+export type NewAuthCode = {
+  guestId: string;
+  salt: string;
+  codeHash: string;
+  createdAt: Date;
+  expiresAt: Date;
+};
+
+export interface AuthCodesRepository {
+  /**
+   * Stores a new code for the guest, replacing any previous one — only the
+   * most recently issued code can ever be valid.
+   */
+  replace(code: NewAuthCode): Promise<void>;
+  /** The guest's current code, or null if none exists or it expired at `now`. */
+  findActive(guestId: string, now: Date): Promise<AuthCode | null>;
+  recordFailedAttempt(id: string): Promise<void>;
+}
 
 export type CompleteGuest = Guest<GuestPrivateInfo>;
 
@@ -249,6 +292,10 @@ export interface GuestsRepository {
     }
   ): Promise<EventGuestPage>;
   findById(id: string): Promise<CompleteGuest | undefined>;
+  /** Server-only: protection flag + password hash, for credential checks. */
+  getAuthCredentials(id: string): Promise<GuestAuthCredentials | null>;
+  /** Returns false when the guest doesn't exist. */
+  setAuthProtection(id: string, creds: GuestAuthCredentials): Promise<boolean>;
   // Matches the email case-insensitively.
   findByEmail(email: string): Promise<CompleteGuest | undefined>;
   /** Guests whose email matches any of `emails`, compared case-insensitively. */
