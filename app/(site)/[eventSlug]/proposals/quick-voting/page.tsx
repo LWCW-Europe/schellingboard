@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import Link from "next/link";
 
 import { QuickVoting } from "./quick-voting";
@@ -8,7 +9,7 @@ export default async function ProposalQuickVoting(props: {
   params: Promise<{ eventSlug: string }>;
 }) {
   const { eventSlug } = await props.params;
-  const currentUser = (await cookies()).get("user")?.value;
+  const currentUser = await verifiedCurrentUser(await cookies());
   if (!currentUser) {
     return (
       <div>

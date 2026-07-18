@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 
 import { SessionForm } from "./session-form";
 import { getRepositories } from "@/db/container";
@@ -8,7 +9,7 @@ export async function renderSessionForm(props: {
   params: Promise<{ eventSlug: string }>;
 }) {
   const { eventSlug } = await props.params;
-  const currentUser = (await cookies()).get("user")?.value;
+  const currentUser = await verifiedCurrentUser(await cookies());
   const repos = getRepositories();
 
   const event = await repos.events.findBySlug(eventSlug);

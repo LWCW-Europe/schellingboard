@@ -92,6 +92,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
         name: schema.guests.name,
         avatarUrl: schema.guests.avatarUrl,
         aboutMe: schema.guests.aboutMe,
+        authProtected: schema.guests.authProtected,
       })
       .from(schema.guests)
       .innerJoin(

@@ -1,5 +1,4 @@
 "use client";
-import Cookies from "js-cookie";
 import {
   createContext,
   useState,
@@ -16,6 +15,10 @@ import type {
   Rsvp,
 } from "@/db/repositories/interfaces";
 import { Vote, voteChoiceToEmoji } from "@/app/(site)/votes";
+import {
+  selectUserAction,
+  type SelectUserResult,
+} from "@/app/actions/user-auth";
 import { DEFAULT_BREAK_MINUTES, votesApiUrl } from "@/utils/utils";
 import { DEFAULT_SLOT_INCREMENT_MINUTES } from "@/utils/slots";
 import { startNowTicker } from "@/utils/now-ticker";
@@ -24,12 +27,21 @@ export type DayWithSessions = Day & { sessions: Session[] };
 
 export interface UserContextType {
   user: string | null;
-  setUser: ((u: string | null) => void) | null;
+  /**
+   * Switches the current user via the server, which owns the identity
+   * cookies. Fails with needsAuth for a protected guest — the caller should
+   * then collect credentials and call the login action, followed by
+   * applyUser on success.
+   */
+  switchUser: ((u: string | null) => Promise<SelectUserResult>) | null;
+  /** Syncs client state after the server already authenticated the user. */
+  applyUser: ((u: string | null) => void) | null;
 }
 
 export const UserContext = createContext<UserContextType>({
   user: null,
-  setUser: null,
+  switchUser: null,
+  applyUser: null,
 });
 
 export interface EventContextType {
@@ -124,18 +136,18 @@ export function UserProvider({
 }) {
   const [user, setUser] = useState<string | null>(initialUser);
 
-  const setCurrentUser = (user: string | null) => {
-    if (user) {
-      setUser(user);
-      Cookies.set("user", user);
-    } else {
-      setUser(null);
-      Cookies.remove("user");
+  const switchUser = async (
+    guestId: string | null
+  ): Promise<SelectUserResult> => {
+    const result = await selectUserAction(guestId);
+    if (result.ok) {
+      setUser(guestId);
     }
+    return result;
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser: setCurrentUser }}>
+    <UserContext.Provider value={{ user, switchUser, applyUser: setUser }}>
       {children}
     </UserContext.Provider>
   );

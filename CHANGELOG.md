@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **Protect your name**: attendees can secure the name they act as with a password, so on a shared device others can't pick it and act as them. A protected name shows a small lock in the name selector; choosing it asks for the password or a one-time code emailed to the attendee. Requires SMTP for the emailed-code option
 - **Email notifications**: attendees are emailed when a session they've RSVP'd to changes time or location, hosts are emailed when a session they're hosting changes time or location, and guests are emailed when they're added as a co-host of a session. Each notification can be turned on or off individually from the new settings page (requires SMTP and `SITE_URL` to be configured)
 - **Profile and settings in the header**: once attendees pick their name, the name chip in the header opens a menu with quick links to their own profile, profile editing, and a new Settings page
 - **Richer attendee profiles**: attendees can now share where they're based, the languages they speak, contact details (email, phone, WhatsApp, Signal, Telegram, Discord, website, or anything else), and conversation starters — answers to prompts like "Ask me about", "Looking for", and "Offering", with a button that suggests more playful prompts to pick from

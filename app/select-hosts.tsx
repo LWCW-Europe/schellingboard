@@ -4,15 +4,23 @@ import { Fragment, useState } from "react";
 import { Combobox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/16/solid";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { LockIcon } from "@/app/(site)/lock-icon";
 
-export function SelectHosts<T extends { id: string; name: string }>(props: {
+export function SelectHosts<
+  T extends { id: string; name: string; authProtected?: boolean },
+>(props: {
   guests: T[];
   hosts: T[];
   setHosts: (hosts: T[]) => void;
   id?: string;
   selectMany: boolean;
+  // Show a lock beside protected guests. Only meaningful where selecting a
+  // guest switches the current user (the name switcher), since that is the
+  // one flow that then asks for a password or code; in co-host pickers the
+  // indicator would wrongly imply credentials are needed to add someone.
+  showProtected?: boolean;
 }) {
-  const { guests, hosts, setHosts, id, selectMany } = props;
+  const { guests, hosts, setHosts, id, selectMany, showProtected } = props;
   const [query, setQuery] = useState("");
   const filteredGuests = guests
     .filter((guest) => guest.name.toLowerCase().includes(query.toLowerCase()))
@@ -87,12 +95,18 @@ export function SelectHosts<T extends { id: string; name: string }>(props: {
                   <>
                     <span
                       className={clsx(
-                        "block truncate",
+                        "flex items-center gap-1.5 truncate",
                         selected ? "font-medium" : "font-normal",
                         disabled ? "text-gray-400" : "text-gray-900"
                       )}
                     >
-                      {guest.name}
+                      <span className="truncate">{guest.name}</span>
+                      {showProtected && guest.authProtected && (
+                        <LockIcon
+                          className="h-3.5 w-3.5 shrink-0 text-gray-400"
+                          title="Protected — password or emailed code needed"
+                        />
+                      )}
                     </span>
                     {selected ? (
                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-rose-400">
