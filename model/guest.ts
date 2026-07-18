@@ -122,5 +122,4 @@ export const profileSchema = z.object({
     .refine((cs) => (cs?.length ?? 0) <= MAX_CONTACTS, {
       message: `At most ${MAX_CONTACTS} contacts`,
     }),
-  emailSettings: emailSettingsSchema,
 });

@@ -268,8 +268,7 @@ export interface GuestsRepository {
     id: string,
     data: { name: string; info: { email: string } }
   ): Promise<CompleteGuest | undefined>;
-  // Usage: a user updates their own profile (name, public profile fields, and
-  // their email notification settings).
+  // Usage: a user updates their own public profile (name and profile fields).
   updateProfile(
     id: string,
     data: {
@@ -281,8 +280,14 @@ export interface GuestsRepository {
       prompts: ProfilePrompt[] | null;
       languages: string[] | null;
       contacts: ProfileContact[] | null;
-      emailSettings: EmailSettings;
     }
+  ): Promise<CompleteGuest | undefined>;
+  // Usage: a user updates their own email notification settings. Kept apart
+  // from updateProfile: settings are private and independent of the public
+  // profile.
+  updateEmailSettings(
+    id: string,
+    settings: EmailSettings
   ): Promise<CompleteGuest | undefined>;
   /** Deletes the guest and all records referencing them (votes, RSVPs, host links, event assignments). */
   delete(id: string): Promise<void>;

@@ -103,18 +103,8 @@ export async function createGuest(opts?: {
     .then((g) => g && sanitizeGuest(g));
   if (opts?.emailSettings) {
     // Guests are created with default settings; non-default settings are
-    // applied the way a real guest would, via their profile.
-    await guests.updateProfile(guest.id, {
-      name: guest.name,
-      aboutMe: guest.aboutMe ?? null,
-      avatarUrl: guest.avatarUrl ?? null,
-      pronouns: guest.pronouns ?? null,
-      basedIn: guest.basedIn ?? null,
-      prompts: guest.prompts ?? null,
-      languages: guest.languages ?? null,
-      contacts: guest.contacts ?? null,
-      emailSettings: opts.emailSettings,
-    });
+    // applied the way a real guest would, via their settings.
+    await guests.updateEmailSettings(guest.id, opts.emailSettings);
   }
   if (opts?.eventId) {
     await guests.assignToEvent(opts.eventId, [guest.id]);

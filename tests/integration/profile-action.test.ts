@@ -27,7 +27,6 @@ vi.mock("next/cache", () => ({
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createGuest } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { DEFAULT_EMAIL_SETTINGS } from "@/db/repositories/interfaces";
 import { updateProfileAction } from "@/app/actions/profile";
 import { createImageFile } from "@/tests/helpers/utils";
 import fs from "fs";
@@ -52,13 +51,15 @@ describe("updateProfileAction", () => {
     fs.rmSync(uploadsDir, { recursive: true, force: true });
   });
 
-  it("updates email settings for the current user", async () => {
-    const guest = await createGuest({ name: "Guest" });
+  it("leaves email settings untouched: those belong to the settings action", async () => {
+    const guest = await createGuest({
+      name: "Guest",
+      emailSettings: { rsvpChange: false, hostChange: false, cohostAdd: true },
+    });
     cookieJar.set("user", guest.id);
     const result = await updateProfileAction({
       name: "Guest",
       aboutMe: null,
-      emailSettings: { rsvpChange: false, hostChange: false, cohostAdd: true },
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
@@ -76,7 +77,6 @@ describe("updateProfileAction", () => {
       name: "New Name",
       aboutMe: "Hello there",
       pronouns: "they/them",
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
@@ -95,7 +95,6 @@ describe("updateProfileAction", () => {
       aboutMe: "Hello there",
       avatar: await createImageFile(256, 256, "avatar.png"),
       pronouns: "they/them",
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
@@ -118,7 +117,6 @@ describe("updateProfileAction", () => {
       name: "New Name",
       aboutMe: "Hello there",
       avatar: await createImageFile(512, 512, "avatar.png"),
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
@@ -145,7 +143,6 @@ describe("updateProfileAction", () => {
         { type: "telegram", value: "@guest" },
         { type: "other", label: "Matrix", value: "@guest:matrix.org" },
       ],
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
@@ -173,7 +170,6 @@ describe("updateProfileAction", () => {
       ],
       languages: ["", "  ", "French"],
       contacts: [{ type: "email", value: "   " }],
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
@@ -195,7 +191,6 @@ describe("updateProfileAction", () => {
         { prompt: "Ask me about", answer: "Fermentation" },
         { prompt: "Ask me about", answer: "Beekeeping" },
       ],
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
@@ -213,7 +208,6 @@ describe("updateProfileAction", () => {
       // A label typed while the type was "other" sticks around in the form
       // state after switching the type; it must not be persisted.
       contacts: [{ type: "telegram", label: "Matrix", value: "@guest" }],
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
@@ -227,7 +221,6 @@ describe("updateProfileAction", () => {
       name: "Guest",
       aboutMe: null,
       contacts: [{ type: "other", value: "@guest:matrix.org" }],
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(result).toMatchObject({ ok: false });
   });
@@ -240,7 +233,6 @@ describe("updateProfileAction", () => {
       name: "Guest",
       aboutMe: null,
       languages: Array.from({ length: 11 }, (_, i) => `Lang ${i}`),
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(tooManyLanguages).toMatchObject({ ok: false });
 
@@ -248,7 +240,6 @@ describe("updateProfileAction", () => {
       name: "Guest",
       aboutMe: null,
       prompts: [{ prompt: "Ask me about", answer: "x".repeat(501) }],
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(answerTooLong).toMatchObject({ ok: false });
   });
@@ -260,7 +251,6 @@ describe("updateProfileAction", () => {
       name: "New Name",
       aboutMe: "Hello there",
       avatar: await createImageFile(128, 128, "avatar.png"),
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
     expect(result).toMatchObject({ ok: false });
   });

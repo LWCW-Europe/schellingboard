@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { sanitizeGuest } from "@/utils/guests";
-import { ProfileForm } from "./profile-form";
+import { SettingsForm } from "./settings-form";
 
-export default async function EditProfilePage() {
+export default async function SettingsPage() {
   const cookieStore = await cookies();
   const currentUser = cookieStore.get("user")?.value;
 
@@ -12,9 +11,9 @@ export default async function EditProfilePage() {
     return (
       <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
         <p className="text-gray-700">
-          You need to select who you are before editing your profile. Pick your
-          name via the &ldquo;Select your name&rdquo; chip in the header at the
-          top of the page.
+          You need to select who you are before changing your settings. Pick
+          your name via the &ldquo;Select your name&rdquo; chip in the header at
+          the top of the page.
         </p>
         <Link
           href="/guests"
@@ -34,7 +33,7 @@ export default async function EditProfilePage() {
     );
   }
 
-  // Strip private info (email, email settings) before handing the guest to a
-  // client component; those live on the settings page, not here.
-  return <ProfileForm guest={sanitizeGuest(guest)} />;
+  // Never render the stored email address here: switching the current user
+  // is unauthenticated, so anyone could impersonate a guest and read it.
+  return <SettingsForm emailSettings={guest.info.emailSettings} />;
 }

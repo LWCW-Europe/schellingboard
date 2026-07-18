@@ -3,7 +3,6 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent, createGuest, createSession } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { DEFAULT_EMAIL_SETTINGS } from "@/db/repositories/interfaces";
 
 describe("guests.listAttendees", () => {
   beforeAll(() => setupTestDb());
@@ -63,7 +62,6 @@ describe("guests.listAttendees", () => {
       prompts: [{ prompt: "Offering", answer: "Sourdough starters" }],
       languages: ["Portuguese"],
       contacts: null,
-      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
 
     const rows = await repos.guests.listAttendees({});

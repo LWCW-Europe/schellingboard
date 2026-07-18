@@ -8,7 +8,6 @@ import {
   createSession,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { DEFAULT_EMAIL_SETTINGS } from "@/db/repositories/interfaces";
 
 describe("guest profile repositories", () => {
   beforeAll(() => setupTestDb());
@@ -76,7 +75,6 @@ describe("guest profile repositories", () => {
         prompts: null,
         languages: null,
         contacts: null,
-        emailSettings: DEFAULT_EMAIL_SETTINGS,
       });
 
       expect(updated).toMatchObject({
@@ -112,7 +110,6 @@ describe("guest profile repositories", () => {
           { type: "signal", value: "@someone.01" },
           { type: "other", label: "Matrix", value: "@someone:matrix.org" },
         ],
-        emailSettings: DEFAULT_EMAIL_SETTINGS,
       });
 
       expect(updated).toMatchObject({ id: guest.id, basedIn: "Berlin" });

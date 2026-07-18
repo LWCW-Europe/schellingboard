@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/app/input";
 import { updateProfileAction } from "@/app/actions/profile";
 import { Avatar } from "../avatar";
-import type { EmailSettings, Guest } from "@/db/repositories/interfaces";
+import type { Guest } from "@/db/repositories/interfaces";
 import { CONTACT_TYPES } from "@/db/repositories/interfaces";
 import { resizeImage } from "@/utils/images-client";
 import clsx from "clsx";
@@ -80,13 +80,7 @@ function seedPrompts(saved: Guest["prompts"]) {
   ];
 }
 
-export function ProfileForm({
-  guest,
-  emailSettings,
-}: {
-  guest: Guest;
-  emailSettings: EmailSettings;
-}) {
+export function ProfileForm({ guest }: { guest: Guest }) {
   const router = useRouter();
   const form = useForm({
     defaultValues: {
@@ -101,7 +95,6 @@ export function ProfileForm({
         label: c.label ?? "",
         value: c.value,
       })),
-      emailSettings,
     },
     resolver: zodResolver(profileFormSchema),
   });
@@ -238,6 +231,17 @@ export function ProfileForm({
         Back to attendees
       </Link>
       <h1 className="text-2xl font-bold">Edit profile</h1>
+      <p className="text-sm text-gray-500">
+        Everything here is shown on your public profile. Email notifications and
+        other private preferences live in{" "}
+        <Link
+          href="/settings"
+          className="text-rose-500 hover:text-rose-600 underline"
+        >
+          Settings
+        </Link>
+        .
+      </p>
 
       <canvas ref={canvas} hidden />
 
@@ -549,31 +553,6 @@ export function ProfileForm({
               form.formState.errors.contacts?.message}
           </span>
         </DisclosureSection>
-
-        <fieldset className="flex flex-col gap-2">
-          <legend className="font-medium mb-1">Email me when…</legend>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              {...form.register("emailSettings.rsvpChange")}
-            />
-            a session I&rsquo;ve RSVP&rsquo;d to changes time or location
-          </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              {...form.register("emailSettings.hostChange")}
-            />
-            a session I&rsquo;m hosting changes time or location
-          </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              {...form.register("emailSettings.cohostAdd")}
-            />
-            someone adds me as a session co-host
-          </label>
-        </fieldset>
 
         {form.formState.errors.root && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">

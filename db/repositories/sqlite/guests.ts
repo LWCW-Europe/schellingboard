@@ -360,7 +360,6 @@ export class SqliteGuestsRepository implements GuestsRepository {
       prompts: ProfilePrompt[] | null;
       languages: string[] | null;
       contacts: ProfileContact[] | null;
-      emailSettings: EmailSettings;
     }
   ): Promise<CompleteGuest | undefined> {
     const result = this.db
@@ -374,9 +373,23 @@ export class SqliteGuestsRepository implements GuestsRepository {
         prompts: data.prompts,
         languages: data.languages,
         contacts: data.contacts,
-        emailOnRsvpChange: data.emailSettings.rsvpChange,
-        emailOnHostChange: data.emailSettings.hostChange,
-        emailOnCohostAdd: data.emailSettings.cohostAdd,
+      })
+      .where(eq(schema.guests.id, id))
+      .run();
+    if (result.changes === 0) return undefined;
+    return this.findById(id);
+  }
+
+  async updateEmailSettings(
+    id: string,
+    settings: EmailSettings
+  ): Promise<CompleteGuest | undefined> {
+    const result = this.db
+      .update(schema.guests)
+      .set({
+        emailOnRsvpChange: settings.rsvpChange,
+        emailOnHostChange: settings.hostChange,
+        emailOnCohostAdd: settings.cohostAdd,
       })
       .where(eq(schema.guests.id, id))
       .run();

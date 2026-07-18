@@ -8,12 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- **Email notifications**: attendees are emailed when a session they've RSVP'd to changes time or location, hosts are emailed when a session they're hosting changes time or location, and guests are emailed when they're added as a co-host of a session. Each notification can be turned on or off individually from the profile page (requires SMTP and `SITE_URL` to be configured)
+- **Email notifications**: attendees are emailed when a session they've RSVP'd to changes time or location, hosts are emailed when a session they're hosting changes time or location, and guests are emailed when they're added as a co-host of a session. Each notification can be turned on or off individually from the new settings page (requires SMTP and `SITE_URL` to be configured)
+- **Profile and settings in the header**: once attendees pick their name, the name chip in the header opens a menu with quick links to their own profile, profile editing, and a new Settings page
 - **Richer attendee profiles**: attendees can now share where they're based, the languages they speak, contact details (email, phone, WhatsApp, Signal, Telegram, Discord, website, or anything else), and conversation starters — answers to prompts like "Ask me about", "Looking for", and "Offering", with a button that suggests more playful prompts to pick from
 - **Smarter attendee search**: searching the attendees page now looks through whole profiles (name, languages, location, bio, and prompt answers) and shows the best matches first — searching "Italian" finds Italian speakers before someone who merely mentions Italian food
 
 ### Changed
 
+- **Settings separated from the public profile**: email notification preferences moved from the profile edit page to the dedicated Settings page, so private preferences are clearly apart from what other attendees can see
 - **Your name is always visible**: the attendee you're acting as now shows as a chip in the header on every page — proposals, voting, and schedule — so it's always clear who "you" are, and you can switch attendee from there (handy for a shared device)
 - **Attendee list shows location, not bio**: rows on the attendees page now show each person's pronouns and where they're based instead of a preview of their bio
 - **Smoother schedule scrolling**: the grid view now has a single scroll area instead of nested scrollbars, and wide schedules can be dragged sideways with the mouse. The view controls (Grid, Text, RSVP'd) sit on one bar alongside an "Event details" popup and a "Proposals" link; the bar scrolls away with the schedule while the room headers stay pinned. The redundant schedule title is gone, since the header already shows the current event
