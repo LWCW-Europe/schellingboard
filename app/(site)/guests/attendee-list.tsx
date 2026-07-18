@@ -4,13 +4,22 @@ import { Attendee } from "@/db/repositories/interfaces";
 import { DataTable, useTableParams } from "@/app/admin/data-table";
 import Link from "next/link";
 import { Avatar } from "@/app/(site)/guests/avatar";
-import { stripMarkdown } from "@/utils/markdown";
+
+// Rows are serialized into the page payload, so only the fields the row
+// actually renders may cross the server/client boundary — never the full
+// profile (contacts, prompts, …).
+export type AttendeeRowData = Pick<
+  Attendee,
+  "id" | "name" | "avatarUrl" | "pronouns" | "basedIn" | "isHost"
+>;
 
 function AttendeeRow({
-  attendee: { id, avatarUrl, name, aboutMe, isHost },
+  attendee: { id, avatarUrl, name, pronouns, basedIn, isHost },
 }: {
-  attendee: Attendee;
+  attendee: AttendeeRowData;
 }) {
+  // Fixed row shape (avatar, name, pronouns, based-in) so the list stays
+  // consistent regardless of which optional profile fields are filled in.
   return (
     <Link
       href={`/guests/${id}`}
@@ -26,16 +35,18 @@ function AttendeeRow({
             </span>
           )}
         </span>
-        <span className="text-sm text-gray-500 line-clamp-1">
-          {stripMarkdown(aboutMe)}
-        </span>
+        {(pronouns || basedIn) && (
+          <span className="text-sm text-gray-500 line-clamp-1">
+            {[pronouns, basedIn].filter(Boolean).join(" · ")}
+          </span>
+        )}
       </div>
     </Link>
   );
 }
 
 export function AttendeeList(props: {
-  rows: Attendee[];
+  rows: AttendeeRowData[];
   total: number;
   page: number;
   pageSize: number;
@@ -84,7 +95,7 @@ export function AttendeeList(props: {
         page={props.page}
         pageSize={props.pageSize}
         searchQuery={props.searchQuery}
-        searchPlaceholder="Search attendees…"
+        searchPlaceholder="Search names, languages, interests…"
         emptyMessage="No attendees match."
         listItem={(u) => <AttendeeRow attendee={u} />}
       />

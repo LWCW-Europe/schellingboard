@@ -5,6 +5,7 @@ import { pageRequestSchema } from "@/model/page";
 import { outOfRangePageRedirect } from "@/utils/pagination";
 import { redirect } from "next/navigation";
 import { AttendeeList } from "@/app/(site)/guests/attendee-list";
+import { searchAttendees } from "@/utils/attendee-search";
 import { z } from "zod";
 
 const PAGE_SIZE = 25;
@@ -30,12 +31,23 @@ export default async function GuestsPage({
     filter: params.filter,
   });
 
-  const { rows, total } = await getRepositories().guests.searchForAttendees({
+  const attendees = await getRepositories().guests.listAttendees({
     host: filter === "isHost",
-    query: query || undefined,
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE,
   });
+  const matches = searchAttendees(attendees, query);
+  const total = matches.length;
+  const rows = matches
+    .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    // Strip fields the list doesn't show; TypeScript's structural typing
+    // wouldn't stop a full Attendee from reaching the client payload.
+    .map(({ id, name, avatarUrl, pronouns, basedIn, isHost }) => ({
+      id,
+      name,
+      avatarUrl,
+      pronouns,
+      basedIn,
+      isHost,
+    }));
 
   const redirectTarget = outOfRangePageRedirect({
     basePath: "/guests",
@@ -51,7 +63,7 @@ export default async function GuestsPage({
   const currentUser = cookieStore.get("user")?.value;
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col gap-6">
+    <div className="max-w-2xl mx-auto flex flex-col gap-6 px-4 sm:px-0">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-3xl font-bold">Attendees</h1>
         {currentUser && (

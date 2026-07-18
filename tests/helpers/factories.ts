@@ -109,6 +109,10 @@ export async function createGuest(opts?: {
       aboutMe: guest.aboutMe ?? null,
       avatarUrl: guest.avatarUrl ?? null,
       pronouns: guest.pronouns ?? null,
+      basedIn: guest.basedIn ?? null,
+      prompts: guest.prompts ?? null,
+      languages: guest.languages ?? null,
+      contacts: guest.contacts ?? null,
       emailSettings: opts.emailSettings,
     });
   }

@@ -132,6 +132,127 @@ describe("updateProfileAction", () => {
     });
   });
 
+  it("saves basedIn, prompts, languages, and contacts", async () => {
+    const guest = await createGuest({ name: "Guest" });
+    cookieJar.set("user", guest.id);
+    const result = await updateProfileAction({
+      name: "Guest",
+      aboutMe: null,
+      basedIn: "Zürich",
+      prompts: [{ prompt: "Ask me about", answer: "Fermentation" }],
+      languages: ["Swiss German", "English"],
+      contacts: [
+        { type: "telegram", value: "@guest" },
+        { type: "other", label: "Matrix", value: "@guest:matrix.org" },
+      ],
+      emailSettings: DEFAULT_EMAIL_SETTINGS,
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = await getRepositories().guests.findById(guest.id);
+    expect(updated).toMatchObject({
+      basedIn: "Zürich",
+      prompts: [{ prompt: "Ask me about", answer: "Fermentation" }],
+      languages: ["Swiss German", "English"],
+      contacts: [
+        { type: "telegram", value: "@guest" },
+        { type: "other", label: "Matrix", value: "@guest:matrix.org" },
+      ],
+    });
+  });
+
+  it("drops empty prompt answers, blank languages, and blank contact rows", async () => {
+    const guest = await createGuest({ name: "Guest" });
+    cookieJar.set("user", guest.id);
+    const result = await updateProfileAction({
+      name: "Guest",
+      aboutMe: null,
+      basedIn: "  ",
+      prompts: [
+        { prompt: "Ask me about", answer: "  " },
+        { prompt: "Offering", answer: "Board games" },
+      ],
+      languages: ["", "  ", "French"],
+      contacts: [{ type: "email", value: "   " }],
+      emailSettings: DEFAULT_EMAIL_SETTINGS,
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = await getRepositories().guests.findById(guest.id);
+    expect(updated?.basedIn).toBeNull();
+    expect(updated?.prompts).toEqual([
+      { prompt: "Offering", answer: "Board games" },
+    ]);
+    expect(updated?.languages).toEqual(["French"]);
+    expect(updated?.contacts).toBeNull();
+  });
+
+  it("keeps only the first answer when a prompt is repeated", async () => {
+    const guest = await createGuest({ name: "Guest" });
+    cookieJar.set("user", guest.id);
+    const result = await updateProfileAction({
+      name: "Guest",
+      aboutMe: null,
+      prompts: [
+        { prompt: "Ask me about", answer: "Fermentation" },
+        { prompt: "Ask me about", answer: "Beekeeping" },
+      ],
+      emailSettings: DEFAULT_EMAIL_SETTINGS,
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = await getRepositories().guests.findById(guest.id);
+    expect(updated?.prompts).toEqual([
+      { prompt: "Ask me about", answer: "Fermentation" },
+    ]);
+  });
+
+  it("strips labels from contacts that are not of type 'other'", async () => {
+    const guest = await createGuest({ name: "Guest" });
+    cookieJar.set("user", guest.id);
+    const result = await updateProfileAction({
+      name: "Guest",
+      aboutMe: null,
+      // A label typed while the type was "other" sticks around in the form
+      // state after switching the type; it must not be persisted.
+      contacts: [{ type: "telegram", label: "Matrix", value: "@guest" }],
+      emailSettings: DEFAULT_EMAIL_SETTINGS,
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = await getRepositories().guests.findById(guest.id);
+    expect(updated?.contacts).toEqual([{ type: "telegram", value: "@guest" }]);
+  });
+
+  it("rejects an 'other' contact without a label", async () => {
+    const guest = await createGuest({ name: "Guest" });
+    cookieJar.set("user", guest.id);
+    const result = await updateProfileAction({
+      name: "Guest",
+      aboutMe: null,
+      contacts: [{ type: "other", value: "@guest:matrix.org" }],
+      emailSettings: DEFAULT_EMAIL_SETTINGS,
+    });
+    expect(result).toMatchObject({ ok: false });
+  });
+
+  it("rejects entries beyond the sanity limits", async () => {
+    const guest = await createGuest({ name: "Guest" });
+    cookieJar.set("user", guest.id);
+
+    const tooManyLanguages = await updateProfileAction({
+      name: "Guest",
+      aboutMe: null,
+      languages: Array.from({ length: 11 }, (_, i) => `Lang ${i}`),
+      emailSettings: DEFAULT_EMAIL_SETTINGS,
+    });
+    expect(tooManyLanguages).toMatchObject({ ok: false });
+
+    const answerTooLong = await updateProfileAction({
+      name: "Guest",
+      aboutMe: null,
+      prompts: [{ prompt: "Ask me about", answer: "x".repeat(501) }],
+      emailSettings: DEFAULT_EMAIL_SETTINGS,
+    });
+    expect(answerTooLong).toMatchObject({ ok: false });
+  });
+
   it("rejects images smaller than 256x256", async () => {
     const guest = await createGuest({ name: "Old" });
     cookieJar.set("user", guest.id);

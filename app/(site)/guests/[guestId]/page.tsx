@@ -1,11 +1,30 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
+import type {
+  ContactType,
+  ProfileContact,
+  ProfilePrompt,
+} from "@/db/repositories/interfaces";
+import { CONTACT_TYPE_LABELS } from "@/model/guest";
+import {
+  EnvelopeIcon,
+  GlobeAltIcon,
+  LinkIcon,
+  PaperAirplaneIcon,
+  PhoneIcon,
+} from "@heroicons/react/20/solid";
+import {
+  DiscordIcon,
+  SignalIcon,
+  WhatsAppIcon,
+} from "@/app/(site)/guests/[guestId]/brand-icons";
+import { CORE_PROMPTS } from "@/model/prompt-pool";
 import { eventNameToSlug } from "@/utils/utils";
 import { sanitizeGuest } from "@/utils/guests";
 import { Avatar } from "../avatar";
 import { Markdown } from "@/app/(site)/markdown";
-import { JSX, PropsWithChildren } from "react";
+import { ComponentType, JSX, PropsWithChildren, SVGProps } from "react";
 import {
   ProfileItem,
   ProposalLink,
@@ -42,7 +61,7 @@ export default async function GuestProfilePage(props: {
   const isSessionHost = hostedSessions.length > 0;
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col gap-8">
+    <div className="max-w-2xl mx-auto flex flex-col gap-8 px-4 sm:px-0">
       <div className="flex items-center justify-between gap-4">
         <Link
           href="/guests"
@@ -76,6 +95,9 @@ export default async function GuestProfilePage(props: {
               )}
             </div>
           )}
+          {guest.basedIn && (
+            <p className="text-gray-700">Based in {guest.basedIn}</p>
+          )}
         </div>
       </header>
 
@@ -85,6 +107,53 @@ export default async function GuestProfilePage(props: {
           <div className="text-gray-800">
             <Markdown>{guest.aboutMe}</Markdown>
           </div>
+        </section>
+      )}
+
+      {orderPrompts(guest.prompts ?? []).map(({ prompt, answer }) => (
+        <section key={prompt}>
+          <h2 className="text-lg font-semibold mb-2">{prompt}</h2>
+          <p className="text-gray-800">{answer}</p>
+        </section>
+      ))}
+
+      {(guest.languages ?? []).length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold mb-2">Languages</h2>
+          <ul className="flex flex-wrap gap-2">
+            {guest.languages!.map((language, i) => (
+              <li
+                key={i}
+                className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-800"
+              >
+                {language}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(guest.contacts ?? []).length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold mb-2">Contact</h2>
+          <ul className="flex flex-col gap-2">
+            {guest.contacts!.map((contact, i) => {
+              const Icon = CONTACT_ICONS[contact.type];
+              return (
+                <li key={i} className="flex items-start gap-2 text-gray-800">
+                  <Icon className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
+                  <span className="min-w-0 break-words">
+                    <span className="font-medium">
+                      {(contact.type === "other" && contact.label) ||
+                        CONTACT_TYPE_LABELS[contact.type]}
+                      :
+                    </span>{" "}
+                    <ContactValue contact={contact} />
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </section>
       )}
 
@@ -119,6 +188,59 @@ export default async function GuestProfilePage(props: {
       />
     </div>
   );
+}
+
+const CONTACT_ICONS: Record<
+  ContactType,
+  ComponentType<SVGProps<SVGSVGElement>>
+> = {
+  email: EnvelopeIcon,
+  phone: PhoneIcon,
+  whatsapp: WhatsAppIcon,
+  signal: SignalIcon,
+  telegram: PaperAirplaneIcon,
+  discord: DiscordIcon,
+  website: GlobeAltIcon,
+  other: LinkIcon,
+};
+
+/** Core prompts first, in their canonical order; the rest keep saved order. */
+function orderPrompts(prompts: ProfilePrompt[]): ProfilePrompt[] {
+  return [
+    ...CORE_PROMPTS.flatMap((core) => prompts.filter((p) => p.prompt === core)),
+    ...prompts.filter((p) => !CORE_PROMPTS.includes(p.prompt)),
+  ];
+}
+
+/**
+ * Values are attendee-supplied: only turn them into links when they are
+ * unambiguously safe (mailto for email, http(s) URLs for websites).
+ */
+function ContactValue({ contact }: { contact: ProfileContact }) {
+  const linkClass = "text-rose-500 hover:text-rose-600 underline";
+  if (contact.type === "email") {
+    return (
+      <a className={linkClass} href={`mailto:${contact.value}`}>
+        {contact.value}
+      </a>
+    );
+  }
+  if (
+    contact.type === "website" &&
+    /^https?:\/\//i.test(contact.value.trim())
+  ) {
+    return (
+      <a
+        className={linkClass}
+        href={contact.value.trim()}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {contact.value}
+      </a>
+    );
+  }
+  return <>{contact.value}</>;
 }
 
 function ProfileList({

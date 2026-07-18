@@ -3,8 +3,9 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent, createGuest, createSession } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
+import { DEFAULT_EMAIL_SETTINGS } from "@/db/repositories/interfaces";
 
-describe("guests.searchForAttendees", () => {
+describe("guests.listAttendees", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());
 
@@ -15,10 +16,7 @@ describe("guests.searchForAttendees", () => {
     await createSession(event.id, { hostIds: [host.id] });
     const repos = getRepositories();
 
-    const { rows } = await repos.guests.searchForAttendees({
-      limit: 50,
-      offset: 0,
-    });
+    const rows = await repos.guests.listAttendees({});
 
     const byName = Object.fromEntries(rows.map((r) => [r.name, r.isHost]));
     expect(byName["Host Person"]).toBe(true);
@@ -32,48 +30,50 @@ describe("guests.searchForAttendees", () => {
     await createSession(event.id, { hostIds: [host.id] });
     const repos = getRepositories();
 
-    const { rows, total } = await repos.guests.searchForAttendees({
-      host: true,
-      limit: 50,
-      offset: 0,
-    });
+    const rows = await repos.guests.listAttendees({ host: true });
 
-    expect(total).toBe(1);
     expect(rows.map((r) => r.name)).toEqual(["Host Person"]);
     expect(rows[0].isHost).toBe(true);
   });
 
-  it("matches name only, not email", async () => {
-    await createGuest({ name: "Alice Smith", email: "findme@test.example" });
-    const repos = getRepositories();
-
-    const { rows } = await repos.guests.searchForAttendees({
-      query: "findme",
-      limit: 50,
-      offset: 0,
-    });
-
-    expect(rows).toEqual([]);
-  });
-
-  it("paginates by name via limit/offset while reporting the full total", async () => {
+  it("orders by name and never exposes the private email", async () => {
     for (const name of ["E", "C", "A", "D", "B"]) {
       await createGuest({ name });
     }
     const repos = getRepositories();
 
-    const firstPage = await repos.guests.searchForAttendees({
-      limit: 2,
-      offset: 0,
-    });
-    expect(firstPage.total).toBe(5);
-    expect(firstPage.rows.map((r) => r.name)).toEqual(["A", "B"]);
+    const rows = await repos.guests.listAttendees({});
 
-    const secondPage = await repos.guests.searchForAttendees({
-      limit: 2,
-      offset: 2,
+    expect(rows.map((r) => r.name)).toEqual(["A", "B", "C", "D", "E"]);
+    for (const row of rows) {
+      expect(row).not.toHaveProperty("email");
+      expect(row).not.toHaveProperty("info");
+    }
+  });
+
+  it("includes the public profile fields used by search", async () => {
+    const guest = await createGuest({ name: "Polyglot" });
+    const repos = getRepositories();
+    await repos.guests.updateProfile(guest.id, {
+      name: guest.name,
+      aboutMe: "Hello",
+      avatarUrl: null,
+      pronouns: "they/them",
+      basedIn: "Lisbon",
+      prompts: [{ prompt: "Offering", answer: "Sourdough starters" }],
+      languages: ["Portuguese"],
+      contacts: null,
+      emailSettings: DEFAULT_EMAIL_SETTINGS,
     });
-    expect(secondPage.total).toBe(5);
-    expect(secondPage.rows.map((r) => r.name)).toEqual(["C", "D"]);
+
+    const rows = await repos.guests.listAttendees({});
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      name: "Polyglot",
+      basedIn: "Lisbon",
+      languages: ["Portuguese"],
+      prompts: [{ prompt: "Offering", answer: "Sourdough starters" }],
+    });
   });
 });

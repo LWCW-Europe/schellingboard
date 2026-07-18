@@ -134,6 +134,13 @@
       "when": 1784110051953,
       "tag": "0018_guest-email-settings",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1784367197755,
+      "tag": "0019_guest_profile_fields",
+      "breakpoints": true
     }
   ]
 }

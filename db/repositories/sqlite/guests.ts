@@ -20,7 +20,8 @@ import {
   type GuestsRepository,
   type GuestPage,
   type NewGuest,
-  AttendeePage,
+  type ProfileContact,
+  type ProfilePrompt,
   Attendee,
 } from "../interfaces";
 import { sanitizeGuest } from "@/utils/guests";
@@ -40,6 +41,10 @@ function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
     aboutMe: row.aboutMe,
     avatarUrl: row.avatarUrl,
     pronouns: row.pronouns,
+    basedIn: row.basedIn,
+    prompts: row.prompts,
+    languages: row.languages,
+    contacts: row.contacts,
     info: {
       email: row.email,
       emailSettings: {
@@ -55,7 +60,20 @@ export class SqliteGuestsRepository implements GuestsRepository {
   constructor(private readonly db: DB) {}
 
   async list(): Promise<Guest[]> {
-    return (await this.listFull()).map(sanitizeGuest);
+    // This list is embedded in every page's client payload (header name
+    // selector, host pickers), so exclude the extended profile fields
+    // (contacts in particular): findById/listAttendees serve those where the
+    // UI actually shows them.
+    return (await this.listFull())
+      .map(sanitizeGuest)
+      .map(({ id, name, aboutMe, avatarUrl, pronouns, info }) => ({
+        id,
+        name,
+        aboutMe,
+        avatarUrl,
+        pronouns,
+        info,
+      }));
   }
 
   async listFull(): Promise<CompleteGuest[]> {
@@ -116,18 +134,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return { rows, total: totalRow?.count ?? 0 };
   }
 
-  async searchForAttendees(opts: {
-    query?: string;
-    host?: boolean;
-    limit: number;
-    offset: number;
-  }): Promise<AttendeePage> {
-    let where = undefined;
-    if (opts.query) {
-      const pattern = `%${escapeLike(opts.query)}%`;
-      where = sql`${schema.guests.name} like ${pattern} escape '\\'`;
-    }
-
+  async listAttendees(opts: { host?: boolean }): Promise<Attendee[]> {
     const isHostExpr = exists(
       this.db
         .select({ one: sql`1` })
@@ -135,38 +142,29 @@ export class SqliteGuestsRepository implements GuestsRepository {
         .where(eq(schema.sessionHosts.guestId, schema.guests.id))
     );
 
-    if (opts.host) {
-      where = and(where, isHostExpr);
-    }
-
-    const totalRow = this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.guests)
-      .where(where)
-      .get();
-
-    const rows = this.db
-      .select({
-        id: schema.guests.id,
-        name: schema.guests.name,
-        aboutMe: schema.guests.aboutMe,
-        avatarUrl: schema.guests.avatarUrl,
-        pronouns: schema.guests.pronouns,
-        // SQLite has no boolean type; this yields 0/1 at runtime despite the
-        // sql<boolean> annotation, so coerce explicitly below.
-        isHost: opts.host ? sql<boolean>`true` : isHostExpr,
-      })
-      .from(schema.guests)
-      .where(where)
-      // id as tiebreaker: name is not unique, and without a deterministic
-      // order LIMIT/OFFSET pagination can duplicate or skip rows.
-      .orderBy(schema.guests.name, schema.guests.id)
-      .limit(opts.limit)
-      .offset(opts.offset)
-      .all()
-      .map((row) => ({ ...row, isHost: Boolean(row.isHost) }) as Attendee);
-
-    return { rows, total: totalRow?.count ?? 0 };
+    return (
+      this.db
+        .select({
+          id: schema.guests.id,
+          name: schema.guests.name,
+          aboutMe: schema.guests.aboutMe,
+          avatarUrl: schema.guests.avatarUrl,
+          pronouns: schema.guests.pronouns,
+          basedIn: schema.guests.basedIn,
+          prompts: schema.guests.prompts,
+          languages: schema.guests.languages,
+          contacts: schema.guests.contacts,
+          // SQLite has no boolean type; this yields 0/1 at runtime despite the
+          // sql<boolean> annotation, so coerce explicitly below.
+          isHost: opts.host ? sql<boolean>`true` : isHostExpr,
+        })
+        .from(schema.guests)
+        .where(opts.host ? isHostExpr : undefined)
+        // id as tiebreaker so equal names keep a deterministic order.
+        .orderBy(schema.guests.name, schema.guests.id)
+        .all()
+        .map((row) => ({ ...row, isHost: Boolean(row.isHost) }) as Attendee)
+    );
   }
 
   async listEventsByGuests(
@@ -358,6 +356,10 @@ export class SqliteGuestsRepository implements GuestsRepository {
       aboutMe: string | null;
       avatarUrl: string | null;
       pronouns: string | null;
+      basedIn: string | null;
+      prompts: ProfilePrompt[] | null;
+      languages: string[] | null;
+      contacts: ProfileContact[] | null;
       emailSettings: EmailSettings;
     }
   ): Promise<CompleteGuest | undefined> {
@@ -368,6 +370,10 @@ export class SqliteGuestsRepository implements GuestsRepository {
         aboutMe: data.aboutMe,
         avatarUrl: data.avatarUrl,
         pronouns: data.pronouns,
+        basedIn: data.basedIn,
+        prompts: data.prompts,
+        languages: data.languages,
+        contacts: data.contacts,
         emailOnRsvpChange: data.emailSettings.rsvpChange,
         emailOnHostChange: data.emailSettings.hostChange,
         emailOnCohostAdd: data.emailSettings.cohostAdd,

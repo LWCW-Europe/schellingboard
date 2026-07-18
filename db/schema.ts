@@ -6,6 +6,7 @@ import {
   primaryKey,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { ProfileContact, ProfilePrompt } from "./repositories/interfaces";
 
 // Singleton table holding site-wide configuration (title, description, map).
 // Always a single row with id "singleton"; see SqliteSettingsRepository.
@@ -26,6 +27,10 @@ export const guests = sqliteTable(
     email: text("email").notNull(),
     aboutMe: text("about_me"),
     pronouns: text("pronouns"),
+    basedIn: text("based_in"),
+    prompts: text("prompts", { mode: "json" }).$type<ProfilePrompt[]>(),
+    languages: text("languages", { mode: "json" }).$type<string[]>(),
+    contacts: text("contacts", { mode: "json" }).$type<ProfileContact[]>(),
     // Email notification settings; see EmailSettings in
     // repositories/interfaces.ts.
     emailOnRsvpChange: integer("email_on_rsvp_change", { mode: "boolean" })

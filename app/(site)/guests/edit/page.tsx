@@ -10,7 +10,7 @@ export default async function EditProfilePage() {
 
   if (!currentUser) {
     return (
-      <div className="max-w-2xl mx-auto flex flex-col gap-4">
+      <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
         <p className="text-gray-700">
           You need to select who you are before editing your profile. Pick your
           name via the &ldquo;Select your name&rdquo; chip in the header at the

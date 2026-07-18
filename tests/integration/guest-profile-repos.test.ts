@@ -72,6 +72,10 @@ describe("guest profile repositories", () => {
         aboutMe: "I love unconferences.",
         avatarUrl: "/media/uploads/avatar.png",
         pronouns: "they/them",
+        basedIn: null,
+        prompts: null,
+        languages: null,
+        contacts: null,
         emailSettings: DEFAULT_EMAIL_SETTINGS,
       });
 
@@ -88,6 +92,51 @@ describe("guest profile repositories", () => {
         aboutMe: "I love unconferences.",
         avatarUrl: "/media/uploads/avatar.png",
       });
+    });
+  });
+
+  describe("guests.updateProfile extended fields", () => {
+    it("stores and returns basedIn, prompts, languages, and contacts", async () => {
+      const { guests } = getRepositories();
+      const guest = await createGuest();
+
+      const updated = await guests.updateProfile(guest.id, {
+        name: guest.name,
+        aboutMe: null,
+        avatarUrl: null,
+        pronouns: null,
+        basedIn: "Berlin",
+        prompts: [{ prompt: "Ask me about", answer: "Urban beekeeping" }],
+        languages: ["German", "Swiss German"],
+        contacts: [
+          { type: "signal", value: "@someone.01" },
+          { type: "other", label: "Matrix", value: "@someone:matrix.org" },
+        ],
+        emailSettings: DEFAULT_EMAIL_SETTINGS,
+      });
+
+      expect(updated).toMatchObject({ id: guest.id, basedIn: "Berlin" });
+      const fetched = await guests.findById(guest.id);
+      expect(fetched?.basedIn).toBe("Berlin");
+      expect(fetched?.prompts).toEqual([
+        { prompt: "Ask me about", answer: "Urban beekeeping" },
+      ]);
+      expect(fetched?.languages).toEqual(["German", "Swiss German"]);
+      expect(fetched?.contacts).toEqual([
+        { type: "signal", value: "@someone.01" },
+        { type: "other", label: "Matrix", value: "@someone:matrix.org" },
+      ]);
+    });
+
+    it("leaves the new fields empty for guests that never set them", async () => {
+      const { guests } = getRepositories();
+      const guest = await createGuest();
+
+      const fetched = await guests.findById(guest.id);
+      expect(fetched?.basedIn ?? null).toBeNull();
+      expect(fetched?.prompts ?? null).toBeNull();
+      expect(fetched?.languages ?? null).toBeNull();
+      expect(fetched?.contacts ?? null).toBeNull();
     });
   });
 

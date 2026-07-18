@@ -124,6 +124,32 @@ type GuestPrivateInfo = {
   emailSettings: EmailSettings;
 };
 
+/** An answered profile prompt, e.g. { prompt: "Ask me about", answer: "…" }. */
+export type ProfilePrompt = { prompt: string; answer: string };
+
+export const CONTACT_TYPES = [
+  "email",
+  "phone",
+  "whatsapp",
+  "signal",
+  "telegram",
+  "discord",
+  "website",
+  "other",
+] as const;
+export type ContactType = (typeof CONTACT_TYPES)[number];
+
+/**
+ * A public contact entry. Deliberately separate from the private system email
+ * (GuestPrivateInfo.email): filling one in is the guest's opt-in to showing it.
+ * `label` is the guest-supplied name for type "other".
+ */
+export type ProfileContact = {
+  type: ContactType;
+  label?: string;
+  value: string;
+};
+
 export type Guest<PI extends GuestPrivateInfo | void = void> = {
   id: string;
   name: string;
@@ -131,6 +157,10 @@ export type Guest<PI extends GuestPrivateInfo | void = void> = {
   aboutMe?: string | null;
   avatarUrl?: string | null;
   pronouns?: string | null;
+  basedIn?: string | null;
+  prompts?: ProfilePrompt[] | null;
+  languages?: string[] | null;
+  contacts?: ProfileContact[] | null;
   info: PI;
 };
 
@@ -167,13 +197,13 @@ export type Attendee = Guest & {
   isHost: boolean;
 };
 
-/** A page of attendees plus the total count matching the same filter. */
-export type AttendeePage = {
-  rows: Attendee[];
-  total: number;
-};
-
 export interface GuestsRepository {
+  /**
+   * Every guest with basic public fields only — no extended profile
+   * (basedIn, prompts, languages, contacts). Pages embed this list in their
+   * client payload (name/host selectors), so it must stay lean; use
+   * findById/listAttendees where the extended profile is shown.
+   */
   list(): Promise<Guest[]>;
   /** Every user with their private info (email). For admin export/lookup. */
   listFull(): Promise<CompleteGuest[]>;
@@ -189,17 +219,13 @@ export interface GuestsRepository {
     offset: number;
   }): Promise<GuestPage>;
   /**
-   * Server-side paginated + searchable global user list, each row tagged
-   * with whether the guest hosts any session. Unlike `search`, `query`
-   * matches name only, not email (case-insensitive substring, LIKE
-   * metacharacters matched literally). Ordered by name with id tiebreaker.
+   * All guests as attendees (public profile fields plus whether they host any
+   * session), ordered by name with id tiebreaker. `host: true` narrows to
+   * session hosts. Search and pagination happen in memory on top of this
+   * (see utils/attendee-search.ts): attendee counts don't warrant a SQL or
+   * persisted search index.
    */
-  searchForAttendees(opts: {
-    query?: string;
-    host?: boolean;
-    limit: number;
-    offset: number;
-  }): Promise<AttendeePage>;
+  listAttendees(opts: { host?: boolean }): Promise<Attendee[]>;
   /**
    * Assigned events for many guests in one query, ordered by event name.
    * Every requested id is present in the result; guests without assignments
@@ -242,8 +268,8 @@ export interface GuestsRepository {
     id: string,
     data: { name: string; info: { email: string } }
   ): Promise<CompleteGuest | undefined>;
-  // Usage: a user updates their own profile (name, public aboutMe, and their
-  // email notification settings).
+  // Usage: a user updates their own profile (name, public profile fields, and
+  // their email notification settings).
   updateProfile(
     id: string,
     data: {
@@ -251,6 +277,10 @@ export interface GuestsRepository {
       aboutMe: string | null;
       avatarUrl: string | null;
       pronouns: string | null;
+      basedIn: string | null;
+      prompts: ProfilePrompt[] | null;
+      languages: string[] | null;
+      contacts: ProfileContact[] | null;
       emailSettings: EmailSettings;
     }
   ): Promise<CompleteGuest | undefined>;
