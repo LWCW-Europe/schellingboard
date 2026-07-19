@@ -21,10 +21,11 @@ import {
   DEFAULT_LOCATION_COLOR,
   isLocationColorName,
 } from "@/utils/location-colors";
-import { Path, useController, useForm } from "react-hook-form";
+import { useController, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { locationSchema, updateLocationSchema } from "@/model/location";
 import { z } from "zod";
+import { consumeErrors } from "@/app/utils/forms";
 
 export type AdminLocation = {
   location: Location;
@@ -101,16 +102,7 @@ function LocationForm({
 
     const result = await action(data);
     if (!result.ok) {
-      if (typeof result.error === "string") {
-        form.setError("root", { message: result.error });
-      } else {
-        for (const issue of result.error) {
-          form.setError(
-            issue.path.join(".") as Path<z.input<typeof locationFormSchema>>,
-            { message: issue.message }
-          );
-        }
-      }
+      consumeErrors(form, result.error);
     }
   };
 
