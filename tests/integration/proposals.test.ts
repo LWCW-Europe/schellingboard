@@ -50,16 +50,15 @@ async function protectGuest(guestId: string): Promise<void> {
   });
 }
 
-function proposalForm(fields: Record<string, string | string[]>): FormData {
-  const fd = new FormData();
-  for (const [key, value] of Object.entries(fields)) {
-    if (Array.isArray(value)) {
-      for (const v of value) fd.append(key, v);
-    } else {
-      fd.set(key, value);
-    }
-  }
-  return fd;
+/**
+ * The form reports validation errors next to the field they belong to, so the
+ * actions must return issues carrying a field path rather than a bare string.
+ */
+function errorFields(result: object): string[] {
+  const error = "error" in result ? result.error : undefined;
+  if (!Array.isArray(error))
+    throw new Error(`not field issues: ${String(error)}`);
+  return error.map((issue: { path: PropertyKey[] }) => issue.path.join("."));
 }
 
 describe("createProposal", () => {
@@ -75,16 +74,14 @@ describe("createProposal", () => {
     const event = await createEvent();
     const host = await createGuest({ name: "Host", eventId: event.id });
 
-    const result = await createProposal(
-      proposalForm({
-        event: event.id,
-        eventSlug: "test-event",
-        title: "My Proposal",
-        description: "A description",
-        hosts: [host.id],
-        durationMinutes: "60",
-      })
-    );
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "My Proposal",
+      description: "A description",
+      hostIds: [host.id],
+      durationMinutes: 60,
+    });
     expect(result).toEqual({ success: true });
 
     const proposals = await getRepositories().sessionProposals.listByEvent(
@@ -103,15 +100,13 @@ describe("createProposal", () => {
     const event = await createEvent();
     const outsider = await createGuest({ name: "Outsider" }); // not assigned
 
-    const result = await createProposal(
-      proposalForm({
-        event: event.id,
-        eventSlug: "test-event",
-        title: "My Proposal",
-        hosts: [outsider.id],
-      })
-    );
-    expect(result).toHaveProperty("error");
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "My Proposal",
+      hostIds: [outsider.id],
+    });
+    expect(errorFields(result)).toEqual(["hostIds"]);
 
     const proposals = await getRepositories().sessionProposals.listByEvent(
       event.id
@@ -122,10 +117,28 @@ describe("createProposal", () => {
   it("rejects a missing title and leaves the event's proposals unchanged", async () => {
     const event = await createEvent();
 
-    const result = await createProposal(
-      proposalForm({ event: event.id, eventSlug: "test-event", title: "" })
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "",
+    });
+    expect(errorFields(result)).toEqual(["title"]);
+
+    const proposals = await getRepositories().sessionProposals.listByEvent(
+      event.id
     );
-    expect(result).toHaveProperty("error");
+    expect(proposals).toHaveLength(0);
+  });
+
+  it("rejects a whitespace-only title", async () => {
+    const event = await createEvent();
+
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "   ",
+    });
+    expect(errorFields(result)).toEqual(["title"]);
 
     const proposals = await getRepositories().sessionProposals.listByEvent(
       event.id
@@ -134,9 +147,10 @@ describe("createProposal", () => {
   });
 
   it("rejects a missing event", async () => {
-    const result = await createProposal(
-      proposalForm({ eventSlug: "test-event", title: "No Event" })
-    );
+    const result = await createProposal({
+      eventSlug: "test-event",
+      title: "No Event",
+    } as never);
     expect(result).toHaveProperty("error");
   });
 
@@ -146,14 +160,12 @@ describe("createProposal", () => {
     await protectGuest(guest.id);
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
-    const result = await createProposal(
-      proposalForm({
-        event: event.id,
-        eventSlug: "test-event",
-        title: "My Proposal",
-        hosts: [guest.id],
-      })
-    );
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "My Proposal",
+      hostIds: [guest.id],
+    });
     expect(result).toHaveProperty("error");
 
     const proposals = await getRepositories().sessionProposals.listByEvent(
@@ -168,14 +180,12 @@ describe("createProposal", () => {
     await protectGuest(guest.id);
     cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
-    const result = await createProposal(
-      proposalForm({
-        event: event.id,
-        eventSlug: "test-event",
-        title: "My Proposal",
-        hosts: [guest.id],
-      })
-    );
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "My Proposal",
+      hostIds: [guest.id],
+    });
     expect(result).toEqual({ success: true });
 
     const proposals = await getRepositories().sessionProposals.listByEvent(
@@ -204,16 +214,13 @@ describe("updateProposal", () => {
     });
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(alice.id));
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({
-        eventSlug: "test-event",
-        title: "Updated",
-        description: "New description",
-        hosts: [alice.id, bob.id],
-        durationMinutes: "90",
-      })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "Updated",
+      description: "New description",
+      hostIds: [alice.id, bob.id],
+      durationMinutes: 90,
+    });
     expect(result).toEqual({ success: true });
 
     const after = await getRepositories().sessionProposals.findById(
@@ -237,14 +244,11 @@ describe("updateProposal", () => {
     });
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(host.id));
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({
-        eventSlug: "test-event",
-        title: proposal.title,
-        durationMinutes: "",
-      })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: proposal.title,
+      durationMinutes: undefined,
+    });
     expect(result).toEqual({ success: true });
 
     const after = await getRepositories().sessionProposals.findById(
@@ -260,11 +264,30 @@ describe("updateProposal", () => {
       title: "Keep Me",
     });
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({ eventSlug: "test-event", title: "" })
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "",
+    });
+    expect(errorFields(result)).toEqual(["title"]);
+
+    const after = await getRepositories().sessionProposals.findById(
+      proposal.id
     );
-    expect(result).toHaveProperty("error");
+    expect(after?.title).toBe("Keep Me");
+  });
+
+  // The form always submits every field, so an update without a title is a
+  // malformed payload, not a request to leave the title alone.
+  it("rejects an omitted title and leaves the proposal unchanged", async () => {
+    const event = await createEvent();
+    const proposal = await createProposalFixture(event.id, [], {
+      title: "Keep Me",
+    });
+
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+    } as never);
+    expect(errorFields(result)).toEqual(["title"]);
 
     const after = await getRepositories().sessionProposals.findById(
       proposal.id
@@ -279,15 +302,12 @@ describe("updateProposal", () => {
     const proposal = await createProposalFixture(event.id, [alice.id]);
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(alice.id));
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({
-        eventSlug: "test-event",
-        title: proposal.title,
-        hosts: [outsider.id],
-      })
-    );
-    expect(result).toHaveProperty("error");
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: proposal.title,
+      hostIds: [outsider.id],
+    });
+    expect(errorFields(result)).toEqual(["hostIds"]);
 
     const after = await getRepositories().sessionProposals.findById(
       proposal.id
@@ -304,10 +324,10 @@ describe("updateProposal", () => {
     });
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(nonHost.id));
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({ eventSlug: "test-event", title: "Hijacked" })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "Hijacked",
+    });
     expect(result).toHaveProperty("error");
 
     const after = await getRepositories().sessionProposals.findById(
@@ -323,10 +343,10 @@ describe("updateProposal", () => {
       title: "Original",
     });
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({ eventSlug: "test-event", title: "Hijacked" })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "Hijacked",
+    });
     expect(result).toHaveProperty("error");
 
     const after = await getRepositories().sessionProposals.findById(
@@ -341,10 +361,10 @@ describe("updateProposal", () => {
       title: "Unclaimed",
     });
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({ eventSlug: "test-event", title: "Claimed by nobody" })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "Claimed by nobody",
+    });
     expect(result).toEqual({ success: true });
 
     const after = await getRepositories().sessionProposals.findById(
@@ -362,10 +382,10 @@ describe("updateProposal", () => {
     });
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(host.id));
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({ eventSlug: "test-event", title: "Hijacked" })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "Hijacked",
+    });
     expect(result).toHaveProperty("error");
 
     const after = await getRepositories().sessionProposals.findById(
@@ -383,10 +403,10 @@ describe("updateProposal", () => {
     });
     cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(host.id));
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({ eventSlug: "test-event", title: "Renamed" })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "Renamed",
+    });
     expect(result).toEqual({ success: true });
 
     const after = await getRepositories().sessionProposals.findById(
