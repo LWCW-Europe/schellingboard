@@ -6,7 +6,11 @@ import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import { sendMail } from "@/utils/mailer";
 import { testEmail } from "@/emails/test-email";
+import { z } from "zod";
+import { createGuestSchema, updateGuestSchema } from "@/model/guest";
 
+export type AdminFormActionResult =
+  { ok: true } | { ok: false; error: string | z.core.$ZodIssue[] };
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
 
 async function isAdminRequest(): Promise<boolean> {
@@ -14,23 +18,26 @@ async function isAdminRequest(): Promise<boolean> {
   return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
 }
 
-function validateGuestInput(name: string, email: string): string | null {
-  if (!name) return "Name is required";
-  if (!email) return "Email is required";
-  if (!/^\S+@\S+\.\S+$/.test(email)) return "Invalid email address";
-  return null;
-}
+const EMAIL_UNIQUENESS_ERROR: z.core.$ZodIssue = {
+  code: "custom",
+  path: ["email"],
+  message: "A user with this email already exists",
+};
 
-export async function createGuestAction(input: {
-  name: string;
-  email: string;
-}): Promise<AdminActionResult> {
+export async function createGuestAction(
+  input: z.input<typeof createGuestSchema>
+): Promise<AdminFormActionResult>;
+export async function createGuestAction(
+  input: unknown
+): Promise<AdminFormActionResult> {
   if (!(await isAdminRequest())) return { ok: false, error: "Unauthorized" };
 
-  const name = input.name.trim();
-  const email = input.email.trim();
-  const validationError = validateGuestInput(name, email);
-  if (validationError) return { ok: false, error: validationError };
+  const parseResult = createGuestSchema.safeParse(input);
+  if (!parseResult.success) {
+    return { ok: false, error: parseResult.error.issues };
+  }
+
+  const { name, email } = parseResult.data;
 
   const { guests } = getRepositories();
   // findOrCreateByEmail is atomic (unique index on lower(email)), so a
@@ -40,34 +47,40 @@ export async function createGuestAction(input: {
     info: { email },
   });
   if (!created) {
-    return { ok: false, error: "A user with this email already exists" };
+    return {
+      ok: false,
+      error: [EMAIL_UNIQUENESS_ERROR],
+    };
   }
 
   revalidatePath("/admin/users");
   return { ok: true };
 }
 
-export async function updateGuestAction(input: {
-  id: string;
-  name: string;
-  email: string;
-}): Promise<AdminActionResult> {
+export async function updateGuestAction(
+  input: z.input<typeof updateGuestSchema>
+): Promise<AdminFormActionResult>;
+export async function updateGuestAction(
+  input: unknown
+): Promise<AdminFormActionResult> {
   if (!(await isAdminRequest())) return { ok: false, error: "Unauthorized" };
 
-  const name = input.name.trim();
-  const email = input.email.trim();
-  const validationError = validateGuestInput(name, email);
-  if (validationError) return { ok: false, error: validationError };
+  const parseResult = updateGuestSchema.safeParse(input);
+  if (!parseResult.success) {
+    return { ok: false, error: parseResult.error.issues };
+  }
+
+  const { id, name, email } = parseResult.data;
 
   const { guests } = getRepositories();
   const existing = await guests.findByEmail(email);
-  if (existing && existing.id !== input.id) {
-    return { ok: false, error: "A user with this email already exists" };
+  if (existing && existing.id !== id) {
+    return { ok: false, error: [EMAIL_UNIQUENESS_ERROR] };
   }
 
   let updated;
   try {
-    updated = await guests.update(input.id, { name, info: { email } });
+    updated = await guests.update(id, { name, info: { email } });
   } catch (e) {
     // A concurrent update/create can win the race between the findByEmail
     // check above and this update; translate the constraint violation into
@@ -78,7 +91,10 @@ export async function updateGuestAction(input: {
         "UNIQUE constraint failed: index 'guests_email_unique'"
       )
     ) {
-      return { ok: false, error: "A user with this email already exists" };
+      return {
+        ok: false,
+        error: [EMAIL_UNIQUENESS_ERROR],
+      };
     }
     throw e;
   }

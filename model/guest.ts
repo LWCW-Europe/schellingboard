@@ -123,3 +123,16 @@ export const profileSchema = z.object({
       message: `At most ${MAX_CONTACTS} contacts`,
     }),
 });
+
+export const createGuestSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, { message: "Email is required" })
+    .pipe(z.email({ pattern: /^\S+@\S+\.\S+$/ })),
+  name: z.string().trim().min(1, { message: "Name is required" }),
+});
+
+export const updateGuestSchema = createGuestSchema.extend({
+  id: z.string().nonempty(),
+});
