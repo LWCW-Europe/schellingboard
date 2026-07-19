@@ -14,3 +14,16 @@ export const profileSchema = z.object({
   pronouns: z.string().trim().nullable().optional().default(null),
   emailSettings: emailSettingsSchema,
 });
+
+export const createGuestSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, { message: "Email is required" })
+    .pipe(z.email({ pattern: /^\S+@\S+\.\S+$/ })),
+  name: z.string().trim().min(1, { message: "Name is required" }),
+});
+
+export const updateGuestSchema = createGuestSchema.extend({
+  id: z.string().nonempty(),
+});

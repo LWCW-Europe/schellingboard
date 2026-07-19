@@ -13,6 +13,10 @@ import {
 } from "../actions/admin-guests";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON, DANGER_BUTTON } from "./buttons";
 import { DataTable } from "./data-table";
+import { Path, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createGuestSchema, updateGuestSchema } from "@/model/guest";
+import { z } from "zod";
 
 /** A guest plus the events they are assigned to. */
 export type AdminUser = {
@@ -20,45 +24,54 @@ export type AdminUser = {
   events: { id: string; name: string }[];
 };
 
-function AddGuestForm({
-  onError,
-}: {
-  onError: (error: string | null) => void;
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [isPending, startTransition] = useTransition();
+function AddGuestForm() {
+  const form = useForm({
+    resolver: zodResolver(createGuestSchema),
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    startTransition(async () => {
-      const result = await createGuestAction({ name, email });
-      if (!result.ok) {
-        onError(result.error);
-      } else {
-        onError(null);
-        setName("");
-        setEmail("");
+  const handleSubmit = async ({
+    name,
+    email,
+  }: z.input<typeof createGuestSchema>) => {
+    const result = await createGuestAction({ name, email });
+    if (!result.ok) {
+      if (typeof result.error === "string")
+        form.setError("root", { message: result.error });
+      else {
+        for (const issue of result.error) {
+          const path = issue.path.join(".") as Path<
+            z.infer<typeof createGuestSchema>
+          >;
+          form.setError(path, issue);
+        }
       }
-    });
+    } else {
+      form.reset();
+    }
   };
 
   return (
     <form
-      onSubmit={handleSubmit}
-      className="flex flex-col sm:flex-row gap-2 sm:items-end max-w-2xl"
+      onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}
+      className="flex flex-col sm:flex-row gap-2 sm:items-center max-w-2xl"
     >
+      {form.formState.errors.root && (
+        <p role="alert" className="text-sm text-red-600">
+          {form.formState.errors.root.message}
+        </p>
+      )}
       <div className="flex flex-col gap-1 flex-1">
         <label htmlFor="new-user-name" className="text-sm text-gray-600">
           Name
         </label>
         <Input
           id="new-user-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
+          {...form.register("name")}
           className="w-full h-10"
         />
+        <span className="text-rose-400 text-sm min-h-(--text-sm)">
+          {form.formState.errors.name?.message}
+        </span>
       </div>
       <div className="flex flex-col gap-1 flex-1">
         <label htmlFor="new-user-email" className="text-sm text-gray-600">
@@ -67,15 +80,22 @@ function AddGuestForm({
         <Input
           id="new-user-email"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+          {...form.register("email")}
           className="w-full h-10"
         />
+        <span className="text-rose-400 text-sm min-h-(--text-sm)">
+          {form.formState.errors.email?.message}
+        </span>
       </div>
-      <button type="submit" disabled={isPending} className={PRIMARY_BUTTON}>
-        {isPending ? "Adding..." : "Add user"}
-      </button>
+      <div className="flex flex-col gap-1">
+        <button
+          type="submit"
+          disabled={form.formState.isSubmitting}
+          className={PRIMARY_BUTTON}
+        >
+          {form.formState.isSubmitting ? "Adding..." : "Add user"}
+        </button>
+      </div>
     </form>
   );
 }
@@ -83,54 +103,66 @@ function AddGuestForm({
 function GuestRow({
   guest,
   events,
-  onError,
 }: {
   guest: CompleteGuest;
   events: AdminUser["events"];
-  onError: (error: string | null) => void;
 }) {
   const [mode, setMode] = useState<"view" | "edit" | "delete">("view");
-  const [name, setName] = useState(guest.name);
-  const [email, setEmail] = useState(guest.info.email);
-  const [isPending, startTransition] = useTransition();
+  const form = useForm({
+    defaultValues: {
+      id: guest.id,
+      name: guest.name,
+      email: guest.info.email,
+    },
+    resolver: zodResolver(updateGuestSchema),
+  });
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [isSendingEmail, startEmailTransition] = useTransition();
   const [emailSent, setEmailSent] = useState(false);
+  const [viewError, setViewError] = useState<string | null>(null);
 
   const startEdit = () => {
-    setName(guest.name);
-    setEmail(guest.info.email);
-    onError(null);
+    form.reset();
     setMode("edit");
   };
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    startTransition(async () => {
-      const result = await updateGuestAction({ id: guest.id, name, email });
-      if (!result.ok) {
-        onError(result.error);
-      } else {
-        onError(null);
-        setMode("view");
+  const handleSave = async ({
+    id,
+    name,
+    email,
+  }: z.input<typeof updateGuestSchema>) => {
+    const result = await updateGuestAction({ id, name, email });
+    if (!result.ok) {
+      if (typeof result.error === "string")
+        form.setError("root", { message: result.error });
+      else {
+        for (const issue of result.error) {
+          const path = issue.path.join(".") as Path<
+            z.infer<typeof updateGuestSchema>
+          >;
+          form.setError(path, issue);
+        }
       }
-    });
+    } else {
+      setEmailSent(false);
+      setMode("view");
+    }
   };
 
-  const handleDelete = () => {
-    startTransition(async () => {
+  const handleDelete = () =>
+    startDeleteTransition(async () => {
       const result = await deleteGuestAction({ id: guest.id });
-      onError(result.ok ? null : result.error);
+      setViewError(result.ok ? null : result.error);
     });
-  };
 
   const handleSendTestEmail = () => {
     setEmailSent(false);
     startEmailTransition(async () => {
       const result = await sendTestEmailAction({ id: guest.id });
       if (!result.ok) {
-        onError(result.error);
+        setViewError(result.error);
       } else {
-        onError(null);
+        setViewError(null);
         setEmailSent(true);
       }
     });
@@ -138,113 +170,136 @@ function GuestRow({
 
   if (mode === "edit") {
     return (
-      <form
-        onSubmit={handleSave}
-        className="flex flex-col sm:flex-row gap-2 sm:items-center"
-      >
-        <Input
-          aria-label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="flex-1 h-10"
-        />
-        <Input
-          aria-label="Email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="flex-1 h-10"
-        />
-        <div className="flex gap-2">
-          <button type="submit" disabled={isPending} className={PRIMARY_BUTTON}>
-            {isPending ? "Saving..." : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onError(null);
-              setMode("view");
-            }}
-            disabled={isPending}
-            className={SECONDARY_BUTTON}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+      <div className="flex-col">
+        <form
+          onSubmit={(e) => form.handleSubmit(handleSave)(e) as never}
+          className="flex flex-col sm:flex-row gap-2 sm:items-baseline"
+        >
+          <div className="flex flex-col gap-1">
+            <Input
+              aria-label="Name"
+              {...form.register("name")}
+              className="flex-1 h-10"
+            />
+            <span className="text-rose-400 text-sm min-h-(--text-sm)">
+              {form.formState.errors.name?.message}
+            </span>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Input
+              aria-label="Email"
+              type="email"
+              {...form.register("email")}
+              className="flex-1 h-10"
+            />
+            <span className="text-rose-400 text-sm min-h-(--text-sm)">
+              {form.formState.errors.email?.message}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+              className={PRIMARY_BUTTON}
+            >
+              {form.formState.isSubmitting ? "Saving..." : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                form.reset();
+                setMode("view");
+              }}
+              disabled={form.formState.isSubmitting}
+              className={SECONDARY_BUTTON}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+        {form.formState.errors.root && (
+          <p role="alert" className="text-sm text-red-600">
+            {form.formState.errors.root.message}
+          </p>
+        )}
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-900 truncate">{guest.name}</p>
-        <p className="text-sm text-gray-500 truncate">{guest.info.email}</p>
-        {events.length > 0 && (
-          <p className="text-sm text-gray-500 truncate">
-            {events.map((event, i) => (
-              <Fragment key={event.id}>
-                {i > 0 && " · "}
-                <Link
-                  href={`/admin/events/${event.id}`}
-                  className="underline hover:text-gray-700"
-                >
-                  {event.name}
-                </Link>
-              </Fragment>
-            ))}
-          </p>
+    <div>
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-gray-900 truncate">{guest.name}</p>
+          <p className="text-sm text-gray-500 truncate">{guest.info.email}</p>
+          {events.length > 0 && (
+            <p className="text-sm text-gray-500 truncate">
+              {events.map((event, i) => (
+                <Fragment key={event.id}>
+                  {i > 0 && " · "}
+                  <Link
+                    href={`/admin/events/${event.id}`}
+                    className="underline hover:text-gray-700"
+                  >
+                    {event.name}
+                  </Link>
+                </Fragment>
+              ))}
+            </p>
+          )}
+        </div>
+        {mode === "delete" ? (
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-red-700">Delete this user?</span>
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className={DANGER_BUTTON}
+            >
+              {isDeleting ? "Deleting..." : "Confirm delete"}
+            </button>
+            <button
+              onClick={() => setMode("view")}
+              disabled={isDeleting}
+              className={SECONDARY_BUTTON}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <button onClick={startEdit} className={SECONDARY_BUTTON}>
+              Edit
+            </button>
+            <button
+              onClick={handleSendTestEmail}
+              disabled={isSendingEmail}
+              className={SECONDARY_BUTTON}
+            >
+              {isSendingEmail
+                ? "Sending..."
+                : emailSent
+                  ? "Sent!"
+                  : "Send test email"}
+            </button>
+            <button
+              onClick={() => {
+                setMode("delete");
+              }}
+              className={clsx(
+                SECONDARY_BUTTON,
+                "text-red-700 hover:bg-red-50 bg-red-50/50"
+              )}
+            >
+              Delete
+            </button>
+          </div>
         )}
       </div>
-      {mode === "delete" ? (
-        <div className="flex gap-2 items-center">
-          <span className="text-sm text-red-700">Delete this user?</span>
-          <button
-            onClick={handleDelete}
-            disabled={isPending}
-            className={DANGER_BUTTON}
-          >
-            {isPending ? "Deleting..." : "Confirm delete"}
-          </button>
-          <button
-            onClick={() => setMode("view")}
-            disabled={isPending}
-            className={SECONDARY_BUTTON}
-          >
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <button onClick={startEdit} className={SECONDARY_BUTTON}>
-            Edit
-          </button>
-          <button
-            onClick={handleSendTestEmail}
-            disabled={isSendingEmail}
-            className={SECONDARY_BUTTON}
-          >
-            {isSendingEmail
-              ? "Sending..."
-              : emailSent
-                ? "Sent!"
-                : "Send test email"}
-          </button>
-          <button
-            onClick={() => {
-              onError(null);
-              setMode("delete");
-            }}
-            className={clsx(
-              SECONDARY_BUTTON,
-              "text-red-700 hover:bg-red-50 bg-red-50/50"
-            )}
-          >
-            Delete
-          </button>
-        </div>
+      {viewError && (
+        <p role="alert" className="text-sm text-red-600">
+          {viewError}
+        </p>
       )}
     </div>
   );
@@ -263,17 +318,9 @@ export function GuestsManager({
   pageSize: number;
   query: string;
 }) {
-  const [error, setError] = useState<string | null>(null);
-
   return (
     <div className="space-y-4">
-      {error && (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
-      )}
-
-      <AddGuestForm onError={setError} />
+      <AddGuestForm />
 
       <DataTable
         rows={users}
@@ -284,9 +331,7 @@ export function GuestsManager({
         searchQuery={query}
         searchPlaceholder="Search name or email…"
         emptyMessage="No users match."
-        listItem={(u) => (
-          <GuestRow guest={u.guest} events={u.events} onError={setError} />
-        )}
+        listItem={(u) => <GuestRow guest={u.guest} events={u.events} />}
       />
     </div>
   );
