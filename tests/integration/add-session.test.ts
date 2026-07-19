@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/utils/mailer", () => ({
@@ -15,20 +23,44 @@ import {
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { POST } from "@/app/api/add-session/route";
+import { createUserAuthCookie } from "@/utils/auth";
 import type { SessionParams } from "@/app/api/session-form-utils";
 import type { Day, Guest, Location } from "@/db/repositories/interfaces";
 
+const VALID_SECRET = "0123456789abcdef0123456789abcdef";
+
+async function protectGuest(guestId: string): Promise<void> {
+  await getRepositories().guests.setAuthProtection(guestId, {
+    authProtected: true,
+    passwordHash: null,
+  });
+}
+
 function makeReq(
   payload: unknown,
-  opts?: { editorGuestId?: string }
+  opts?: { editorGuestId?: string; verified?: boolean }
 ): NextRequest {
+  const cookies: string[] = [];
+  if (opts?.editorGuestId) cookies.push(`user=${opts.editorGuestId}`);
   return new NextRequest("http://test/api/add-session", {
     method: "POST",
     body: JSON.stringify(payload),
     // The `user` cookie identifies the acting guest, like the site sets it.
-    headers: opts?.editorGuestId
-      ? { cookie: `user=${opts.editorGuestId}` }
-      : undefined,
+    headers: cookies.length ? { cookie: cookies.join("; ") } : undefined,
+  });
+}
+
+async function makeReqWithAuthCookie(
+  payload: unknown,
+  editorGuestId: string
+): Promise<NextRequest> {
+  const authCookie = await createUserAuthCookie(editorGuestId);
+  return new NextRequest("http://test/api/add-session", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: {
+      cookie: `user=${editorGuestId}; ${authCookie.name}=${authCookie.value}`,
+    },
   });
 }
 
@@ -57,7 +89,9 @@ describe("POST /api/add-session", () => {
   beforeEach(() => {
     resetTestDb();
     vi.mocked(sendMail).mockReset();
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
   });
+  afterEach(() => vi.unstubAllEnvs());
 
   it("emails co-hosts of the new session, but not its creator", async () => {
     const event = await createEvent({ phase: "scheduling" });
@@ -213,6 +247,40 @@ describe("POST /api/add-session", () => {
 
     const sessions = await getRepositories().sessions.listByEvent(event.id);
     expect(sessions).toHaveLength(0);
+  });
+
+  it("rejects creating as a protected guest without a verified session", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    await protectGuest(guest.id);
+    const location = await createLocation();
+    const day = await createDay(event.id);
+
+    const res = await POST(
+      makeReq(buildPayload(guest, location, day), {
+        editorGuestId: guest.id,
+      })
+    );
+    expect(res.status).toBe(403);
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(0);
+  });
+
+  it("creates as a protected guest with a verified session", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    await protectGuest(guest.id);
+    const location = await createLocation();
+    const day = await createDay(event.id);
+
+    const res = await POST(
+      await makeReqWithAuthCookie(buildPayload(guest, location, day), guest.id)
+    );
+    expect(res.ok).toBe(true);
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(1);
   });
 
   // Route does not guard req.json() — parse errors surface as a thrown SyntaxError

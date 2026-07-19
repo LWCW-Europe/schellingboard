@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/utils/mailer", () => ({
@@ -15,10 +23,20 @@ import {
   createDay,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
+import { createUserAuthCookie } from "@/utils/auth";
 import { POST as addPOST } from "@/app/api/add-session/route";
 import { POST } from "@/app/api/update-session/route";
 import type { SessionParams } from "@/app/api/session-form-utils";
 import type { Day, Guest, Location } from "@/db/repositories/interfaces";
+
+const VALID_SECRET = "0123456789abcdef0123456789abcdef";
+
+async function protectGuest(guestId: string): Promise<void> {
+  await getRepositories().guests.setAuthProtection(guestId, {
+    authProtected: true,
+    passwordHash: null,
+  });
+}
 
 function makeAddReq(payload: unknown): NextRequest {
   return new NextRequest("http://test/api/add-session", {
@@ -38,6 +56,20 @@ function makeUpdateReq(
     headers: opts?.editorGuestId
       ? { cookie: `user=${opts.editorGuestId}` }
       : undefined,
+  });
+}
+
+async function makeUpdateReqWithAuthCookie(
+  payload: unknown,
+  editorGuestId: string
+): Promise<NextRequest> {
+  const authCookie = await createUserAuthCookie(editorGuestId);
+  return new NextRequest("http://test/api/update-session", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: {
+      cookie: `user=${editorGuestId}; ${authCookie.name}=${authCookie.value}`,
+    },
   });
 }
 
@@ -83,7 +115,9 @@ describe("POST /api/update-session", () => {
   beforeEach(() => {
     resetTestDb();
     vi.mocked(sendMail).mockReset();
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
   });
+  afterEach(() => vi.unstubAllEnvs());
 
   it("emails RSVP'd guests when the session time changes", async () => {
     const event = await createEvent({ phase: "scheduling" });
@@ -173,10 +207,13 @@ describe("POST /api/update-session", () => {
     const before = (await getRepositories().sessions.findById(id))!;
 
     const res = await POST(
-      makeUpdateReq({
-        ...basePayload(guest, location, day, { startTimeMinutes: 12 * 60 }),
-        id,
-      })
+      makeUpdateReq(
+        {
+          ...basePayload(guest, location, day, { startTimeMinutes: 12 * 60 }),
+          id,
+        },
+        { editorGuestId: guest.id }
+      )
     );
     expect(res.ok).toBe(true);
 
@@ -210,13 +247,16 @@ describe("POST /api/update-session", () => {
       .startTime;
 
     const res = await POST(
-      makeUpdateReq({
-        ...basePayload(guest, location, day, {
-          title: "Moving",
-          startTimeMinutes: 10 * 60 + 30,
-        }),
-        id: movingId,
-      })
+      makeUpdateReq(
+        {
+          ...basePayload(guest, location, day, {
+            title: "Moving",
+            startTimeMinutes: 10 * 60 + 30,
+          }),
+          id: movingId,
+        },
+        { editorGuestId: guest.id }
+      )
     );
     expect(res.ok).toBe(false);
 
@@ -233,7 +273,10 @@ describe("POST /api/update-session", () => {
     const id = await createScheduledSession(event.id, guest, location, day);
 
     const res = await POST(
-      makeUpdateReq({ ...basePayload(guest, location, day), id })
+      makeUpdateReq(
+        { ...basePayload(guest, location, day), id },
+        { editorGuestId: guest.id }
+      )
     );
     expect(res.ok).toBe(true);
   });
@@ -261,13 +304,16 @@ describe("POST /api/update-session", () => {
     });
 
     const res = await POST(
-      makeUpdateReq({
-        ...basePayload(guest, location, day, {
-          title: "Renamed",
-          startTimeMinutes: 14 * 60,
-        }),
-        id: created.id,
-      })
+      makeUpdateReq(
+        {
+          ...basePayload(guest, location, day, {
+            title: "Renamed",
+            startTimeMinutes: 14 * 60,
+          }),
+          id: created.id,
+        },
+        { editorGuestId: guest.id }
+      )
     );
     expect(res.status).toBe(403);
 
@@ -285,7 +331,10 @@ describe("POST /api/update-session", () => {
     const outsider = await createGuest(); // not assigned to the event
 
     const res = await POST(
-      makeUpdateReq({ ...basePayload(outsider, location, day), id })
+      makeUpdateReq(
+        { ...basePayload(outsider, location, day), id },
+        { editorGuestId: guest.id }
+      )
     );
     expect(res.status).toBe(403);
 
@@ -311,10 +360,13 @@ describe("POST /api/update-session", () => {
     });
 
     const res = await POST(
-      makeUpdateReq({
-        ...basePayload(host, location, day, { hosts: [host, rsvper] }),
-        id,
-      })
+      makeUpdateReq(
+        {
+          ...basePayload(host, location, day, { hosts: [host, rsvper] }),
+          id,
+        },
+        { editorGuestId: host.id }
+      )
     );
     expect(res.ok).toBe(true);
     const remaining = await getRepositories().rsvps.listBySession(id);
@@ -332,7 +384,10 @@ describe("POST /api/update-session", () => {
     const id = await createScheduledSession(event.id, host1, loc1, day);
 
     const res = await POST(
-      makeUpdateReq({ ...basePayload(host2, loc2, day), id })
+      makeUpdateReq(
+        { ...basePayload(host2, loc2, day), id },
+        { editorGuestId: host1.id }
+      )
     );
     expect(res.ok).toBe(true);
 
@@ -340,5 +395,84 @@ describe("POST /api/update-session", () => {
     expect(updated.hosts[0].id).toBe(host2.id);
     expect(updated.locations[0].id).toBe(loc2.id);
     expect(updated.capacity).toBe(50);
+  });
+
+  it("rejects a non-host attempting to edit", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const nonHost = await createGuest({ eventId: event.id });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(
+      makeUpdateReq(
+        { ...basePayload(host, location, day, { title: "Renamed" }), id },
+        { editorGuestId: nonHost.id }
+      )
+    );
+    expect(res.status).toBe(403);
+
+    const unchanged = (await getRepositories().sessions.findById(id))!;
+    expect(unchanged.title).toBe("Test Session");
+  });
+
+  it("rejects editing with no acting guest at all", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(
+      makeUpdateReq({
+        ...basePayload(host, location, day, { title: "Renamed" }),
+        id,
+      })
+    );
+    expect(res.status).toBe(403);
+
+    const unchanged = (await getRepositories().sessions.findById(id))!;
+    expect(unchanged.title).toBe("Test Session");
+  });
+
+  it("rejects a protected host without a verified session", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    await protectGuest(host.id);
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(
+      makeUpdateReq(
+        { ...basePayload(host, location, day, { title: "Renamed" }), id },
+        { editorGuestId: host.id }
+      )
+    );
+    expect(res.status).toBe(403);
+
+    const unchanged = (await getRepositories().sessions.findById(id))!;
+    expect(unchanged.title).toBe("Test Session");
+  });
+
+  it("accepts a protected host with a verified session", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    await protectGuest(host.id);
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(
+      await makeUpdateReqWithAuthCookie(
+        { ...basePayload(host, location, day, { title: "Renamed" }), id },
+        host.id
+      )
+    );
+    expect(res.ok).toBe(true);
+
+    const updated = (await getRepositories().sessions.findById(id))!;
+    expect(updated.title).toBe("Renamed");
   });
 });

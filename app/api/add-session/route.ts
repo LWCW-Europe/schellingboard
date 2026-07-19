@@ -2,13 +2,20 @@ import type { NextRequest } from "next/server";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
 import { notifyCohostsAdded } from "@/utils/notifications";
-import { verifiedCurrentUser } from "@/utils/acting-guest";
+import {
+  actingUserIsVerified,
+  guestProtectionError,
+  verifiedCurrentUser,
+} from "@/utils/acting-guest";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
 export const dynamic = "force-dynamic"; // defaults to auto
 
 export async function POST(req: NextRequest) {
+  if (!(await actingUserIsVerified(req.cookies))) {
+    return guestProtectionError();
+  }
   const params = (await req.json()) as SessionParams;
   const repos = getRepositories();
   const input = prepareToInsert(params);

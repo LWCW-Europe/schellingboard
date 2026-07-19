@@ -1,10 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import {
+  actingUserIsVerified,
+  NAME_PROTECTED_ERROR,
+  verifiedCurrentUser,
+} from "@/utils/acting-guest";
 
 export async function createProposal(formData: FormData) {
+  if (!(await actingUserIsVerified(await cookies()))) {
+    return { error: NAME_PROTECTED_ERROR };
+  }
+
   const eventId = formData.get("event") as string;
   const eventSlug = formData.get("eventSlug") as string;
   const title = formData.get("title") as string;
@@ -76,6 +86,16 @@ export async function updateProposal(id: string, formData: FormData) {
       return { error: "Proposal not found" };
     }
 
+    if (proposal.hosts.length > 0) {
+      const actor = await verifiedCurrentUser(await cookies());
+      if (!actor || !proposal.hosts.some((h) => h.id === actor)) {
+        return {
+          error:
+            "Only a host may edit this proposal — switch to your name first",
+        };
+      }
+    }
+
     const eventGuestIds = new Set(
       (await getRepositories().guests.listByEvent(proposal.eventId)).map(
         (g) => g.id
@@ -103,6 +123,21 @@ export async function updateProposal(id: string, formData: FormData) {
 // their proposal in any phase, including scheduling.
 export async function deleteProposal(id: string, eventSlug: string) {
   try {
+    const proposal = await getRepositories().sessionProposals.findById(id);
+    if (!proposal) {
+      return { error: "Proposal not found" };
+    }
+
+    if (proposal.hosts.length > 0) {
+      const actor = await verifiedCurrentUser(await cookies());
+      if (!actor || !proposal.hosts.some((h) => h.id === actor)) {
+        return {
+          error:
+            "Only a host may delete this proposal — switch to your name first",
+        };
+      }
+    }
+
     await getRepositories().sessionProposals.delete(id);
     revalidatePath(`/${eventSlug}/proposals`);
   } catch (error) {

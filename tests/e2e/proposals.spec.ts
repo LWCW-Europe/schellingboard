@@ -1,5 +1,6 @@
 import { test, expect } from "./helpers/fixtures";
 import { loginAndGoto, login } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
 
 test("should auto-focus the title input for new proposals", async ({
   page,
@@ -115,6 +116,52 @@ test("should delete a proposal from its edit page", async ({ page }) => {
   await page.reload();
   await expect(
     page.getByRole("row", { name: new RegExp(proposalTitle) })
+  ).toHaveCount(0);
+});
+
+test("a non-host cannot edit or delete another guest's proposal", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Alpha/proposals");
+  const proposalTitle = `Playwright Ownership Proposal ${Date.now()}`;
+
+  // Alice creates a proposal; she's prefilled as its only host.
+  await selectUser(page, /Alice Test/i);
+  await page.getByRole("link", { name: /Add Proposal/i }).click();
+  await page.getByLabel("Title").fill(proposalTitle);
+  await expect(page.getByRole("main").getByText("Alice Test")).toBeVisible();
+  await Promise.all([
+    page.waitForURL(/\/Conference-Alpha\/proposals$/),
+    page.getByRole("button", { name: /Submit/i }).click(),
+  ]);
+  const row = page.getByRole("row", { name: new RegExp(proposalTitle) });
+  await expect(row).toBeVisible();
+  await row.getByRole("button", { name: /Edit/i }).click();
+  await expect(
+    page.getByRole("heading", { name: /Edit Session Proposal/i })
+  ).toBeVisible();
+  const editUrl = page.url();
+
+  // Bob switches in; the list no longer offers him an Edit affordance...
+  await selectUser(page, /Bob Test/i);
+  await expect(
+    page.getByRole("button", { name: "Your name: Bob Test" })
+  ).toBeVisible();
+  await page.getByRole("link", { name: /Back to Proposals/i }).click();
+  await page.waitForURL(/\/Conference-Alpha\/proposals$/);
+  await expect(
+    page.getByRole("row", { name: new RegExp(proposalTitle) })
+  ).not.toContainText("Edit");
+
+  // ...and revisiting the edit page directly (e.g. via browser history) is
+  // refused server-side too, not just hidden from the UI.
+  await page.goto(editUrl);
+  await expect(
+    page.getByText(/Only a host of this proposal can edit it/i)
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Edit Session Proposal/i })
   ).toHaveCount(0);
 });
 

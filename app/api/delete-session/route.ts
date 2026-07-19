@@ -1,9 +1,11 @@
+import type { NextRequest } from "next/server";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 
 export const dynamic = "force-dynamic"; // defaults to auto
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const { id } = (await req.json()) as { id: string };
   const repos = getRepositories();
 
@@ -22,6 +24,14 @@ export async function POST(req: Request) {
 
   if (session.adminManaged || session.blocker) {
     return new Response("Cannot delete via web app", { status: 400 });
+  }
+
+  const actor = await verifiedCurrentUser(req.cookies);
+  if (!actor || !session.hosts.some((h) => h.id === actor)) {
+    return Response.json(
+      { error: "Only a host may delete this session" },
+      { status: 403 }
+    );
   }
 
   try {

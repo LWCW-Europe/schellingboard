@@ -1,7 +1,27 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+}));
+
+const cookieJar = new Map<string, string>();
+
+vi.mock("next/headers", () => ({
+  cookies: () =>
+    Promise.resolve({
+      get: (name: string) => {
+        const value = cookieJar.get(name);
+        return value === undefined ? undefined : { name, value };
+      },
+    }),
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
@@ -11,10 +31,20 @@ import {
   createProposal as createProposalFixture,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
+import { createUserAuthCookie, USER_AUTH_COOKIE_NAME } from "@/utils/auth";
 import {
   createProposal,
   updateProposal,
 } from "@/app/(site)/[eventSlug]/proposals/actions";
+
+const VALID_SECRET = "0123456789abcdef0123456789abcdef";
+
+async function protectGuest(guestId: string): Promise<void> {
+  await getRepositories().guests.setAuthProtection(guestId, {
+    authProtected: true,
+    passwordHash: null,
+  });
+}
 
 function proposalForm(fields: Record<string, string | string[]>): FormData {
   const fd = new FormData();
@@ -30,7 +60,12 @@ function proposalForm(fields: Record<string, string | string[]>): FormData {
 
 describe("createProposal", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => resetTestDb());
+  beforeEach(() => {
+    resetTestDb();
+    cookieJar.clear();
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+  });
+  afterEach(() => vi.unstubAllEnvs());
 
   it("creates a proposal with hosts and duration, readable via listByEvent", async () => {
     const event = await createEvent();
@@ -100,11 +135,64 @@ describe("createProposal", () => {
     );
     expect(result).toHaveProperty("error");
   });
+
+  it("rejects creating as a protected guest without a verified session", async () => {
+    const event = await createEvent();
+    const guest = await createGuest({ name: "Host", eventId: event.id });
+    await protectGuest(guest.id);
+    cookieJar.set("user", guest.id);
+
+    const result = await createProposal(
+      proposalForm({
+        event: event.id,
+        eventSlug: "test-event",
+        title: "My Proposal",
+        hosts: [guest.id],
+      })
+    );
+    expect(result).toHaveProperty("error");
+
+    const proposals = await getRepositories().sessionProposals.listByEvent(
+      event.id
+    );
+    expect(proposals).toHaveLength(0);
+  });
+
+  it("creates as a protected guest with a verified session", async () => {
+    const event = await createEvent();
+    const guest = await createGuest({ name: "Host", eventId: event.id });
+    await protectGuest(guest.id);
+    cookieJar.set("user", guest.id);
+    cookieJar.set(
+      USER_AUTH_COOKIE_NAME,
+      (await createUserAuthCookie(guest.id)).value
+    );
+
+    const result = await createProposal(
+      proposalForm({
+        event: event.id,
+        eventSlug: "test-event",
+        title: "My Proposal",
+        hosts: [guest.id],
+      })
+    );
+    expect(result).toEqual({ success: true });
+
+    const proposals = await getRepositories().sessionProposals.listByEvent(
+      event.id
+    );
+    expect(proposals).toHaveLength(1);
+  });
 });
 
 describe("updateProposal", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => resetTestDb());
+  beforeEach(() => {
+    resetTestDb();
+    cookieJar.clear();
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+  });
+  afterEach(() => vi.unstubAllEnvs());
 
   it("updates title, description, hosts, and duration", async () => {
     const event = await createEvent();
@@ -114,6 +202,7 @@ describe("updateProposal", () => {
       title: "Original",
       durationMinutes: 30,
     });
+    cookieJar.set("user", alice.id);
 
     const result = await updateProposal(
       proposal.id,
@@ -146,6 +235,7 @@ describe("updateProposal", () => {
     const proposal = await createProposalFixture(event.id, [host.id], {
       durationMinutes: 60,
     });
+    cookieJar.set("user", host.id);
 
     const result = await updateProposal(
       proposal.id,
@@ -187,6 +277,7 @@ describe("updateProposal", () => {
     const alice = await createGuest({ name: "Alice", eventId: event.id });
     const outsider = await createGuest({ name: "Outsider" }); // not assigned
     const proposal = await createProposalFixture(event.id, [alice.id]);
+    cookieJar.set("user", alice.id);
 
     const result = await updateProposal(
       proposal.id,
@@ -202,5 +293,109 @@ describe("updateProposal", () => {
       proposal.id
     );
     expect(after?.hosts.map((h) => h.id)).toEqual([alice.id]);
+  });
+
+  it("rejects a non-host attempting to edit", async () => {
+    const event = await createEvent();
+    const host = await createGuest({ name: "Host", eventId: event.id });
+    const nonHost = await createGuest({ name: "NonHost", eventId: event.id });
+    const proposal = await createProposalFixture(event.id, [host.id], {
+      title: "Original",
+    });
+    cookieJar.set("user", nonHost.id);
+
+    const result = await updateProposal(
+      proposal.id,
+      proposalForm({ eventSlug: "test-event", title: "Hijacked" })
+    );
+    expect(result).toHaveProperty("error");
+
+    const after = await getRepositories().sessionProposals.findById(
+      proposal.id
+    );
+    expect(after?.title).toBe("Original");
+  });
+
+  it("rejects editing with no acting guest at all", async () => {
+    const event = await createEvent();
+    const host = await createGuest({ name: "Host", eventId: event.id });
+    const proposal = await createProposalFixture(event.id, [host.id], {
+      title: "Original",
+    });
+
+    const result = await updateProposal(
+      proposal.id,
+      proposalForm({ eventSlug: "test-event", title: "Hijacked" })
+    );
+    expect(result).toHaveProperty("error");
+
+    const after = await getRepositories().sessionProposals.findById(
+      proposal.id
+    );
+    expect(after?.title).toBe("Original");
+  });
+
+  it("allows anyone to edit a hostless proposal", async () => {
+    const event = await createEvent();
+    const proposal = await createProposalFixture(event.id, [], {
+      title: "Unclaimed",
+    });
+
+    const result = await updateProposal(
+      proposal.id,
+      proposalForm({ eventSlug: "test-event", title: "Claimed by nobody" })
+    );
+    expect(result).toEqual({ success: true });
+
+    const after = await getRepositories().sessionProposals.findById(
+      proposal.id
+    );
+    expect(after?.title).toBe("Claimed by nobody");
+  });
+
+  it("rejects a protected host without a verified session", async () => {
+    const event = await createEvent();
+    const host = await createGuest({ name: "Host", eventId: event.id });
+    await protectGuest(host.id);
+    const proposal = await createProposalFixture(event.id, [host.id], {
+      title: "Original",
+    });
+    cookieJar.set("user", host.id);
+
+    const result = await updateProposal(
+      proposal.id,
+      proposalForm({ eventSlug: "test-event", title: "Hijacked" })
+    );
+    expect(result).toHaveProperty("error");
+
+    const after = await getRepositories().sessionProposals.findById(
+      proposal.id
+    );
+    expect(after?.title).toBe("Original");
+  });
+
+  it("accepts a protected host with a verified session", async () => {
+    const event = await createEvent();
+    const host = await createGuest({ name: "Host", eventId: event.id });
+    await protectGuest(host.id);
+    const proposal = await createProposalFixture(event.id, [host.id], {
+      title: "Original",
+    });
+    cookieJar.set("user", host.id);
+    cookieJar.set(
+      USER_AUTH_COOKIE_NAME,
+      (await createUserAuthCookie(host.id)).value
+    );
+
+    const result = await updateProposal(
+      proposal.id,
+      proposalForm({ eventSlug: "test-event", title: "Renamed" })
+    );
+    expect(result).toEqual({ success: true });
+
+    const after = await getRepositories().sessionProposals.findById(
+      proposal.id
+    );
+    expect(after?.title).toBe("Renamed");
   });
 });

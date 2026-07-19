@@ -5,6 +5,13 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("next/headers", () => ({
+  cookies: () =>
+    Promise.resolve({
+      get: () => undefined,
+    }),
+}));
+
 vi.mock("@/utils/mailer", () => ({
   sendMail: vi.fn(),
 }));

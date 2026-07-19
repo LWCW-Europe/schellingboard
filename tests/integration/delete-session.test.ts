@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/utils/mailer", () => ({
@@ -13,10 +21,20 @@ import {
   createDay,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
+import { createUserAuthCookie } from "@/utils/auth";
 import { POST as addPOST } from "@/app/api/add-session/route";
 import { POST } from "@/app/api/delete-session/route";
 import type { SessionParams } from "@/app/api/session-form-utils";
 import type { Day, Guest, Location } from "@/db/repositories/interfaces";
+
+const VALID_SECRET = "0123456789abcdef0123456789abcdef";
+
+async function protectGuest(guestId: string): Promise<void> {
+  await getRepositories().guests.setAuthProtection(guestId, {
+    authProtected: true,
+    passwordHash: null,
+  });
+}
 
 function makeAddReq(payload: unknown): NextRequest {
   return new NextRequest("http://test/api/add-session", {
@@ -25,10 +43,30 @@ function makeAddReq(payload: unknown): NextRequest {
   });
 }
 
-function makeDeleteReq(id: string): Request {
-  return new Request("http://test/api/delete-session", {
+function makeDeleteReq(
+  id: string,
+  opts?: { editorGuestId?: string }
+): NextRequest {
+  return new NextRequest("http://test/api/delete-session", {
     method: "POST",
     body: JSON.stringify({ id }),
+    headers: opts?.editorGuestId
+      ? { cookie: `user=${opts.editorGuestId}` }
+      : undefined,
+  });
+}
+
+async function makeDeleteReqWithAuthCookie(
+  id: string,
+  editorGuestId: string
+): Promise<NextRequest> {
+  const authCookie = await createUserAuthCookie(editorGuestId);
+  return new NextRequest("http://test/api/delete-session", {
+    method: "POST",
+    body: JSON.stringify({ id }),
+    headers: {
+      cookie: `user=${editorGuestId}; ${authCookie.name}=${authCookie.value}`,
+    },
   });
 }
 
@@ -60,7 +98,11 @@ async function createScheduledSession(
 
 describe("POST /api/delete-session", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => resetTestDb());
+  beforeEach(() => {
+    resetTestDb();
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+  });
+  afterEach(() => vi.unstubAllEnvs());
 
   it("deleted session is absent from listByEvent", async () => {
     const event = await createEvent({ phase: "scheduling" });
@@ -70,7 +112,7 @@ describe("POST /api/delete-session", () => {
 
     const id = await createScheduledSession(event.id, guest, location, day);
 
-    const res = await POST(makeDeleteReq(id));
+    const res = await POST(makeDeleteReq(id, { editorGuestId: guest.id }));
     expect(res.ok).toBe(true);
 
     const sessions = await getRepositories().sessions.listByEvent(event.id);
@@ -98,7 +140,9 @@ describe("POST /api/delete-session", () => {
       eventId: event.id,
     });
 
-    const res = await POST(makeDeleteReq(created.id));
+    const res = await POST(
+      makeDeleteReq(created.id, { editorGuestId: guest.id })
+    );
     expect(res.status).toBe(403);
 
     const still = await getRepositories().sessions.findById(created.id);
@@ -123,10 +167,71 @@ describe("POST /api/delete-session", () => {
     const before = await getRepositories().rsvps.listByGuest(attendee.id);
     expect(before).toHaveLength(1);
 
-    const res = await POST(makeDeleteReq(sessionId));
+    const res = await POST(
+      makeDeleteReq(sessionId, { editorGuestId: host.id })
+    );
     expect(res.ok).toBe(true);
 
     const after = await getRepositories().rsvps.listByGuest(attendee.id);
     expect(after).toHaveLength(0);
+  });
+
+  it("rejects a non-host attempting to delete", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const nonHost = await createGuest({ eventId: event.id });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(makeDeleteReq(id, { editorGuestId: nonHost.id }));
+    expect(res.status).toBe(403);
+
+    const still = await getRepositories().sessions.findById(id);
+    expect(still).toBeDefined();
+  });
+
+  it("rejects deleting with no acting guest at all", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(makeDeleteReq(id));
+    expect(res.status).toBe(403);
+
+    const still = await getRepositories().sessions.findById(id);
+    expect(still).toBeDefined();
+  });
+
+  it("rejects a protected host without a verified session", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    await protectGuest(host.id);
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(makeDeleteReq(id, { editorGuestId: host.id }));
+    expect(res.status).toBe(403);
+
+    const still = await getRepositories().sessions.findById(id);
+    expect(still).toBeDefined();
+  });
+
+  it("accepts a protected host with a verified session", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    await protectGuest(host.id);
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(await makeDeleteReqWithAuthCookie(id, host.id));
+    expect(res.ok).toBe(true);
+
+    const gone = await getRepositories().sessions.findById(id);
+    expect(gone).toBeUndefined();
   });
 });

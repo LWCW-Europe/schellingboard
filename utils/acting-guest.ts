@@ -79,3 +79,21 @@ export async function verifiedCurrentUser(
   );
   return verified ? currentUser : null;
 }
+
+/**
+ * True unless the `user` cookie claims a protected guest without a verified
+ * session. Unlike verifiedCurrentUser, an absent `user` cookie doesn't fail
+ * this check — there's no protected identity being claimed, so there's
+ * nothing to verify. For creation endpoints, which have no existing object
+ * to check ownership against.
+ */
+export async function actingUserIsVerified(
+  cookieStore: ReadonlyCookies
+): Promise<boolean> {
+  const currentUser = cookieStore.get("user")?.value;
+  if (!currentUser) return true;
+  return isVerifiedAsGuest(
+    currentUser,
+    cookieStore.get(USER_AUTH_COOKIE_NAME)?.value
+  );
+}

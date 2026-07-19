@@ -37,6 +37,13 @@ export async function POST(req: NextRequest) {
   if (prevSession.adminManaged || prevSession.blocker) {
     return new Response("Cannot edit via web app", { status: 400 });
   }
+  const actor = await verifiedCurrentUser(req.cookies);
+  if (!actor || !prevSession.hosts.some((h) => h.id === actor)) {
+    return Response.json(
+      { error: "Only a host may edit this session" },
+      { status: 403 }
+    );
+  }
   const eventGuestIds = new Set(
     (await repos.guests.listByEvent(event.id)).map((g) => g.id)
   );
@@ -58,18 +65,15 @@ export async function POST(req: NextRequest) {
       return Response.error();
     }
 
-    // Verified so notifications can't attribute the change to a protected
-    // guest someone merely claims to be.
-    const changedById = await verifiedCurrentUser(req.cookies);
     await notifyCohostsAdded({
       session: updated,
       previousHostIds: prevSession.hosts.map((h) => h.id),
-      changedById,
+      changedById: actor,
     });
     await notifySessionChanged({
       before: prevSession,
       after: updated,
-      changedById,
+      changedById: actor,
     });
     return Response.json({ success: true });
   } else {

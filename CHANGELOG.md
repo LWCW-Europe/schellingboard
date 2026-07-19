@@ -28,6 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Hosts can no longer RSVP to their own session**: this was already prevented everywhere in the interface, but a direct request could still add the RSVP
 - **Alphabetical sorting ignores case**: attendee, session, and proposal lists now sort names and titles case-insensitively, so e.g. "bob" no longer sorts after "Zoe"
 - **"Back to attendees" keeps your place**: returning from an attendee's profile now goes back to the same page, search, and filter you were viewing, instead of resetting to the top of the list
+- **Session and proposal editing is now enforced everywhere, not just hidden in the interface**: only a session or proposal's hosts (or, for an unclaimed proposal, anyone) can create, edit, or delete it — previously the interface hid those actions from everyone else, but a direct request could still make the change. Creating or editing as a protected name now always requires that name's password or emailed code, matching the rule already documented
 
 ### Internal
 
