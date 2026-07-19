@@ -81,10 +81,11 @@ async function addSessionIn(phase: "proposal" | "voting" | "scheduling") {
 
 async function proposeIn(phase: "proposal" | "voting" | "scheduling") {
   const event = await createEvent({ phase });
-  const fd = new FormData();
-  fd.set("event", event.id);
-  fd.set("eventSlug", "test-event");
-  fd.set("title", "Late Proposal");
+  const fd = {
+    eventId: event.id,
+    eventSlug: "test-event",
+    title: "Late Proposal",
+  };
   const result = await createProposal(fd);
   const proposals = await getRepositories().sessionProposals.listByEvent(
     event.id
