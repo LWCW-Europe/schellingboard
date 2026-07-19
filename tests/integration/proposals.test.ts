@@ -16,18 +16,6 @@ import {
   updateProposal,
 } from "@/app/(site)/[eventSlug]/proposals/actions";
 
-function proposalForm(fields: Record<string, string | string[]>): FormData {
-  const fd = new FormData();
-  for (const [key, value] of Object.entries(fields)) {
-    if (Array.isArray(value)) {
-      for (const v of value) fd.append(key, v);
-    } else {
-      fd.set(key, value);
-    }
-  }
-  return fd;
-}
-
 describe("createProposal", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());
@@ -36,16 +24,14 @@ describe("createProposal", () => {
     const event = await createEvent();
     const host = await createGuest({ name: "Host", eventId: event.id });
 
-    const result = await createProposal(
-      proposalForm({
-        event: event.id,
-        eventSlug: "test-event",
-        title: "My Proposal",
-        description: "A description",
-        hosts: [host.id],
-        durationMinutes: "60",
-      })
-    );
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "My Proposal",
+      description: "A description",
+      hostIds: [host.id],
+      durationMinutes: 60,
+    });
     expect(result).toEqual({ success: true });
 
     const proposals = await getRepositories().sessionProposals.listByEvent(
@@ -64,14 +50,12 @@ describe("createProposal", () => {
     const event = await createEvent();
     const outsider = await createGuest({ name: "Outsider" }); // not assigned
 
-    const result = await createProposal(
-      proposalForm({
-        event: event.id,
-        eventSlug: "test-event",
-        title: "My Proposal",
-        hosts: [outsider.id],
-      })
-    );
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "My Proposal",
+      hostIds: [outsider.id],
+    });
     expect(result).toHaveProperty("error");
 
     const proposals = await getRepositories().sessionProposals.listByEvent(
@@ -83,9 +67,11 @@ describe("createProposal", () => {
   it("rejects a missing title and leaves the event's proposals unchanged", async () => {
     const event = await createEvent();
 
-    const result = await createProposal(
-      proposalForm({ event: event.id, eventSlug: "test-event", title: "" })
-    );
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "",
+    });
     expect(result).toHaveProperty("error");
 
     const proposals = await getRepositories().sessionProposals.listByEvent(
@@ -95,9 +81,10 @@ describe("createProposal", () => {
   });
 
   it("rejects a missing event", async () => {
-    const result = await createProposal(
-      proposalForm({ eventSlug: "test-event", title: "No Event" })
-    );
+    const result = await createProposal({
+      eventSlug: "test-event",
+      title: "No Event",
+    } as never);
     expect(result).toHaveProperty("error");
   });
 });
@@ -115,16 +102,13 @@ describe("updateProposal", () => {
       durationMinutes: 30,
     });
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({
-        eventSlug: "test-event",
-        title: "Updated",
-        description: "New description",
-        hosts: [alice.id, bob.id],
-        durationMinutes: "90",
-      })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "Updated",
+      description: "New description",
+      hostIds: [alice.id, bob.id],
+      durationMinutes: 90,
+    });
     expect(result).toEqual({ success: true });
 
     const after = await getRepositories().sessionProposals.findById(
@@ -147,14 +131,11 @@ describe("updateProposal", () => {
       durationMinutes: 60,
     });
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({
-        eventSlug: "test-event",
-        title: proposal.title,
-        durationMinutes: "",
-      })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: proposal.title,
+      durationMinutes: undefined,
+    });
     expect(result).toEqual({ success: true });
 
     const after = await getRepositories().sessionProposals.findById(
@@ -170,10 +151,10 @@ describe("updateProposal", () => {
       title: "Keep Me",
     });
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({ eventSlug: "test-event", title: "" })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "",
+    });
     expect(result).toHaveProperty("error");
 
     const after = await getRepositories().sessionProposals.findById(
@@ -188,14 +169,11 @@ describe("updateProposal", () => {
     const outsider = await createGuest({ name: "Outsider" }); // not assigned
     const proposal = await createProposalFixture(event.id, [alice.id]);
 
-    const result = await updateProposal(
-      proposal.id,
-      proposalForm({
-        eventSlug: "test-event",
-        title: proposal.title,
-        hosts: [outsider.id],
-      })
-    );
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: proposal.title,
+      hostIds: [outsider.id],
+    });
     expect(result).toHaveProperty("error");
 
     const after = await getRepositories().sessionProposals.findById(

@@ -3,23 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import { z } from "zod";
+import { sessionProposalSchema } from "@/model/session";
 
-export async function createProposal(formData: FormData) {
-  const eventId = formData.get("event") as string;
-  const eventSlug = formData.get("eventSlug") as string;
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string;
-  const hostIds = formData.getAll("hosts") as string[];
-  const durationMinutes =
-    parseInt(formData.get("durationMinutes") as string) || undefined;
+export async function createProposal(
+  sessionProposal: z.input<typeof sessionProposalSchema>
+): Promise<{ error: string | z.core.$ZodIssue[] } | { success: true }>;
 
-  if (!title) {
-    return { error: "Title is required" };
+export async function createProposal(
+  input: unknown
+): Promise<{ error: string | z.core.$ZodIssue[] } | { success: true }> {
+  const parseResult = await sessionProposalSchema.safeParseAsync(input);
+  if (!parseResult.success) {
+    return { error: parseResult.error.issues };
   }
 
-  if (!eventId) {
-    return { error: "Event is required" };
-  }
+  const {
+    data: { eventId, eventSlug, title, description, hostIds, durationMinutes },
+  } = parseResult;
 
   try {
     // Mirrors the UI: proposals may be added during the proposal and voting
@@ -33,7 +34,16 @@ export async function createProposal(formData: FormData) {
       (await getRepositories().guests.listByEvent(eventId)).map((g) => g.id)
     );
     if (!hostIds.every((id) => eventGuestIds.has(id))) {
-      return { error: "A host is not part of this event" };
+      return {
+        error: [
+          {
+            code: "custom",
+            path: ["hostIds"],
+            message: "A host is not part of this event",
+            input: hostIds,
+          },
+        ],
+      };
     }
 
     await getRepositories().sessionProposals.create({
@@ -56,19 +66,24 @@ export async function createProposal(formData: FormData) {
 // proposal), not by phase, so hosts can still fix up or withdraw their own
 // proposal after scheduling starts. Adding a phase gate here would make the
 // server reject an action the UI still offers.
-export async function updateProposal(id: string, formData: FormData) {
-  const eventSlug = formData.get("eventSlug") as string;
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string;
-  const hostIds = formData.getAll("hosts") as string[];
-  const durationMinutesRaw = formData.get("durationMinutes") as string;
-  const durationMinutes = durationMinutesRaw
-    ? parseInt(durationMinutesRaw) || null
-    : null;
-
-  if (!title) {
-    return { error: "Title is required" };
+export async function updateProposal(
+  id: string,
+  sessionProposal: Partial<z.input<typeof sessionProposalSchema>>
+): Promise<{ error: string | z.core.$ZodIssue[] } | { success: true }>;
+export async function updateProposal(
+  id: string,
+  input: unknown
+): Promise<{ error: string | z.core.$ZodIssue[] } | { success: true }> {
+  const parseResult = await sessionProposalSchema
+    .partial()
+    .safeParseAsync(input);
+  if (!parseResult.success) {
+    return { error: parseResult.error.issues };
   }
+
+  const {
+    data: { eventSlug, title, description, hostIds, durationMinutes },
+  } = parseResult;
 
   try {
     const proposal = await getRepositories().sessionProposals.findById(id);
@@ -81,8 +96,17 @@ export async function updateProposal(id: string, formData: FormData) {
         (g) => g.id
       )
     );
-    if (!hostIds.every((hostId) => eventGuestIds.has(hostId))) {
-      return { error: "A host is not part of this event" };
+    if (hostIds && !hostIds.every((hostId) => eventGuestIds.has(hostId))) {
+      return {
+        error: [
+          {
+            code: "custom",
+            path: ["hostIds"],
+            message: "A host is not part of this event",
+            input: hostIds,
+          },
+        ],
+      };
     }
 
     await getRepositories().sessionProposals.update(id, {
