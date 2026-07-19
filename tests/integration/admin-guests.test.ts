@@ -141,7 +141,15 @@ describe("admin guest actions", () => {
         name: "  ",
         email: "alice@test.example",
       });
-      expect(result).toEqual({ ok: false, error: "Name is required" });
+      expect(result).toMatchObject({
+        ok: false,
+        error: [
+          {
+            path: ["name"],
+            message: "Name is required",
+          },
+        ],
+      });
     });
 
     it("rejects an invalid email", async () => {
@@ -149,7 +157,15 @@ describe("admin guest actions", () => {
         name: "Alice",
         email: "not-an-email",
       });
-      expect(result).toEqual({ ok: false, error: "Invalid email address" });
+      expect(result).toMatchObject({
+        ok: false,
+        error: [
+          {
+            path: ["email"],
+            message: "Invalid email address",
+          },
+        ],
+      });
     });
 
     it("rejects a duplicate email", async () => {
@@ -158,9 +174,15 @@ describe("admin guest actions", () => {
         name: "Alice",
         email: "taken@test.example",
       });
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         ok: false,
-        error: "A user with this email already exists",
+        error: [
+          {
+            code: "custom",
+            path: ["email"],
+            message: "A user with this email already exists",
+          },
+        ],
       });
     });
   });
@@ -199,9 +221,14 @@ describe("admin guest actions", () => {
         name: "Name",
         email: "taken@test.example",
       });
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         ok: false,
-        error: "A user with this email already exists",
+        error: [
+          {
+            path: ["email"],
+            message: "A user with this email already exists",
+          },
+        ],
       });
     });
 
