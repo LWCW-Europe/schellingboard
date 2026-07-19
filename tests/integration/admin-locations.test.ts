@@ -42,6 +42,8 @@ import {
   moveLocationAction,
 } from "@/app/actions/admin-locations";
 import { createImageFile } from "@/tests/helpers/utils";
+import { locationSchema } from "@/model/location";
+import z from "zod";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef"; // 32 chars
 
@@ -50,19 +52,12 @@ async function loginAsAdmin() {
   cookieJar.set(c.name, c.value);
 }
 
-function locationFormData(
-  overrides: Record<string, string | File> = {}
-): FormData {
-  const formData = new FormData();
-  formData.set("name", "Main Hall");
-  formData.set("description", "The big one");
-  formData.set("capacity", "50");
-  formData.set("color", "teal");
-  for (const [key, value] of Object.entries(overrides)) {
-    formData.set(key, value);
-  }
-  return formData;
-}
+const baseLocationData = {
+  name: "Main Hall",
+  description: "The big one",
+  capacity: 50,
+  color: "teal",
+} satisfies Partial<z.input<typeof locationSchema>>;
 
 async function makeImageFile(
   width: number,
@@ -96,14 +91,16 @@ describe("admin location actions", () => {
     it("rejects all actions without an admin cookie", async () => {
       const location = await createLocation();
       cookieJar.clear();
-      expect(await createLocationAction(locationFormData())).toEqual({
+      expect(await createLocationAction(baseLocationData as never)).toEqual({
         ok: false,
         error: "Unauthorized",
       });
       expect(
-        await updateLocationAction(
-          locationFormData({ id: location.id, name: "Hacked" })
-        )
+        await updateLocationAction({
+          ...baseLocationData,
+          id: location.id,
+          name: "Hacked",
+        })
       ).toEqual({ ok: false, error: "Unauthorized" });
       expect(await deleteLocationAction({ id: location.id })).toEqual({
         ok: false,
@@ -119,11 +116,12 @@ describe("admin location actions", () => {
 
   describe("createLocationAction", () => {
     it("creates a location with all fields", async () => {
-      const formData = locationFormData({
+      const formData = {
+        ...baseLocationData,
         areaDescription: "First floor",
-        hidden: "on",
-        bookable: "on",
-      });
+        hidden: true,
+        bookable: true,
+      };
       const result = await createLocationAction(formData);
       expect(result).toEqual({ ok: true });
 
@@ -142,18 +140,19 @@ describe("admin location actions", () => {
     });
 
     it("coerces an invalid colour to the default palette name", async () => {
-      const result = await createLocationAction(
-        locationFormData({ color: "#aabbcc" })
-      );
-      expect(result).toEqual({ ok: true });
+      const result = await createLocationAction({
+        ...baseLocationData,
+        color: "#aabbcc",
+      });
+      expect(result).toMatchObject({ ok: true });
 
       const [created] = await getRepositories().locations.list();
       expect(created.color).toBe("slate");
     });
 
     it("appends new locations at the end of the sort order", async () => {
-      await createLocationAction(locationFormData({ name: "A" }));
-      await createLocationAction(locationFormData({ name: "B" }));
+      await createLocationAction({ ...baseLocationData, name: "A" });
+      await createLocationAction({ ...baseLocationData, name: "B" });
       const all = await getRepositories().locations.list();
       expect(all.map((l) => l.name)).toEqual(["A", "B"]);
       expect(all[1].sortIndex).toBeGreaterThan(all[0].sortIndex);
@@ -161,8 +160,10 @@ describe("admin location actions", () => {
 
     it("assigns the location to the given events", async () => {
       const event = await createEvent();
-      const formData = locationFormData();
-      formData.append("eventIds", event.id);
+      const formData = {
+        ...baseLocationData,
+        eventIds: [event.id],
+      };
       const result = await createLocationAction(formData);
       expect(result).toEqual({ ok: true });
 
@@ -172,34 +173,50 @@ describe("admin location actions", () => {
     });
 
     it("rejects unknown event ids", async () => {
-      const formData = locationFormData();
-      formData.append("eventIds", "no-such-event");
+      const formData = {
+        ...baseLocationData,
+        eventIds: ["no-such-event"],
+      };
       const result = await createLocationAction(formData);
-      expect(result).toEqual({ ok: false, error: "Unknown event" });
+      expect(result).toMatchObject({
+        ok: false,
+        error: [{ message: "Unknown event", path: ["eventIds"] }],
+      });
       expect(await getRepositories().locations.list()).toEqual([]);
     });
 
     it("requires a name", async () => {
-      const result = await createLocationAction(
-        locationFormData({ name: "  " })
-      );
-      expect(result).toEqual({ ok: false, error: "Name is required" });
+      const result = await createLocationAction({
+        ...baseLocationData,
+        name: "  ",
+      });
+      expect(result).toMatchObject({
+        ok: false,
+        error: [{ message: "Name is required", path: ["name"] }],
+      });
     });
 
     it("rejects a negative capacity", async () => {
-      const result = await createLocationAction(
-        locationFormData({ capacity: "-1" })
-      );
-      expect(result).toEqual({
+      const result = await createLocationAction({
+        ...baseLocationData,
+        capacity: -1,
+      });
+      expect(result).toMatchObject({
         ok: false,
-        error: "Capacity must be a non-negative whole number",
+        error: [
+          {
+            message: "Capacity must be a non-negative whole number",
+            path: ["capacity"],
+          },
+        ],
       });
     });
 
     it("accepts a capacity of 0", async () => {
-      const result = await createLocationAction(
-        locationFormData({ capacity: "0" })
-      );
+      const result = await createLocationAction({
+        ...baseLocationData,
+        capacity: 0,
+      });
       expect(result).toEqual({ ok: true });
 
       const [created] = await getRepositories().locations.list();
@@ -207,9 +224,10 @@ describe("admin location actions", () => {
     });
 
     it("stores a valid image and sets the imageUrl", async () => {
-      const formData = locationFormData({
+      const formData = {
+        ...baseLocationData,
         image: await makeImageFile(800, 600),
-      });
+      };
       const result = await createLocationAction(formData);
       expect(result).toEqual({ ok: true });
 
@@ -223,11 +241,12 @@ describe("admin location actions", () => {
     });
 
     it("accepts a 4:3 image whose orientation is specified by EXIF", async () => {
-      const formData = locationFormData({
+      const formData = {
+        ...baseLocationData,
         image: await createImageFile(600, 800, "image.jpg", {
           preprocess: (image) => image.jpeg().withMetadata({ orientation: 6 }),
         }),
-      });
+      };
 
       const result = await createLocationAction(formData);
 
@@ -244,12 +263,21 @@ describe("admin location actions", () => {
     });
 
     it("rejects an image with the wrong aspect ratio and creates nothing", async () => {
-      const formData = locationFormData({
+      const formData = {
+        ...baseLocationData,
         image: await makeImageFile(800, 800),
-      });
+      };
       const result = await createLocationAction(formData);
       expect(result.ok).toBe(false);
-      if (!result.ok) expect(result.error).toMatch(/4:3/);
+      if (!result.ok) {
+        expect(result.error).toMatchObject([
+          {
+            code: "custom",
+            message: /4:3/,
+            path: ["image"],
+          },
+        ]);
+      }
       expect(await getRepositories().locations.list()).toEqual([]);
     });
   });
@@ -264,12 +292,13 @@ describe("admin location actions", () => {
         imageUrl: "/media/locations/existing.png",
       });
 
-      const formData = locationFormData({
+      const formData = {
+        ...baseLocationData,
         id: location.id,
         name: "Renamed",
-        capacity: "10",
-      });
-      formData.append("eventIds", event.id);
+        capacity: 10,
+        eventIds: [event.id],
+      };
       const result = await updateLocationAction(formData);
       expect(result).toEqual({ ok: true });
 
@@ -284,10 +313,11 @@ describe("admin location actions", () => {
 
     it("replaces the image when a new one is uploaded", async () => {
       const location = await createLocation();
-      const formData = locationFormData({
+      const formData = {
+        ...baseLocationData,
         id: location.id,
         image: await makeImageFile(800, 600),
-      });
+      };
       const result = await updateLocationAction(formData);
       expect(result).toEqual({ ok: true });
 
@@ -298,9 +328,10 @@ describe("admin location actions", () => {
     });
 
     it("errors for an unknown id", async () => {
-      const result = await updateLocationAction(
-        locationFormData({ id: "does-not-exist" })
-      );
+      const result = await updateLocationAction({
+        ...baseLocationData,
+        id: "does-not-exist",
+      });
       expect(result).toEqual({ ok: false, error: "Location not found" });
     });
   });
@@ -336,9 +367,10 @@ describe("admin location actions", () => {
     });
 
     it("removes the stored image file", async () => {
-      const formData = locationFormData({
+      const formData = {
+        ...baseLocationData,
         image: await makeImageFile(800, 600),
-      });
+      };
       await createLocationAction(formData);
       const [created] = await getRepositories().locations.list();
       const imagePath = path.join(uploadsDir, "locations", `${created.id}.png`);
@@ -349,9 +381,10 @@ describe("admin location actions", () => {
     });
 
     it("keeps the image file if deleting the location record fails", async () => {
-      const formData = locationFormData({
+      const formData = {
+        ...baseLocationData,
         image: await makeImageFile(800, 600),
-      });
+      };
       await createLocationAction(formData);
       const [created] = await getRepositories().locations.list();
       const imagePath = path.join(uploadsDir, "locations", `${created.id}.png`);
@@ -370,9 +403,9 @@ describe("admin location actions", () => {
   describe("moveLocationAction", () => {
     it("moves a location up and down", async () => {
       const { locations } = getRepositories();
-      await createLocationAction(locationFormData({ name: "A" }));
-      await createLocationAction(locationFormData({ name: "B" }));
-      await createLocationAction(locationFormData({ name: "C" }));
+      await createLocationAction({ ...baseLocationData, name: "A" });
+      await createLocationAction({ ...baseLocationData, name: "B" });
+      await createLocationAction({ ...baseLocationData, name: "C" });
 
       const byName = async () => (await locations.list()).map((l) => l.name);
       const idOf = async (name: string) =>
@@ -387,8 +420,8 @@ describe("admin location actions", () => {
 
     it("ignores moves beyond the boundaries", async () => {
       const { locations } = getRepositories();
-      await createLocationAction(locationFormData({ name: "A" }));
-      await createLocationAction(locationFormData({ name: "B" }));
+      await createLocationAction({ ...baseLocationData, name: "A" });
+      await createLocationAction({ ...baseLocationData, name: "B" });
       const first = (await locations.list())[0];
 
       const result = await moveLocationAction({
