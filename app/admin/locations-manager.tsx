@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import Image from "next/image";
 import clsx from "clsx";
 import { Input } from "@/app/input";
@@ -21,6 +21,10 @@ import {
   DEFAULT_LOCATION_COLOR,
   isLocationColorName,
 } from "@/utils/location-colors";
+import { Path, useController, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { locationSchema, updateLocationSchema } from "@/model/location";
+import { z } from "zod";
 
 export type AdminLocation = {
   location: Location;
@@ -30,13 +34,25 @@ export type AdminLocation = {
 
 export type EventOption = { id: string; name: string };
 
+// A file input hands react-hook-form a FileList; the action takes a single
+// Blob. `FileList` only exists in the browser and this component is also
+// rendered on the server, so the global must only be touched at parse time
+// (inside the callback), never at module scope.
+const locationFormSchema = locationSchema.extend({
+  image: z
+    .custom<FileList>((value) => value instanceof FileList)
+    .transform((list) => list.item(0))
+    .nullable()
+    .optional(),
+});
+
 function LocationForm({
   location,
   eventIds,
   events,
   submitLabel,
   pendingLabel,
-  onSubmit,
+  action,
   onCancel,
 }: {
   location?: Location;
@@ -44,35 +60,82 @@ function LocationForm({
   events: EventOption[];
   submitLabel: string;
   pendingLabel: string;
-  onSubmit: (formData: FormData) => Promise<boolean>;
+  action: typeof createLocationAction;
   onCancel: () => void;
 }) {
-  const [isPending, startTransition] = useTransition();
-  const formRef = useRef<HTMLFormElement>(null);
-  const idPrefix = location ? `loc-${location.id}` : "loc-new";
-  const [color, setColor] = useState<string>(
+  const defaultColor =
     location && isLocationColorName(location.color)
       ? location.color
-      : DEFAULT_LOCATION_COLOR
-  );
+      : DEFAULT_LOCATION_COLOR;
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    startTransition(async () => {
-      const ok = await onSubmit(formData);
-      if (ok) formRef.current?.reset();
-    });
+  const form = useForm({
+    resolver: zodResolver(locationFormSchema),
+    defaultValues: {
+      name: location?.name ?? "",
+      capacity: location?.capacity ?? 0,
+      description: location?.description ?? "",
+      areaDescription: location?.areaDescription ?? "",
+      color: defaultColor,
+      hidden: location?.hidden ?? false,
+      bookable: location?.bookable ?? false,
+      eventIds,
+      image: null,
+    },
+  });
+
+  // The swatch only mirrors the select, so watch it rather than taking over
+  // the field: `register` below stays the single owner of the input.
+  const color = useWatch({ control: form.control, name: "color" });
+
+  // `register` on a group of same-named checkboxes only collects an array when
+  // there is more than one of them: with a single event configured it yields
+  // the bare event id (or `false` when unchecked), which the schema rejects as
+  // "expected array". Driving the group explicitly keeps it an array always.
+  const eventIdsController = useController({
+    control: form.control,
+    name: "eventIds",
+  });
+  const selectedEventIds = eventIdsController.field.value ?? [];
+
+  const idPrefix = location ? `loc-${location.id}` : "loc-new";
+
+  // The resolver hands over the schema's *output*; typing it as such is what
+  // makes TypeScript check that the form really produces what the action takes.
+  const handleSubmit = async (data: z.output<typeof locationFormSchema>) => {
+    const file = data.image;
+    if (file && file.size >= MAX_IMAGE_BYTES) {
+      form.setError("image", {
+        message: `Image exceeds ${MAX_IMAGE_BYTES / 1024 / 1024} MB limit.`,
+      });
+      return;
+    }
+
+    const result = await action(data);
+    if (!result.ok) {
+      if (typeof result.error === "string") {
+        form.setError("root", { message: result.error });
+      } else {
+        for (const issue of result.error) {
+          // A form-level issue has an empty path; setError("") would drop the
+          // message silently, so fall back to the form-wide slot.
+          const path = (issue.path.join(".") || "root") as Path<
+            z.input<typeof locationFormSchema>
+          >;
+          form.setError(path, { message: issue.message });
+        }
+      }
+    }
   };
 
   return (
     <form
-      ref={formRef}
-      onSubmit={handleSubmit}
+      // Without this the browser's own number validation (step mismatch on
+      // Capacity) blocks submit and shows a native bubble, so the per-field
+      // message below never gets a chance to render. zod owns validation here.
+      noValidate
+      onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}
       className="space-y-3 rounded-md border border-gray-200 p-4"
     >
-      {location && <input type="hidden" name="id" value={location.id} />}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <label htmlFor={`${idPrefix}-name`} className="text-sm text-gray-600">
@@ -80,11 +143,13 @@ function LocationForm({
           </label>
           <Input
             id={`${idPrefix}-name`}
-            name="name"
-            defaultValue={location?.name ?? ""}
-            required
+            error={!!form.formState.errors.name}
+            {...form.register("name")}
             className="w-full h-10"
           />
+          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+            {form.formState.errors.name?.message}
+          </span>
         </div>
         <div className="flex flex-col gap-1">
           <label
@@ -95,14 +160,16 @@ function LocationForm({
           </label>
           <Input
             id={`${idPrefix}-capacity`}
-            name="capacity"
             type="number"
             min={0}
             step={1}
-            defaultValue={location?.capacity ?? 0}
-            required
+            error={!!form.formState.errors.capacity}
+            {...form.register("capacity", { valueAsNumber: true })}
             className="w-full h-10"
           />
+          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+            {form.formState.errors.capacity?.message}
+          </span>
         </div>
       </div>
 
@@ -115,11 +182,13 @@ function LocationForm({
         </label>
         <textarea
           id={`${idPrefix}-description`}
-          name="description"
-          defaultValue={location?.description ?? ""}
+          {...form.register("description")}
           rows={2}
           className="rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
         />
+        <span className="text-xs text-rose-400 min-h-(--text-xs)">
+          {form.formState.errors.description?.message}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -129,10 +198,13 @@ function LocationForm({
           </label>
           <Input
             id={`${idPrefix}-area`}
-            name="areaDescription"
-            defaultValue={location?.areaDescription ?? ""}
+            error={!!form.formState.errors.areaDescription}
+            {...form.register("areaDescription")}
             className="w-full h-10"
           />
+          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+            {form.formState.errors.areaDescription?.message}
+          </span>
         </div>
         <div className="flex flex-col gap-1">
           <label
@@ -151,9 +223,7 @@ function LocationForm({
             />
             <select
               id={`${idPrefix}-color`}
-              name="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
+              {...form.register("color")}
               className="h-10 flex-1 rounded-md border border-gray-300 bg-white px-2 capitalize shadow-sm focus:ring-2 focus:ring-rose-400 focus:outline-0"
             >
               {LOCATION_COLOR_NAMES.map((name) => (
@@ -163,6 +233,9 @@ function LocationForm({
               ))}
             </select>
           </div>
+          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+            {form.formState.errors.color?.message}
+          </span>
         </div>
       </div>
 
@@ -170,8 +243,7 @@ function LocationForm({
         <label className="flex items-center gap-2 text-sm text-gray-600">
           <input
             type="checkbox"
-            name="hidden"
-            defaultChecked={location?.hidden ?? false}
+            {...form.register("hidden")}
             className="rounded border-gray-300 text-rose-600 focus:ring-rose-400"
           />
           Hidden
@@ -179,8 +251,7 @@ function LocationForm({
         <label className="flex items-center gap-2 text-sm text-gray-600">
           <input
             type="checkbox"
-            name="bookable"
-            defaultChecked={location?.bookable ?? false}
+            {...form.register("bookable")}
             className="rounded border-gray-300 text-rose-600 focus:ring-rose-400"
           />
           Bookable
@@ -198,15 +269,25 @@ function LocationForm({
               >
                 <input
                   type="checkbox"
-                  name="eventIds"
                   value={event.id}
-                  defaultChecked={eventIds.includes(event.id)}
+                  checked={selectedEventIds.includes(event.id)}
+                  onBlur={eventIdsController.field.onBlur}
+                  onChange={(e) =>
+                    eventIdsController.field.onChange(
+                      e.target.checked
+                        ? [...selectedEventIds, event.id]
+                        : selectedEventIds.filter((id) => id !== event.id)
+                    )
+                  }
                   className="rounded border-gray-300 text-rose-600 focus:ring-rose-400"
                 />
                 {event.name}
               </label>
             ))}
           </div>
+          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+            {form.formState.errors.eventIds?.message}
+          </span>
         </fieldset>
       )}
 
@@ -225,26 +306,38 @@ function LocationForm({
         )}
         <input
           id={`${idPrefix}-image`}
-          name="image"
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          {...form.register("image")}
           className="text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200"
         />
         <p className="text-xs text-gray-500">{IMAGE_REQUIREMENTS_HINT}</p>
+        <span className="text-xs text-rose-400 min-h-(--text-xs)">
+          {form.formState.errors.image?.message}
+        </span>
       </div>
 
-      <div className="flex gap-2">
-        <button type="submit" disabled={isPending} className={PRIMARY_BUTTON}>
-          {isPending ? pendingLabel : submitLabel}
+      <div className="flex gap-2 items-baseline">
+        <button
+          type="submit"
+          disabled={form.formState.isSubmitting}
+          className={PRIMARY_BUTTON}
+        >
+          {form.formState.isSubmitting ? pendingLabel : submitLabel}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          disabled={isPending}
+          disabled={form.formState.isSubmitting}
           className={SECONDARY_BUTTON}
         >
           Cancel
         </button>
+        {form.formState.errors.root && (
+          <p role="alert" className="text-sm text-red-600">
+            {form.formState.errors.root.message}
+          </p>
+        )}
       </div>
     </form>
   );
@@ -307,17 +400,6 @@ function DeleteConfirmation({
   );
 }
 
-// If the image is too large, NEXT.js cannot send it to the server at all.
-function validateImageWithinSizeLimit(
-  file: FormDataEntryValue | null
-): void | { error: string } {
-  if (file instanceof File && file.size >= MAX_IMAGE_BYTES) {
-    return {
-      error: `Image exceeds ${MAX_IMAGE_BYTES / 1024 / 1024} MB limit.`,
-    };
-  }
-}
-
 function LocationRow({
   adminLocation,
   events,
@@ -342,21 +424,17 @@ function LocationRow({
     });
   };
 
-  const handleUpdate = async (formData: FormData) => {
-    const imageSizeError = validateImageWithinSizeLimit(formData.get("image"));
-    if (imageSizeError) {
-      onError(imageSizeError.error);
-      return false;
+  const handleUpdate = async (formData: z.input<typeof locationSchema>) => {
+    const updateLocation: z.input<typeof updateLocationSchema> = {
+      ...formData,
+      id: location.id,
+    };
+    const result = await updateLocationAction(updateLocation);
+    if (result.ok) {
+      onError(null);
+      setMode("view");
     }
-
-    const result = await updateLocationAction(formData);
-    if (!result.ok) {
-      onError(result.error);
-      return false;
-    }
-    onError(null);
-    setMode("view");
-    return true;
+    return result;
   };
 
   if (mode === "edit") {
@@ -368,7 +446,7 @@ function LocationRow({
           events={events}
           submitLabel="Save"
           pendingLabel="Saving..."
-          onSubmit={handleUpdate}
+          action={handleUpdate}
           onCancel={() => {
             onError(null);
             setMode("view");
@@ -478,20 +556,13 @@ export function LocationsManager({
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const handleCreate = async (formData: FormData) => {
-    const imageSizeError = validateImageWithinSizeLimit(formData.get("image"));
-    if (imageSizeError) {
-      setError(imageSizeError.error);
-      return false;
-    }
+  const handleCreate = async (formData: z.input<typeof locationSchema>) => {
     const result = await createLocationAction(formData);
-    if (!result.ok) {
-      setError(result.error);
-      return false;
+    if (result.ok) {
+      setError(null);
+      setShowAddForm(false);
     }
-    setError(null);
-    setShowAddForm(false);
-    return true;
+    return result;
   };
 
   return (
@@ -508,7 +579,7 @@ export function LocationsManager({
           events={events}
           submitLabel="Add location"
           pendingLabel="Adding..."
-          onSubmit={handleCreate}
+          action={handleCreate}
           onCancel={() => {
             setError(null);
             setShowAddForm(false);

@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Footer always visible in the text and RSVP'd schedule views**: on a large screen it now stays at the bottom of the window instead of following the last session, so it no longer floats mid-page when there is little to show — the same as the proposals list. On phones it still ends the page, and the grid view keeps it at the end of the schedule, where a fixed footer would add an extra scrollbar
 - **One less click after creating/updating/deleting a session**: now goes straight back to the schedule, replacing the intermediate confirmation page with a message you dismiss when you've read it
 - **Clearer errors when adding or editing users**: the admin users page now points at the field that's wrong — "Name is required" under the name, "Invalid email address" or "A user with this email already exists" under the email — instead of showing one message above the whole list
+- **Clearer errors when adding or editing locations**: the admin locations page now points at the field that's wrong — "Name is required" under the name, "Capacity must be a non-negative whole number" under the capacity, the reason a photo was rejected under the image — instead of showing one message above the whole list
 
 ### Fixed
 

@@ -1541,6 +1541,46 @@ test.describe("Admin UI locations", () => {
   // calculations, so they must run serially.
   test.describe.configure({ mode: "serial" });
 
+  // Reaching the page through the nav only ever renders it in the browser;
+  // reloading is the one route that also renders it on the server, so it is
+  // what catches browser-only globals leaking into module scope.
+  test("renders on the server when reloaded", async ({ page }) => {
+    await adminLogin(page);
+    await gotoLocations(page);
+
+    const response = await page.reload();
+    expect(response?.status()).toBe(200);
+    await expect(
+      page.getByRole("button", { name: "New location" })
+    ).toBeVisible();
+  });
+
+  test("reports invalid fields individually", async ({ page }) => {
+    await adminLogin(page);
+    await gotoLocations(page);
+    const region = page.getByRole("region", { name: "Locations" });
+
+    await region.getByRole("button", { name: "New location" }).click();
+    await region.getByLabel("Capacity").fill("");
+    await region.getByRole("button", { name: "Add location" }).click();
+    await expect(region.getByText("Name is required")).toBeVisible();
+    await expect(
+      region.getByText("Capacity must be a non-negative whole number")
+    ).toBeVisible();
+
+    // A fractional capacity must produce the same message rather than the
+    // browser's own step-mismatch bubble.
+    await region.getByLabel("Name", { exact: true }).fill("Half a room");
+    await region.getByLabel("Capacity").fill("1.5");
+    await region.getByRole("button", { name: "Add location" }).click();
+    await expect(region.getByText("Name is required")).toBeHidden();
+    await expect(
+      region.getByText("Capacity must be a non-negative whole number")
+    ).toBeVisible();
+
+    await region.getByRole("button", { name: "Cancel" }).click();
+  });
+
   test("can create, edit, reorder, and delete locations", async ({ page }) => {
     await adminLogin(page);
     await gotoLocations(page);
