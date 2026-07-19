@@ -17,11 +17,12 @@ import { ConfirmDeletionModal } from "../modals";
 import { formatDuration, durationMinusBreak } from "@/utils/utils";
 import { slotDurationOptions } from "@/utils/slots";
 import { MarkdownHint } from "@/app/(site)/markdown";
-import { Path, useController, useForm, useWatch } from "react-hook-form";
+import { useController, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { sessionProposalSchema } from "@/model/session";
 import { z } from "zod";
 import { MarkdownTextarea } from "@/app/components/markdown-textarea";
+import { setActionErrors } from "@/utils/forms";
 
 export function SessionProposalForm(props: {
   eventID: string;
@@ -85,16 +86,7 @@ export function SessionProposalForm(props: {
       }
 
       if ("error" in result) {
-        if (typeof result.error === "string")
-          form.setError("root", { message: result.error });
-        else {
-          for (const issue of result.error) {
-            const path = issue.path.join(".") as Path<
-              z.infer<typeof sessionProposalSchema>
-            >;
-            form.setError(path, issue);
-          }
-        }
+        setActionErrors(form, result.error);
       } else {
         router.push(`/${eventSlug}/proposals`);
       }

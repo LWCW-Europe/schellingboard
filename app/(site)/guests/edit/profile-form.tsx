@@ -21,7 +21,6 @@ import { AVATAR_MAX_SIZE } from "@/utils/avatar-image-constraints";
 import clsx from "clsx";
 import {
   Controller,
-  Path,
   useController,
   useFieldArray,
   useForm,
@@ -48,6 +47,7 @@ import { ArrowPathIcon, ChevronUpDownIcon } from "@heroicons/react/16/solid";
 import { MarkdownHint } from "@/app/(site)/markdown";
 import { containsIgnoringAccents } from "@/utils/utils";
 import { MarkdownTextarea } from "@/app/components/markdown-textarea";
+import { setActionErrors } from "@/utils/forms";
 
 const profileFormSchema = profileSchema.extend({
   avatar: z.instanceof(FileList).nullable().optional(),
@@ -181,16 +181,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
     try {
       const result = await updateProfileAction(profile);
       if (!result.ok) {
-        if (typeof result.error === "string")
-          form.setError("root", { message: result.error });
-        else {
-          for (const issue of result.error) {
-            const path = issue.path.join(".") as Path<
-              z.infer<typeof profileFormSchema>
-            >;
-            form.setError(path, issue);
-          }
-        }
+        setActionErrors(form, result.error);
       } else {
         router.push(`/guests/${guest.id}`);
         router.refresh();
