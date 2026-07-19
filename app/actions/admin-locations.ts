@@ -6,110 +6,67 @@ import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import { getImageRepositories } from "@/utils/images";
 import type { Location } from "@/db/repositories/interfaces";
-import { normalizeLocationColor } from "@/utils/location-colors";
-import type { AdminActionResult } from "./admin-guests";
+import type { AdminActionResult, AdminFormActionResult } from "./admin-guests";
+import { locationSchema, updateLocationSchema } from "@/model/location";
+import { z } from "zod";
 
 async function isAdminRequest(): Promise<boolean> {
   const cookieStore = await cookies();
   return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
 }
 
-type LocationFields = {
-  name: string;
-  description: string;
-  areaDescription?: string;
-  capacity: number;
-  color: string;
-  hidden: boolean;
-  bookable: boolean;
-  eventIds: string[];
-};
-
-function formString(formData: FormData, key: string): string {
-  const value = formData.get(key);
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function parseLocationForm(
-  formData: FormData
-): { fields: LocationFields; image?: File } | { error: string } {
-  const name = formString(formData, "name");
-  if (!name) {
-    return { error: "Name is required" };
-  }
-
-  const capacity = Number(formString(formData, "capacity") || 0);
-  if (!Number.isInteger(capacity) || capacity < 0) {
-    return { error: "Capacity must be a non-negative whole number" };
-  }
-
-  const color = normalizeLocationColor(formString(formData, "color"));
-
-  const areaDescription = formString(formData, "areaDescription");
-  const imageEntry = formData.get("image");
-  const image =
-    imageEntry instanceof File && imageEntry.size > 0 ? imageEntry : undefined;
-
-  return {
-    fields: {
-      name,
-      description: formString(formData, "description"),
-      areaDescription: areaDescription || undefined,
-      capacity,
-      color,
-      hidden: formData.get("hidden") === "on",
-      bookable: formData.get("bookable") === "on",
-      eventIds: formData
-        .getAll("eventIds")
-        .filter((v): v is string => typeof v === "string"),
-    },
-    image,
-  };
-}
-
-async function validateEventIds(eventIds: string[]): Promise<string | null> {
+async function validateEventIds(eventIds: string[]): Promise<boolean> {
   const events = await getRepositories().events.list();
   const known = new Set(events.map((e) => e.id));
-  return eventIds.every((id) => known.has(id)) ? null : "Unknown event";
+  return eventIds.every((id) => known.has(id));
 }
 
 /** Reads and validates an uploaded image without storing it yet. */
 async function prepareImage(
-  image: File
-): Promise<{ buffer: Buffer; ext: string } | { error: string }> {
+  image: Blob | null | undefined,
+  ctx: z.core.$RefinementCtx<Blob | null | undefined>
+): Promise<{ buffer: Buffer; ext: string } | undefined> {
+  if (!image) return;
   const buffer = Buffer.from(await image.arrayBuffer());
   const validation = await getImageRepositories().locations.validate(buffer);
   if ("error" in validation) {
-    return validation;
+    ctx.addIssue({
+      code: "custom",
+      message: validation.error,
+    });
+    return z.NEVER;
   }
   return { buffer: validation.buffer, ext: validation.ext };
 }
 
+const validations = {
+  eventIds: locationSchema.shape.eventIds.refine(validateEventIds, {
+    message: "Unknown event",
+  }),
+  // Validate the image before creating the location so a bad upload
+  // doesn't leave a half-created record behind
+  image: locationSchema.shape.image.optional().transform(prepareImage),
+} as const;
+
+const locationValidationSchema = locationSchema.extend(validations);
+const updateLocationValidationSchema = updateLocationSchema.extend(validations);
+
 export async function createLocationAction(
-  formData: FormData
-): Promise<AdminActionResult> {
+  formData: z.input<typeof locationSchema>
+): Promise<AdminFormActionResult>;
+export async function createLocationAction(
+  formData: unknown
+): Promise<AdminFormActionResult> {
   if (!(await isAdminRequest())) {
     return { ok: false, error: "Unauthorized" };
   }
 
-  const parsed = parseLocationForm(formData);
-  if ("error" in parsed) {
-    return { ok: false, error: parsed.error };
+  const parsed = await locationValidationSchema.safeParseAsync(formData);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues };
   }
-  const { fields, image } = parsed;
+  const { image, ...fields } = parsed.data;
   const { eventIds, ...locationFields } = fields;
-
-  const eventError = await validateEventIds(eventIds);
-  if (eventError) {
-    return { ok: false, error: eventError };
-  }
-
-  // Validate the image before creating the location so a bad upload
-  // doesn't leave a half-created record behind
-  const prepared = image ? await prepareImage(image) : undefined;
-  if (prepared && "error" in prepared) {
-    return { ok: false, error: prepared.error };
-  }
 
   const { locations } = getRepositories();
   const existing = await locations.list();
@@ -124,11 +81,11 @@ export async function createLocationAction(
     sortIndex,
   });
 
-  if (prepared) {
+  if (image) {
     const imageUrl = await getImageRepositories().locations.save(
       location.id,
-      prepared.buffer,
-      prepared.ext
+      image.buffer,
+      image.ext
     );
     await locations.update(location.id, { ...location, imageUrl });
   }
@@ -139,24 +96,21 @@ export async function createLocationAction(
 }
 
 export async function updateLocationAction(
-  formData: FormData
-): Promise<AdminActionResult> {
+  formData: z.input<typeof updateLocationSchema>
+): Promise<AdminFormActionResult>;
+export async function updateLocationAction(
+  formData: unknown
+): Promise<AdminFormActionResult> {
   if (!(await isAdminRequest())) {
     return { ok: false, error: "Unauthorized" };
   }
 
-  const id = formString(formData, "id");
-  const parsed = parseLocationForm(formData);
-  if ("error" in parsed) {
-    return { ok: false, error: parsed.error };
+  const parsed = await updateLocationValidationSchema.safeParseAsync(formData);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues };
   }
-  const { fields, image } = parsed;
+  const { image, id, ...fields } = parsed.data;
   const { eventIds, ...locationFields } = fields;
-
-  const eventError = await validateEventIds(eventIds);
-  if (eventError) {
-    return { ok: false, error: eventError };
-  }
 
   const { locations } = getRepositories();
   const existing = await locations.findById(id);
@@ -166,14 +120,10 @@ export async function updateLocationAction(
 
   let imageUrl = existing.imageUrl;
   if (image) {
-    const prepared = await prepareImage(image);
-    if ("error" in prepared) {
-      return { ok: false, error: prepared.error };
-    }
     imageUrl = await getImageRepositories().locations.save(
       id,
-      prepared.buffer,
-      prepared.ext
+      image.buffer,
+      image.ext
     );
   }
 
