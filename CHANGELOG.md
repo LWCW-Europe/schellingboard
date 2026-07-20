@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- **Flaky RSVP capacity E2E test fixed**: the test left the admin panel for the site with a hard navigation immediately after saving a capacity change. That save triggers a `router.refresh`, and Firefox aborted the navigation when it started while the refresh's RSC fetch was still in flight (`NS_BINDING_ABORTED`) — failing 5 of 15 full suite runs. The existing `waitForLoadState("networkidle")` guard did not close the window, since the refresh can be scheduled just after the network goes quiet. The test now leaves via a client-side link first, which cannot abort a document load. 10 consecutive suite runs are clean
 - **More seed locations**: dev seed data now includes 5 additional locations (reading room, boardroom, auditorium, courtyard, rooftop terrace) with photos, for a more realistic local dev environment
 - **Richer seed profiles**: dev/test seed guests now come with realistic based-in, languages, contact details, and conversation-starter data, with a few guests still left blank to keep the "empty profile" case covered
 - **Configurable mailpit ports**: mailpit's host ports can now be overridden with `MAILPIT_SMTP_PORT`/`MAILPIT_UI_PORT`, so multiple project instances (e.g. separate clones or workspaces) can run on one machine without port clashes. New `make mailpit` target starts it, reading these from `.env.dev.local`; CONTRIBUTING.md documents the recommended per-clone setup
