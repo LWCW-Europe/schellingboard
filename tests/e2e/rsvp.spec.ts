@@ -124,9 +124,23 @@ test("a full session blocks further RSVPs when the event enforces capacity", asy
   await expect(
     page.getByRole("button", { name: `Edit ${sessionTitle}` })
   ).toBeVisible();
-  // Saving triggers a router.refresh; navigating away while its RSC fetch is
-  // in flight aborts it and trips the console-error guard.
-  await page.waitForLoadState("networkidle");
+  // Saving triggers a router.refresh. A document navigation started while its
+  // RSC fetch is in flight is aborted by Firefox (NS_BINDING_ABORTED), and
+  // waitForLoadState("networkidle") does not reliably close that window — the
+  // refresh can be scheduled just after the network goes quiet. Leaving via a
+  // client-side link instead is a React transition, which cannot abort a
+  // document load, and it supersedes the pending refresh. The hard navigation
+  // to the site below then starts from a settled page.
+  await page
+    .getByRole("navigation", { name: "Admin" })
+    .getByRole("link", { name: "Events" })
+    .click();
+  await expect(
+    page
+      .getByRole("listitem")
+      .filter({ hasText: "Conference Gamma" })
+      .getByRole("link", { name: "Manage" })
+  ).toBeVisible();
 
   // Bob takes the only seat.
   await page.goto("/Conference-Gamma");
