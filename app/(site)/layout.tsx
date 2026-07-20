@@ -3,11 +3,7 @@ import Footer from "../footer";
 import { UserProvider } from "./context";
 import { getRepositories } from "@/db/container";
 import { cookies } from "next/headers";
-import {
-  AUTH_COOKIE_NAME,
-  isAuthCookieValid,
-  isPasswordProtectionEnabledServer,
-} from "@/utils/auth";
+import { AUTH_COOKIE_NAME, isAuthCookieValid } from "@/utils/auth";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 
 export default async function SiteLayout({
@@ -15,7 +11,6 @@ export default async function SiteLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const passwordProtected = isPasswordProtectionEnabledServer();
   const cookieStore = await cookies();
   const authCookieValue = cookieStore.get(AUTH_COOKIE_NAME)?.value;
   const isAuthenticated = await isAuthCookieValid(authCookieValue);
@@ -42,7 +37,6 @@ export default async function SiteLayout({
       <NavBar
         navItems={navItems}
         guests={guests}
-        showLogout={passwordProtected && isAuthenticated}
         showGuestsLink={isAuthenticated}
         mapImageUrl={mapImageUrl}
       />

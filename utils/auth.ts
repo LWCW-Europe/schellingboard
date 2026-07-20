@@ -59,10 +59,6 @@ export function isPasswordProtectionEnabled(): boolean {
   return !!process.env.SITE_PASSWORD;
 }
 
-export function isPasswordProtectionEnabledServer(): boolean {
-  return !!process.env.SITE_PASSWORD;
-}
-
 export function verifyPassword(inputPassword: string): boolean {
   const sitePassword = process.env.SITE_PASSWORD;
   if (!sitePassword) {
@@ -240,6 +236,20 @@ export function createUserAuthLogoutCookie() {
     name: USER_AUTH_COOKIE_NAME,
     value: "",
     ...cookieOptions(0),
+  };
+}
+
+// The plain name-selection cookie. Deliberately not httpOnly and unsigned —
+// on its own it only selects a name; the signed USER_AUTH_COOKIE_NAME cookie
+// is what proves identity for protected guests.
+export function userSelectionCookie(guestId: string | null) {
+  return {
+    name: "user",
+    value: guestId ?? "",
+    path: "/",
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    ...(guestId === null ? { maxAge: 0 } : {}),
   };
 }
 

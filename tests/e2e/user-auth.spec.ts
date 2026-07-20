@@ -63,6 +63,31 @@ async function pickName(page: Page, name: string) {
 const headerChip = (page: Page, name: string) =>
   page.getByRole("button", { name: new RegExp(`Your name: ${name}`, "i") });
 
+test("logging out from the chip menu clears the selected name", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/");
+  await selectUser(page, /Bob Test/i);
+  await expect(headerChip(page, "Bob Test")).toBeVisible();
+
+  await page.getByRole("button", { name: /your name/i }).click();
+  await page.getByRole("menuitem", { name: "Log out" }).click();
+
+  // Logout clears the site login too, so a password-protected site
+  // re-prompts before landing on the anonymous state. Wait for the actual
+  // hard-reload navigation rather than the chip's optimistic "Select your
+  // name" text, which appears instantly on the old page before the reload
+  // lands (see openNameSwitcher).
+  await page.waitForURL((url) => url.pathname === "/login");
+  await login(page);
+  await expect(
+    page.getByRole("button", { name: "Your name", exact: true })
+  ).toBeVisible();
+  await pickName(page, "Bob Test");
+  await expect(headerChip(page, "Bob Test")).toBeVisible();
+});
+
 test("guest protects their name; switching to it then needs a password or emailed code", async ({
   page,
 }) => {
@@ -70,6 +95,10 @@ test("guest protects their name; switching to it then needs a password or emaile
     skipWithoutMailpit(),
     "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see CONTRIBUTING.md § Running tests)"
   );
+  // Many identity switches, each now a real logout-then-login round trip
+  // (see logoutAction), add up to just over the 30s default once parallel
+  // workers compete for the server.
+  test.slow();
 
   await login(page);
   await page.goto("/");

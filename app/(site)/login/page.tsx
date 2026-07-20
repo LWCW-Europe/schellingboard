@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input } from "@/app/input";
 import clsx from "clsx";
@@ -11,6 +11,16 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams?.get("redirect") || "/";
   const [state, formAction] = useActionState(loginAction, null);
+
+  // Hard reload rather than a client-side transition: the (site) layout
+  // persists across a soft navigation from /login, so it can render the
+  // destination from stale pre-login state (see logoutAction's comment for
+  // the same issue on the way out).
+  useEffect(() => {
+    if (state?.redirectTo) {
+      window.location.href = state.redirectTo;
+    }
+  }, [state]);
 
   return (
     <div className="max-w-md w-full space-y-8">

@@ -30,6 +30,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **"Back to attendees" keeps your place**: returning from an attendee's profile now goes back to the same page, search, and filter you were viewing, instead of resetting to the top of the list
 - **Session and proposal editing is now enforced everywhere, not just hidden in the interface**: only a session or proposal's hosts (or, for an unclaimed proposal, anyone) can create, edit, or delete it — previously the interface hid those actions from everyone else, but a direct request could still make the change. Creating or editing as a protected name now always requires that name's password or emailed code, matching the rule already documented
 
+### Security
+
+- **Logging out now clears your selected name too**: previously it only ended the site login, so on a shared device the next person past the password screen was still acting as whoever came before — including a still-verified protected name, selectable without a password. "Log out" in the name-chip menu is now the only way to end a session or switch names (the separate header logout button and the "Switch name" menu entry are gone); logging out then picking a new name is how you switch, and on a password-protected site that now means re-entering the password — a deliberate speed bump against casually acting as someone else on a shared device
+
 ### Internal
 
 - **Flaky RSVP capacity E2E test fixed**: the test left the admin panel for the site with a hard navigation immediately after saving a capacity change. That save triggers a `router.refresh`, and Firefox aborted the navigation when it started while the refresh's RSC fetch was still in flight (`NS_BINDING_ABORTED`) — failing 5 of 15 full suite runs. The existing `waitForLoadState("networkidle")` guard did not close the window, since the refresh can be scheduled just after the network goes quiet. The test now leaves via a client-side link first, which cannot abort a document load. 10 consecutive suite runs are clean

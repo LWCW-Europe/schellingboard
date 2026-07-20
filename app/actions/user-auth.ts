@@ -7,6 +7,7 @@ import {
   createUserAuthCookie,
   createUserAuthLogoutCookie,
   isUserAuthCookieValidFor,
+  userSelectionCookie,
   USER_AUTH_COOKIE_NAME,
 } from "@/utils/auth";
 import {
@@ -35,20 +36,6 @@ export type SelectUserResult =
   // needsAuth: the guest is protected and the caller must present a
   // password or emailed code (loginAsGuestAction) instead.
   | { ok: false; needsAuth?: boolean; error: string };
-
-// The plain name-selection cookie. Deliberately not httpOnly and unsigned —
-// on its own it only selects a name, as before; the signed
-// USER_AUTH_COOKIE_NAME cookie is what proves identity for protected guests.
-function userSelectionCookie(guestId: string | null) {
-  return {
-    name: "user",
-    value: guestId ?? "",
-    path: "/",
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    ...(guestId === null ? { maxAge: 0 } : {}),
-  };
-}
 
 async function setAuthenticatedIdentity(guestId: string): Promise<void> {
   const cookieStore = await cookies();

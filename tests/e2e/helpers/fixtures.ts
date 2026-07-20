@@ -7,6 +7,18 @@ const ALLOWED_CONSOLE_PATTERNS: RegExp[] = [
   // 0x804B0002 = NS_BINDING_ABORTED ("the request was cancelled"), so it's
   // not a real download failure.
   /downloadable font: download failed.*status=2152398850/,
+  // Firefox quirk: a hard navigation that starts while a server action's
+  // response is still streaming aborts that stream, which Firefox reports
+  // as an uncaught "TypeError: Error in input stream" (see the comment at
+  // admin.spec.ts's event-rename test for the same issue). logoutAction's
+  // caller deliberately hard-reloads right after the action resolves, so
+  // this can happen there too.
+  /Error in input stream/,
+  // Same root cause as above, different wording: a hard reload can also
+  // abort an in-flight background prefetch of another page's RSC payload,
+  // which Next's client runtime reports as an uncaught "Error: Connection
+  // closed" while reading that stream.
+  /Error: Connection closed\./,
 ];
 
 function isAllowed(text: string): boolean {

@@ -31,6 +31,10 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
     skipWithoutMailpit(),
     "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see CONTRIBUTING.md § Running tests)"
   );
+  // Three identity switches, each now a real logout-then-login round trip
+  // (see logoutAction), add up to just over the 30s default once parallel
+  // workers compete for the server.
+  test.slow();
 
   await login(page);
   // The title doubles as the unique token for finding this test's emails
@@ -59,9 +63,14 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
   await expect(
     page.getByRole("heading", { name: /Session added/i })
   ).toBeVisible();
-  await page.getByRole("link", { name: /Back to schedule/i }).click();
+  await Promise.all([
+    page.waitForURL(/\/Conference-Gamma$/),
+    page.getByRole("link", { name: /Back to schedule/i }).click(),
+  ]);
 
-  // Bob RSVPs to it.
+  // Bob RSVPs to it. Wait for the navigation above to land before switching:
+  // switching now hard-reloads the *current* page (see logoutAction), so a
+  // click that's still mid-navigation would resurrect the wrong page.
   await selectUser(page, /Bob Test/i);
   await page.getByRole("link", { name: title }).click();
   const dialog = page.getByRole("dialog", { name: "Session details" });

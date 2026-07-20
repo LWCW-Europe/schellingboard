@@ -1,5 +1,5 @@
 "use client";
-import { useContext, useState } from "react";
+import { useContext, useState, useTransition } from "react";
 import clsx from "clsx";
 import Link from "next/link";
 import {
@@ -14,16 +14,38 @@ import type { Guest } from "@/db/repositories/interfaces";
 import { UserSelect } from "./user-select";
 import { Modal } from "./modals";
 import { UserContext } from "./context";
+import { logoutAction } from "@/app/actions/auth";
 
 // The current identity lives in the header so it is always visible who "I" am.
 // Once a name is selected the chip opens a menu leading to the user's own
-// profile, profile editing, and settings; switching names is possible but
-// tucked behind a menu entry so it isn't encouraged — the only real use case
-// is a shared device. Without a name, the chip prompts a selection directly.
+// profile, profile editing, and settings, ending in "Log out" — the only
+// identity exit (see logoutAction). There is no "become someone else" while
+// wearing a name: switching is logout-then-select, so the picker only ever
+// appears from the anonymous state, where the chip prompts a selection
+// directly.
 export function HeaderUserSelect({ guests }: { guests: Guest[] }) {
-  const { user: currentUser } = useContext(UserContext);
+  const { user: currentUser, applyUser } = useContext(UserContext);
   const [open, setOpen] = useState(false);
+  const [isLoggingOut, startLogout] = useTransition();
   const currentGuest = guests.find((g) => g.id === currentUser);
+
+  // applyUser(null) gives instant feedback while the request is in flight
+  // (the layout stays mounted, so a fresh server render of UserProvider's
+  // initialUser prop alone wouldn't reset its state — useState only reads
+  // that prop on first mount). The hard reload after is what actually makes
+  // the logout take effect: a soft client-side navigation could otherwise
+  // serve the current page from Next's router cache, looking authenticated
+  // until some later, unrelated navigation rechecks the cookie (see
+  // logoutAction). Reloading the current URL, rather than sending the user
+  // to "/", means a re-login (if the site is password protected) returns
+  // them to the page they logged out from.
+  const handleLogout = () => {
+    applyUser?.(null);
+    startLogout(async () => {
+      await logoutAction();
+      window.location.reload();
+    });
+  };
 
   const chipClasses =
     "flex min-w-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-rose-400";
@@ -114,10 +136,11 @@ export function HeaderUserSelect({ guests }: { guests: Guest[] }) {
             {({ focus }) => (
               <button
                 type="button"
-                onClick={() => setOpen(true)}
-                className={itemClasses(focus)}
+                disabled={isLoggingOut}
+                onClick={handleLogout}
+                className={clsx(itemClasses(focus), "disabled:opacity-50")}
               >
-                Switch name
+                {isLoggingOut ? "Logging out..." : "Log out"}
               </button>
             )}
           </MenuItem>

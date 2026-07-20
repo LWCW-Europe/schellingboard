@@ -9,7 +9,6 @@ import clsx from "clsx";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { MapModal } from "./modals";
-import { LogoutButton } from "./logout-button";
 import { HeaderUserSelect } from "./header-user-select";
 import { EVENT_ICONS } from "@/app/event-icons";
 import type { Guest } from "@/db/repositories/interfaces";
@@ -23,13 +22,11 @@ export type NavItem = {
 export default function NavBar({
   navItems,
   guests,
-  showLogout,
   showGuestsLink,
   mapImageUrl,
 }: {
   navItems: NavItem[];
   guests: Guest[];
-  showLogout: boolean;
   showGuestsLink: boolean;
   mapImageUrl: string;
 }) {
@@ -80,7 +77,6 @@ export default function NavBar({
                   )}
                   {mapImageUrl && <MapModal mapImageUrl={mapImageUrl} />}
                   {guests.length > 0 && <HeaderUserSelect guests={guests} />}
-                  {showLogout && <LogoutButton />}
                 </div>
               </div>
             </div>
@@ -103,11 +99,6 @@ export default function NavBar({
                   <UserGroupIcon className="block h-5 w-auto" />
                   Attendees
                 </Disclosure.Button>
-              )}
-              {showLogout && (
-                <div className="px-1 pt-2 border-t border-gray-200">
-                  <LogoutButton className="w-full justify-start" />
-                </div>
               )}
             </div>
           </Disclosure.Panel>
