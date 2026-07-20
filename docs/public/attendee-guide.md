@@ -20,6 +20,10 @@ You can browse, search, and sort existing proposals at any time. During the
 description, and optionally co-hosts. You can edit your own proposals until
 scheduling starts.
 
+Description fields accept Markdown. A small toolbar above the box adds bold,
+italics, links, lists, quotes and code for you, and a **Preview** tab shows
+how the text will look before you save.
+
 ![Session proposal form with title, description, hosts, and duration fields](../screenshots/proposal-edit.webp)
 
 ## Vote
