@@ -45,6 +45,7 @@ import {
 } from "@headlessui/react";
 import { ArrowPathIcon, ChevronUpDownIcon } from "@heroicons/react/16/solid";
 import { MarkdownHint } from "@/app/(site)/markdown";
+import { MarkdownTextarea } from "@/app/components/markdown-textarea";
 
 const profileFormSchema = profileSchema.extend({
   avatar: z.instanceof(FileList).nullable().optional(),
@@ -354,14 +355,11 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           <label className="font-medium" htmlFor="profile-about-me">
             About me
           </label>
-          <textarea
+          <MarkdownTextarea
             id="profile-about-me"
             {...form.register("aboutMe")}
             placeholder="Tell others about yourself"
-            className={clsx(
-              "rounded-md text-sm resize-y h-40 border bg-white px-4 py-2 shadow-sm transition-colors focus:outline-none border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none",
-              form.formState.errors.aboutMe ? "invalid" : ""
-            )}
+            className={clsx(form.formState.errors.aboutMe ? "invalid" : "")}
           />
           <MarkdownHint />
           <span className="text-rose-400 text-sm">

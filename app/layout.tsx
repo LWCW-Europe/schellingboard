@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Montserrat, Roboto } from "next/font/google";
+import { Montserrat, Roboto, Fira_Code } from "next/font/google";
 import "./globals.css";
 import { getRepositories } from "@/db/container";
 
@@ -12,8 +12,16 @@ const monteserrat = Montserrat({
   subsets: ["latin"],
   variable: "--font-monteserrat",
 });
+const firaCode = Fira_Code({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
-const fontVars = [roboto.variable, monteserrat.variable].join(" ");
+const fontVars = [
+  roboto.variable,
+  monteserrat.variable,
+  firaCode.variable,
+].join(" ");
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getRepositories().settings.get();
