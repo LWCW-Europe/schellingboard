@@ -19,6 +19,7 @@ import { IconPicker } from "@/app/admin/icon-picker";
 import { normalizeEventIconName } from "@/app/event-icons";
 import { SLOT_INCREMENT_OPTIONS } from "@/utils/slots";
 import { MarkdownHint } from "@/app/(site)/markdown";
+import { MarkdownTextarea } from "@/app/components/markdown-textarea";
 
 function toDateInputValue(date: Date): string {
   return date.toISOString().split("T")[0];
@@ -97,12 +98,11 @@ export function EventDetailForm({ event }: { event: Event }) {
           <label htmlFor="ev-description" className="text-sm text-gray-600">
             Description
           </label>
-          <textarea
+          <MarkdownTextarea
             id="ev-description"
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
-            rows={3}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y focus:outline-none focus:ring-2 focus:ring-gray-400"
+            wrapperClassName="w-full"
           />
           <MarkdownHint />
         </div>

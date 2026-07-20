@@ -294,6 +294,39 @@ test.describe("Edit profile", () => {
     ).toBeHidden();
     await expect(page.getByText(/^AT$/)).toBeVisible();
   });
+
+  test("formats About me with the markdown toolbar and previews it", async ({
+    page,
+  }) => {
+    await login(page);
+    await page.goto("/Conference-Alpha/proposals");
+
+    await selectCurrentUser(page);
+    await page.getByRole("link", { name: "Attendees", exact: true }).click();
+    await page.getByRole("link", { name: /Edit profile/i }).click();
+
+    const aboutMe = page.getByLabel("About me");
+    await aboutMe.fill("hello world");
+    await aboutMe.press("ControlOrMeta+a");
+    await page.getByRole("button", { name: "Bold" }).click();
+    await expect(aboutMe).toHaveValue("**hello world**");
+
+    // Preview renders the markdown; Edit brings the textarea back.
+    await page.getByRole("button", { name: "Preview" }).click();
+    await expect(aboutMe).toBeHidden();
+    await expect(
+      page.locator("strong", { hasText: "hello world" })
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Edit", exact: true }).click();
+    await expect(aboutMe).toBeVisible();
+
+    // The toolbar's edit reaches the form, not just the textarea's own value.
+    await page.getByRole("button", { name: /^Save$/ }).click();
+    await expect(page).toHaveURL(/\/guests\/[^/]+$/);
+    await expect(
+      page.locator("strong", { hasText: "hello world" })
+    ).toBeVisible();
+  });
 });
 
 test("shows an error on the edit page when no user is selected", async ({
