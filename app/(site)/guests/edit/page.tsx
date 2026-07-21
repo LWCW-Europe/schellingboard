@@ -2,11 +2,12 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { sanitizeGuest } from "@/utils/guests";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { ProfileForm } from "./profile-form";
 
 export default async function EditProfilePage() {
   const cookieStore = await cookies();
-  const currentUser = cookieStore.get("user")?.value;
+  const currentUser = await verifiedCurrentUser(cookieStore);
 
   if (!currentUser) {
     return (

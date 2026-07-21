@@ -22,6 +22,7 @@ import {
 import { CORE_PROMPTS } from "@/model/prompt-pool";
 import { eventNameToSlug } from "@/utils/utils";
 import { sanitizeGuest } from "@/utils/guests";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { Avatar } from "../avatar";
 import { Markdown } from "@/app/(site)/markdown";
 import { ComponentType, JSX, PropsWithChildren, SVGProps } from "react";
@@ -62,7 +63,7 @@ export default async function GuestProfilePage(props: {
     eventNameToSlug(events.find((e) => e.id === eventId)!.name);
 
   const cookieStore = await cookies();
-  const isOwnProfile = cookieStore.get("user")?.value === guestId;
+  const isOwnProfile = (await verifiedCurrentUser(cookieStore)) === guestId;
   const isSessionHost = hostedSessions.length > 0;
 
   return (

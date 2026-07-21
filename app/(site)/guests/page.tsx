@@ -6,6 +6,7 @@ import { outOfRangePageRedirect } from "@/utils/pagination";
 import { redirect } from "next/navigation";
 import { AttendeeList } from "@/app/(site)/guests/attendee-list";
 import { searchAttendees } from "@/utils/attendee-search";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { z } from "zod";
 
 const PAGE_SIZE = 25;
@@ -60,7 +61,7 @@ export default async function GuestsPage({
   if (redirectTarget) redirect(redirectTarget);
 
   const cookieStore = await cookies();
-  const currentUser = cookieStore.get("user")?.value;
+  const currentUser = await verifiedCurrentUser(cookieStore);
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-6 px-4 sm:px-0">
