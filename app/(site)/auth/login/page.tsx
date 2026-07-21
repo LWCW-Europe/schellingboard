@@ -12,6 +12,9 @@ export default async function AuthLoginPage({
   const guest = guestId
     ? await getRepositories().guests.findById(guestId)
     : null;
+  const credentials = guest
+    ? await getRepositories().guests.getAuthCredentials(guest.id)
+    : null;
 
   if (!guest) {
     return (
@@ -31,6 +34,7 @@ export default async function AuthLoginPage({
         guestId={guest.id}
         guestName={guest.name}
         code={code ?? ""}
+        hasPassword={credentials?.passwordHash != null}
       />
     </div>
   );

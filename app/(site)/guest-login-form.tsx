@@ -17,7 +17,7 @@ export function GuestLoginForm({
   guestId: string;
   guestName: string;
   initialCredential?: string;
-  onSuccess: () => void;
+  onSuccess: (credential: string) => void;
 }) {
   const [credential, setCredential] = useState(initialCredential);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export function GuestLoginForm({
     try {
       const result = await loginAsGuestAction(guestId, credential);
       if (result.ok) {
-        onSuccess();
+        onSuccess(credential);
       } else {
         setError(result.error);
       }

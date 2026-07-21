@@ -13,6 +13,10 @@ import {
 const PRIYA_EMAIL = "priya.sharma@example.com";
 const PRIYA_PASSWORD = "priya-e2e-password";
 
+// Ahmad Karimi is used by no other spec, likewise.
+const AHMAD_EMAIL = "ahmad.karimi@example.com";
+const AHMAD_PASSWORD = "ahmad-e2e-password";
+
 async function authCodeEmailCount(email: string): Promise<number> {
   const messages = await searchBySubject("Your temporary login code");
   return messages.filter((m) => m.To.some((t) => t.Address === email)).length;
@@ -183,4 +187,52 @@ test("guest protects their name; switching to it then needs a password or emaile
   await expect(headerChip(page, "Bob Test")).toBeVisible();
   await pickName(page, "Priya Sharma");
   await expect(headerChip(page, "Priya Sharma")).toBeVisible();
+});
+
+test("emailed login link offers to set a password when none is set yet", async ({
+  page,
+}) => {
+  test.skip(
+    skipWithoutMailpit(),
+    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see CONTRIBUTING.md § Running tests)"
+  );
+
+  await login(page);
+  await page.goto("/");
+  await pickName(page, "Ahmad Karimi");
+
+  // Start "Enable protection" from Settings just to get a code emailed —
+  // don't submit that form. The emailed link is a separate path to the same
+  // outcome.
+  await page.getByRole("button", { name: /your name/i }).click();
+  await page.getByRole("menuitem", { name: /settings/i }).click();
+  const countBefore = await authCodeEmailCount(AHMAD_EMAIL);
+  await page.getByRole("button", { name: "Enable protection" }).click();
+  const { code, link } = await newestAuthCode(AHMAD_EMAIL, countBefore + 1);
+
+  // Follow the emailed link like on a fresh device.
+  await selectUser(page, /Bob Test/i);
+  await expect(headerChip(page, "Bob Test")).toBeVisible();
+  await page.goto(link);
+  await expect(
+    page.getByRole("heading", { name: /log in as Ahmad Karimi/i })
+  ).toBeVisible();
+  await expect(page.getByLabel("Password or emailed code")).toHaveValue(code);
+  await page.getByRole("button", { name: "Log in" }).click();
+
+  // No password set yet, so the same code can be reused inline to set one —
+  // no second trip to Settings, no retyping the code.
+  await expect(page.getByText(/set a password/i)).toBeVisible();
+  await page.getByLabel(/password/i).fill(AHMAD_PASSWORD);
+  await page.getByRole("button", { name: "Set password" }).click();
+  await expect(headerChip(page, "Ahmad Karimi")).toBeVisible();
+
+  // Protection is now on and the new password works from a fresh switch.
+  await selectUser(page, /Bob Test/i);
+  await expect(headerChip(page, "Bob Test")).toBeVisible();
+  await openFilteredNameSwitcher(page, "Ahmad");
+  await page.getByRole("option", { name: /Ahmad Karimi/i }).click();
+  await page.getByLabel("Password or emailed code").fill(AHMAD_PASSWORD);
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(headerChip(page, "Ahmad Karimi")).toBeVisible();
 });
