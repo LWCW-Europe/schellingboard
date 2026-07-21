@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useTransition } from "react";
+import { Fragment, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 import { Input } from "@/app/input";
@@ -136,6 +136,13 @@ function GuestRow({
     });
   };
 
+  useEffect(() => {
+    if (!emailSent) return;
+    // Briefly disable the button to guard against accidental double-sends.
+    const timer = setTimeout(() => setEmailSent(false), 3000);
+    return () => clearTimeout(timer);
+  }, [emailSent]);
+
   if (mode === "edit") {
     return (
       <form
@@ -223,7 +230,7 @@ function GuestRow({
           </button>
           <button
             onClick={handleSendTestEmail}
-            disabled={isSendingEmail}
+            disabled={isSendingEmail || emailSent}
             className={SECONDARY_BUTTON}
           >
             {isSendingEmail
