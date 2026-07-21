@@ -53,18 +53,27 @@ import {
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
+async function lastEmail(): Promise<{
+  to: string;
+  subject: string;
+  html: string;
+}> {
+  const call = vi.mocked(sendMail).mock.calls.at(-1)?.[0];
+  if (!call) throw new Error("No email was sent");
+  const html = await render(call.body);
+  return { to: call.to, subject: call.subject, html };
+}
+
 async function lastSentEmail(): Promise<{
   to: string;
   subject: string;
   html: string;
   code: string;
 }> {
-  const call = vi.mocked(sendMail).mock.calls.at(-1)?.[0];
-  if (!call) throw new Error("No email was sent");
-  const html = await render(call.body);
-  const code = html.match(/>([A-HJ-NP-Z2-9]{8})</)?.[1];
-  if (!code) throw new Error(`No code found in email: ${html}`);
-  return { to: call.to, subject: call.subject, html, code };
+  const email = await lastEmail();
+  const code = email.html.match(/>([A-HJ-NP-Z2-9]{8})</)?.[1];
+  if (!code) throw new Error(`No code found in email: ${email.html}`);
+  return { ...email, code };
 }
 
 async function userAuthCookieValidFor(guestId: string): Promise<boolean> {
@@ -263,7 +272,10 @@ describe("user auth actions", () => {
 
     it("enables protection with a valid code and authenticates the session", async () => {
       const { guest, code } = await currentGuestWithCode();
-      const result = await updateAuthSecurityAction({ code, protect: true });
+      const result = await updateAuthSecurityAction({
+        credential: code,
+        protect: true,
+      });
       expect(result).toEqual({ ok: true });
       expect(
         await getRepositories().guests.getAuthCredentials(guest.id)
@@ -274,7 +286,7 @@ describe("user auth actions", () => {
     it("enables protection with a permanent password usable for login", async () => {
       const { guest, code } = await currentGuestWithCode();
       const result = await updateAuthSecurityAction({
-        code,
+        credential: code,
         protect: true,
         newPassword: "correct horse battery",
       });
@@ -291,7 +303,7 @@ describe("user auth actions", () => {
       // not flip the flag and then leave a guest nobody can ever log in as.
       vi.stubEnv("AUTH_SECRET", "");
       await expect(
-        updateAuthSecurityAction({ code, protect: true })
+        updateAuthSecurityAction({ credential: code, protect: true })
       ).rejects.toThrow();
       expect(
         (await getRepositories().guests.getAuthCredentials(guest.id))
@@ -302,7 +314,7 @@ describe("user auth actions", () => {
     it("rejects a wrong code and leaves the guest unprotected", async () => {
       const { guest } = await currentGuestWithCode();
       const result = await updateAuthSecurityAction({
-        code: "WRONGONE",
+        credential: "WRONGONE",
         protect: true,
       });
       expect(result.ok).toBe(false);
@@ -311,16 +323,90 @@ describe("user auth actions", () => {
       ).toEqual({ authProtected: false, passwordHash: null });
     });
 
-    it("rejects the permanent password in place of a code", async () => {
+    it("rejects a password in place of a code when enabling protection", async () => {
       const { guest, code } = await currentGuestWithCode();
       await updateAuthSecurityAction({
-        code,
+        credential: code,
         protect: true,
         newPassword: "correct horse battery",
       });
-      // Changing settings must always go through a fresh emailed code.
+      // Disabling clears the password, but the guest might still remember
+      // it — re-enabling must go through a fresh emailed code regardless,
+      // since it's the operation the recovery path depends on.
+      await updateAuthSecurityAction({ credential: code, protect: false });
       const result = await updateAuthSecurityAction({
-        code: "correct horse battery",
+        credential: "correct horse battery",
+        protect: true,
+      });
+      expect(result.ok).toBe(false);
+      expect(
+        (await getRepositories().guests.getAuthCredentials(guest.id))
+          ?.authProtected
+      ).toBe(false);
+    });
+
+    it("disables protection and clears the password, with a code", async () => {
+      const { guest, code } = await currentGuestWithCode();
+      await updateAuthSecurityAction({
+        credential: code,
+        protect: true,
+        newPassword: "correct horse battery",
+      });
+      const result = await updateAuthSecurityAction({
+        credential: code,
+        protect: false,
+      });
+      expect(result).toEqual({ ok: true });
+      expect(
+        await getRepositories().guests.getAuthCredentials(guest.id)
+      ).toEqual({ authProtected: false, passwordHash: null });
+    });
+
+    it("disables protection with the permanent password", async () => {
+      const { guest, code } = await currentGuestWithCode();
+      await updateAuthSecurityAction({
+        credential: code,
+        protect: true,
+        newPassword: "correct horse battery",
+      });
+      const result = await updateAuthSecurityAction({
+        credential: "correct horse battery",
+        protect: false,
+      });
+      expect(result).toEqual({ ok: true });
+      expect(
+        await getRepositories().guests.getAuthCredentials(guest.id)
+      ).toEqual({ authProtected: false, passwordHash: null });
+    });
+
+    it("changes the password with the current permanent password", async () => {
+      const { guest, code } = await currentGuestWithCode();
+      await updateAuthSecurityAction({
+        credential: code,
+        protect: true,
+        newPassword: "correct horse battery",
+      });
+      const result = await updateAuthSecurityAction({
+        credential: "correct horse battery",
+        protect: true,
+        newPassword: "new password entirely",
+      });
+      expect(result).toEqual({ ok: true });
+      cookieJar.clear();
+      expect(
+        (await loginAsGuestAction(guest.id, "new password entirely")).ok
+      ).toBe(true);
+    });
+
+    it("rejects a wrong password in place of a code or password", async () => {
+      const { guest, code } = await currentGuestWithCode();
+      await updateAuthSecurityAction({
+        credential: code,
+        protect: true,
+        newPassword: "correct horse battery",
+      });
+      const result = await updateAuthSecurityAction({
+        credential: "wrong password",
         protect: false,
       });
       expect(result.ok).toBe(false);
@@ -330,27 +416,10 @@ describe("user auth actions", () => {
       ).toBe(true);
     });
 
-    it("disables protection and clears the password", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({
-        code,
-        protect: true,
-        newPassword: "correct horse battery",
-      });
-      const result = await updateAuthSecurityAction({
-        code,
-        protect: false,
-      });
-      expect(result).toEqual({ ok: true });
-      expect(
-        await getRepositories().guests.getAuthCredentials(guest.id)
-      ).toEqual({ authProtected: false, passwordHash: null });
-    });
-
     it("rejects a too-short password", async () => {
       const { code } = await currentGuestWithCode();
       const result = await updateAuthSecurityAction({
-        code,
+        credential: code,
         protect: true,
         newPassword: "short",
       });
@@ -362,8 +431,69 @@ describe("user auth actions", () => {
       await requestAuthCodeAction(guest.id);
       const { code } = await lastSentEmail();
       cookieJar.clear();
-      const result = await updateAuthSecurityAction({ code, protect: true });
+      const result = await updateAuthSecurityAction({
+        credential: code,
+        protect: true,
+      });
       expect(result.ok).toBe(false);
+    });
+
+    it("does not notify when protection is enabled for the first time", async () => {
+      const { code } = await currentGuestWithCode();
+      await updateAuthSecurityAction({
+        credential: code,
+        protect: true,
+        newPassword: "correct horse battery",
+      });
+      // Only the code request itself sent mail — no notification for a
+      // guest's first-ever protection/password.
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(1);
+    });
+
+    it("emails a notification when protection is disabled", async () => {
+      const { code } = await currentGuestWithCode();
+      await updateAuthSecurityAction({ credential: code, protect: true });
+      await updateAuthSecurityAction({ credential: code, protect: false });
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(2);
+      const email = await lastEmail();
+      expect(email.to).toMatch(/@test\.example$/);
+      expect(email.subject).toMatch(/protection.*(off|disabled)/i);
+    });
+
+    it("emails a notification when the password changes", async () => {
+      const { code } = await currentGuestWithCode();
+      await updateAuthSecurityAction({
+        credential: code,
+        protect: true,
+        newPassword: "correct horse battery",
+      });
+      await updateAuthSecurityAction({
+        credential: "correct horse battery",
+        protect: true,
+        newPassword: "new password entirely",
+      });
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(2);
+      const email = await lastEmail();
+      expect(email.subject).toMatch(/password/i);
+    });
+
+    it("disabling succeeds even if the notification email fails to send", async () => {
+      const { guest, code } = await currentGuestWithCode();
+      await updateAuthSecurityAction({
+        credential: code,
+        protect: true,
+        newPassword: "correct horse battery",
+      });
+      vi.mocked(sendMail).mockRejectedValueOnce(new Error("smtp down"));
+      const result = await updateAuthSecurityAction({
+        credential: "correct horse battery",
+        protect: false,
+      });
+      expect(result).toEqual({ ok: true });
+      expect(
+        (await getRepositories().guests.getAuthCredentials(guest.id))
+          ?.authProtected
+      ).toBe(false);
     });
   });
 });

@@ -174,7 +174,7 @@ test("guest protects their name; switching to it then needs a password or emaile
     PRIYA_EMAIL,
     freshCodeSent ? countBeforeDisable + 1 : countBeforeDisable
   );
-  await page.getByLabel("Emailed code").fill(disableCode);
+  await page.getByLabel("Password or emailed code").fill(disableCode);
   await page.getByRole("button", { name: "Turn off protection" }).click();
   await expect(page.getByText("Protection turned off")).toBeVisible();
 

@@ -22,6 +22,7 @@ import {
 import { isMailerConfigured, sendMail } from "@/utils/mailer";
 import { siteUrl } from "@/utils/site-url";
 import { authCodeEmail } from "@/emails/auth-code";
+import { authSecurityChangedEmail } from "@/emails/auth-security-changed";
 
 const REQUEST_THROTTLE_SECONDS = 60;
 const MAX_CODE_ATTEMPTS = 10;
@@ -184,7 +185,10 @@ export async function selectUserAction(
 }
 
 const authSecuritySchema = z.object({
-  code: z.string().trim().min(1, { message: "Enter the emailed code" }),
+  credential: z
+    .string()
+    .trim()
+    .min(1, { message: "Enter your password or the emailed code" }),
   protect: z.boolean(),
   newPassword: z
     .string()
@@ -193,11 +197,39 @@ const authSecuritySchema = z.object({
     .optional(),
 });
 
+/** Best-effort heads-up that protection was disabled or the password
+ * changed. Never blocks the change it follows: a failed notification here
+ * is exactly the SMTP dependency this step exists to remove. */
+async function notifySecurityChange(
+  guestId: string,
+  change: "disabled" | "password-changed"
+): Promise<void> {
+  try {
+    const guest = await getRepositories().guests.findById(guestId);
+    if (!guest) return;
+    await sendMail({
+      to: guest.info.email,
+      ...authSecurityChangedEmail({ name: guest.name, change }),
+    });
+  } catch (err) {
+    console.error(
+      `Failed to send security-change notification to ${guestId}:`,
+      err
+    );
+  }
+}
+
 /**
- * Changes the current user's account security settings. Every change —
- * enabling or disabling protection, setting or changing the password —
- * requires a currently valid emailed code, proving control of the email
- * address (the permanent password is deliberately not accepted here).
+ * Changes the current user's account security settings: enabling or
+ * disabling protection, and setting or changing the password.
+ *
+ * Enabling protection is code-only, since it's the one operation that must
+ * prove control of the address the recovery path depends on. Once a guest
+ * is already protected, disabling protection or changing the password also
+ * accepts the current permanent password in place of the code, so a broken
+ * mailer never leaves protection stuck on — a notification email is sent to
+ * the address on file for both, best-effort, so a change made this way
+ * doesn't go unnoticed.
  */
 export async function updateAuthSecurityAction(
   input: z.input<typeof authSecuritySchema>
@@ -213,7 +245,7 @@ export async function updateAuthSecurityAction(
       error: parsed.error.issues[0]?.message ?? "Invalid input",
     };
   }
-  const { code, protect, newPassword } = parsed.data;
+  const { credential, protect, newPassword } = parsed.data;
 
   const cookieStore = await cookies();
   const currentUser = cookieStore.get("user")?.value;
@@ -225,8 +257,13 @@ export async function updateAuthSecurityAction(
   if (!creds) {
     return { ok: false, error: "Unknown user" };
   }
-  if (!(await verifyCode(currentUser, code))) {
-    return { ok: false, error: "Wrong or expired code" };
+  const wasProtected = creds.authProtected;
+  const verified =
+    (await verifyCode(currentUser, credential)) ||
+    (wasProtected &&
+      (await verifyUserPassword(credential, creds.passwordHash)));
+  if (!verified) {
+    return { ok: false, error: "Wrong password or code" };
   }
 
   if (protect) {
@@ -241,16 +278,22 @@ export async function updateAuthSecurityAction(
       authProtected: true,
       passwordHash,
     });
-    // The code proved control of the email address, so this session is
-    // authenticated from here on.
+    // The code or password proved control of the account, so this session
+    // is authenticated from here on.
     cookieStore.set(userSelectionCookie(currentUser));
     cookieStore.set(authCookie);
+    if (wasProtected && newPassword) {
+      await notifySecurityChange(currentUser, "password-changed");
+    }
   } else {
     await guests.setAuthProtection(currentUser, {
       authProtected: false,
       passwordHash: null,
     });
     cookieStore.set(createUserAuthLogoutCookie());
+    if (wasProtected) {
+      await notifySecurityChange(currentUser, "disabled");
+    }
   }
   return { ok: true };
 }

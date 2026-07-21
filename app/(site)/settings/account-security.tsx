@@ -12,10 +12,11 @@ const inputClass =
   "rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none";
 
 /**
- * Enable/disable account protection and set a permanent password. Every
- * change requires a code emailed to the guest, so a forgotten password is
- * never a problem: requesting a code and setting a new password is the same
- * flow as setting it the first time.
+ * Enable/disable account protection and set a permanent password. Enabling
+ * always requires a code emailed to the guest — a forgotten password is
+ * never a problem, since setting one is the same flow. Changing the
+ * password or disabling protection also accepts the current password
+ * instead, so a broken mailer never blocks that.
  */
 export function AccountSecurity({
   guestId,
@@ -26,7 +27,7 @@ export function AccountSecurity({
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode | null>(null);
-  const [code, setCode] = useState("");
+  const [credential, setCredential] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -59,7 +60,7 @@ export function AccountSecurity({
 
   const startMode = async (next: Mode) => {
     setMode(next);
-    setCode("");
+    setCredential("");
     setNewPassword("");
     setSuccess(null);
     await sendCode();
@@ -77,7 +78,7 @@ export function AccountSecurity({
     setInfo(null);
     try {
       const result = await updateAuthSecurityAction({
-        code,
+        credential,
         protect: mode !== "disable",
         newPassword: newPassword.length > 0 ? newPassword : undefined,
       });
@@ -165,22 +166,24 @@ export function AccountSecurity({
             {mode === "enable" &&
               "To confirm it's you, enter the code emailed to you. You can also set a permanent password now or later."}
             {mode === "password" &&
-              "Enter the code emailed to you and your new password."}
+              "Enter your password or the code emailed to you, and your new password."}
             {mode === "disable" &&
-              "Enter the code emailed to you to turn off protection. This also removes your password."}
+              "Enter your password or the code emailed to you to turn off protection. This also removes your password."}
           </p>
           <label
-            htmlFor="security-code"
+            htmlFor="security-credential"
             className="text-sm font-medium text-gray-700"
           >
-            Emailed code
+            {mode === "enable" ? "Emailed code" : "Password or emailed code"}
           </label>
           <input
-            id="security-code"
-            type="text"
-            autoComplete="one-time-code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
+            id="security-credential"
+            type={mode === "enable" ? "text" : "password"}
+            autoComplete={
+              mode === "enable" ? "one-time-code" : "current-password"
+            }
+            value={credential}
+            onChange={(e) => setCredential(e.target.value)}
             className={inputClass}
           />
           {mode !== "disable" && (
@@ -216,7 +219,7 @@ export function AccountSecurity({
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="submit"
-              disabled={busy || code.trim().length === 0}
+              disabled={busy || credential.trim().length === 0}
               className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500"
             >
               {mode === "enable" && "Enable protection"}
