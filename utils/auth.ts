@@ -2,22 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const AUTH_COOKIE_NAME = "site-auth";
 export const ADMIN_COOKIE_NAME = "admin-auth";
-// Proves "I am this guest" for auth-protected guests (issue #370). Separate
-// from the plain `user` cookie, which merely selects the current name and
-// stays client-writable for unprotected guests.
-export const USER_AUTH_COOKIE_NAME = "user-auth";
+// The single cookie that names the current guest AND, when applicable, proves
+// it. Its value carries a level (issue #370):
+//   - "open"     — a mere name selection. Unsigned and forgeable, exactly like
+//                  the old plain `user` cookie: unprotected guests are freely
+//                  impersonable by design, so an open cookie needs no secret
+//                  and grants nothing a protected guest's identity relies on.
+//   - "verified" — a signed proof that the guest's password/code was checked.
+// Reads go only through readGuestCookie (here) and the acting-guest helpers,
+// so no caller ever trusts a raw guest id: a protected guest is honoured only
+// with a "verified" cookie (see isVerifiedAsGuest).
+export const GUEST_COOKIE_NAME = "guest";
+export type GuestAuthLevel = "open" | "verified";
 export const ADMIN_DISABLED_MESSAGE =
   "Admin UI is disabled: set the ADMIN_PASSWORD environment variable on the server to enable it. See the project documentation.";
 const ADMIN_SCOPE = "admin";
 const COOKIE_MAX_AGE_SEC = 7 * 24 * 60 * 60;
 const COOKIE_MAX_AGE_MS = COOKIE_MAX_AGE_SEC * 1000;
-
-// The guest id becomes part of the signed scope, so a cookie issued for one
-// guest can never validate for another. Guest ids are nanoids (no dots), so
-// the existing dot-delimited payload format stays parseable.
-function userScope(guestId: string): string {
-  return `user.${guestId}`;
-}
 
 /**
  * Returns a safe same-origin redirect path, or `fallback` if `value` could
@@ -223,41 +224,82 @@ export function createLogoutCookie() {
   };
 }
 
-export async function createUserAuthCookie(guestId: string) {
+// Guest ids are nanoids (no dots), so the dot-delimited value stays parseable.
+// A "verified" value is `verified.<guestId>.<issuedAt>.<sig>`, signed via the
+// scoped signCookieValue so it can't be forged; an "open" value is just
+// `open.<guestId>` and isn't. Folding the guest id into the signed scope means
+// a proof issued for one guest can never validate for another.
+function verifiedScope(guestId: string): string {
+  return `verified.${guestId}`;
+}
+
+/**
+ * Parses and validates the guest cookie into its guest id and level, or null
+ * if absent/malformed. A "verified" value must carry a valid, unexpired
+ * signature; an "open" value is accepted as-is (it is only ever honoured for
+ * an unprotected guest — see isVerifiedAsGuest). Never trust the returned id
+ * for a protected guest without also checking the level is "verified".
+ */
+export async function readGuestCookie(
+  value: string | undefined
+): Promise<{ guestId: string; level: GuestAuthLevel } | null> {
+  if (!value) return null;
+  const firstDot = value.indexOf(".");
+  if (firstDot < 0) return null;
+  const level = value.slice(0, firstDot);
+
+  if (level === "open") {
+    const guestId = value.slice(firstDot + 1);
+    if (!guestId || guestId.includes(".")) return null;
+    return { guestId, level: "open" };
+  }
+
+  if (level === "verified") {
+    // `verified.<guestId>.<issuedAt>.<sig>`: exactly four parts, so the guest
+    // id can't smuggle an extra dot. Signature and expiry are delegated to the
+    // shared scoped verifier.
+    const parts = value.split(".");
+    if (parts.length !== 4) return null;
+    const guestId = parts[1];
+    if (!guestId) return null;
+    try {
+      return (await isSignedCookieValid(value, verifiedScope(guestId)))
+        ? { guestId, level: "verified" }
+        : null;
+    } catch {
+      // No AUTH_SECRET configured (or another crypto error): this can't be a
+      // genuine proof, so treat it as an invalid cookie rather than throwing.
+      // A passwordless site with no protected guests has no secret and must
+      // still survive a client that sends a forged `verified` value.
+      return null;
+    }
+  }
+
+  return null;
+}
+
+// Signing (the "verified" path) needs AUTH_SECRET; the "open" path never does,
+// so a passwordless site with no protected guests still runs without a secret.
+export async function createGuestCookie(
+  guestId: string,
+  level: GuestAuthLevel
+) {
   return {
-    name: USER_AUTH_COOKIE_NAME,
-    value: await signCookieValue(userScope(guestId)),
+    name: GUEST_COOKIE_NAME,
+    value:
+      level === "verified"
+        ? await signCookieValue(verifiedScope(guestId))
+        : `open.${guestId}`,
     ...cookieOptions(COOKIE_MAX_AGE_SEC),
   };
 }
 
-export function createUserAuthLogoutCookie() {
+export function createGuestLogoutCookie() {
   return {
-    name: USER_AUTH_COOKIE_NAME,
+    name: GUEST_COOKIE_NAME,
     value: "",
     ...cookieOptions(0),
   };
-}
-
-// The plain name-selection cookie. Deliberately not httpOnly and unsigned —
-// on its own it only selects a name; the signed USER_AUTH_COOKIE_NAME cookie
-// is what proves identity for protected guests.
-export function userSelectionCookie(guestId: string | null) {
-  return {
-    name: "user",
-    value: guestId ?? "",
-    path: "/",
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    ...(guestId === null ? { maxAge: 0 } : {}),
-  };
-}
-
-export async function isUserAuthCookieValidFor(
-  guestId: string,
-  value: string | undefined
-): Promise<boolean> {
-  return isSignedCookieValid(value, userScope(guestId));
 }
 
 export async function createAdminAuthCookie() {

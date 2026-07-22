@@ -44,7 +44,11 @@ vi.mock("@/app/(site)/[eventSlug]/event-provider-wrapper", () => ({
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createGuest, createEvent, createSession } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { createUserAuthCookie, USER_AUTH_COOKIE_NAME } from "@/utils/auth";
+import {
+  GUEST_COOKIE_NAME,
+  openGuestValue,
+  verifiedGuestValue,
+} from "../helpers/guest-cookie";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
@@ -83,8 +87,8 @@ describe("event layout seeds RSVPs from the verified guest", () => {
     });
     await protectGuest(guest.id);
 
-    // Forged plain cookie only — no verified user-auth cookie.
-    cookieJar.set("user", guest.id);
+    // Forged "open" selection only — not a verified proof.
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
     await renderLayout(event.slug);
 
@@ -101,11 +105,7 @@ describe("event layout seeds RSVPs from the verified guest", () => {
     });
     await protectGuest(guest.id);
 
-    cookieJar.set("user", guest.id);
-    cookieJar.set(
-      USER_AUTH_COOKIE_NAME,
-      (await createUserAuthCookie(guest.id)).value
-    );
+    cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
     await renderLayout(event.slug);
 

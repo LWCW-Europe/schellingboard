@@ -40,7 +40,11 @@ vi.mock("@/app/(site)/guests/attendee-list", () => ({
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createGuest } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { createUserAuthCookie, USER_AUTH_COOKIE_NAME } from "@/utils/auth";
+import {
+  GUEST_COOKIE_NAME,
+  openGuestValue,
+  verifiedGuestValue,
+} from "../helpers/guest-cookie";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
@@ -68,7 +72,7 @@ describe("server components read the verified guest, not the raw cookie", () => 
         await import("@/app/(site)/guests/edit/page");
       const guest = await createGuest();
       await protectGuest(guest.id);
-      cookieJar.set("user", guest.id);
+      cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
       const html = renderToStaticMarkup(await EditProfilePage());
       expect(html).toMatch(/select who you are/i);
@@ -79,11 +83,7 @@ describe("server components read the verified guest, not the raw cookie", () => 
         await import("@/app/(site)/guests/edit/page");
       const guest = await createGuest();
       await protectGuest(guest.id);
-      cookieJar.set("user", guest.id);
-      cookieJar.set(
-        USER_AUTH_COOKIE_NAME,
-        (await createUserAuthCookie(guest.id)).value
-      );
+      cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
       const html = renderToStaticMarkup(await EditProfilePage());
       expect(html).not.toMatch(/select who you are/i);
@@ -96,7 +96,7 @@ describe("server components read the verified guest, not the raw cookie", () => 
         await import("@/app/(site)/guests/[guestId]/page");
       const guest = await createGuest();
       await protectGuest(guest.id);
-      cookieJar.set("user", guest.id);
+      cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
       const html = renderToStaticMarkup(
         await GuestProfilePage({
@@ -112,11 +112,7 @@ describe("server components read the verified guest, not the raw cookie", () => 
         await import("@/app/(site)/guests/[guestId]/page");
       const guest = await createGuest();
       await protectGuest(guest.id);
-      cookieJar.set("user", guest.id);
-      cookieJar.set(
-        USER_AUTH_COOKIE_NAME,
-        (await createUserAuthCookie(guest.id)).value
-      );
+      cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
       const html = renderToStaticMarkup(
         await GuestProfilePage({
@@ -133,7 +129,7 @@ describe("server components read the verified guest, not the raw cookie", () => 
       const { default: GuestsPage } = await import("@/app/(site)/guests/page");
       const guest = await createGuest();
       await protectGuest(guest.id);
-      cookieJar.set("user", guest.id);
+      cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
       const html = renderToStaticMarkup(
         await GuestsPage({ searchParams: Promise.resolve({}) })
@@ -145,11 +141,7 @@ describe("server components read the verified guest, not the raw cookie", () => 
       const { default: GuestsPage } = await import("@/app/(site)/guests/page");
       const guest = await createGuest();
       await protectGuest(guest.id);
-      cookieJar.set("user", guest.id);
-      cookieJar.set(
-        USER_AUTH_COOKIE_NAME,
-        (await createUserAuthCookie(guest.id)).value
-      );
+      cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
       const html = renderToStaticMarkup(
         await GuestsPage({ searchParams: Promise.resolve({}) })

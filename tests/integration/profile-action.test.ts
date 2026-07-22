@@ -26,6 +26,7 @@ vi.mock("next/cache", () => ({
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createGuest } from "../helpers/factories";
+import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
 import { updateProfileAction } from "@/app/actions/profile";
 import { createImageFile } from "@/tests/helpers/utils";
@@ -56,7 +57,7 @@ describe("updateProfileAction", () => {
       name: "Guest",
       emailSettings: { rsvpChange: false, hostChange: false, cohostAdd: true },
     });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "Guest",
       aboutMe: null,
@@ -72,7 +73,7 @@ describe("updateProfileAction", () => {
 
   it("updates name, pronouns and aboutMe for the current user", async () => {
     const guest = await createGuest({ name: "Old" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "New Name",
       aboutMe: "Hello there",
@@ -89,7 +90,7 @@ describe("updateProfileAction", () => {
 
   it("updates name, aboutMe, pronouns and avatar for the current user", async () => {
     const guest = await createGuest({ name: "Old" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "New Name",
       aboutMe: "Hello there",
@@ -112,7 +113,7 @@ describe("updateProfileAction", () => {
 
   it("resizes avatar to 256 and keeps extension", async () => {
     const guest = await createGuest({ name: "Old" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "New Name",
       aboutMe: "Hello there",
@@ -132,7 +133,7 @@ describe("updateProfileAction", () => {
 
   it("saves basedIn, prompts, languages, and contacts", async () => {
     const guest = await createGuest({ name: "Guest" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "Guest",
       aboutMe: null,
@@ -159,7 +160,7 @@ describe("updateProfileAction", () => {
 
   it("drops empty prompt answers, blank languages, and blank contact rows", async () => {
     const guest = await createGuest({ name: "Guest" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "Guest",
       aboutMe: null,
@@ -183,7 +184,7 @@ describe("updateProfileAction", () => {
 
   it("keeps only the first answer when a prompt is repeated", async () => {
     const guest = await createGuest({ name: "Guest" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "Guest",
       aboutMe: null,
@@ -201,7 +202,7 @@ describe("updateProfileAction", () => {
 
   it("strips labels from contacts that are not of type 'other'", async () => {
     const guest = await createGuest({ name: "Guest" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "Guest",
       aboutMe: null,
@@ -216,7 +217,7 @@ describe("updateProfileAction", () => {
 
   it("rejects an 'other' contact without a label", async () => {
     const guest = await createGuest({ name: "Guest" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "Guest",
       aboutMe: null,
@@ -227,7 +228,7 @@ describe("updateProfileAction", () => {
 
   it("rejects entries beyond the sanity limits", async () => {
     const guest = await createGuest({ name: "Guest" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
     const tooManyLanguages = await updateProfileAction({
       name: "Guest",
@@ -246,7 +247,7 @@ describe("updateProfileAction", () => {
 
   it("rejects images smaller than 256x256", async () => {
     const guest = await createGuest({ name: "Old" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
       name: "New Name",
       aboutMe: "Hello there",

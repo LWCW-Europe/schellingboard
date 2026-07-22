@@ -32,7 +32,11 @@ import {
   createSession,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { createUserAuthCookie, USER_AUTH_COOKIE_NAME } from "@/utils/auth";
+import {
+  GUEST_COOKIE_NAME,
+  openGuestValue,
+  verifiedGuestValue,
+} from "../helpers/guest-cookie";
 import { VoteChoice } from "@/db/repositories/interfaces";
 import { deleteProposal } from "@/app/(site)/[eventSlug]/proposals/actions";
 
@@ -78,7 +82,7 @@ describe("deleteProposal", () => {
     const session = await createSession(event.id, { hostIds: [host.id] });
     await repos.sessions.update(session.id, { proposalId: proposal.id });
 
-    cookieJar.set("user", host.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(host.id));
     const result = await deleteProposal(proposal.id, "test-event");
     expect(result).toEqual({ success: true });
 
@@ -108,7 +112,7 @@ describe("deleteProposal", () => {
     const host = await createGuest({ name: "Host" });
     const nonHost = await createGuest({ name: "NonHost" });
     const proposal = await createProposal(event.id, [host.id]);
-    cookieJar.set("user", nonHost.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(nonHost.id));
 
     const result = await deleteProposal(proposal.id, "test-event");
     expect(result).toHaveProperty("error");
@@ -145,7 +149,7 @@ describe("deleteProposal", () => {
     const host = await createGuest({ name: "Host" });
     await protectGuest(host.id);
     const proposal = await createProposal(event.id, [host.id]);
-    cookieJar.set("user", host.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(host.id));
 
     const result = await deleteProposal(proposal.id, "test-event");
     expect(result).toHaveProperty("error");
@@ -159,11 +163,7 @@ describe("deleteProposal", () => {
     const host = await createGuest({ name: "Host" });
     await protectGuest(host.id);
     const proposal = await createProposal(event.id, [host.id]);
-    cookieJar.set("user", host.id);
-    cookieJar.set(
-      USER_AUTH_COOKIE_NAME,
-      (await createUserAuthCookie(host.id)).value
-    );
+    cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(host.id));
 
     const result = await deleteProposal(proposal.id, "test-event");
     expect(result).toEqual({ success: true });

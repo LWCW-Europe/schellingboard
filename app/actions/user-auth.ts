@@ -5,11 +5,10 @@ import { z } from "zod";
 import { getRepositories } from "@/db/container";
 import type { AuthCode, AuthCodePurpose } from "@/db/repositories/interfaces";
 import {
-  createUserAuthCookie,
-  createUserAuthLogoutCookie,
-  isUserAuthCookieValidFor,
-  userSelectionCookie,
-  USER_AUTH_COOKIE_NAME,
+  createGuestCookie,
+  createGuestLogoutCookie,
+  readGuestCookie,
+  GUEST_COOKIE_NAME,
 } from "@/utils/auth";
 import {
   AUTH_CODE_VALID_MINUTES,
@@ -50,8 +49,7 @@ const newPasswordSchema = z
 
 async function setAuthenticatedIdentity(guestId: string): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.set(userSelectionCookie(guestId));
-  cookieStore.set(await createUserAuthCookie(guestId));
+  cookieStore.set(await createGuestCookie(guestId, "verified"));
 }
 
 /**
@@ -338,7 +336,10 @@ export async function disableProtectionAction(
     authProtected: false,
     passwordHash: null,
   });
-  cookieStore.set(createUserAuthLogoutCookie());
+  // Drop the now-moot verified proof but keep the guest selected: the name is
+  // unprotected now, so an "open" cookie is all it needs (and re-enabling
+  // protection later will correctly require a fresh login).
+  cookieStore.set(await createGuestCookie(guestId, "open"));
   await notifySecurityChange(guestId, "disabled");
   return { ok: true };
 }
@@ -355,8 +356,7 @@ export async function selectUserAction(
 ): Promise<SelectUserResult> {
   const cookieStore = await cookies();
   if (guestId === null) {
-    cookieStore.set(userSelectionCookie(null));
-    cookieStore.set(createUserAuthLogoutCookie());
+    cookieStore.set(createGuestLogoutCookie());
     return { ok: true };
   }
 
@@ -365,20 +365,23 @@ export async function selectUserAction(
     return { ok: false, error: "Unknown user" };
   }
   if (creds.authProtected) {
-    const authCookie = cookieStore.get(USER_AUTH_COOKIE_NAME)?.value;
-    if (!(await isUserAuthCookieValidFor(guestId, authCookie))) {
+    const parsed = await readGuestCookie(
+      cookieStore.get(GUEST_COOKIE_NAME)?.value
+    );
+    if (parsed?.guestId !== guestId || parsed.level !== "verified") {
       return {
         ok: false,
         needsAuth: true,
         error: "This name is protected — a password or emailed code is needed",
       };
     }
-    cookieStore.set(userSelectionCookie(guestId));
+    // Already verified for this guest — refresh the cookie to keep them
+    // selected (and extend its lifetime).
+    cookieStore.set(await createGuestCookie(guestId, "verified"));
     return { ok: true };
   }
 
-  cookieStore.set(userSelectionCookie(guestId));
-  cookieStore.set(createUserAuthLogoutCookie());
+  cookieStore.set(await createGuestCookie(guestId, "open"));
   return { ok: true };
 }
 

@@ -23,7 +23,11 @@ import {
   createDay,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { createUserAuthCookie } from "@/utils/auth";
+import {
+  GUEST_COOKIE_NAME,
+  openGuestValue,
+  verifiedGuestValue,
+} from "../helpers/guest-cookie";
 import { POST as addPOST } from "@/app/api/add-session/route";
 import { POST } from "@/app/api/update-session/route";
 import type { SessionParams } from "@/app/api/session-form-utils";
@@ -52,9 +56,9 @@ function makeUpdateReq(
   return new NextRequest("http://test/api/update-session", {
     method: "POST",
     body: JSON.stringify(payload),
-    // The `user` cookie identifies the acting guest, like the site sets it.
+    // The guest cookie identifies the acting guest, like the site sets it.
     headers: opts?.editorGuestId
-      ? { cookie: `user=${opts.editorGuestId}` }
+      ? { cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(opts.editorGuestId)}` }
       : undefined,
   });
 }
@@ -63,12 +67,11 @@ async function makeUpdateReqWithAuthCookie(
   payload: unknown,
   editorGuestId: string
 ): Promise<NextRequest> {
-  const authCookie = await createUserAuthCookie(editorGuestId);
   return new NextRequest("http://test/api/update-session", {
     method: "POST",
     body: JSON.stringify(payload),
     headers: {
-      cookie: `user=${editorGuestId}; ${authCookie.name}=${authCookie.value}`,
+      cookie: `${GUEST_COOKIE_NAME}=${await verifiedGuestValue(editorGuestId)}`,
     },
   });
 }

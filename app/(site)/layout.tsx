@@ -14,8 +14,8 @@ export default async function SiteLayout({
   const cookieStore = await cookies();
   const authCookieValue = cookieStore.get(AUTH_COOKIE_NAME)?.value;
   const isAuthenticated = await isAuthCookieValid(authCookieValue);
-  // verifiedCurrentUser: a stale plain `user` cookie naming a protected
-  // guest must not render the UI as that guest.
+  // verifiedCurrentUser: a guest cookie naming a protected guest without a
+  // verified proof must not render the UI as that guest.
   const initialUser = isAuthenticated
     ? await verifiedCurrentUser(cookieStore)
     : null;

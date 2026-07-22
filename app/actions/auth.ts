@@ -4,8 +4,7 @@ import {
   verifyPassword,
   createAuthCookie,
   createLogoutCookie,
-  createUserAuthLogoutCookie,
-  userSelectionCookie,
+  createGuestLogoutCookie,
   isPasswordProtectionEnabled,
   safeRedirectPath,
 } from "@/utils/auth";
@@ -53,6 +52,5 @@ export async function loginAction(
 export async function logoutAction() {
   const cookieStore = await cookies();
   cookieStore.set(createLogoutCookie());
-  cookieStore.set(userSelectionCookie(null));
-  cookieStore.set(createUserAuthLogoutCookie());
+  cookieStore.set(createGuestLogoutCookie());
 }

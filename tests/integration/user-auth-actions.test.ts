@@ -42,7 +42,7 @@ import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createGuest } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { sendMail, isMailerConfigured } from "@/utils/mailer";
-import { isUserAuthCookieValidFor, USER_AUTH_COOKIE_NAME } from "@/utils/auth";
+import { readGuestCookie, GUEST_COOKIE_NAME } from "@/utils/auth";
 import { hashUserPassword } from "@/utils/user-credentials";
 import {
   changePasswordAction,
@@ -87,11 +87,16 @@ async function lastResetToken(): Promise<string> {
   return token;
 }
 
+/** The selected guest id from the single guest cookie, or null if none. */
+async function currentUserId(): Promise<string | null> {
+  const parsed = await readGuestCookie(cookieJar.get(GUEST_COOKIE_NAME)?.value);
+  return parsed?.guestId ?? null;
+}
+
+/** Whether the guest cookie is a verified proof issued for `guestId`. */
 async function userAuthCookieValidFor(guestId: string): Promise<boolean> {
-  return isUserAuthCookieValidFor(
-    guestId,
-    cookieJar.get(USER_AUTH_COOKIE_NAME)?.value
-  );
+  const parsed = await readGuestCookie(cookieJar.get(GUEST_COOKIE_NAME)?.value);
+  return parsed?.guestId === guestId && parsed.level === "verified";
 }
 
 describe("user auth actions", () => {
@@ -216,7 +221,7 @@ describe("user auth actions", () => {
         ` ${code.toLowerCase()} `
       );
       expect(result).toEqual({ ok: true });
-      expect(cookieJar.get("user")?.value).toBe(guest.id);
+      expect(await currentUserId()).toBe(guest.id);
       expect(await userAuthCookieValidFor(guest.id)).toBe(true);
     });
 
@@ -231,7 +236,7 @@ describe("user auth actions", () => {
       const { guest } = await protectedGuestWithCode();
       const result = await loginAsGuestAction(guest.id, "WRONGONE");
       expect(result.ok).toBe(false);
-      expect(cookieJar.get("user")).toBeUndefined();
+      expect(await currentUserId()).toBeNull();
       expect(await userAuthCookieValidFor(guest.id)).toBe(false);
     });
 
@@ -262,7 +267,7 @@ describe("user auth actions", () => {
       expect((await loginAsGuestAction(guest.id, "wrong")).ok).toBe(false);
       const result = await loginAsGuestAction(guest.id, "hunter2 forever");
       expect(result).toEqual({ ok: true });
-      expect(cookieJar.get("user")?.value).toBe(guest.id);
+      expect(await currentUserId()).toBe(guest.id);
       expect(await userAuthCookieValidFor(guest.id)).toBe(true);
     });
   });
@@ -272,7 +277,7 @@ describe("user auth actions", () => {
       const guest = await createGuest();
       const result = await selectUserAction(guest.id);
       expect(result).toEqual({ ok: true });
-      expect(cookieJar.get("user")?.value).toBe(guest.id);
+      expect(await currentUserId()).toBe(guest.id);
     });
 
     it("refuses a protected guest without credentials", async () => {
@@ -283,7 +288,7 @@ describe("user auth actions", () => {
       });
       const result = await selectUserAction(guest.id);
       expect(result).toMatchObject({ ok: false, needsAuth: true });
-      expect(cookieJar.get("user")).toBeUndefined();
+      expect(await currentUserId()).toBeNull();
     });
 
     it("switching away from a protected guest drops the authenticated session", async () => {
@@ -296,7 +301,7 @@ describe("user auth actions", () => {
       await loginAsGuestAction(protectedGuest.id, "hunter2 forever");
 
       await selectUserAction(other.id);
-      expect(cookieJar.get("user")?.value).toBe(other.id);
+      expect(await currentUserId()).toBe(other.id);
       expect(await userAuthCookieValidFor(protectedGuest.id)).toBe(false);
       // Switching back now needs credentials again.
       expect(await selectUserAction(protectedGuest.id)).toMatchObject({
@@ -309,7 +314,7 @@ describe("user auth actions", () => {
       const guest = await createGuest();
       await selectUserAction(guest.id);
       await selectUserAction(null);
-      expect(cookieJar.get("user")).toBeUndefined();
+      expect(await currentUserId()).toBeNull();
     });
   });
 
@@ -333,7 +338,7 @@ describe("user auth actions", () => {
       expect(creds?.authProtected).toBe(true);
       expect(creds?.passwordHash).toBeTruthy();
       // No session: the guest logs in with the new password afterwards.
-      expect(cookieJar.get("user")).toBeUndefined();
+      expect(await currentUserId()).toBeNull();
       expect(await userAuthCookieValidFor(guest.id)).toBe(false);
       expect(
         (await loginAsGuestAction(guest.id, "correct horse battery")).ok

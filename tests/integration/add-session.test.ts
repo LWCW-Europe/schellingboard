@@ -23,7 +23,11 @@ import {
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { POST } from "@/app/api/add-session/route";
-import { createUserAuthCookie } from "@/utils/auth";
+import {
+  GUEST_COOKIE_NAME,
+  openGuestValue,
+  verifiedGuestValue,
+} from "../helpers/guest-cookie";
 import type { SessionParams } from "@/app/api/session-form-utils";
 import type { Day, Guest, Location } from "@/db/repositories/interfaces";
 
@@ -41,11 +45,12 @@ function makeReq(
   opts?: { editorGuestId?: string; verified?: boolean }
 ): NextRequest {
   const cookies: string[] = [];
-  if (opts?.editorGuestId) cookies.push(`user=${opts.editorGuestId}`);
+  if (opts?.editorGuestId)
+    cookies.push(`${GUEST_COOKIE_NAME}=${openGuestValue(opts.editorGuestId)}`);
   return new NextRequest("http://test/api/add-session", {
     method: "POST",
     body: JSON.stringify(payload),
-    // The `user` cookie identifies the acting guest, like the site sets it.
+    // The guest cookie identifies the acting guest, like the site sets it.
     headers: cookies.length ? { cookie: cookies.join("; ") } : undefined,
   });
 }
@@ -54,12 +59,11 @@ async function makeReqWithAuthCookie(
   payload: unknown,
   editorGuestId: string
 ): Promise<NextRequest> {
-  const authCookie = await createUserAuthCookie(editorGuestId);
   return new NextRequest("http://test/api/add-session", {
     method: "POST",
     body: JSON.stringify(payload),
     headers: {
-      cookie: `user=${editorGuestId}; ${authCookie.name}=${authCookie.value}`,
+      cookie: `${GUEST_COOKIE_NAME}=${await verifiedGuestValue(editorGuestId)}`,
     },
   });
 }

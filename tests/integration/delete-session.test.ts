@@ -21,7 +21,11 @@ import {
   createDay,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { createUserAuthCookie } from "@/utils/auth";
+import {
+  GUEST_COOKIE_NAME,
+  openGuestValue,
+  verifiedGuestValue,
+} from "../helpers/guest-cookie";
 import { POST as addPOST } from "@/app/api/add-session/route";
 import { POST } from "@/app/api/delete-session/route";
 import type { SessionParams } from "@/app/api/session-form-utils";
@@ -51,7 +55,7 @@ function makeDeleteReq(
     method: "POST",
     body: JSON.stringify({ id }),
     headers: opts?.editorGuestId
-      ? { cookie: `user=${opts.editorGuestId}` }
+      ? { cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(opts.editorGuestId)}` }
       : undefined,
   });
 }
@@ -60,12 +64,11 @@ async function makeDeleteReqWithAuthCookie(
   id: string,
   editorGuestId: string
 ): Promise<NextRequest> {
-  const authCookie = await createUserAuthCookie(editorGuestId);
   return new NextRequest("http://test/api/delete-session", {
     method: "POST",
     body: JSON.stringify({ id }),
     headers: {
-      cookie: `user=${editorGuestId}; ${authCookie.name}=${authCookie.value}`,
+      cookie: `${GUEST_COOKIE_NAME}=${await verifiedGuestValue(editorGuestId)}`,
     },
   });
 }

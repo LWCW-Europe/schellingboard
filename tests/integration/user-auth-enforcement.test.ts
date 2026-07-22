@@ -33,7 +33,11 @@ import {
   createSession,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { createUserAuthCookie, USER_AUTH_COOKIE_NAME } from "@/utils/auth";
+import {
+  GUEST_COOKIE_NAME,
+  openGuestValue,
+  verifiedGuestValue,
+} from "../helpers/guest-cookie";
 import { POST as toggleRsvp } from "@/app/api/toggle-rsvp/route";
 import { POST as addVote } from "@/app/api/add-vote/route";
 import { POST as deleteVote } from "@/app/api/delete-vote/route";
@@ -52,8 +56,7 @@ async function protectGuest(guestId: string): Promise<void> {
 }
 
 async function authCookieHeader(guestId: string): Promise<string> {
-  const cookie = await createUserAuthCookie(guestId);
-  return `${cookie.name}=${cookie.value}`;
+  return `${GUEST_COOKIE_NAME}=${await verifiedGuestValue(guestId)}`;
 }
 
 function postReq(path: string, payload: unknown, cookie?: string): NextRequest {
@@ -258,7 +261,7 @@ describe("write enforcement for protected guests", () => {
     it("rejects edits as a protected guest without a verified session", async () => {
       const guest = await createGuest({ name: "Before" });
       await protectGuest(guest.id);
-      cookieJar.set("user", guest.id);
+      cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
       const profileResult = await updateProfileAction({
         name: "After",
@@ -280,11 +283,7 @@ describe("write enforcement for protected guests", () => {
     it("accepts edits with a verified session", async () => {
       const guest = await createGuest({ name: "Before" });
       await protectGuest(guest.id);
-      cookieJar.set("user", guest.id);
-      cookieJar.set(
-        USER_AUTH_COOKIE_NAME,
-        (await createUserAuthCookie(guest.id)).value
-      );
+      cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
       const result = await updateProfileAction({
         name: "After",

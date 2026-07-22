@@ -1,24 +1,26 @@
 import { getRepositories } from "@/db/container";
-import { isUserAuthCookieValidFor, USER_AUTH_COOKIE_NAME } from "./auth";
+import { readGuestCookie, GUEST_COOKIE_NAME } from "./auth";
 
 // Server-side enforcement for guest account security (issue #370): a request
-// acting as an auth-protected guest must carry that guest's signed session
-// cookie. Unprotected guests stay freely impersonable by design.
+// acting as an auth-protected guest must carry that guest's signed, verified
+// guest cookie. Unprotected guests stay freely impersonable by design.
 //
 // Kept separate from utils/auth.ts because these helpers hit the database.
 
 /**
- * Whether a request carrying `authCookieValue` may act as `guestId`.
+ * Whether a request carrying `guestCookieValue` may act as `guestId`.
  * True for unprotected and unknown guests — existence checks and their
- * error responses stay with the caller.
+ * error responses stay with the caller. A protected guest is honoured only
+ * when the cookie is a "verified" proof issued for exactly that guest.
  */
 export async function isVerifiedAsGuest(
   guestId: string,
-  authCookieValue: string | undefined
+  guestCookieValue: string | undefined
 ): Promise<boolean> {
   const creds = await getRepositories().guests.getAuthCredentials(guestId);
   if (!creds || !creds.authProtected) return true;
-  return isUserAuthCookieValidFor(guestId, authCookieValue);
+  const parsed = await readGuestCookie(guestCookieValue);
+  return parsed?.guestId === guestId && parsed.level === "verified";
 }
 
 // Shared 403 body for writes attempted as a protected guest without a
@@ -55,7 +57,7 @@ export async function isRequestVerifiedAsGuest(
   req: Request,
   guestId: string
 ): Promise<boolean> {
-  return isVerifiedAsGuest(guestId, requestCookie(req, USER_AUTH_COOKIE_NAME));
+  return isVerifiedAsGuest(guestId, requestCookie(req, GUEST_COOKIE_NAME));
 }
 
 type ReadonlyCookies = {
@@ -63,37 +65,49 @@ type ReadonlyCookies = {
 };
 
 /**
- * The current user id from the `user` cookie, for server components and
- * actions — but null when that guest is protected and the session isn't
- * verified, so an unauthenticated visitor can't act (or render private
- * state) as a protected guest merely by setting the plain cookie.
+ * The current user id from the guest cookie, for server components and
+ * actions — but null when that guest is protected and the cookie isn't a
+ * verified proof, so an unauthenticated visitor can't act (or render private
+ * state) as a protected guest merely by forging an "open" selection cookie.
  */
 export async function verifiedCurrentUser(
   cookieStore: ReadonlyCookies
 ): Promise<string | null> {
-  const currentUser = cookieStore.get("user")?.value;
-  if (!currentUser) return null;
-  const verified = await isVerifiedAsGuest(
-    currentUser,
-    cookieStore.get(USER_AUTH_COOKIE_NAME)?.value
-  );
-  return verified ? currentUser : null;
+  const value = cookieStore.get(GUEST_COOKIE_NAME)?.value;
+  const parsed = await readGuestCookie(value);
+  if (!parsed) return null;
+  return (await isVerifiedAsGuest(parsed.guestId, value))
+    ? parsed.guestId
+    : null;
 }
 
 /**
- * True unless the `user` cookie claims a protected guest without a verified
- * session. Unlike verifiedCurrentUser, an absent `user` cookie doesn't fail
- * this check — there's no protected identity being claimed, so there's
- * nothing to verify. For creation endpoints, which have no existing object
- * to check ownership against.
+ * The selected guest id regardless of verification, or null if none is
+ * selected. Use only to tell "no name selected" apart from "a protected name
+ * selected but not yet verified" — never to authorize acting as the guest
+ * (use verifiedCurrentUser for that).
+ */
+export async function currentGuestSelection(
+  cookieStore: ReadonlyCookies
+): Promise<string | null> {
+  const parsed = await readGuestCookie(
+    cookieStore.get(GUEST_COOKIE_NAME)?.value
+  );
+  return parsed?.guestId ?? null;
+}
+
+/**
+ * True unless the guest cookie claims a protected guest without a verified
+ * proof. Unlike verifiedCurrentUser, an absent cookie doesn't fail this
+ * check — there's no protected identity being claimed, so there's nothing to
+ * verify. For creation endpoints, which have no existing object to check
+ * ownership against.
  */
 export async function actingUserIsVerified(
   cookieStore: ReadonlyCookies
 ): Promise<boolean> {
-  const currentUser = cookieStore.get("user")?.value;
-  if (!currentUser) return true;
-  return isVerifiedAsGuest(
-    currentUser,
-    cookieStore.get(USER_AUTH_COOKIE_NAME)?.value
-  );
+  const value = cookieStore.get(GUEST_COOKIE_NAME)?.value;
+  const parsed = await readGuestCookie(value);
+  if (!parsed) return true;
+  return isVerifiedAsGuest(parsed.guestId, value);
 }

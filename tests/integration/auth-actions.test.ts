@@ -20,7 +20,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { logoutAction } from "@/app/actions/auth";
-import { AUTH_COOKIE_NAME, USER_AUTH_COOKIE_NAME } from "@/utils/auth";
+import { AUTH_COOKIE_NAME, GUEST_COOKIE_NAME } from "@/utils/auth";
 
 describe("logoutAction", () => {
   beforeEach(() => {
@@ -29,17 +29,15 @@ describe("logoutAction", () => {
       name: AUTH_COOKIE_NAME,
       value: "site-session",
     });
-    cookieJar.set("user", { name: "user", value: "guest-1" });
-    cookieJar.set(USER_AUTH_COOKIE_NAME, {
-      name: USER_AUTH_COOKIE_NAME,
-      value: "user.guest-1.session",
+    cookieJar.set(GUEST_COOKIE_NAME, {
+      name: GUEST_COOKIE_NAME,
+      value: "verified.guest-1.123.sig",
     });
   });
 
   it("clears the site login and the guest identity together", async () => {
     await logoutAction();
     expect(cookieJar.has(AUTH_COOKIE_NAME)).toBe(false);
-    expect(cookieJar.has("user")).toBe(false);
-    expect(cookieJar.has(USER_AUTH_COOKIE_NAME)).toBe(false);
+    expect(cookieJar.has(GUEST_COOKIE_NAME)).toBe(false);
   });
 });

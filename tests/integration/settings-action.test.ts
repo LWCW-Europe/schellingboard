@@ -14,6 +14,7 @@ vi.mock("next/headers", () => ({
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createGuest } from "../helpers/factories";
+import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
 import { DEFAULT_EMAIL_SETTINGS } from "@/db/repositories/interfaces";
 import { updateEmailSettingsAction } from "@/app/actions/settings";
@@ -28,7 +29,7 @@ describe("updateEmailSettingsAction", () => {
 
   it("updates the current user's email settings", async () => {
     const guest = await createGuest({ name: "Guest" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateEmailSettingsAction({
       rsvpChange: false,
       hostChange: false,
@@ -57,7 +58,7 @@ describe("updateEmailSettingsAction", () => {
 
   it("rejects an invalid payload", async () => {
     const guest = await createGuest({ name: "Guest" });
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     // A payload the typed signature can't produce; simulates a hand-crafted
     // request hitting the server action directly.
     const result = await updateEmailSettingsAction({

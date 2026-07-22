@@ -51,6 +51,7 @@ import {
   createProposal,
   createSession,
 } from "../helpers/factories";
+import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
@@ -110,7 +111,7 @@ const VERIFIERS: Record<string, Verifier> = {
           duration: 60,
           timezone: "UTC",
         }),
-        headers: { cookie: `user=${guest.id}` },
+        headers: { cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(guest.id)}` },
       })
     );
     expect(res.status).toBe(403);
@@ -144,7 +145,7 @@ const VERIFIERS: Record<string, Verifier> = {
           duration: 60,
           timezone: "UTC",
         }),
-        headers: { cookie: `user=${host.id}` },
+        headers: { cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(host.id)}` },
       })
     );
     expect(res.status).toBe(403);
@@ -166,7 +167,7 @@ const VERIFIERS: Record<string, Verifier> = {
       new NextRequest("http://test/api/delete-session", {
         method: "POST",
         body: JSON.stringify({ id: session.id }),
-        headers: { cookie: `user=${host.id}` },
+        headers: { cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(host.id)}` },
       })
     );
     expect(res.status).toBe(403);
@@ -238,7 +239,7 @@ const PROPOSAL_ACTION_VERIFIERS: Record<
     const event = await createEvent();
     const guest = await createGuest({ eventId: event.id });
     await protectGuest(guest.id);
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const fd = new FormData();
     fd.set("event", event.id);
     fd.set("eventSlug", "test-event");
@@ -255,7 +256,7 @@ const PROPOSAL_ACTION_VERIFIERS: Record<
     const host = await createGuest({ eventId: event.id });
     await protectGuest(host.id);
     const proposal = await createProposal(event.id, [host.id]);
-    cookieJar.set("user", host.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(host.id));
     const fd = new FormData();
     fd.set("eventSlug", "test-event");
     fd.set("title", "Renamed");
@@ -270,7 +271,7 @@ const PROPOSAL_ACTION_VERIFIERS: Record<
     const host = await createGuest({ eventId: event.id });
     await protectGuest(host.id);
     const proposal = await createProposal(event.id, [host.id]);
-    cookieJar.set("user", host.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(host.id));
     const result = await deleteProposal(proposal.id, "test-event");
     expect(result).toHaveProperty("error");
   },

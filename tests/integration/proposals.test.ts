@@ -31,7 +31,11 @@ import {
   createProposal as createProposalFixture,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { createUserAuthCookie, USER_AUTH_COOKIE_NAME } from "@/utils/auth";
+import {
+  GUEST_COOKIE_NAME,
+  openGuestValue,
+  verifiedGuestValue,
+} from "../helpers/guest-cookie";
 import {
   createProposal,
   updateProposal,
@@ -140,7 +144,7 @@ describe("createProposal", () => {
     const event = await createEvent();
     const guest = await createGuest({ name: "Host", eventId: event.id });
     await protectGuest(guest.id);
-    cookieJar.set("user", guest.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
     const result = await createProposal(
       proposalForm({
@@ -162,11 +166,7 @@ describe("createProposal", () => {
     const event = await createEvent();
     const guest = await createGuest({ name: "Host", eventId: event.id });
     await protectGuest(guest.id);
-    cookieJar.set("user", guest.id);
-    cookieJar.set(
-      USER_AUTH_COOKIE_NAME,
-      (await createUserAuthCookie(guest.id)).value
-    );
+    cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
     const result = await createProposal(
       proposalForm({
@@ -202,7 +202,7 @@ describe("updateProposal", () => {
       title: "Original",
       durationMinutes: 30,
     });
-    cookieJar.set("user", alice.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(alice.id));
 
     const result = await updateProposal(
       proposal.id,
@@ -235,7 +235,7 @@ describe("updateProposal", () => {
     const proposal = await createProposalFixture(event.id, [host.id], {
       durationMinutes: 60,
     });
-    cookieJar.set("user", host.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(host.id));
 
     const result = await updateProposal(
       proposal.id,
@@ -277,7 +277,7 @@ describe("updateProposal", () => {
     const alice = await createGuest({ name: "Alice", eventId: event.id });
     const outsider = await createGuest({ name: "Outsider" }); // not assigned
     const proposal = await createProposalFixture(event.id, [alice.id]);
-    cookieJar.set("user", alice.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(alice.id));
 
     const result = await updateProposal(
       proposal.id,
@@ -302,7 +302,7 @@ describe("updateProposal", () => {
     const proposal = await createProposalFixture(event.id, [host.id], {
       title: "Original",
     });
-    cookieJar.set("user", nonHost.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(nonHost.id));
 
     const result = await updateProposal(
       proposal.id,
@@ -360,7 +360,7 @@ describe("updateProposal", () => {
     const proposal = await createProposalFixture(event.id, [host.id], {
       title: "Original",
     });
-    cookieJar.set("user", host.id);
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(host.id));
 
     const result = await updateProposal(
       proposal.id,
@@ -381,11 +381,7 @@ describe("updateProposal", () => {
     const proposal = await createProposalFixture(event.id, [host.id], {
       title: "Original",
     });
-    cookieJar.set("user", host.id);
-    cookieJar.set(
-      USER_AUTH_COOKIE_NAME,
-      (await createUserAuthCookie(host.id)).value
-    );
+    cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(host.id));
 
     const result = await updateProposal(
       proposal.id,

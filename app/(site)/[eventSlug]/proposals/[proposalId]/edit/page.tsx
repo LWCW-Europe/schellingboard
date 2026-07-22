@@ -2,7 +2,10 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { SessionProposalForm } from "@/app/(site)/[eventSlug]/session-proposal-form";
-import { verifiedCurrentUser } from "@/utils/acting-guest";
+import {
+  verifiedCurrentUser,
+  currentGuestSelection,
+} from "@/utils/acting-guest";
 import { notFound } from "next/navigation";
 
 function CantEdit(props: { eventSlug: string; children: React.ReactNode }) {
@@ -49,7 +52,7 @@ export default async function EditProposalPage({
       // verifiedCurrentUser is null both when no name is selected and when the
       // selected name is protected but unverified — distinguish so a protected
       // host is told to authenticate, not to pick a name they already picked.
-      const nameSelected = Boolean(cookieStore.get("user")?.value);
+      const nameSelected = Boolean(await currentGuestSelection(cookieStore));
       return (
         <CantEdit eventSlug={eventSlug}>
           {nameSelected
