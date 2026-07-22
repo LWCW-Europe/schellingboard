@@ -10,10 +10,13 @@ import {
 } from "@heroicons/react/16/solid";
 
 type Icon = typeof BoldIcon;
+type Key =
+  RegExp | string | ((e: React.KeyboardEvent<HTMLTextAreaElement>) => boolean);
 type Option = {
   icon: Icon;
   label: string;
   template: Template;
+  key: Key;
 };
 
 /**
@@ -180,6 +183,19 @@ const around =
     return tpl`${newBefore}${newSelectedText}${newAfter}`;
   };
 
+export const isKey =
+  (key: Key) => (e: React.KeyboardEvent<HTMLTextAreaElement>) =>
+    typeof key === "function"
+      ? key(e)
+      : typeof key === "string"
+        ? e.key.toLowerCase() === key.toLowerCase()
+        : key.test(e.key);
+
+const ctrl = (k: Key) => (e: React.KeyboardEvent<HTMLTextAreaElement>) =>
+  (e.ctrlKey || e.metaKey) && isKey(k)(e);
+const shift = (k: Key) => (e: React.KeyboardEvent<HTMLTextAreaElement>) =>
+  e.shiftKey && isKey(k)(e);
+
 export const options: Option[] = [
   {
     icon: BoldIcon,
@@ -187,6 +203,7 @@ export const options: Option[] = [
     template: around(
       (before, selectedText, after) => tpl`${before}**${selectedText}**${after}`
     ),
+    key: ctrl("B"),
   },
   {
     icon: ItalicIcon,
@@ -194,15 +211,18 @@ export const options: Option[] = [
     template: around(
       (before, selectedText, after) => tpl`${before}*${selectedText}*${after}`
     ),
+    key: ctrl("I"),
   },
   {
     icon: ChatBubbleBottomCenterTextIcon,
-    label: "Quote (Ctrl+Q)",
+    label: "Quote (Ctrl+Shift+>)",
     template: selectLine(
       around(
         (before, selectedText, after) => tpl`${before}> ${selectedText}${after}`
       )
     ),
+    // Ctrl + Q is a special shortcut
+    key: ctrl(shift(">")),
   },
   {
     icon: NumberedListIcon,
@@ -217,34 +237,39 @@ export const options: Option[] = [
         (line, index) => `${index + 1 + lastNumber}. ${line}`
       )(before, selectedText, after);
     }),
+    key: ctrl(/\d/),
   },
   {
     icon: ListBulletIcon,
     label: "Bullet list (Ctrl+-)",
     template: selectLine(listMarker(/^-\s+/, (line) => `- ${line}`)),
+    key: ctrl("-"),
   },
   {
     icon: CodeBracketIcon,
-    label: "Inline code",
+    label: "Inline code (Ctrl+`)",
     template: around(
       (before, selectedText, after) => tpl`${before}\`${selectedText}\`${after}`
     ),
+    key: ctrl("`"),
   },
   {
     icon: CodeBracketSquareIcon,
-    label: "Code block",
+    label: "Code block (Ctrl+Shift+~)",
     template: selectLine(
       around(
         (before, selectedText, after) =>
           tpl`${before}\`\`\`\n${selectedText}\n\`\`\`${after}`
       )
     ),
+    key: ctrl(shift("~")),
   },
   {
     icon: LinkIcon,
-    label: "Insert link",
+    label: "Insert link (Ctrl+L)",
     template: around(
       (before, selectedText, after) => tpl`${before}[](${selectedText})${after}`
     ),
+    key: ctrl("L"),
   },
 ];

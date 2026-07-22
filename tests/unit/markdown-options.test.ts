@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { applyTemplate, options } from "@/app/components/markdown-options";
+import { describe, expect, it } from "vitest";
+import {
+  applyTemplate,
+  isKey,
+  options,
+} from "@/app/components/markdown-options";
 
 // Options are looked up by the start of their label so that adding a keyboard
 // shortcut hint to the label doesn't break these tests.
@@ -135,5 +139,87 @@ describe("markdown toolbar options", () => {
       expect(edit.value).toBe("[]()");
       expect([edit.selectionStart, edit.selectionEnd]).toEqual([3, 3]);
     });
+  });
+});
+
+function optionBy(event: unknown) {
+  return options.find((opt) =>
+    isKey(opt.key)(event as React.KeyboardEvent<HTMLTextAreaElement>)
+  );
+}
+
+describe("Markdown editor keyboard shortcuts", () => {
+  it("should do bold on Ctrl+B", () => {
+    expect(
+      optionBy({
+        ctrlKey: true,
+        key: "b",
+      })?.label
+    ).toMatch(/^Bold/);
+  });
+
+  it("should do italics on Ctrl+I", () => {
+    expect(
+      optionBy({
+        ctrlKey: true,
+        key: "i",
+      })?.label
+    ).toMatch(/^Italic/);
+  });
+
+  it("should do quote on Ctrl+Shift+>", () => {
+    expect(
+      optionBy({
+        ctrlKey: true,
+        shiftKey: true,
+        key: ">",
+      })?.label
+    ).toMatch(/^Quote/);
+  });
+
+  it("should do numbered list on Ctrl+1", () => {
+    expect(
+      optionBy({
+        ctrlKey: true,
+        key: "1",
+      })?.label
+    ).toMatch(/^Numbered list/);
+  });
+
+  it("should do bullet list on Ctrl+-", () => {
+    expect(
+      optionBy({
+        ctrlKey: true,
+        key: "-",
+      })?.label
+    ).toMatch(/^Bullet list/);
+  });
+
+  it("should do inline code on Ctrl+`", () => {
+    expect(
+      optionBy({
+        ctrlKey: true,
+        key: "`",
+      })?.label
+    ).toMatch(/^Inline code/);
+  });
+
+  it("should do inline code on Ctrl+Shift+`", () => {
+    expect(
+      optionBy({
+        ctrlKey: true,
+        shiftKey: true,
+        key: "~", // ` becomes ~ when shift is held
+      })?.label
+    ).toMatch(/^Code block/);
+  });
+
+  it("should do insert link on Ctrl+L", () => {
+    expect(
+      optionBy({
+        ctrlKey: true,
+        key: "l",
+      })?.label
+    ).toMatch(/^Insert link/);
   });
 });
