@@ -43,6 +43,13 @@ export async function POST(req: Request) {
   }
 
   if (!remove) {
+    if (session.hosts.some((h) => h.id === guestId)) {
+      return Response.json(
+        { error: "Hosts cannot RSVP to their own session" },
+        { status: 403 }
+      );
+    }
+
     const enforceCapacity = event.rsvpCapacityHardLimit && session.capacity > 0;
     try {
       if (enforceCapacity) {
