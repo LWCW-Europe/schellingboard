@@ -451,6 +451,26 @@ describe("event actions", () => {
       const event = await getRepositories().events.findByName("Test Event");
       expect(event?.rsvpCapacityHardLimit).toBe(false);
     });
+
+    it("adds an https:// scheme to a bare website domain", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        website: "example.com",
+      });
+      expect(result.ok).toBe(true);
+      const event = await getRepositories().events.findByName("Test Event");
+      expect(event?.website).toBe("https://example.com");
+    });
+
+    it("keeps an already-schemed website URL unchanged", async () => {
+      const result = await createEventAction({
+        ...VALID_EVENT_INPUT,
+        website: "https://example.com",
+      });
+      expect(result.ok).toBe(true);
+      const event = await getRepositories().events.findByName("Test Event");
+      expect(event?.website).toBe("https://example.com");
+    });
   });
 
   describe("updateEventAction", () => {

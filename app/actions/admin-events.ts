@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { eventNameToSlug, RESERVED_EVENT_SLUGS } from "@/utils/utils";
+import {
+  eventNameToSlug,
+  normalizeWebsiteUrl,
+  RESERVED_EVENT_SLUGS,
+} from "@/utils/utils";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import type { Event } from "@/db/repositories/interfaces";
 import type { AdminActionResult } from "./admin-guests";
@@ -96,7 +100,7 @@ function parseEventInput(input: EventInput): ParseResult {
     data: {
       name,
       description: input.description.trim(),
-      website: input.website.trim(),
+      website: normalizeWebsiteUrl(input.website),
       start,
       end,
       timezone,

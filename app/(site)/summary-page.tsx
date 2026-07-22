@@ -42,13 +42,15 @@ export default function SummaryPage(props: {
                       .toFormat("LLL d")}
                   </span>
                 </span>
-                <a
-                  className="flex gap-1 items-center hover:underline"
-                  href={`https://${event.website}`}
-                >
-                  <LinkIcon className="h-3 w-3 stroke-2" />
-                  <span>{event.website}</span>
-                </a>
+                {event.website && (
+                  <a
+                    className="flex gap-1 items-center hover:underline"
+                    href={event.website}
+                  >
+                    <LinkIcon className="h-3 w-3 stroke-2" />
+                    <span>{event.website}</span>
+                  </a>
+                )}
               </div>
               <div className="text-gray-900 mt-2">
                 <Markdown>{event.description}</Markdown>

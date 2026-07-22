@@ -1289,7 +1289,7 @@ function seedTestData() {
     slug: eventNameToSlug(config.name),
     description: config.description,
     icon: config.icon,
-    website: `test-event-${index + 1}.example.com`,
+    website: `https://test-event-${index + 1}.example.com`,
     start: config.start.toISOString(),
     end: config.end.toISOString(),
     proposalPhaseStart: config.proposalPhaseStart.toISOString(),

@@ -91,6 +91,25 @@ describe("POST /api/admin/create-event", () => {
     expect(event?.schedulingPhaseEnd).toBeUndefined();
   });
 
+  it("adds an https:// scheme to a bare website domain", async () => {
+    const res = await POST(makeReq({ ...VALID_BODY, website: "example.com" }));
+    expect(res.status).toBe(201);
+    const event = await getRepositories().events.findBySlug("Summer-Camp");
+    expect(event?.website).toBe("https://example.com");
+  });
+
+  it("keeps an already-schemed website URL unchanged", async () => {
+    const res = await POST(
+      makeReq({
+        ...VALID_BODY,
+        website: "https://example.com",
+      })
+    );
+    expect(res.status).toBe(201);
+    const event = await getRepositories().events.findBySlug("Summer-Camp");
+    expect(event?.website).toBe("https://example.com");
+  });
+
   it("accepts explicit timezone, durations and scheduling phase", async () => {
     const res = await POST(
       makeReq({
