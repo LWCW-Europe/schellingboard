@@ -54,6 +54,7 @@ jj squash --from <commit> --to @ -m "message" -- <path>
   - `bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts:42` (one test by line)
   - `bun set-env.ts test bun x playwright test -g "creates a proposal"` (by title substring)
 - Full test strategy and TDD rules are in [CONTRIBUTING.md § Testing](CONTRIBUTING.md#testing) — read it before writing any test
+- Before running tests for the first time in a session, check whether mailpit is running (`docker compose ps mailpit`); if not, ask the user whether to start it (`make mailpit`)
 
 ### Test tiers (short form)
 
