@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepositories } from "@/db/container";
+import { isRequestVerifiedAsGuest } from "@/utils/acting-guest";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { error: "user or session parameter is required" },
       { ...NO_STORE, status: 400 }
+    );
+  }
+
+  // A guest's full RSVP list is private to that guest (aggregating it across
+  // sessions is exposing). Per-session RSVPs stay openly readable — they are
+  // displayed to everyone in the session details.
+  if (user && !(await isRequestVerifiedAsGuest(request, user))) {
+    return NextResponse.json(
+      { error: "This user's RSVPs are private" },
+      { ...NO_STORE, status: 403 }
     );
   }
 

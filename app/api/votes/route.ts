@@ -20,8 +20,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Votes are private to their owner once the guest is protected; RSVPs
-  // stay openly readable (they are displayed per session).
+  // Votes are private to their owner once the guest is protected — as is a
+  // guest's per-user RSVP list (see app/api/rsvps). Only the per-session RSVP
+  // list stays openly readable.
   if (!(await isRequestVerifiedAsGuest(request, user))) {
     return NextResponse.json(
       { error: "This user's votes are private" },

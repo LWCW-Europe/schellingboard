@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { EventProviderWrapper } from "./event-provider-wrapper";
 import type { DayWithSessions } from "@/app/(site)/context";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 
 export async function EventLayoutContent({
   eventSlug,
@@ -18,7 +19,10 @@ export async function EventLayoutContent({
   }
 
   const cookieStore = await cookies();
-  const currentUser = cookieStore.get("user")?.value;
+  // Verified, not the raw `user` cookie: a guest's RSVP list is private, so a
+  // forged plain cookie naming a protected guest must not seed their RSVPs
+  // into the SSR payload.
+  const currentUser = await verifiedCurrentUser(cookieStore);
 
   const [days, sessions, locations, guests, rsvps] = await Promise.all([
     repos.days.listByEvent(event.id),

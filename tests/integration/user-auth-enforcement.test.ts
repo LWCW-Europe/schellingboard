@@ -38,6 +38,7 @@ import { POST as toggleRsvp } from "@/app/api/toggle-rsvp/route";
 import { POST as addVote } from "@/app/api/add-vote/route";
 import { POST as deleteVote } from "@/app/api/delete-vote/route";
 import { GET as getVotes } from "@/app/api/votes/route";
+import { GET as getRsvps } from "@/app/api/rsvps/route";
 import { updateProfileAction } from "@/app/actions/profile";
 import { updateEmailSettingsAction } from "@/app/actions/settings";
 
@@ -208,6 +209,48 @@ describe("write enforcement for protected guests", () => {
       );
       expect(verified.ok).toBe(true);
       expect(await verified.json()).toHaveLength(1);
+    });
+  });
+
+  describe("GET /api/rsvps", () => {
+    async function setup() {
+      const event = await createEvent({ phase: "scheduling" });
+      const guest = await createGuest({ eventId: event.id });
+      const session = await createSession(event.id);
+      await getRepositories().rsvps.create({
+        sessionId: session.id,
+        guestId: guest.id,
+      });
+      return { guest, session };
+    }
+
+    it("hides a protected guest's RSVPs from unverified readers", async () => {
+      const { guest } = await setup();
+      await protectGuest(guest.id);
+
+      const unverified = await getRsvps(
+        new NextRequest(`http://test/api/rsvps?user=${guest.id}`)
+      );
+      expect(unverified.status).toBe(403);
+
+      const verified = await getRsvps(
+        new NextRequest(`http://test/api/rsvps?user=${guest.id}`, {
+          headers: { cookie: await authCookieHeader(guest.id) },
+        })
+      );
+      expect(verified.ok).toBe(true);
+      expect(await verified.json()).toHaveLength(1);
+    });
+
+    it("still lists RSVPs per session without auth", async () => {
+      const { guest, session } = await setup();
+      await protectGuest(guest.id);
+
+      const res = await getRsvps(
+        new NextRequest(`http://test/api/rsvps?session=${session.id}`)
+      );
+      expect(res.ok).toBe(true);
+      expect(await res.json()).toHaveLength(1);
     });
   });
 

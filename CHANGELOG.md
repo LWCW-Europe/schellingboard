@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - **Kiosk mode stays on while browsing**: opening a schedule with `?kiosk=1` used to only stay in kiosk mode on that exact page — clicking any link (e.g. to Proposals) dropped back to the normal view. It now stays on across the whole site until turned off with `?kiosk=0`
+- **RSVPs are private to each attendee**: a profile no longer lists the sessions that person is going to — you can still see who's coming on each session's own details, but their RSVPs are no longer gathered together on their profile, and only they can pull up their own full list. When scheduling, a host who is already busy at the chosen time still triggers a clash warning, but it now just says they're busy at that time rather than naming the session they're attending
 - **Settings separated from the public profile**: email notification preferences moved from the profile edit page to the dedicated Settings page, so private preferences are clearly apart from what other attendees can see
 - **Your name is always visible**: the attendee you're acting as now shows as a chip in the header on every page — proposals, voting, and schedule — so it's always clear who "you" are, and you can switch attendee from there (handy for a shared device)
 - **Attendee list shows location, not bio**: rows on the attendees page now show each person's pronouns and where they're based instead of a preview of their bio

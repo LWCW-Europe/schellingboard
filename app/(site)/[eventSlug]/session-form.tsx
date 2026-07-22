@@ -10,7 +10,6 @@ import { SelectHosts } from "@/app/select-hosts";
 import {
   convertParamDateTime,
   dateOnDay,
-  getStartTimePlusBreak,
   formatDuration,
   durationMinusBreak,
   TIME_FORMAT,
@@ -24,14 +23,14 @@ import type {
   Guest,
   Location,
   Session,
-  Rsvp,
   SessionProposal,
 } from "@/db/repositories/interfaces";
 import { ConfirmDeletionModal } from "../modals";
 import { UserContext } from "../context";
-import { sessionsOverlap, newEmptySession } from "../session_utils";
+import { newEmptySession } from "../session_utils";
 import { buildSessionInterval } from "@/app/api/session-form-utils";
 import { revalidateEvent } from "./session-actions";
+import { detectHostClashes, type HostClash } from "./clash-actions";
 import { MarkdownHint } from "@/app/(site)/markdown";
 
 interface ErrorResponse {
@@ -200,61 +199,53 @@ export function SessionForm(props: {
     };
   }
 
-  const [hostRSVPs, setHostRSVPs] = useState<Record<string, Rsvp[]>>({});
-  const [isFetchingRSVPs, setIsFetchingRSVPs] = useState(false);
+  // Clash detection runs on the server (see clash-actions): a host's RSVP'd
+  // sessions are private, so the client never receives them — the server only
+  // reports that the host is "busy" for the overlapping interval.
+  const [hostClashes, setHostClashes] = useState<HostClash[]>([]);
+  const [isCheckingClashes, setIsCheckingClashes] = useState(false);
+
+  const hostIdsKey = hosts.map((h) => h.id).join(",");
+  const candidateStart = dummySession.startTime?.getTime();
+  const candidateEnd = dummySession.endTime?.getTime();
 
   useEffect(() => {
-    const fetchRSVPs = async () => {
-      setIsFetchingRSVPs(true);
-      const entries = await Promise.all(
-        hosts.map(async (host) => {
-          const res = await fetch(`/api/rsvps?user=${host.id}`);
-          const rsvps = (await res.json()) as Rsvp[];
-          return [host.id, rsvps] as const;
-        })
-      );
-
-      setHostRSVPs(Object.fromEntries(entries));
-      setIsFetchingRSVPs(false);
+    let cancelled = false;
+    const check = async () => {
+      if (!candidateStart || !candidateEnd || !hostIdsKey) {
+        setHostClashes((prev) => (prev.length === 0 ? prev : []));
+        return;
+      }
+      setIsCheckingClashes(true);
+      try {
+        const clashes = await detectHostClashes({
+          eventId: event.id,
+          hostIds: hostIdsKey.split(","),
+          start: new Date(candidateStart).toISOString(),
+          end: new Date(candidateEnd).toISOString(),
+          excludeSessionId: sessionID ?? null,
+        });
+        if (!cancelled) setHostClashes(clashes);
+      } catch (error) {
+        console.error("Error detecting clashes:", error);
+      } finally {
+        if (!cancelled) setIsCheckingClashes(false);
+      }
     };
-
-    void fetchRSVPs();
-  }, [hosts]);
-
-  const clashes = hosts.map((host) => {
-    const sessionClashes = sessions.filter(
-      (ses) =>
-        ses.hosts.some((h) => h.id === host.id) &&
-        sessionsOverlap(ses, dummySession)
-    );
-    const rsvpClashes = (hostRSVPs[host.id] || [])
-      .map((rsvp) => sessions.find((ses) => ses.id === rsvp.sessionId))
-      .filter((ses): ses is Session => ses !== undefined)
-      .filter((ses) => sessionsOverlap(ses, dummySession));
-
-    return {
-      id: host.id,
-      sessionClashes,
-      rsvpClashes,
+    void check();
+    return () => {
+      cancelled = true;
     };
+  }, [event.id, hostIdsKey, candidateStart, candidateEnd, sessionID]);
+
+  const clashErrors = hostClashes.map((clash) => {
+    const formatTime = (iso: string) =>
+      DateTime.fromISO(iso).setZone(timezone).toFormat(TIME_FORMAT);
+    const interval = `from ${formatTime(clash.start)} to ${formatTime(clash.end)}`;
+    return clash.kind === "hosting"
+      ? `${clash.hostName} is hosting ${clash.title} ${interval}`
+      : `${clash.hostName} is busy ${interval}`;
   });
-  const clashErrors = clashes
-    .map((hostClashes) => {
-      const { id, sessionClashes, rsvpClashes } = hostClashes;
-      const hostName = hosts.find((host) => host.id === id)!.name;
-      const formatTime = (d: DateTime) =>
-        d.setZone(timezone).toFormat(TIME_FORMAT);
-      const displayInterval = (ses: Session) =>
-        `from ${formatTime(getStartTimePlusBreak(ses, event.breakMinutes))} to ${formatTime(DateTime.fromJSDate(ses.endTime ?? new Date()))}`;
-      const sessionErrors = sessionClashes.map(
-        (ses) => `${hostName} is hosting ${ses.title} ${displayInterval(ses)}`
-      );
-      const rsvpErrors = rsvpClashes.map(
-        (ses) => `${hostName} is attending ${ses.title} ${displayInterval(ses)}`
-      );
-      return sessionErrors.concat(rsvpErrors);
-    })
-    .flat();
 
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -539,7 +530,7 @@ export function SessionForm(props: {
           !locationId ||
           !day ||
           !effectiveDuration ||
-          isFetchingRSVPs ||
+          isCheckingClashes ||
           isSubmitting
         }
         onClick={() => void Submit()}

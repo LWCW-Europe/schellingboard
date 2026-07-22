@@ -43,14 +43,12 @@ export default async function GuestProfilePage(props: {
   const backHref = from ? `/guests?${from}` : "/guests";
   const repos = getRepositories();
 
-  const [completeGuest, hostedSessions, proposals, rsvpdSessions, events] =
-    await Promise.all([
-      repos.guests.findById(guestId),
-      repos.sessions.listHostedByGuest(guestId),
-      repos.sessionProposals.listByHost(guestId),
-      repos.sessions.listRsvpdByGuest(guestId),
-      repos.events.list(),
-    ]);
+  const [completeGuest, hostedSessions, proposals, events] = await Promise.all([
+    repos.guests.findById(guestId),
+    repos.sessions.listHostedByGuest(guestId),
+    repos.sessionProposals.listByHost(guestId),
+    repos.events.list(),
+  ]);
 
   if (!completeGuest) {
     return <p className="text-gray-600">Profile not found.</p>;
@@ -179,16 +177,6 @@ export default async function GuestProfilePage(props: {
           key: p.id,
           label: p.title,
           item: { eventSlug: eventIdToSlug(p.eventId), id: p.id },
-        }))}
-        LinkType={ProposalLink}
-      />
-
-      <ProfileList
-        title="Going to"
-        items={rsvpdSessions.map((s) => ({
-          key: s.id,
-          label: s.title,
-          item: { eventSlug: eventIdToSlug(s.eventId), id: s.id },
         }))}
         LinkType={ProposalLink}
       />
