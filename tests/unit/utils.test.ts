@@ -3,6 +3,7 @@ import {
   durationMinusBreak,
   formatDuration,
   eventNameToSlug,
+  normalizeWebsiteUrl,
   dateOnDay,
   getPercentThroughDay,
   getStartTimePlusBreak,
@@ -70,6 +71,37 @@ describe("eventNameToSlug", () => {
 
   it("returns an empty slug when nothing safe remains", () =>
     expect(eventNameToSlug("///")).toBe(""));
+});
+
+// ── normalizeWebsiteUrl ──────────────────────────────────────────────────────
+
+describe("normalizeWebsiteUrl", () => {
+  it("adds an https:// scheme to a bare domain", () =>
+    expect(normalizeWebsiteUrl("example.com")).toBe("https://example.com"));
+
+  it("leaves an https:// URL unchanged", () =>
+    expect(normalizeWebsiteUrl("https://example.com")).toBe(
+      "https://example.com"
+    ));
+
+  it("leaves an http:// URL unchanged", () =>
+    expect(normalizeWebsiteUrl("http://example.com")).toBe(
+      "http://example.com"
+    ));
+
+  it("is case-insensitive about an existing scheme", () =>
+    expect(normalizeWebsiteUrl("HTTPS://example.com")).toBe(
+      "HTTPS://example.com"
+    ));
+
+  it("trims surrounding whitespace", () =>
+    expect(normalizeWebsiteUrl("  example.com  ")).toBe("https://example.com"));
+
+  it("returns an empty string unchanged", () =>
+    expect(normalizeWebsiteUrl("")).toBe(""));
+
+  it("returns an empty string for whitespace-only input", () =>
+    expect(normalizeWebsiteUrl("   ")).toBe(""));
 });
 
 // ── votesApiUrl ──────────────────────────────────────────────────────────────

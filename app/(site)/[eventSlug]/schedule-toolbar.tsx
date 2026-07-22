@@ -91,7 +91,7 @@ function EventDetails(props: { event: Event }) {
         {event.website && (
           <a
             className="flex items-center gap-1 hover:underline"
-            href={`https://${event.website}`}
+            href={event.website}
           >
             <LinkIcon className="h-4 w-4 stroke-2" />
             <span>{event.website}</span>

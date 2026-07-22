@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
-import { eventNameToSlug, RESERVED_EVENT_SLUGS } from "@/utils/utils";
+import {
+  eventNameToSlug,
+  normalizeWebsiteUrl,
+  RESERVED_EVENT_SLUGS,
+} from "@/utils/utils";
 import {
   DEFAULT_SLOT_INCREMENT_MINUTES,
   SLOT_INCREMENT_OPTIONS,
@@ -151,7 +155,7 @@ export async function POST(req: Request) {
     event = await events.create({
       name,
       description: (body.description ?? "").trim(),
-      website: (body.website ?? "").trim(),
+      website: normalizeWebsiteUrl(body.website ?? ""),
       start,
       end,
       timezone,
