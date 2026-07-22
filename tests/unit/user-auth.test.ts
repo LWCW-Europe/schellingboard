@@ -86,9 +86,12 @@ describe("user passwords", () => {
   });
 
   it("salts hashes (same password, different hash)", async () => {
-    const a = await hashUserPassword("pw");
-    const b = await hashUserPassword("pw");
+    // Long enough that the hash accidentally containing the password by
+    // chance is negligible (~1e-11), unlike a short password such as "pw".
+    const password = "correct horse battery staple";
+    const a = await hashUserPassword(password);
+    const b = await hashUserPassword(password);
     expect(a).not.toBe(b);
-    expect(a).not.toContain("pw");
+    expect(a).not.toContain(password);
   });
 });
