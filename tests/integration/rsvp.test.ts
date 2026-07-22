@@ -92,6 +92,19 @@ describe("POST /api/toggle-rsvp", () => {
     expect(await rsvpsForGuest(guest.id)).toHaveLength(0);
   });
 
+  it("rejects a host RSVPing to their own session", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest();
+    const session = await createSession(event.id, { hostIds: [host.id] });
+    await getRepositories().guests.assignToEvent(event.id, [host.id]);
+
+    const res = await toggleRsvp(
+      makeToggleReq({ sessionId: session.id, guestId: host.id })
+    );
+    expect(res.status).toBe(403);
+    expect(await rsvpsForGuest(host.id)).toHaveLength(0);
+  });
+
   it("rejects RSVPs from a guest who isn't assigned to the event", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest();

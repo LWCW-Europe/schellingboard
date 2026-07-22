@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - **Host RSVPs cleared on edit**: adding an attendee as a session host now removes their RSVP to that session, including when an organizer edits the session from the admin panel
+- **Hosts can no longer RSVP to their own session**: this was already prevented everywhere in the interface, but a direct request could still add the RSVP
 
 ### Internal
 
