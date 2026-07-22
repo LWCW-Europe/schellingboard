@@ -18,6 +18,12 @@ Next.js scheduling app for managing conference/event sessions with three phases:
 
 Update `CHANGELOG.md` under `[Unreleased]` for any user-facing change — audience is event organizers, so keep it non-technical. Dev-only changes go under `Internal`. See [CONTRIBUTING.md § Changelog](CONTRIBUTING.md#changelog) for section types and conventions.
 
+## GitHub Issues
+
+When creating or editing GitHub issues, set Issue Type and the Priority field to match existing
+conventions — see [docs/github-issues.md](docs/github-issues.md) for the required `gh api
+graphql` commands (neither field is settable via plain `gh issue create`/`edit`).
+
 ## Version Control
 
 - Use `jj` (jujutsu) if available, otherwise `git`
