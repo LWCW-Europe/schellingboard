@@ -237,7 +237,7 @@ export class SqliteSessionsRepository implements SessionsRepository {
       .where(where)
       // id as tiebreaker: title is not unique, and without a deterministic
       // order LIMIT/OFFSET pagination can duplicate or skip rows.
-      .orderBy(schema.sessions.title, schema.sessions.id)
+      .orderBy(sql`${schema.sessions.title} collate nocase`, schema.sessions.id)
       .limit(opts.limit)
       .offset(opts.offset)
       .all();

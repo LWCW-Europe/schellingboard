@@ -130,7 +130,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .where(where)
       // id as tiebreaker: name is not unique, and without a deterministic
       // order LIMIT/OFFSET pagination can duplicate or skip rows.
-      .orderBy(schema.guests.name, schema.guests.id)
+      .orderBy(sql`${schema.guests.name} collate nocase`, schema.guests.id)
       .limit(opts.limit)
       .offset(opts.offset)
       .all()
@@ -166,7 +166,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
         .from(schema.guests)
         .where(opts.host ? isHostExpr : undefined)
         // id as tiebreaker so equal names keep a deterministic order.
-        .orderBy(schema.guests.name, schema.guests.id)
+        .orderBy(sql`${schema.guests.name} collate nocase`, schema.guests.id)
         .all()
         .map((row) => ({ ...row, isHost: Boolean(row.isHost) }) as Attendee)
     );
@@ -191,7 +191,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
         eq(schema.eventGuests.eventId, schema.events.id)
       )
       .where(inArray(schema.eventGuests.guestId, guestIds))
-      .orderBy(schema.events.name, schema.events.id)
+      .orderBy(sql`${schema.events.name} collate nocase`, schema.events.id)
       .all();
     for (const row of rows) {
       result.get(row.guestId)?.push({ id: row.eventId, name: row.eventName });
@@ -247,7 +247,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
       .where(where)
       // id as tiebreaker: name is not unique, and without a deterministic
       // order LIMIT/OFFSET pagination can duplicate or skip rows.
-      .orderBy(schema.guests.name, schema.guests.id)
+      .orderBy(sql`${schema.guests.name} collate nocase`, schema.guests.id)
       .limit(opts.limit)
       .offset(opts.offset)
       .all()

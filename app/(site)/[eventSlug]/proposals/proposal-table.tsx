@@ -150,7 +150,7 @@ export function ProposalTable({
         const hostNamesStr = (hosts: SessionProposal["hosts"]) =>
           hosts
             .map((h) => h.name)
-            .sort()
+            .sort((x, y) => x.localeCompare(y))
             .join("");
         cmp = hostNamesStr(a.hosts).localeCompare(hostNamesStr(b.hosts));
       }
