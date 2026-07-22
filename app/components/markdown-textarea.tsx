@@ -2,6 +2,7 @@
 
 import {
   forwardRef,
+  KeyboardEventHandler,
   TextareaHTMLAttributes,
   useEffect,
   useRef,
@@ -9,7 +10,7 @@ import {
 } from "react";
 import clsx from "clsx";
 import { Markdown } from "@/app/(site)/markdown";
-import { options } from "@/app/components/markdown-options";
+import { isKey, options } from "@/app/components/markdown-options";
 
 const TAB_STYLE =
   "first:rounded-tl-md border-e-1 border-gray-400 p-2 hover:bg-gray-300 cursor-pointer";
@@ -41,6 +42,14 @@ export const MarkdownTextarea = forwardRef<
   const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
     props.onChange?.(e);
+  };
+
+  const onKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
+    const option = options.find((opt) => isKey(opt.key)(e));
+    if (option) {
+      e.preventDefault();
+      option.onClick(e.currentTarget);
+    }
   };
 
   return (
@@ -95,6 +104,7 @@ export const MarkdownTextarea = forwardRef<
         }
         ref={setTextareaRefs}
         onChange={onChange}
+        onKeyDown={onKeyDown}
         className={clsx(
           props.className,
           "w-full font-(family-name:--font-mono) rounded-t-none rounded-md text-sm resize-y peer h-40 border-none ring-0 outline-0 bg-white px-4 py-2 placeholder-gray-400 transition-colors",
