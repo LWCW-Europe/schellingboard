@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 // Kiosk mode (?kiosk=1) is for unattended large screens at the venue: a red
@@ -18,9 +18,50 @@ const INTERACTION_IDLE_MS = 60 * 1000;
 /** How often the event data is refetched so the display never goes stale. */
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
+/** Cookie that lets kiosk mode survive navigation once ?kiosk=1 has set it. */
+const KIOSK_COOKIE_NAME = "kiosk";
+const KIOSK_COOKIE_MAX_AGE_SEC = 365 * 24 * 60 * 60;
+
+function hasKioskCookie(): boolean {
+  return document.cookie
+    .split("; ")
+    .some((entry) => entry.split("=")[0] === KIOSK_COOKIE_NAME);
+}
+
+// The cookie is only ever written by this hook (never by another tab we need
+// to react to live), so subscribing is a no-op; the value is re-read on every
+// render a ?kiosk change or navigation already triggers.
+const subscribeKioskCookie = () => () => {};
+
+/**
+ * Kiosk mode is entered via ?kiosk=1 and left via ?kiosk=0; a cookie makes it
+ * stick across navigation the rest of the time, so a kiosk display doesn't
+ * fall out of kiosk mode just because a visitor clicked a link.
+ */
 export function useKioskMode(): boolean {
   const searchParams = useSearchParams();
-  return searchParams?.get("kiosk") != null;
+  const param = searchParams?.get("kiosk") ?? null;
+
+  useEffect(() => {
+    if (param === "0") {
+      document.cookie = `${KIOSK_COOKIE_NAME}=; path=/; max-age=0`;
+    } else if (param != null) {
+      document.cookie = `${KIOSK_COOKIE_NAME}=1; path=/; max-age=${KIOSK_COOKIE_MAX_AGE_SEC}`;
+    }
+  }, [param]);
+
+  // The cookie can't be read during render on the server, so report false for
+  // SSR and the first hydration pass; useSyncExternalStore then re-reads it on
+  // the client. Only consulted when the URL carries no ?kiosk parameter.
+  const cookieEnabled = useSyncExternalStore(
+    subscribeKioskCookie,
+    hasKioskCookie,
+    () => false
+  );
+
+  if (param === "0") return false;
+  if (param != null) return true;
+  return cookieEnabled;
 }
 
 /**

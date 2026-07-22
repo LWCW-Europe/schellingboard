@@ -50,9 +50,11 @@ Rules:
 Append `?kiosk=1` to a schedule URL for an unattended screen at the venue: a
 red line marks the current time, the view auto-scrolls back to it after a
 minute of no interaction, the screen is kept awake, and the page refreshes
-periodically. It stays fully interactive. Add `&loc=Main+Hall` (repeatable)
-to show only specific locations — handy for a kiosk in one room or a
-shareable filtered link.
+periodically. It stays fully interactive. Once set, kiosk mode sticks as
+visitors browse the site — clicking through to Proposals and back keeps the
+display in kiosk mode — until you turn it off with `?kiosk=0`. Add
+`&loc=Main+Hall` (repeatable) to show only specific locations — handy for a
+kiosk in one room or a shareable filtered link.
 
 ## Multi-event installs
 

@@ -40,7 +40,10 @@ async function openGammaScheduleDuringEvent(page: Page, path: string) {
   await page.getByRole("button", { name: "Grid" }).click();
   await expect(page).toHaveURL(/view=grid/);
   await page.clock.setFixedTime(duringGammaDayOne);
-  await page.clock.runFor("05:00");
+  // Just under the 5-minute REFRESH_INTERVAL_MS in kiosk.tsx: a full 5:00
+  // fires KioskController's router.refresh(), which can race a subsequent
+  // navigation in the test and trip the console-error guard.
+  await page.clock.runFor("04:59");
 }
 
 test("kiosk mode draws a now line and auto-scrolls it into view", async ({
@@ -52,5 +55,41 @@ test("kiosk mode draws a now line and auto-scrolls it into view", async ({
 
 test("without the kiosk parameter there is no now line", async ({ page }) => {
   await openGammaScheduleDuringEvent(page, "/Conference-Gamma");
+  await expect(page.getByTestId("now-line")).toHaveCount(0);
+});
+
+test("kiosk mode persists via cookie after navigating without the parameter", async ({
+  page,
+}) => {
+  await openGammaScheduleDuringEvent(page, "/Conference-Gamma?kiosk=1");
+  await expect(page.getByTestId("now-line")).toBeInViewport();
+
+  // Neither link below carries ?kiosk=1, yet the display should stay in
+  // kiosk mode: the cookie set on the first load should carry it through.
+  await page.getByRole("link", { name: "Proposals" }).click();
+  await page.getByRole("link", { name: "View Schedule" }).click();
+  await expect(page).toHaveURL(/\/Conference-Gamma$/);
+
+  await expect(page.getByTestId("now-line")).toBeInViewport();
+});
+
+test("?kiosk=0 clears the cookie and leaves kiosk mode", async ({ page }) => {
+  await openGammaScheduleDuringEvent(page, "/Conference-Gamma?kiosk=1");
+  await expect(page.getByTestId("now-line")).toBeInViewport();
+
+  // Leave via a client-side link first and wait for it to settle: a hard
+  // page.goto right after kiosk mode was active risks getting aborted by an
+  // in-flight fetch (NS_BINDING_ABORTED) — see memory
+  // e2e-nav-abort-after-admin-save.
+  await page.getByRole("link", { name: "Proposals" }).click();
+  await expect(
+    page.getByRole("heading", { name: /Session Proposals/ })
+  ).toBeVisible();
+  await page.goto("/Conference-Gamma?kiosk=0");
+  await expect(page.getByTestId("now-line")).toHaveCount(0);
+
+  // A plain reload (no parameter at all) should stay out of kiosk mode too,
+  // proving the cookie was actually cleared rather than just overridden.
+  await page.goto("/Conference-Gamma");
   await expect(page.getByTestId("now-line")).toHaveCount(0);
 });
