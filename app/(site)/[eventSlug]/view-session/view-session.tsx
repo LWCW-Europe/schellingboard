@@ -85,7 +85,7 @@ export function ViewSession(props: {
       ? null
       : optimisticRsvps
           .flatMap((rsvp) => guestMap.get(rsvp.guestId) ?? [])
-          .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+          .sort((a, b) => a.name.localeCompare(b.name));
 
   const location = locations.find((loc) => loc.id === session.locations[0]?.id);
 

@@ -192,7 +192,10 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
       .where(where)
       // id as tiebreaker: title is not unique, and without a deterministic
       // order LIMIT/OFFSET pagination can duplicate or skip rows.
-      .orderBy(schema.sessionProposals.title, schema.sessionProposals.id)
+      .orderBy(
+        sql`${schema.sessionProposals.title} collate nocase`,
+        schema.sessionProposals.id
+      )
       .limit(opts.limit)
       .offset(opts.offset)
       .all();

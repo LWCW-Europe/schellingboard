@@ -91,7 +91,10 @@ export class SqliteLocationsRepository implements LocationsRepository {
       .where(where)
       // id as tiebreaker: name is not unique, and without a deterministic
       // order LIMIT/OFFSET pagination can duplicate or skip rows.
-      .orderBy(schema.locations.name, schema.locations.id)
+      .orderBy(
+        sql`${schema.locations.name} collate nocase`,
+        schema.locations.id
+      )
       .limit(opts.limit)
       .offset(opts.offset)
       .all()
