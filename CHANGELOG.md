@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Host RSVPs cleared on edit**: adding an attendee as a session host now removes their RSVP to that session, including when an organizer edits the session from the admin panel
 - **Hosts can no longer RSVP to their own session**: this was already prevented everywhere in the interface, but a direct request could still add the RSVP
 - **Alphabetical sorting ignores case**: attendee, session, and proposal lists now sort names and titles case-insensitively, so e.g. "bob" no longer sorts after "Zoe"
+- **"Back to attendees" keeps your place**: returning from an attendee's profile now goes back to the same page, search, and filter you were viewing, instead of resetting to the top of the list
 
 ### Internal
 

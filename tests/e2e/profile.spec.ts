@@ -307,3 +307,38 @@ test("shows an error on the edit page when no user is selected", async ({
     page.getByRole("heading", { name: /Edit profile/i })
   ).toHaveCount(0);
 });
+
+test("Back to attendees preserves pagination", async ({ page }) => {
+  await login(page);
+  await page.goto("/guests");
+
+  await page.getByRole("button", { name: "Next page" }).click();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+
+  // Seed data is 40 guests sorted alphabetically; "Mateo Quispe" is 26th,
+  // i.e. the first row of page 2.
+  await page.getByRole("link", { name: "Mateo Quispe" }).click();
+  await expect(page).toHaveURL(/\/guests\/[^/]+/);
+
+  await page.getByRole("link", { name: "Back to attendees" }).click();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Mateo Quispe" })).toBeVisible();
+});
+
+test("Back to attendees preserves the search query", async ({ page }) => {
+  await login(page);
+  await page.goto("/guests");
+
+  await page.getByLabel("Search").fill("Test");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Alice Test" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Bob Test" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Alice Test" }).click();
+  await expect(page).toHaveURL(/\/guests\/[^/]+/);
+
+  await page.getByRole("link", { name: "Back to attendees" }).click();
+  await expect(page.getByLabel("Search")).toHaveValue("Test");
+  await expect(page.getByRole("link", { name: "Bob Test" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Charlie Test" })).toBeVisible();
+});

@@ -15,14 +15,22 @@ export type AttendeeRowData = Pick<
 
 function AttendeeRow({
   attendee: { id, avatarUrl, name, pronouns, basedIn, isHost },
+  listQueryString,
 }: {
   attendee: AttendeeRowData;
+  listQueryString: string;
 }) {
   // Fixed row shape (avatar, name, pronouns, based-in) so the list stays
   // consistent regardless of which optional profile fields are filled in.
+  const href = listQueryString
+    ? // Carries the list's current page/search/filter so the profile page's
+      // "Back to attendees" link can return to the same view instead of
+      // always resetting to page 1.
+      `/guests/${id}?from=${encodeURIComponent(listQueryString)}`
+    : `/guests/${id}`;
   return (
     <Link
-      href={`/guests/${id}`}
+      href={href}
       className="flex items-center gap-4 hover:bg-gray-50 rounded-md px-2"
     >
       <Avatar name={name} size="sm" image={avatarUrl ?? undefined} />
@@ -54,7 +62,10 @@ export function AttendeeList(props: {
   filter?: string;
   filters: { value: string; label: string }[];
 }) {
-  const { setParams } = useTableParams();
+  const { searchParams, setParams } = useTableParams();
+  // The raw query string (no leading "/guests?"), forwarded as `from` on
+  // each row link so the profile page can rebuild "/guests?<from>".
+  const listQueryString = searchParams.toString();
   const toolbar = (
     <div className="flex gap-2">
       {props.filters.map((f) => (
@@ -97,7 +108,9 @@ export function AttendeeList(props: {
         searchQuery={props.searchQuery}
         searchPlaceholder="Search names, languages, interests…"
         emptyMessage="No attendees match."
-        listItem={(u) => <AttendeeRow attendee={u} />}
+        listItem={(u) => (
+          <AttendeeRow attendee={u} listQueryString={listQueryString} />
+        )}
       />
     </div>
   );

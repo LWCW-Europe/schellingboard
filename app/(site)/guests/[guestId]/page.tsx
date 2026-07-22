@@ -33,8 +33,13 @@ import {
 
 export default async function GuestProfilePage(props: {
   params: Promise<{ guestId: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { guestId } = await props.params;
+  const { from } = await props.searchParams;
+  // Only ever a query string appended to "/guests" (see attendee-list.tsx),
+  // so this can't become a redirect off-site even if `from` is tampered with.
+  const backHref = from ? `/guests?${from}` : "/guests";
   const repos = getRepositories();
 
   const [completeGuest, hostedSessions, proposals, rsvpdSessions, events] =
@@ -64,7 +69,7 @@ export default async function GuestProfilePage(props: {
     <div className="max-w-2xl mx-auto flex flex-col gap-8 px-4 sm:px-0">
       <div className="flex items-center justify-between gap-4">
         <Link
-          href="/guests"
+          href={backHref}
           className="bg-rose-400 text-white font-semibold py-2 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
         >
           Back to attendees
