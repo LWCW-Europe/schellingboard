@@ -45,10 +45,13 @@ import { sendMail, isMailerConfigured } from "@/utils/mailer";
 import { isUserAuthCookieValidFor, USER_AUTH_COOKIE_NAME } from "@/utils/auth";
 import { hashUserPassword } from "@/utils/user-credentials";
 import {
+  changePasswordAction,
+  disableProtectionAction,
   loginAsGuestAction,
-  requestAuthCodeAction,
+  requestLoginCodeAction,
+  requestPasswordLinkAction,
   selectUserAction,
-  updateAuthSecurityAction,
+  setPasswordWithTokenAction,
 } from "@/app/actions/user-auth";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
@@ -74,6 +77,14 @@ async function lastSentEmail(): Promise<{
   const code = email.html.match(/>([A-HJ-NP-Z2-9]{8})</)?.[1];
   if (!code) throw new Error(`No code found in email: ${email.html}`);
   return { ...email, code };
+}
+
+/** The reset token carried in the most recent password-link email. */
+async function lastResetToken(): Promise<string> {
+  const email = await lastEmail();
+  const token = email.html.match(/token=([A-Za-z0-9_-]+)/)?.[1];
+  if (!token) throw new Error(`No reset token in email: ${email.html}`);
+  return token;
 }
 
 async function userAuthCookieValidFor(guestId: string): Promise<boolean> {
@@ -102,10 +113,10 @@ describe("user auth actions", () => {
     vi.useRealTimers();
   });
 
-  describe("requestAuthCodeAction", () => {
+  describe("requestLoginCodeAction", () => {
     it("emails the guest a code and a login link", async () => {
       const guest = await createGuest();
-      const result = await requestAuthCodeAction(guest.id);
+      const result = await requestLoginCodeAction(guest.id);
       expect(result).toEqual({ ok: true });
       const email = await lastSentEmail();
       expect(email.to).toMatch(/@test\.example$/);
@@ -119,19 +130,19 @@ describe("user auth actions", () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2026-07-18T12:00:00Z"));
       const guest = await createGuest();
-      expect((await requestAuthCodeAction(guest.id)).ok).toBe(true);
-      const throttled = await requestAuthCodeAction(guest.id);
+      expect((await requestLoginCodeAction(guest.id)).ok).toBe(true);
+      const throttled = await requestLoginCodeAction(guest.id);
       // throttled is a typed flag so the UI can tell "recent code still
       // valid" apart from real errors without matching on the message.
       expect(throttled).toMatchObject({ ok: false, throttled: true });
       expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(1);
       vi.setSystemTime(new Date("2026-07-18T12:01:01Z"));
-      expect((await requestAuthCodeAction(guest.id)).ok).toBe(true);
+      expect((await requestLoginCodeAction(guest.id)).ok).toBe(true);
       expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(2);
     });
 
     it("fails for an unknown guest without sending mail", async () => {
-      const result = await requestAuthCodeAction("nope");
+      const result = await requestLoginCodeAction("nope");
       expect(result.ok).toBe(false);
       expect(vi.mocked(sendMail)).not.toHaveBeenCalled();
     });
@@ -139,7 +150,48 @@ describe("user auth actions", () => {
     it("fails when email is not configured", async () => {
       vi.mocked(isMailerConfigured).mockReturnValue(false);
       const guest = await createGuest();
-      const result = await requestAuthCodeAction(guest.id);
+      const result = await requestLoginCodeAction(guest.id);
+      expect(result.ok).toBe(false);
+      expect(vi.mocked(sendMail)).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("requestPasswordLinkAction", () => {
+    it("emails the guest a single-use reset link", async () => {
+      const guest = await createGuest();
+      const result = await requestPasswordLinkAction(guest.id);
+      expect(result).toEqual({ ok: true });
+      const email = await lastEmail();
+      expect(email.to).toMatch(/@test\.example$/);
+      expect(email.subject).toMatch(/password/i);
+      expect(email.html).toContain(
+        `https://sessions.test.example/auth/reset?guest=${guest.id}&amp;token=`
+      );
+    });
+
+    it("throttles repeated requests, allowing a new one after a minute", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-07-18T12:00:00Z"));
+      const guest = await createGuest();
+      expect((await requestPasswordLinkAction(guest.id)).ok).toBe(true);
+      const throttled = await requestPasswordLinkAction(guest.id);
+      expect(throttled).toMatchObject({ ok: false, throttled: true });
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(1);
+      vi.setSystemTime(new Date("2026-07-18T12:01:01Z"));
+      expect((await requestPasswordLinkAction(guest.id)).ok).toBe(true);
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(2);
+    });
+
+    it("a login code and a reset link are issued independently", async () => {
+      // Requesting one must not throttle or clobber the other.
+      const guest = await createGuest();
+      expect((await requestLoginCodeAction(guest.id)).ok).toBe(true);
+      expect((await requestPasswordLinkAction(guest.id)).ok).toBe(true);
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(2);
+    });
+
+    it("fails for an unknown guest without sending mail", async () => {
+      const result = await requestPasswordLinkAction("nope");
       expect(result.ok).toBe(false);
       expect(vi.mocked(sendMail)).not.toHaveBeenCalled();
     });
@@ -150,9 +202,9 @@ describe("user auth actions", () => {
       const guest = await createGuest();
       await getRepositories().guests.setAuthProtection(guest.id, {
         authProtected: true,
-        passwordHash: null,
+        passwordHash: await hashUserPassword("existing password ok"),
       });
-      await requestAuthCodeAction(guest.id);
+      await requestLoginCodeAction(guest.id);
       const { code } = await lastSentEmail();
       return { guest, code };
     }
@@ -168,11 +220,11 @@ describe("user auth actions", () => {
       expect(await userAuthCookieValidFor(guest.id)).toBe(true);
     });
 
-    it("the code stays valid for repeated logins within its window", async () => {
+    it("the code is single-use: a second login with it fails", async () => {
       const { guest, code } = await protectedGuestWithCode();
       expect((await loginAsGuestAction(guest.id, code)).ok).toBe(true);
       cookieJar.clear();
-      expect((await loginAsGuestAction(guest.id, code)).ok).toBe(true);
+      expect((await loginAsGuestAction(guest.id, code)).ok).toBe(false);
     });
 
     it("rejects a wrong code and never sets cookies", async () => {
@@ -261,154 +313,192 @@ describe("user auth actions", () => {
     });
   });
 
-  describe("updateAuthSecurityAction", () => {
-    async function currentGuestWithCode() {
+  describe("setPasswordWithTokenAction", () => {
+    async function guestWithResetToken() {
       const guest = await createGuest();
-      await selectUserAction(guest.id);
-      await requestAuthCodeAction(guest.id);
-      const { code } = await lastSentEmail();
-      return { guest, code };
+      await requestPasswordLinkAction(guest.id);
+      const token = await lastResetToken();
+      return { guest, token };
     }
 
-    it("enables protection with a valid code and authenticates the session", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      const result = await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-      });
+    it("sets the password, turns protection on, and grants no session", async () => {
+      const { guest, token } = await guestWithResetToken();
+      const result = await setPasswordWithTokenAction(
+        guest.id,
+        token,
+        "correct horse battery"
+      );
       expect(result).toEqual({ ok: true });
-      expect(
-        await getRepositories().guests.getAuthCredentials(guest.id)
-      ).toEqual({ authProtected: true, passwordHash: null });
-      expect(await userAuthCookieValidFor(guest.id)).toBe(true);
-    });
-
-    it("enables protection with a permanent password usable for login", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      const result = await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "correct horse battery",
-      });
-      expect(result).toEqual({ ok: true });
-      cookieJar.clear();
+      const creds = await getRepositories().guests.getAuthCredentials(guest.id);
+      expect(creds?.authProtected).toBe(true);
+      expect(creds?.passwordHash).toBeTruthy();
+      // No session: the guest logs in with the new password afterwards.
+      expect(cookieJar.get("user")).toBeUndefined();
+      expect(await userAuthCookieValidFor(guest.id)).toBe(false);
       expect(
         (await loginAsGuestAction(guest.id, "correct horse battery")).ok
       ).toBe(true);
     });
 
-    it("leaves the guest unprotected when the auth cookie cannot be signed", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      // e.g. AUTH_SECRET unset: enabling protection must fail as a whole,
-      // not flip the flag and then leave a guest nobody can ever log in as.
-      vi.stubEnv("AUTH_SECRET", "");
-      await expect(
-        updateAuthSecurityAction({ credential: code, protect: true })
-      ).rejects.toThrow();
+    it("is single-use: the same token cannot set a password twice", async () => {
+      const { guest, token } = await guestWithResetToken();
       expect(
-        (await getRepositories().guests.getAuthCredentials(guest.id))
-          ?.authProtected
+        (
+          await setPasswordWithTokenAction(
+            guest.id,
+            token,
+            "correct horse battery"
+          )
+        ).ok
+      ).toBe(true);
+      const again = await setPasswordWithTokenAction(
+        guest.id,
+        token,
+        "another password here"
+      );
+      expect(again.ok).toBe(false);
+    });
+
+    it("rejects a wrong or expired token", async () => {
+      const { guest } = await guestWithResetToken();
+      expect(
+        (
+          await setPasswordWithTokenAction(
+            guest.id,
+            "not-the-token",
+            "long enough"
+          )
+        ).ok
       ).toBe(false);
     });
 
-    it("rejects a wrong code and leaves the guest unprotected", async () => {
-      const { guest } = await currentGuestWithCode();
-      const result = await updateAuthSecurityAction({
-        credential: "WRONGONE",
-        protect: true,
-      });
-      expect(result.ok).toBe(false);
+    it("rejects a too-short password without consuming the token", async () => {
+      const { guest, token } = await guestWithResetToken();
       expect(
-        await getRepositories().guests.getAuthCredentials(guest.id)
-      ).toEqual({ authProtected: false, passwordHash: null });
-    });
-
-    it("rejects a password in place of a code when enabling protection", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "correct horse battery",
-      });
-      // Disabling clears the password, but the guest might still remember
-      // it — re-enabling must go through a fresh emailed code regardless,
-      // since it's the operation the recovery path depends on.
-      await updateAuthSecurityAction({ credential: code, protect: false });
-      const result = await updateAuthSecurityAction({
-        credential: "correct horse battery",
-        protect: true,
-      });
-      expect(result.ok).toBe(false);
-      expect(
-        (await getRepositories().guests.getAuthCredentials(guest.id))
-          ?.authProtected
+        (await setPasswordWithTokenAction(guest.id, token, "short")).ok
       ).toBe(false);
-    });
-
-    it("disables protection and clears the password, with a code", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "correct horse battery",
-      });
-      const result = await updateAuthSecurityAction({
-        credential: code,
-        protect: false,
-      });
-      expect(result).toEqual({ ok: true });
+      // The token survives a rejected weak password, so a valid retry works.
       expect(
-        await getRepositories().guests.getAuthCredentials(guest.id)
-      ).toEqual({ authProtected: false, passwordHash: null });
+        (
+          await setPasswordWithTokenAction(
+            guest.id,
+            token,
+            "correct horse battery"
+          )
+        ).ok
+      ).toBe(true);
     });
 
-    it("disables protection with the permanent password", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "correct horse battery",
-      });
-      const result = await updateAuthSecurityAction({
-        credential: "correct horse battery",
-        protect: false,
-      });
-      expect(result).toEqual({ ok: true });
-      expect(
-        await getRepositories().guests.getAuthCredentials(guest.id)
-      ).toEqual({ authProtected: false, passwordHash: null });
-    });
+    it("notifies only when the guest was already protected (a reset)", async () => {
+      // First set: enabling protection, no notification.
+      const { guest, token } = await guestWithResetToken();
+      await setPasswordWithTokenAction(
+        guest.id,
+        token,
+        "correct horse battery"
+      );
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(1); // just the link
 
-    it("changes the password with the current permanent password", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "correct horse battery",
+      // Second set on an already-protected guest: a reset — notify.
+      await requestPasswordLinkAction(guest.id);
+      const token2 = await lastResetToken();
+      await setPasswordWithTokenAction(
+        guest.id,
+        token2,
+        "new password entirely"
+      );
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(3); // link + notification
+      const email = await lastEmail();
+      expect(email.subject).toMatch(/password/i);
+    });
+  });
+
+  describe("changePasswordAction", () => {
+    async function loggedInProtectedGuest() {
+      const guest = await createGuest();
+      await getRepositories().guests.setAuthProtection(guest.id, {
+        authProtected: true,
+        passwordHash: await hashUserPassword("correct horse battery"),
       });
-      const result = await updateAuthSecurityAction({
-        credential: "correct horse battery",
-        protect: true,
-        newPassword: "new password entirely",
-      });
+      await loginAsGuestAction(guest.id, "correct horse battery");
+      return guest;
+    }
+
+    it("changes the password given the current one, and notifies", async () => {
+      const guest = await loggedInProtectedGuest();
+      const result = await changePasswordAction(
+        "correct horse battery",
+        "new password entirely"
+      );
       expect(result).toEqual({ ok: true });
+      const email = await lastEmail();
+      expect(email.subject).toMatch(/password/i);
       cookieJar.clear();
       expect(
         (await loginAsGuestAction(guest.id, "new password entirely")).ok
       ).toBe(true);
     });
 
-    it("rejects a wrong password in place of a code or password", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "correct horse battery",
+    it("rejects a wrong current password and leaves it unchanged", async () => {
+      const guest = await loggedInProtectedGuest();
+      const result = await changePasswordAction(
+        "wrong",
+        "new password entirely"
+      );
+      expect(result.ok).toBe(false);
+      cookieJar.clear();
+      expect(
+        (await loginAsGuestAction(guest.id, "correct horse battery")).ok
+      ).toBe(true);
+    });
+
+    it("rejects a too-short new password", async () => {
+      await loggedInProtectedGuest();
+      expect(
+        (await changePasswordAction("correct horse battery", "short")).ok
+      ).toBe(false);
+    });
+
+    it("fails when no user is selected", async () => {
+      await loggedInProtectedGuest();
+      cookieJar.clear();
+      expect(
+        (
+          await changePasswordAction(
+            "correct horse battery",
+            "new password entirely"
+          )
+        ).ok
+      ).toBe(false);
+    });
+  });
+
+  describe("disableProtectionAction", () => {
+    async function loggedInProtectedGuest() {
+      const guest = await createGuest();
+      await getRepositories().guests.setAuthProtection(guest.id, {
+        authProtected: true,
+        passwordHash: await hashUserPassword("correct horse battery"),
       });
-      const result = await updateAuthSecurityAction({
-        credential: "wrong password",
-        protect: false,
-      });
+      await loginAsGuestAction(guest.id, "correct horse battery");
+      return guest;
+    }
+
+    it("turns protection off, clears the password and session, and notifies", async () => {
+      const guest = await loggedInProtectedGuest();
+      const result = await disableProtectionAction("correct horse battery");
+      expect(result).toEqual({ ok: true });
+      expect(
+        await getRepositories().guests.getAuthCredentials(guest.id)
+      ).toEqual({ authProtected: false, passwordHash: null });
+      expect(await userAuthCookieValidFor(guest.id)).toBe(false);
+      const email = await lastEmail();
+      expect(email.subject).toMatch(/protection.*(off|disabled)/i);
+    });
+
+    it("rejects a wrong password and stays protected", async () => {
+      const guest = await loggedInProtectedGuest();
+      const result = await disableProtectionAction("wrong");
       expect(result.ok).toBe(false);
       expect(
         (await getRepositories().guests.getAuthCredentials(guest.id))
@@ -416,79 +506,10 @@ describe("user auth actions", () => {
       ).toBe(true);
     });
 
-    it("rejects a too-short password", async () => {
-      const { code } = await currentGuestWithCode();
-      const result = await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "short",
-      });
-      expect(result.ok).toBe(false);
-    });
-
-    it("fails when no user is selected", async () => {
-      const guest = await createGuest();
-      await requestAuthCodeAction(guest.id);
-      const { code } = await lastSentEmail();
-      cookieJar.clear();
-      const result = await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-      });
-      expect(result.ok).toBe(false);
-    });
-
-    it("does not notify when protection is enabled for the first time", async () => {
-      const { code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "correct horse battery",
-      });
-      // Only the code request itself sent mail — no notification for a
-      // guest's first-ever protection/password.
-      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(1);
-    });
-
-    it("emails a notification when protection is disabled", async () => {
-      const { code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({ credential: code, protect: true });
-      await updateAuthSecurityAction({ credential: code, protect: false });
-      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(2);
-      const email = await lastEmail();
-      expect(email.to).toMatch(/@test\.example$/);
-      expect(email.subject).toMatch(/protection.*(off|disabled)/i);
-    });
-
-    it("emails a notification when the password changes", async () => {
-      const { code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "correct horse battery",
-      });
-      await updateAuthSecurityAction({
-        credential: "correct horse battery",
-        protect: true,
-        newPassword: "new password entirely",
-      });
-      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(2);
-      const email = await lastEmail();
-      expect(email.subject).toMatch(/password/i);
-    });
-
-    it("disabling succeeds even if the notification email fails to send", async () => {
-      const { guest, code } = await currentGuestWithCode();
-      await updateAuthSecurityAction({
-        credential: code,
-        protect: true,
-        newPassword: "correct horse battery",
-      });
+    it("succeeds even if the notification email fails to send", async () => {
+      const guest = await loggedInProtectedGuest();
       vi.mocked(sendMail).mockRejectedValueOnce(new Error("smtp down"));
-      const result = await updateAuthSecurityAction({
-        credential: "correct horse battery",
-        protect: false,
-      });
+      const result = await disableProtectionAction("correct horse battery");
       expect(result).toEqual({ ok: true });
       expect(
         (await getRepositories().guests.getAuthCredentials(guest.id))

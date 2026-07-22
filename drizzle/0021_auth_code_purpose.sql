@@ -1,0 +1,1 @@
+ALTER TABLE `auth_codes` ADD `purpose` text DEFAULT 'login' NOT NULL;

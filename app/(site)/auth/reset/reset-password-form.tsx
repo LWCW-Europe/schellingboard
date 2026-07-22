@@ -1,34 +1,33 @@
 "use client";
 import { useState } from "react";
-import { updateAuthSecurityAction } from "@/app/actions/user-auth";
+import Link from "next/link";
+import { setPasswordWithTokenAction } from "@/app/actions/user-auth";
 
-// Offered right after a successful emailed-code login, when the guest has no
-// password yet. Reuses that same code (still valid within its window) so it
-// never has to be retyped in Settings — this is the same "enable protection
-// (+ password)" operation as Account security's inline form, just triggered
-// here instead.
-export function SetPasswordForm({
-  credential,
-  onDone,
+// Sets a new password from a reset link. Grants no session, so on success it
+// points the guest at the home page to log in with the password they just set.
+export function ResetPasswordForm({
+  guestId,
+  token,
 }: {
-  credential: string;
-  onDone: () => void;
+  guestId: string;
+  token: string;
 }) {
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
     setBusy(true);
     setError(null);
     try {
-      const result = await updateAuthSecurityAction({
-        credential,
-        protect: true,
-        newPassword,
-      });
+      const result = await setPasswordWithTokenAction(
+        guestId,
+        token,
+        newPassword
+      );
       if (result.ok) {
-        onDone();
+        setDone(true);
       } else {
         setError(result.error);
       }
@@ -40,6 +39,23 @@ export function SetPasswordForm({
     }
   };
 
+  if (done) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p role="status" className="text-sm text-green-700">
+          Password set. Your name is now protected — log in with your new
+          password.
+        </p>
+        <Link
+          href="/"
+          className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm hover:bg-rose-500 self-start"
+        >
+          Go to sign in
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <form
       className="flex flex-col gap-2"
@@ -49,39 +65,35 @@ export function SetPasswordForm({
       }}
     >
       <p className="text-sm text-gray-600">
-        You&apos;re logged in. Set a password now so you don&apos;t need an
-        emailed code next time.
+        Choose a new password. You&apos;ll use it to switch to your name from
+        now on.
       </p>
       <label
-        htmlFor="login-new-password"
+        htmlFor="reset-new-password"
         className="text-sm font-medium text-gray-700"
       >
-        Password (at least 8 characters)
+        New password (at least 8 characters)
       </label>
       <input
-        id="login-new-password"
+        id="reset-new-password"
         type="password"
         autoComplete="new-password"
         value={newPassword}
         onChange={(e) => setNewPassword(e.target.value)}
         className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none"
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="flex flex-wrap items-center gap-2">
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
+      <div>
         <button
           type="submit"
           disabled={busy || newPassword.length === 0}
           className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500"
         >
           Set password
-        </button>
-        <button
-          type="button"
-          onClick={onDone}
-          disabled={busy}
-          className="text-sm text-gray-500 hover:text-gray-700 underline disabled:text-gray-400"
-        >
-          Not now
         </button>
       </div>
     </form>

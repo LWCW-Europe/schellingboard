@@ -173,13 +173,17 @@ export type GuestAuthCredentials = {
   passwordHash: string | null;
 };
 
+/** Which flow an emailed token belongs to (see the `authCodes` schema). */
+export type AuthCodePurpose = "login" | "reset";
+
 /**
- * An emailed temporary login code. `codeHash` is a digest of `salt + code`,
+ * An emailed single-use token. `codeHash` is a digest of `salt + code`,
  * never the code.
  */
 export type AuthCode = {
   id: string;
   guestId: string;
+  purpose: AuthCodePurpose;
   salt: string;
   codeHash: string;
   createdAt: Date;
@@ -187,9 +191,10 @@ export type AuthCode = {
   attempts: number;
 };
 
-/** Input for issuing a code; `id` and `attempts` are filled in on insert. */
+/** Input for issuing a token; `id` and `attempts` are filled in on insert. */
 export type NewAuthCode = {
   guestId: string;
+  purpose: AuthCodePurpose;
   salt: string;
   codeHash: string;
   createdAt: Date;
@@ -198,13 +203,22 @@ export type NewAuthCode = {
 
 export interface AuthCodesRepository {
   /**
-   * Stores a new code for the guest, replacing any previous one — only the
-   * most recently issued code can ever be valid.
+   * Stores a new token for the guest, replacing any previous one of the same
+   * purpose — only the most recently issued token of a purpose can be valid.
    */
   replace(code: NewAuthCode): Promise<void>;
-  /** The guest's current code, or null if none exists or it expired at `now`. */
-  findActive(guestId: string, now: Date): Promise<AuthCode | null>;
+  /**
+   * The guest's current token of `purpose`, or null if none exists or it
+   * expired at `now`.
+   */
+  findActive(
+    guestId: string,
+    purpose: AuthCodePurpose,
+    now: Date
+  ): Promise<AuthCode | null>;
   recordFailedAttempt(id: string): Promise<void>;
+  /** Deletes the token, so a successful use can never be replayed. */
+  consume(id: string): Promise<void>;
 }
 
 export type CompleteGuest = Guest<GuestPrivateInfo>;

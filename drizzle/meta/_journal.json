@@ -148,6 +148,13 @@
       "when": 1784389404349,
       "tag": "0020_user-auth-protection",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1784721166667,
+      "tag": "0021_auth_code_purpose",
+      "breakpoints": true
     }
   ]
 }

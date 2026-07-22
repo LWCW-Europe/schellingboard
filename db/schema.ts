@@ -62,15 +62,22 @@ export const guests = sqliteTable(
   ]
 );
 
-// Temporary login codes emailed to guests ("8-character temporary password").
-// At most one valid code per guest: issuing a new one replaces the old.
-// A code stays usable until it expires (multi-use within its window).
+// Single-use tokens emailed to guests, in two flavours (see `purpose`):
+//   - "login": an 8-character code (also delivered as a link) that logs the
+//     guest in but can never change credentials.
+//   - "reset": a high-entropy link-only token that sets/replaces the password
+//     but grants no session.
+// At most one valid token per (guest, purpose): issuing a new one replaces the
+// old of the same purpose, so a login code and a reset token can coexist. A
+// token dies the moment it is used (consumed) or when it expires.
 export const authCodes = sqliteTable("auth_codes", {
   id: text("id").primaryKey(),
   guestId: text("guest_id")
     .notNull()
     .references(() => guests.id, { onDelete: "cascade" }),
-  // Per-code random salt; codeHash is sha256(salt + code), never the code.
+  // "login" | "reset" — which flow the token belongs to.
+  purpose: text("purpose").notNull().default("login"),
+  // Per-token random salt; codeHash is sha256(salt + code), never the code.
   salt: text("salt").notNull(),
   codeHash: text("code_hash").notNull(),
   createdAt: text("created_at").notNull(),

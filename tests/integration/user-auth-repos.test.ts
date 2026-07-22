@@ -83,27 +83,36 @@ describe("auth codes (repository)", () => {
     const { authCodes } = getRepositories();
     await authCodes.replace({
       guestId: guest.id,
+      purpose: "login",
       salt: "salt1",
       codeHash: "abc",
       createdAt: dates.created,
       expiresAt: dates.expires,
     });
-    const active = await authCodes.findActive(guest.id, dates.beforeExpiry);
+    const active = await authCodes.findActive(
+      guest.id,
+      "login",
+      dates.beforeExpiry
+    );
     expect(active).toMatchObject({
       guestId: guest.id,
+      purpose: "login",
       salt: "salt1",
       codeHash: "abc",
       attempts: 0,
     });
     expect(active?.createdAt).toEqual(dates.created);
-    expect(await authCodes.findActive(guest.id, dates.afterExpiry)).toBeNull();
+    expect(
+      await authCodes.findActive(guest.id, "login", dates.afterExpiry)
+    ).toBeNull();
   });
 
-  it("replace invalidates the previous code", async () => {
+  it("replace invalidates the previous code of the same purpose", async () => {
     const guest = await createGuest();
     const { authCodes } = getRepositories();
     await authCodes.replace({
       guestId: guest.id,
+      purpose: "login",
       salt: "salt1",
       codeHash: "old",
       createdAt: dates.created,
@@ -111,13 +120,70 @@ describe("auth codes (repository)", () => {
     });
     await authCodes.replace({
       guestId: guest.id,
+      purpose: "login",
       salt: "salt2",
       codeHash: "new",
       createdAt: dates.created,
       expiresAt: dates.expires,
     });
-    const active = await authCodes.findActive(guest.id, dates.beforeExpiry);
+    const active = await authCodes.findActive(
+      guest.id,
+      "login",
+      dates.beforeExpiry
+    );
     expect(active?.codeHash).toBe("new");
+  });
+
+  it("keeps login and reset tokens independent for one guest", async () => {
+    const guest = await createGuest();
+    const { authCodes } = getRepositories();
+    await authCodes.replace({
+      guestId: guest.id,
+      purpose: "login",
+      salt: "s-login",
+      codeHash: "login-hash",
+      createdAt: dates.created,
+      expiresAt: dates.expires,
+    });
+    await authCodes.replace({
+      guestId: guest.id,
+      purpose: "reset",
+      salt: "s-reset",
+      codeHash: "reset-hash",
+      createdAt: dates.created,
+      expiresAt: dates.expires,
+    });
+    // Issuing the reset token must not clobber the login code.
+    expect(
+      (await authCodes.findActive(guest.id, "login", dates.beforeExpiry))
+        ?.codeHash
+    ).toBe("login-hash");
+    expect(
+      (await authCodes.findActive(guest.id, "reset", dates.beforeExpiry))
+        ?.codeHash
+    ).toBe("reset-hash");
+  });
+
+  it("consume deletes the token so it is no longer active", async () => {
+    const guest = await createGuest();
+    const { authCodes } = getRepositories();
+    await authCodes.replace({
+      guestId: guest.id,
+      purpose: "login",
+      salt: "salt1",
+      codeHash: "abc",
+      createdAt: dates.created,
+      expiresAt: dates.expires,
+    });
+    const active = await authCodes.findActive(
+      guest.id,
+      "login",
+      dates.beforeExpiry
+    );
+    await authCodes.consume(active!.id);
+    expect(
+      await authCodes.findActive(guest.id, "login", dates.beforeExpiry)
+    ).toBeNull();
   });
 
   it("records failed attempts", async () => {
@@ -125,15 +191,24 @@ describe("auth codes (repository)", () => {
     const { authCodes } = getRepositories();
     await authCodes.replace({
       guestId: guest.id,
+      purpose: "login",
       salt: "salt1",
       codeHash: "abc",
       createdAt: dates.created,
       expiresAt: dates.expires,
     });
-    const first = await authCodes.findActive(guest.id, dates.beforeExpiry);
+    const first = await authCodes.findActive(
+      guest.id,
+      "login",
+      dates.beforeExpiry
+    );
     await authCodes.recordFailedAttempt(first!.id);
     await authCodes.recordFailedAttempt(first!.id);
-    const after = await authCodes.findActive(guest.id, dates.beforeExpiry);
+    const after = await authCodes.findActive(
+      guest.id,
+      "login",
+      dates.beforeExpiry
+    );
     expect(after?.attempts).toBe(2);
   });
 });

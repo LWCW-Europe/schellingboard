@@ -9,6 +9,7 @@ import {
   AUTH_CODE_LENGTH,
   generateAuthCode,
   generateAuthCodeSalt,
+  generateResetToken,
   hashAuthCode,
   normalizeAuthCode,
   hashUserPassword,
@@ -74,6 +75,15 @@ describe("auth codes", () => {
   it("generates random, non-empty salts", () => {
     expect(generateAuthCodeSalt()).not.toBe(generateAuthCodeSalt());
     expect(generateAuthCodeSalt().length).toBeGreaterThan(0);
+  });
+});
+
+describe("reset tokens", () => {
+  it("generates random, high-entropy, URL-safe tokens", () => {
+    const token = generateResetToken();
+    // base64url of 32 bytes → 43 chars, only URL-safe characters.
+    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(generateResetToken()).not.toBe(generateResetToken());
   });
 });
 

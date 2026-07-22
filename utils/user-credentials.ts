@@ -12,6 +12,9 @@ import {
 
 export const AUTH_CODE_LENGTH = 8;
 export const AUTH_CODE_VALID_MINUTES = 10;
+// Password-reset links live longer than login codes: the recipient may open
+// the mail on another device and still needs time to choose a new password.
+export const RESET_TOKEN_VALID_MINUTES = 30;
 // No I, O, 0, 1: codes are meant to be read from an email on one device and
 // typed on another.
 const AUTH_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -27,6 +30,13 @@ export function generateAuthCode(): string {
 /** Forgives case and stray whitespace in a hand-typed code. */
 export function normalizeAuthCode(input: string): string {
   return input.replace(/\s/g, "").toUpperCase();
+}
+
+// Password-reset tokens travel only inside a link, never typed by hand, so
+// they carry far more entropy than login codes (256 bits). Guessing one is
+// infeasible; single use and a short lifetime guard the rest.
+export function generateResetToken(): string {
+  return randomBytes(32).toString("base64url");
 }
 
 /** Per-code random salt, stored alongside the hash (see hashAuthCode). */

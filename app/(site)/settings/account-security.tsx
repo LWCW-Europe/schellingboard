@@ -2,21 +2,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  requestAuthCodeAction,
-  updateAuthSecurityAction,
+  changePasswordAction,
+  disableProtectionAction,
+  requestPasswordLinkAction,
 } from "@/app/actions/user-auth";
 
-type Mode = "enable" | "password" | "disable";
+type Mode = "password" | "disable";
 
 const inputClass =
   "rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none";
 
 /**
- * Enable/disable account protection and set a permanent password. Enabling
- * always requires a code emailed to the guest — a forgotten password is
- * never a problem, since setting one is the same flow. Changing the
- * password or disabling protection also accepts the current password
- * instead, so a broken mailer never blocks that.
+ * Enable/disable account protection and change the password.
+ *
+ * Enabling protection and recovering a forgotten password both go through a
+ * link emailed to the guest (proving control of the address on file — the gate
+ * that stops anyone else claiming the name). Changing the password or turning
+ * protection off is done here with the current password; no email is sent to
+ * start, only a heads-up afterwards.
  */
 export function AccountSecurity({
   guestId,
@@ -27,26 +30,26 @@ export function AccountSecurity({
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode | null>(null);
-  const [credential, setCredential] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Emails a code and reflects the outcome. A throttled response means a
-  // recent code is still valid — information, not an error from the user's
-  // point of view — so both entry points present it the same friendly way.
-  const sendCode = async () => {
+  // Emails a link to set (enable) or reset (forgot) the password. A throttled
+  // response means a recent link is still valid — information, not an error.
+  const sendPasswordLink = async () => {
     setBusy(true);
     setError(null);
     setInfo(null);
+    setSuccess(null);
     try {
-      const result = await requestAuthCodeAction(guestId);
+      const result = await requestPasswordLinkAction(guestId);
       if (result.ok) {
-        setInfo("Code sent — check your email");
+        setInfo("Check your email for a link to set your password");
       } else if (result.throttled) {
-        setInfo("A recently emailed code is still valid — check your inbox");
+        setInfo("A recently emailed link is still valid — check your inbox");
       } else {
         setError(result.error);
       }
@@ -58,38 +61,27 @@ export function AccountSecurity({
     }
   };
 
-  const startMode = async (next: Mode) => {
+  const startMode = (next: Mode) => {
     setMode(next);
-    setCredential("");
+    setCurrentPassword("");
     setNewPassword("");
-    setSuccess(null);
-    await sendCode();
-  };
-
-  const requestCode = sendCode;
-
-  const submit = async () => {
-    if (mode === "password" && newPassword.length === 0) {
-      setError("Enter a new password");
-      return;
-    }
-    setBusy(true);
     setError(null);
     setInfo(null);
+    setSuccess(null);
+  };
+
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
     try {
-      const result = await updateAuthSecurityAction({
-        credential,
-        protect: mode !== "disable",
-        newPassword: newPassword.length > 0 ? newPassword : undefined,
-      });
+      const result =
+        mode === "disable"
+          ? await disableProtectionAction(currentPassword)
+          : await changePasswordAction(currentPassword, newPassword);
       if (result.ok) {
         setMode(null);
         setSuccess(
-          mode === "disable"
-            ? "Protection turned off"
-            : mode === "password"
-              ? "Password changed"
-              : "Protection enabled"
+          mode === "disable" ? "Protection turned off" : "Password changed"
         );
         router.refresh();
       } else {
@@ -109,14 +101,14 @@ export function AccountSecurity({
       {authProtected ? (
         <p className="text-sm text-gray-500">
           Your name is protected: switching to it requires your password or a
-          code emailed to you. Forgot your password? An emailed code is all you
-          need to set a new one.
+          single-use code emailed to you. Forgot your password? Reset it with an
+          emailed link.
         </p>
       ) : (
         <p className="text-sm text-gray-500">
           Anyone can currently act under your name. Enable protection so
-          switching to your name requires your password or a code emailed to
-          you.
+          switching to your name requires your password. We&apos;ll email you a
+          link to set it.
         </p>
       )}
       {success && (
@@ -126,32 +118,48 @@ export function AccountSecurity({
       )}
 
       {mode === null ? (
-        <div className="flex flex-wrap gap-2">
-          {authProtected ? (
-            <>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
+            {authProtected ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => startMode("password")}
+                  className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm hover:bg-rose-500 active:bg-rose-500"
+                >
+                  Change password
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void sendPasswordLink()}
+                  disabled={busy}
+                  className="border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded text-sm hover:bg-gray-50 disabled:text-gray-400"
+                >
+                  Forgot your password?
+                </button>
+                <button
+                  type="button"
+                  onClick={() => startMode("disable")}
+                  className="border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded text-sm hover:bg-gray-50"
+                >
+                  Turn off protection
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
-                onClick={() => void startMode("password")}
-                className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm hover:bg-rose-500 active:bg-rose-500"
+                onClick={() => void sendPasswordLink()}
+                disabled={busy}
+                className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm hover:bg-rose-500 active:bg-rose-500 disabled:bg-gray-200 disabled:text-gray-400"
               >
-                Change password
+                Enable protection
               </button>
-              <button
-                type="button"
-                onClick={() => void startMode("disable")}
-                className="border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded text-sm hover:bg-gray-50"
-              >
-                Turn off protection
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void startMode("enable")}
-              className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm hover:bg-rose-500 active:bg-rose-500"
-            >
-              Enable protection
-            </button>
+            )}
+          </div>
+          {info && (
+            <p role="status" className="text-sm text-green-700">
+              {info}
+            </p>
           )}
         </div>
       ) : (
@@ -163,38 +171,31 @@ export function AccountSecurity({
           }}
         >
           <p className="text-sm text-gray-600">
-            {mode === "enable" &&
-              "To confirm it's you, enter the code emailed to you. You can also set a permanent password now or later."}
-            {mode === "password" &&
-              "Enter your password or the code emailed to you, and your new password."}
-            {mode === "disable" &&
-              "Enter your password or the code emailed to you to turn off protection. This also removes your password."}
+            {mode === "password"
+              ? "Enter your current password and choose a new one."
+              : "Enter your current password to turn off protection. This also removes your password."}
           </p>
           <label
-            htmlFor="security-credential"
+            htmlFor="security-current-password"
             className="text-sm font-medium text-gray-700"
           >
-            {mode === "enable" ? "Emailed code" : "Password or emailed code"}
+            Current password
           </label>
           <input
-            id="security-credential"
-            type={mode === "enable" ? "text" : "password"}
-            autoComplete={
-              mode === "enable" ? "one-time-code" : "current-password"
-            }
-            value={credential}
-            onChange={(e) => setCredential(e.target.value)}
+            id="security-current-password"
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
             className={inputClass}
           />
-          {mode !== "disable" && (
+          {mode === "password" && (
             <>
               <label
                 htmlFor="security-new-password"
                 className="text-sm font-medium text-gray-700"
               >
-                {mode === "enable"
-                  ? "Password (optional, at least 8 characters)"
-                  : "New password (at least 8 characters)"}
+                New password (at least 8 characters)
               </label>
               <input
                 id="security-new-password"
@@ -211,28 +212,17 @@ export function AccountSecurity({
               {error}
             </p>
           )}
-          {info && (
-            <p role="status" className="text-sm text-green-700">
-              {info}
-            </p>
-          )}
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="submit"
-              disabled={busy || credential.trim().length === 0}
+              disabled={
+                busy ||
+                currentPassword.length === 0 ||
+                (mode === "password" && newPassword.length === 0)
+              }
               className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500"
             >
-              {mode === "enable" && "Enable protection"}
-              {mode === "password" && "Change password"}
-              {mode === "disable" && "Turn off protection"}
-            </button>
-            <button
-              type="button"
-              onClick={() => void requestCode()}
-              disabled={busy}
-              className="text-sm text-rose-500 hover:text-rose-600 underline disabled:text-gray-400"
-            >
-              Email me a new code
+              {mode === "password" ? "Change password" : "Turn off protection"}
             </button>
             <button
               type="button"

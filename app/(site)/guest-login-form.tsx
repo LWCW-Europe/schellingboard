@@ -2,12 +2,14 @@
 import { useState } from "react";
 import {
   loginAsGuestAction,
-  requestAuthCodeAction,
+  requestLoginCodeAction,
+  requestPasswordLinkAction,
 } from "@/app/actions/user-auth";
 
 // Credential prompt for switching to a protected guest: accepts either the
-// permanent password or an emailed temporary code in one field, with a
-// button to request a fresh code.
+// permanent password or an emailed single-use login code in one field, with a
+// button to email a fresh code and a "forgot password" link that emails a
+// reset link instead.
 export function GuestLoginForm({
   guestId,
   guestName,
@@ -17,7 +19,7 @@ export function GuestLoginForm({
   guestId: string;
   guestName: string;
   initialCredential?: string;
-  onSuccess: (credential: string) => void;
+  onSuccess: () => void;
 }) {
   const [credential, setCredential] = useState(initialCredential);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export function GuestLoginForm({
     try {
       const result = await loginAsGuestAction(guestId, credential);
       if (result.ok) {
-        onSuccess(credential);
+        onSuccess();
       } else {
         setError(result.error);
       }
@@ -48,9 +50,34 @@ export function GuestLoginForm({
     setError(null);
     setInfo(null);
     try {
-      const result = await requestAuthCodeAction(guestId);
+      const result = await requestLoginCodeAction(guestId);
       if (result.ok) {
         setInfo("Code sent — check your email");
+      } else if (result.throttled) {
+        setInfo("A recently emailed code is still valid — check your inbox");
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong — try again");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const forgotPassword = async () => {
+    setBusy(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const result = await requestPasswordLinkAction(guestId);
+      if (result.ok) {
+        setInfo("Reset link sent — check your email to set a new password");
+      } else if (result.throttled) {
+        setInfo(
+          "A recently emailed reset link is still valid — check your inbox"
+        );
       } else {
         setError(result.error);
       }
@@ -71,8 +98,8 @@ export function GuestLoginForm({
       }}
     >
       <p className="text-sm text-gray-600">
-        {guestName} has protected their account. Enter their password or a code
-        emailed to them. No password, or forgot it? Use an emailed code instead.
+        {guestName} has protected their account. Enter their password, or use a
+        single-use code emailed to them. Forgot the password? Reset it instead.
       </p>
       <label
         htmlFor="guest-credential"
@@ -105,6 +132,14 @@ export function GuestLoginForm({
           className="text-sm text-rose-500 hover:text-rose-600 underline disabled:text-gray-400"
         >
           Email me a code
+        </button>
+        <button
+          type="button"
+          onClick={() => void forgotPassword()}
+          disabled={busy}
+          className="text-sm text-gray-500 hover:text-gray-700 underline disabled:text-gray-400"
+        >
+          Forgot your password?
         </button>
       </div>
     </form>
