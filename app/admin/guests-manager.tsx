@@ -13,10 +13,11 @@ import {
 } from "../actions/admin-guests";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON, DANGER_BUTTON } from "./buttons";
 import { DataTable } from "./data-table";
-import { Path, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createGuestSchema, updateGuestSchema } from "@/model/guest";
 import { z } from "zod";
+import { consumeErrors } from "@/app/utils/forms";
 
 /** A guest plus the events they are assigned to. */
 export type AdminUser = {
@@ -35,16 +36,7 @@ function AddGuestForm() {
   }: z.input<typeof createGuestSchema>) => {
     const result = await createGuestAction({ name, email });
     if (!result.ok) {
-      if (typeof result.error === "string")
-        form.setError("root", { message: result.error });
-      else {
-        for (const issue of result.error) {
-          const path = issue.path.join(".") as Path<
-            z.infer<typeof createGuestSchema>
-          >;
-          form.setError(path, issue);
-        }
-      }
+      consumeErrors(form, result.error);
     } else {
       form.reset();
     }
@@ -133,16 +125,7 @@ function GuestRow({
   }: z.input<typeof updateGuestSchema>) => {
     const result = await updateGuestAction({ id, name, email });
     if (!result.ok) {
-      if (typeof result.error === "string")
-        form.setError("root", { message: result.error });
-      else {
-        for (const issue of result.error) {
-          const path = issue.path.join(".") as Path<
-            z.infer<typeof updateGuestSchema>
-          >;
-          form.setError(path, issue);
-        }
-      }
+      consumeErrors(form, result.error);
     } else {
       setEmailSent(false);
       setMode("view");
