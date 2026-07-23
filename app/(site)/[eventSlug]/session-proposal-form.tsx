@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useContext } from "react";
+import { useContext, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -17,6 +17,10 @@ import { ConfirmDeletionModal } from "../modals";
 import { formatDuration, durationMinusBreak } from "@/utils/utils";
 import { slotDurationOptions } from "@/utils/slots";
 import { MarkdownHint } from "@/app/(site)/markdown";
+import { Path, useController, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { sessionProposalSchema } from "@/model/session";
+import { z } from "zod";
 
 export function SessionProposalForm(props: {
   eventID: string;
@@ -34,77 +38,89 @@ export function SessionProposalForm(props: {
   ];
   const { user: currentUserId } = useContext(UserContext);
   const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const [title, setTitle] = useState(proposal?.title || "");
-  const [description, setDescription] = useState(proposal?.description || "");
-  const [hosts, setHosts] = useState<string[]>(() => {
+  const defaultHosts = useMemo(() => {
     if (proposal) return proposal.hosts.map((h) => h.id);
     if (currentUserId) return [currentUserId];
     return [];
+  }, [currentUserId, proposal]);
+
+  const form = useForm({
+    resolver: zodResolver(sessionProposalSchema),
+    defaultValues: {
+      eventId: eventID,
+      eventSlug,
+      title: proposal?.title ?? "",
+      description: proposal?.description ?? "",
+      hostIds: defaultHosts,
+      durationMinutes: proposal?.durationMinutes,
+    },
   });
-  const [durationMinutes, setDurationMinutes] = useState(
-    proposal?.durationMinutes
-  );
 
-  // UI state
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const hostsController = useController({
+    control: form.control,
+    name: "hostIds",
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+  const durationMinutesController = useController({
+    control: form.control,
+    name: "durationMinutes",
+  });
 
-    const formData = new FormData();
-    formData.append("event", eventID);
-    formData.append("eventSlug", eventSlug);
-    formData.append("title", title);
-    formData.append("description", description || "");
-    hosts.forEach((host) => formData.append("hosts", host));
-    if (durationMinutes) {
-      formData.append("durationMinutes", durationMinutes.toString());
-    }
+  // Read-only: the input itself is registered, this only drives the submit
+  // button's disabled state.
+  const title = useWatch({ control: form.control, name: "title" });
 
+  const handleSubmit = async (
+    sessionProposal: z.infer<typeof sessionProposalSchema>
+  ) => {
     try {
-      let result;
+      let result: Awaited<ReturnType<typeof updateProposal>>;
       if (proposal) {
-        result = await updateProposal(proposal.id, formData);
+        result = await updateProposal(proposal.id, sessionProposal);
       } else {
-        result = await createProposal(formData);
+        result = await createProposal(sessionProposal);
       }
 
-      if (result.error) {
-        setError(result.error);
+      if ("error" in result) {
+        if (typeof result.error === "string")
+          form.setError("root", { message: result.error });
+        else {
+          for (const issue of result.error) {
+            const path = issue.path.join(".") as Path<
+              z.infer<typeof sessionProposalSchema>
+            >;
+            form.setError(path, issue);
+          }
+        }
       } else {
         router.push(`/${eventSlug}/proposals`);
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      form.setError("root", { message: "An unexpected error occurred" });
       console.error(err);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (): Promise<void> => {
     if (!proposal) return;
 
-    setIsSubmitting(true);
-    setError(null);
+    setIsDeleting(true);
 
     try {
       const result = await deleteProposal(proposal.id, eventSlug);
 
       if (result.error) {
-        setError(result.error);
+        form.setError("root", { message: result.error });
       } else {
         router.push(`/${eventSlug}/proposals`);
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      form.setError("root", { message: "An unexpected error occurred" });
       console.error(err);
     } finally {
-      setIsSubmitting(false);
+      setIsDeleting(false);
     }
   };
 
@@ -127,7 +143,7 @@ export function SessionProposalForm(props: {
       </div>
 
       <form
-        onSubmit={(e) => void handleSubmit(e)}
+        onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}
         className="flex flex-col gap-4"
       >
         <div className="flex flex-col gap-1">
@@ -137,12 +153,13 @@ export function SessionProposalForm(props: {
           </label>
           <Input
             id="proposal-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
+            {...form.register("title")}
             autoFocus
             placeholder="Enter a clear, descriptive title"
           />
+          <span className="text-rose-400 text-sm">
+            {form.formState.errors.title?.message}
+          </span>
         </div>
 
         <div className="flex flex-col gap-1">
@@ -151,9 +168,8 @@ export function SessionProposalForm(props: {
           </label>
           <textarea
             id="proposal-description"
-            value={description}
+            {...form.register("description")}
             className="rounded-md text-sm resize-y h-24 border bg-white px-4 py-2 shadow-sm transition-colors invalid:border-red-500 invalid:text-red-900 invalid:placeholder-red-300 focus:outline-none disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
-            onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe what your session will cover"
           />
           <MarkdownHint />
@@ -169,10 +185,17 @@ export function SessionProposalForm(props: {
           <SelectHosts
             id="proposal-hosts"
             guests={guests}
-            hosts={guests.filter((g) => hosts.some((h) => h === g.id))}
-            setHosts={(nextHosts) => setHosts(nextHosts.map((h) => h.id))}
+            hosts={guests.filter((g) =>
+              hostsController.field.value?.some((h) => h === g.id)
+            )}
+            setHosts={(nextHosts) =>
+              hostsController.field.onChange(nextHosts.map((h) => h.id))
+            }
             selectMany={true}
           />
+          <span className="text-rose-400 text-sm">
+            {form.formState.errors.hostIds?.message}
+          </span>
         </div>
 
         <div className="flex flex-col gap-1">
@@ -184,8 +207,10 @@ export function SessionProposalForm(props: {
                   <input
                     id={`duration-${value ?? "undecided"}`}
                     type="radio"
-                    checked={value === durationMinutes}
-                    onChange={() => setDurationMinutes(value)}
+                    checked={value === durationMinutesController.field.value}
+                    onChange={() =>
+                      durationMinutesController.field.onChange(value)
+                    }
                     className="h-4 w-4 border-gray-300 text-rose-400 focus:ring-rose-400"
                   />
                   <label
@@ -203,26 +228,31 @@ export function SessionProposalForm(props: {
               ))}
             </div>
           </fieldset>
+          <span className="text-rose-400 text-sm">
+            {form.formState.errors.durationMinutes?.message}
+          </span>
         </div>
 
-        {error && (
+        {form.formState.errors.root && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-            <p className="text-sm font-medium">Error: {error}</p>
+            <p className="text-sm font-medium">
+              Error: {form.formState.errors.root.message}
+            </p>
           </div>
         )}
 
         <button
           type="submit"
           className="bg-rose-400 text-white font-semibold py-2 rounded shadow disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500 mx-auto px-12"
-          disabled={!title || isSubmitting}
+          disabled={!title || form.formState.isSubmitting || isDeleting}
         >
-          {isSubmitting ? "Submitting..." : "Submit"}
+          {form.formState.isSubmitting ? "Submitting..." : "Submit"}
         </button>
       </form>
 
       {proposal && (
         <ConfirmDeletionModal
-          btnDisabled={isSubmitting}
+          btnDisabled={form.formState.isSubmitting || isDeleting}
           confirm={handleDelete}
           itemName="session proposal"
         />

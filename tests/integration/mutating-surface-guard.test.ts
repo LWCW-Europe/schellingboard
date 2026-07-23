@@ -240,12 +240,12 @@ const PROPOSAL_ACTION_VERIFIERS: Record<
     const guest = await createGuest({ eventId: event.id });
     await protectGuest(guest.id);
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
-    const fd = new FormData();
-    fd.set("event", event.id);
-    fd.set("eventSlug", "test-event");
-    fd.set("title", "T");
-    fd.append("hosts", guest.id);
-    const result = await createProposal(fd);
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "T",
+      hostIds: [guest.id],
+    });
     expect(result).toHaveProperty("error");
   },
 
@@ -257,10 +257,10 @@ const PROPOSAL_ACTION_VERIFIERS: Record<
     await protectGuest(host.id);
     const proposal = await createProposal(event.id, [host.id]);
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(host.id));
-    const fd = new FormData();
-    fd.set("eventSlug", "test-event");
-    fd.set("title", "Renamed");
-    const result = await updateProposal(proposal.id, fd);
+    const result = await updateProposal(proposal.id, {
+      eventSlug: "test-event",
+      title: "Renamed",
+    });
     expect(result).toHaveProperty("error");
   },
 
