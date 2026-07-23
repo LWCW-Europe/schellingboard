@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import { requestNow } from "@/utils/dev-clock";
 import {
   notifyCohostsAdded,
   notifySessionChanged,
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     return new Response(msg, { status: 404 });
   }
   const event = await repos.events.findById(prevSession.eventId);
-  if (!event || !inSchedPhase(event)) {
+  if (!event || !inSchedPhase(event, requestNow(req))) {
     return new Response(
       "Sessions can only be edited during the scheduling phase",
       { status: 403 }

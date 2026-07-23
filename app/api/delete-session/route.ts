@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import { requestNow } from "@/utils/dev-clock";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 
 export const dynamic = "force-dynamic"; // defaults to auto
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   const event = await repos.events.findById(session.eventId);
-  if (!event || !inSchedPhase(event)) {
+  if (!event || !inSchedPhase(event, requestNow(req))) {
     return new Response(
       "Sessions can only be deleted during the scheduling phase",
       { status: 403 }

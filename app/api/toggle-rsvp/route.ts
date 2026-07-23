@@ -1,5 +1,6 @@
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import { requestNow } from "@/utils/dev-clock";
 import {
   guestProtectionError,
   isRequestVerifiedAsGuest,
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!event || !inSchedPhase(event)) {
+  if (!event || !inSchedPhase(event, requestNow(req))) {
     return Response.json(
       { error: "RSVPs can only be changed during the scheduling phase" },
       { status: 403 }

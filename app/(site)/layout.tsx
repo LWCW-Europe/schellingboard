@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import NavBar from "./nav-bar";
 import Footer from "../footer";
 import { UserProvider } from "./context";
@@ -5,6 +6,8 @@ import { getRepositories } from "@/db/container";
 import { cookies } from "next/headers";
 import { AUTH_COOKIE_NAME, isAuthCookieValid } from "@/utils/auth";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import { isDevToolsEnabled } from "@/utils/dev-clock";
+import { DevToolbar } from "./dev-toolbar";
 
 export default async function SiteLayout({
   children,
@@ -44,6 +47,11 @@ export default async function SiteLayout({
         {children}
       </main>
       <Footer />
+      {isDevToolsEnabled() && (
+        <Suspense fallback={null}>
+          <DevToolbar />
+        </Suspense>
+      )}
     </UserProvider>
   );
 }

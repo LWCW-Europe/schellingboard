@@ -5,6 +5,7 @@ import type { Event } from "@/db/repositories/interfaces";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ago = (days: number) => new Date(Date.now() - days * DAY_MS);
 const ahead = (days: number) => new Date(Date.now() + days * DAY_MS);
+const NOW = () => new Date();
 
 function makeEvent(overrides: Partial<Event>): Event {
   return {
@@ -31,7 +32,7 @@ describe("getCurrentPhase with implicit phase ends", () => {
       // no proposalPhaseEnd -> implicitly ends when voting starts
       votingPhaseStart: ago(1),
     });
-    expect(getCurrentPhase(event)).toBe(EventPhase.VOTING);
+    expect(getCurrentPhase(event, NOW())).toBe(EventPhase.VOTING);
   });
 
   it("ends an open-ended proposal phase at voting start even when scheduling is also configured", () => {
@@ -45,7 +46,7 @@ describe("getCurrentPhase with implicit phase ends", () => {
       votingPhaseStart: ago(1),
       schedulingPhaseStart: ahead(1),
     });
-    expect(getCurrentPhase(event)).toBe(EventPhase.VOTING);
+    expect(getCurrentPhase(event, NOW())).toBe(EventPhase.VOTING);
   });
 
   it("ends an open-ended voting phase when scheduling starts", () => {
@@ -55,7 +56,7 @@ describe("getCurrentPhase with implicit phase ends", () => {
       // no votingPhaseEnd -> implicitly ends when scheduling starts
       schedulingPhaseStart: ago(1),
     });
-    expect(getCurrentPhase(event)).toBe(EventPhase.SCHEDULING);
+    expect(getCurrentPhase(event, NOW())).toBe(EventPhase.SCHEDULING);
   });
 
   it("falls through to scheduling when voting is unset", () => {
@@ -64,7 +65,7 @@ describe("getCurrentPhase with implicit phase ends", () => {
       // no proposalPhaseEnd, no voting -> implicit end is scheduling start
       schedulingPhaseStart: ago(1),
     });
-    expect(getCurrentPhase(event)).toBe(EventPhase.SCHEDULING);
+    expect(getCurrentPhase(event, NOW())).toBe(EventPhase.SCHEDULING);
   });
 
   it("keeps an open-ended scheduling phase active (no successor)", () => {
@@ -74,7 +75,7 @@ describe("getCurrentPhase with implicit phase ends", () => {
       schedulingPhaseStart: ago(1),
       // no schedulingPhaseEnd -> stays active
     });
-    expect(getCurrentPhase(event)).toBe(EventPhase.SCHEDULING);
+    expect(getCurrentPhase(event, NOW())).toBe(EventPhase.SCHEDULING);
   });
 
   it("respects an explicit gap between phases as INACTIVE", () => {
@@ -83,7 +84,7 @@ describe("getCurrentPhase with implicit phase ends", () => {
       proposalPhaseEnd: ago(3),
       votingPhaseStart: ahead(1),
     });
-    expect(getCurrentPhase(event)).toBe(EventPhase.INACTIVE);
+    expect(getCurrentPhase(event, NOW())).toBe(EventPhase.INACTIVE);
   });
 
   it("respects an explicit scheduling end as INACTIVE afterwards", () => {
@@ -93,7 +94,20 @@ describe("getCurrentPhase with implicit phase ends", () => {
       schedulingPhaseStart: ago(3),
       schedulingPhaseEnd: ago(1),
     });
-    expect(getCurrentPhase(event)).toBe(EventPhase.INACTIVE);
+    expect(getCurrentPhase(event, NOW())).toBe(EventPhase.INACTIVE);
+  });
+
+  it("uses the supplied now, not real time, to pick the phase", () => {
+    // Real time is far in the future (all phases long past), but a faked `now`
+    // lands inside the voting window — the supplied clock must win.
+    const event = makeEvent({
+      proposalPhaseStart: ago(365),
+      votingPhaseStart: ago(360),
+      schedulingPhaseStart: ago(355),
+      schedulingPhaseEnd: ago(350),
+    });
+    const duringVoting = new Date(event.votingPhaseStart!.getTime() + DAY_MS);
+    expect(getCurrentPhase(event, duringVoting)).toBe(EventPhase.VOTING);
   });
 
   describe("at the exact boundary instant between touching phases", () => {
@@ -112,7 +126,7 @@ describe("getCurrentPhase with implicit phase ends", () => {
         votingPhaseStart: now,
       });
 
-      expect(getCurrentPhase(event)).toBe(EventPhase.VOTING);
+      expect(getCurrentPhase(event, NOW())).toBe(EventPhase.VOTING);
     });
   });
 });

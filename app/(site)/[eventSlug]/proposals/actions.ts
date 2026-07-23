@@ -9,6 +9,7 @@ import {
   sessionProposalSchema,
   sessionProposalUpdateSchema,
 } from "@/model/session";
+import { serverNow } from "@/utils/dev-clock-server";
 import {
   actingUserIsVerified,
   NAME_PROTECTED_ERROR,
@@ -38,7 +39,7 @@ export async function createProposal(
     // Mirrors the UI: proposals may be added during the proposal and voting
     // phases; once scheduling starts they are closed.
     const event = await getRepositories().events.findById(eventId);
-    if (!event || inSchedPhase(event)) {
+    if (!event || inSchedPhase(event, await serverNow())) {
       return { error: "The proposal phase is over" };
     }
 

@@ -15,7 +15,7 @@ import {
   dateStartDescription,
   inProposalPhase,
 } from "@/app/(site)/utils/events";
-import { UserContext } from "@/app/(site)/context";
+import { EventContext, UserContext } from "@/app/(site)/context";
 import type { Event } from "@/db/repositories/interfaces";
 
 export function ProposalActionBar({
@@ -26,32 +26,35 @@ export function ProposalActionBar({
   event: Event;
 }) {
   const { user: currentUserId } = useContext(UserContext);
-  const votingEnabled = !!currentUserId && inVotingPhase(event);
+  const { now } = useContext(EventContext);
+  const votingEnabled = !!currentUserId && inVotingPhase(event, now);
 
   let votingDisabledText = "";
-  if (inSchedPhase(event)) {
+  if (inSchedPhase(event, now)) {
     votingDisabledText = `The voting phase is over`;
-  } else if (inProposalPhase(event)) {
+  } else if (inProposalPhase(event, now)) {
     votingDisabledText = `Voting ${dateStartDescription(event.votingPhaseStart)}`;
   } else if (!currentUserId) {
     votingDisabledText = "Select a user first";
   }
 
-  const schedEnabled = inSchedPhase(event);
+  const schedEnabled = inSchedPhase(event, now);
   const schedDisabledText = `Scheduling ${dateStartDescription(event.schedulingPhaseStart)}`;
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-6">
       <HoverTooltip
         text="Proposal and voting phases are over"
-        visible={inSchedPhase(event)}
+        visible={inSchedPhase(event, now)}
       >
         <Link
           href={`/${eventSlug}/proposals/new`}
           className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 ${
-            inSchedPhase(event) ? "opacity-50 cursor-not-allowed" : ""
+            inSchedPhase(event, now) ? "opacity-50 cursor-not-allowed" : ""
           }`}
-          {...(inSchedPhase(event) && { onClick: (e) => e.preventDefault() })}
+          {...(inSchedPhase(event, now) && {
+            onClick: (e) => e.preventDefault(),
+          })}
         >
           <PlusIcon className="h-5 w-5" />
           <span>Add Proposal</span>

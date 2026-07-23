@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { useSearchParams } from "next/navigation";
 import { TIME_FORMAT } from "@/utils/utils";
 import { getNumSlots, getNowOffsetPx } from "@/utils/slots";
-import { useKioskMode, useTickingNow } from "./kiosk";
+import { useKioskMode } from "./kiosk";
 import { useContext } from "react";
 import Image from "next/image";
 import { Tooltip } from "./tooltip";
@@ -28,7 +28,7 @@ export function DayGrid(props: {
   guests: Guest[];
 }) {
   const { day, locations, guests } = props;
-  const { event } = useContext(EventContext);
+  const { event, now } = useContext(EventContext);
   const timezone = event?.timezone ?? "UTC";
   const searchParams = useSearchParams();
   const locParams = searchParams?.getAll("loc");
@@ -43,11 +43,13 @@ export function DayGrid(props: {
   const hasImages = includedLocations.some((loc) => loc.imageUrl);
   const date = DateTime.fromJSDate(day.start).setZone(timezone);
 
-  // Kiosk mode: a red line across the day at the current time. Client-only
-  // (useTickingNow is null on the server) so hydration stays consistent.
-  const now = useTickingNow(useKioskMode());
-  const nowOffsetPx =
-    now === null ? null : getNowOffsetPx(day, now, slotIncrement);
+  // Kiosk mode: a red line across the day at the current time. `now` comes from
+  // EventContext so it honours the dev fake clock (and ticks live) rather than
+  // reading the real wall clock — time-travelling with ?dev=1 must move the
+  // line too. SSR and hydration share the server-seeded value, so they agree.
+  const nowOffsetPx = useKioskMode()
+    ? getNowOffsetPx(day, now, slotIncrement)
+    : null;
 
   return (
     <div

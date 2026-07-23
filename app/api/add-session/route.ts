@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
+import { requestNow } from "@/utils/dev-clock";
 import { notifyCohostsAdded } from "@/utils/notifications";
 import {
   actingUserIsVerified,
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
   const repos = getRepositories();
   const input = prepareToInsert(params);
   const event = await repos.events.findById(input.eventId);
-  if (!event || !inSchedPhase(event)) {
+  if (!event || !inSchedPhase(event, requestNow(req))) {
     return Response.json(
       { error: "Sessions can only be created during the scheduling phase" },
       { status: 403 }

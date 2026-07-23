@@ -21,7 +21,7 @@ import {
 } from "@/app/actions/user-auth";
 import { DEFAULT_BREAK_MINUTES, votesApiUrl } from "@/utils/utils";
 import { DEFAULT_SLOT_INCREMENT_MINUTES } from "@/utils/slots";
-import { startNowTicker } from "@/utils/now-ticker";
+import { startNowTicker, NOW_REFRESH_INTERVAL_MS } from "@/utils/now-ticker";
 
 export type DayWithSessions = Day & { sessions: Session[] };
 
@@ -173,8 +173,25 @@ export function EventProvider({
     () => new Map<string, number>()
   );
   const [now, setNow] = useState(value.now);
+  // The server re-seeds `now` on every RSC render; it jumps when the dev fake
+  // clock changes and triggers a router.refresh. Adopt the new instant during
+  // render (React's reset-state-on-prop-change pattern) rather than in an
+  // effect, so there is no cascading render and no stale flash before the first
+  // tick. `seedMs` also keys the ticker effect below.
+  const seedMs = value.now.getTime();
+  const [prevSeedMs, setPrevSeedMs] = useState(seedMs);
+  if (seedMs !== prevSeedMs) {
+    setPrevSeedMs(seedMs);
+    setNow(value.now);
+  }
 
-  useEffect(() => startNowTicker(setNow), []);
+  // Keep simulated time moving with an offset matching the current seed (~0
+  // without an override, the simulated jump under one). Restarted whenever the
+  // seed changes; see startNowTicker.
+  useEffect(() => {
+    const offsetMs = seedMs - Date.now();
+    return startNowTicker(setNow, NOW_REFRESH_INTERVAL_MS, offsetMs);
+  }, [seedMs]);
 
   const localSessions = serverSessions.map((session) => {
     const delta = rsvpCountDeltas.get(session.id) ?? 0;

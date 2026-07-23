@@ -71,6 +71,15 @@ It requires `ADMIN_PASSWORD` (and `AUTH_SECRET`) to be set; without
 explaining how to enable them. It is fully separate from the normal user UI: it
 has its own layout and only requires the admin password (not `SITE_PASSWORD`).
 
+### Dev fake clock
+
+Set `SB_ENABLE_DEV_TOOLS=1` and visit any event page with `?dev=1` to get a
+toolbar for time-traveling the app (real time / `+1h` / `+1d` / `+7d` / pick a
+date), so you can walk an event through its proposal → voting → scheduling
+phases without editing dates in the database. It's a request-scoped cookie,
+inert unless the env var is set — safe to enable on a shared staging/demo
+instance. See [ADR 0004](docs/adr/0004-dev-fake-clock.md) for details.
+
 ## Environment Variables
 
 See [docs/hosting](docs/hosting/README.md#environment-variables) for the full list and descriptions.

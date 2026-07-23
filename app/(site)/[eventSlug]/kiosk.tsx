@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 // Kiosk mode (?kiosk=1) is for unattended large screens at the venue: a red
@@ -7,8 +7,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 // regular intervals. All normal interaction stays available so visitors
 // without a phone can still RSVP or add sessions from the display.
 
-/** How often the now line re-reads the clock. */
-const NOW_TICK_MS = 60 * 1000;
 /** How often the schedule is scrolled back to the now line. */
 const SCROLL_INTERVAL_MS = 3 * 60 * 1000;
 /** First scroll after load, once the grid and now line have rendered. */
@@ -62,25 +60,6 @@ export function useKioskMode(): boolean {
   if (param === "0") return false;
   if (param != null) return true;
   return cookieEnabled;
-}
-
-/**
- * The current time, updated every NOW_TICK_MS. Null on the server and during
- * hydration (and when disabled) so SSR and client markup agree.
- */
-export function useTickingNow(enabled: boolean): Date | null {
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => {
-    if (!enabled) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setNow(new Date());
-    const id = setInterval(() => setNow(new Date()), NOW_TICK_MS);
-    return () => {
-      clearInterval(id);
-      setNow(null);
-    };
-  }, [enabled]);
-  return now;
 }
 
 /**

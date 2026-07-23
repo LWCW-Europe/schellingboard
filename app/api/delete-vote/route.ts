@@ -1,5 +1,6 @@
 import { getRepositories } from "@/db/container";
 import { inVotingPhase } from "@/app/(site)/utils/events";
+import { requestNow } from "@/utils/dev-clock";
 import {
   guestProtectionError,
   isRequestVerifiedAsGuest,
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "Proposal not found" }, { status: 404 });
   }
   const event = await repos.events.findById(proposal.eventId);
-  if (!event || !inVotingPhase(event)) {
+  if (!event || !inVotingPhase(event, requestNow(req))) {
     return Response.json(
       { error: "Voting is only allowed during the voting phase" },
       { status: 403 }

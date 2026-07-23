@@ -7,8 +7,15 @@ import { DateTime } from "luxon";
 // red line across the grid at the current time and keeps it scrolled into
 // view. The seeded events lie ~2 weeks in the future (see
 // scripts/seed-database.ts: Conference Gamma's first day is today+14, running
-// 09:00–18:00 Europe/Berlin), so the test moves the browser clock to a moment
-// within that first day to make the now line appear.
+// 09:00–18:00 Europe/Berlin), so the tests time-travel to a moment within that
+// first day to make the now line appear.
+//
+// Time travel goes through the dev fake clock (?dev=1), not the browser clock:
+// the now line follows the app's simulated "now" (server-seeded, cookie-driven
+// — see docs/adr/0004-dev-fake-clock.md), which a browser-only clock jump wouldn't move.
+// Berlin timezone so the toolbar's datetime-local picker maps 16:00 to 16:00
+// Berlin, squarely inside Gamma's first day.
+test.use({ timezoneId: "Europe/Berlin" });
 
 // 16:00 Berlin on Gamma's first event day — late enough in the day that the
 // line starts outside the visible schedule area and only auto-scrolling
@@ -16,34 +23,33 @@ import { DateTime } from "luxon";
 const duringGammaDayOne = DateTime.now()
   .setZone("Europe/Berlin")
   .plus({ days: 14 })
-  .set({ hour: 16, minute: 0, second: 0, millisecond: 0 })
-  .toJSDate();
+  .set({ hour: 16, minute: 0, second: 0, millisecond: 0 });
 
-// The page must load and hydrate at (roughly) real time — the server renders
-// with the real clock, and a client clock jumped ahead makes hydration
-// disagree about which slots are in the past. So: install a naturally ticking
-// clock, load the page, and only then jump to the target time and fast-forward
-// through the kiosk mode intervals so the now line appears and scrolls without
-// waiting minutes of wall-clock time.
+// Move the dev fake clock to `target` via the toolbar's datetime picker, then
+// wait for the simulated date to show so the override cookie is committed.
+async function setDevClock(page: Page, target: DateTime) {
+  await expect(page.getByText("Dev clock")).toBeVisible();
+  await page
+    .getByLabel("Pick date and time")
+    .fill(target.toFormat("yyyy-MM-dd'T'HH:mm"));
+  // The toolbar prints the simulated instant in UTC; the calendar date is the
+  // same as Berlin's for a 16:00 target, so match on the date alone.
+  await expect(page.getByText(target.toFormat("yyyy-MM-dd"))).toBeVisible();
+  // Applying the clock triggers a router.refresh(); let its RSC fetch finish so
+  // a following navigation doesn't abort it (which logs an RSC-payload error).
+  await page.waitForLoadState("networkidle");
+}
+
+// Land the browser on `path` with the fake clock already inside Gamma's first
+// day, so the now line is present from first paint (and thus auto-scrolled).
+// The clock is set first, then a reload replays the page with the override
+// cookie in place — a full navigation, so it can't abort an in-flight refresh.
 async function openGammaScheduleDuringEvent(page: Page, path: string) {
-  await page.clock.install();
   await login(page);
-  await page.goto(path);
-  await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
-  // The toolbar comes from server-rendered HTML, so the page may still be
-  // hydrating. Only hydrated React reacts to the view toggle by rewriting the
-  // URL — once that works, hydration is done and the clock can jump safely.
-  await expect(async () => {
-    await page.getByRole("button", { name: "Text" }).click();
-    await expect(page).toHaveURL(/view=text/, { timeout: 1000 });
-  }).toPass();
-  await page.getByRole("button", { name: "Grid" }).click();
-  await expect(page).toHaveURL(/view=grid/);
-  await page.clock.setFixedTime(duringGammaDayOne);
-  // Just under the 5-minute REFRESH_INTERVAL_MS in kiosk.tsx: a full 5:00
-  // fires KioskController's router.refresh(), which can race a subsequent
-  // navigation in the test and trip the console-error guard.
-  await page.clock.runFor("04:59");
+  const url = path.includes("?") ? `${path}&dev=1` : `${path}?dev=1`;
+  await page.goto(url);
+  await setDevClock(page, duringGammaDayOne);
+  await page.reload();
 }
 
 test("kiosk mode draws a now line and auto-scrolls it into view", async ({
@@ -92,4 +98,21 @@ test("?kiosk=0 clears the cookie and leaves kiosk mode", async ({ page }) => {
   // proving the cookie was actually cleared rather than just overridden.
   await page.goto("/Conference-Gamma");
   await expect(page.getByTestId("now-line")).toHaveCount(0);
+});
+
+// The now line must follow the fake clock, not the real one: without this the
+// display stays blank when organizers time-travel to preview the kiosk.
+test("kiosk now line follows the dev fake clock, not the real clock", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Gamma?kiosk=1&dev=1");
+
+  // The real clock is not inside any event day, so nothing is drawn yet.
+  await expect(page.getByText("Dev clock")).toBeVisible();
+  await expect(page.getByTestId("now-line")).toHaveCount(0);
+
+  // Time-travelling into the event makes the now line appear.
+  await setDevClock(page, duringGammaDayOne);
+  await expect(page.getByTestId("now-line")).toBeVisible();
 });

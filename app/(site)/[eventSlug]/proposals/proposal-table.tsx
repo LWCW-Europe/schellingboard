@@ -14,7 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 import HoverTooltip from "@/app/(site)/hover-tooltip";
-import { UserContext, VotesContext } from "@/app/(site)/context";
+import { EventContext, UserContext, VotesContext } from "@/app/(site)/context";
 import type { SessionProposal } from "@/db/repositories/interfaces";
 import {
   inSchedPhase,
@@ -50,6 +50,7 @@ export function ProposalTable({
   eventSlug: string;
   event: Event;
 }) {
+  const { now } = useContext(EventContext);
   const initialProposals = paramProposals.map((proposal) => {
     const hostNames = proposal.hosts.map((h) => h.name);
     return { ...proposal, hostNames };
@@ -58,7 +59,7 @@ export function ProposalTable({
   const [page, setPage] = useState(1);
   const [resultFilter, setResultFilter] = useState<Filter>(undefined);
   const [sortConfig, setSortConfig] = useState<SortConfig>(
-    inVotingPhase(event)
+    inVotingPhase(event, now)
       ? {
           key: "votesCount",
           direction: "asc",
@@ -92,12 +93,12 @@ export function ProposalTable({
     }
   });
   const totalPages = Math.ceil(filteredProposals.length / ITEMS_PER_PAGE);
-  const votingEnabled = !!currentUserId && inVotingPhase(event);
-  const schedEnabled = inSchedPhase(event);
+  const votingEnabled = !!currentUserId && inVotingPhase(event, now);
+  const schedEnabled = inSchedPhase(event, now);
   let votingDisabledText = "";
-  if (inSchedPhase(event)) {
+  if (inSchedPhase(event, now)) {
     votingDisabledText = `The voting phase is over`;
-  } else if (inProposalPhase(event)) {
+  } else if (inProposalPhase(event, now)) {
     votingDisabledText = `Voting ${dateStartDescription(event.votingPhaseStart)}`;
   } else if (!currentUserId) {
     votingDisabledText = "Select a user first";

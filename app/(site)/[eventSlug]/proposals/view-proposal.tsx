@@ -11,7 +11,7 @@ import {
   dateStartDescription,
 } from "@/app/(site)/utils/events";
 import HoverTooltip from "@/app/(site)/hover-tooltip";
-import { UserContext, VotesContext } from "@/app/(site)/context";
+import { EventContext, UserContext, VotesContext } from "@/app/(site)/context";
 import { Proposal } from "@/app/(site)/[eventSlug]/proposal";
 import type {
   Event,
@@ -40,6 +40,7 @@ export function ViewProposal(props: {
   } = props;
   const { user: currentUserId } = useContext(UserContext);
   const { proposalVoteEmoji, votes } = useContext(VotesContext);
+  const { now } = useContext(EventContext);
   const router = useRouter();
 
   const canEdit = () => {
@@ -60,10 +61,10 @@ export function ViewProposal(props: {
     router.push(`/${eventSlug}/add-session?proposalID=${proposal.id}`);
   };
 
-  const votingEnabled = !!currentUserId && inVotingPhase(event);
-  const schedEnabled = inSchedPhase(event);
+  const votingEnabled = !!currentUserId && inVotingPhase(event, now);
+  const schedEnabled = inSchedPhase(event, now);
   let votingDisabledText = "";
-  if (!inVotingPhase(event)) {
+  if (!inVotingPhase(event, now)) {
     votingDisabledText = `Voting ${dateStartDescription(event.votingPhaseStart)}`;
   } else if (!currentUserId) {
     votingDisabledText = "Select a user first";

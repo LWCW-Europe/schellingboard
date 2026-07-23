@@ -1,6 +1,7 @@
 import { getRepositories } from "@/db/container";
 import { VoteChoice } from "@/app/(site)/votes";
 import { inVotingPhase } from "@/app/(site)/utils/events";
+import { requestNow } from "@/utils/dev-clock";
 import {
   guestProtectionError,
   isRequestVerifiedAsGuest,
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
       { status: 403 }
     );
   }
-  if (!event || !inVotingPhase(event)) {
+  if (!event || !inVotingPhase(event, requestNow(req))) {
     return Response.json(
       { error: "Voting is only allowed during the voting phase" },
       { status: 403 }

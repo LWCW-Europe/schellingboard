@@ -62,6 +62,33 @@ test("voting phase: proposing and voting are open, scheduling is not", async ({
   await expect(page.getByRole("link", { name: "Add session" })).toHaveCount(0);
 });
 
+test("dev fake clock: time travel moves a proposal-phase event into voting", async ({
+  page,
+}) => {
+  await login(page);
+  // ?dev=1 reveals the dev clock toolbar (enabled by SB_ENABLE_DEV_TOOLS).
+  await page.goto("/Conference-Alpha/proposals?dev=1");
+  // Bob is not a host of Alpha's Lightning Talks, so the only thing gating his
+  // vote button is the phase (Alice hosts it and would never see one).
+  await selectUser(page, /Bob Test/i);
+
+  const toolbar = page.getByText("Dev clock");
+  await expect(toolbar).toBeVisible();
+
+  const row = page.getByRole("row", {
+    name: /Conference Alpha Lightning Talks/,
+  });
+  // Proposal phase: no voting buttons yet.
+  await expect(row.getByRole("button", { name: "❤️" })).toHaveCount(0);
+
+  // Alpha's voting phase opens 7 days out; jump +14 days to land inside it.
+  await page.getByRole("button", { name: "+7d" }).click();
+  await page.getByRole("button", { name: "+7d" }).click();
+
+  // The same row now offers an enabled interested-vote button.
+  await expect(row.getByRole("button", { name: "❤️" })).toBeEnabled();
+});
+
 test("scheduling phase: grid is interactive, proposing and voting are over", async ({
   page,
 }) => {

@@ -18,14 +18,15 @@ export enum EventPhase {
  * start) hand over cleanly at the boundary instead of overlapping for one
  * instant.
  *
+ * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
  * @param start - The start date of the period
  * @param end - The end date of the period (optional, defaults to no end limit)
  * @returns true if current time is within the period
  */
-function inDatePeriod(start: Date, end?: Date): boolean {
-  const now = Date.now();
-  const afterStart = now >= start.getTime();
-  const beforeEnd = !end || now < end.getTime();
+function inDatePeriod(now: Date, start: Date, end?: Date): boolean {
+  const nowMs = now.getTime();
+  const afterStart = nowMs >= start.getTime();
+  const beforeEnd = !end || nowMs < end.getTime();
   return afterStart && beforeEnd;
 }
 
@@ -38,9 +39,10 @@ function inDatePeriod(start: Date, end?: Date): boolean {
  * an intentional inactive gap.
  *
  * @param event - The event to check
+ * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
  * @returns true if the event is in the proposal phase
  */
-export function inProposalPhase(event: Event): boolean {
+export function inProposalPhase(event: Event, now: Date): boolean {
   const {
     proposalPhaseStart,
     proposalPhaseEnd,
@@ -50,7 +52,7 @@ export function inProposalPhase(event: Event): boolean {
   const effectiveEnd =
     proposalPhaseEnd ?? votingPhaseStart ?? schedulingPhaseStart;
   return !!(
-    proposalPhaseStart && inDatePeriod(proposalPhaseStart, effectiveEnd)
+    proposalPhaseStart && inDatePeriod(now, proposalPhaseStart, effectiveEnd)
   );
 }
 
@@ -60,20 +62,24 @@ export function inProposalPhase(event: Event): boolean {
  * An open-ended voting phase is treated as ending when scheduling starts.
  *
  * @param event - The event to check
+ * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
  * @returns true if the event is in the voting phase
  */
-export function inVotingPhase(event: Event): boolean {
+export function inVotingPhase(event: Event, now: Date): boolean {
   const { votingPhaseStart, votingPhaseEnd, schedulingPhaseStart } = event;
   const effectiveEnd = votingPhaseEnd ?? schedulingPhaseStart;
-  return !!(votingPhaseStart && inDatePeriod(votingPhaseStart, effectiveEnd));
+  return !!(
+    votingPhaseStart && inDatePeriod(now, votingPhaseStart, effectiveEnd)
+  );
 }
 
 /**
  * Checks if an event is currently in the scheduling phase
  * @param event - The event to check
+ * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
  * @returns true if the event is in the scheduling phase
  */
-export function inSchedPhase(event: Event): boolean {
+export function inSchedPhase(event: Event, now: Date): boolean {
   const { schedulingPhaseStart, schedulingPhaseEnd } = event;
 
   // If no phases are configured, assume scheduling is always active
@@ -83,19 +89,20 @@ export function inSchedPhase(event: Event): boolean {
 
   return !!(
     schedulingPhaseStart &&
-    inDatePeriod(schedulingPhaseStart, schedulingPhaseEnd)
+    inDatePeriod(now, schedulingPhaseStart, schedulingPhaseEnd)
   );
 }
 
 /**
  * Gets the current phase of an event
  * @param event - The event to check
+ * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
  * @returns The current phase of the event
  */
-export function getCurrentPhase(event: Event): EventPhase {
-  if (inProposalPhase(event)) return EventPhase.PROPOSAL;
-  if (inVotingPhase(event)) return EventPhase.VOTING;
-  if (inSchedPhase(event)) return EventPhase.SCHEDULING;
+export function getCurrentPhase(event: Event, now: Date): EventPhase {
+  if (inProposalPhase(event, now)) return EventPhase.PROPOSAL;
+  if (inVotingPhase(event, now)) return EventPhase.VOTING;
+  if (inSchedPhase(event, now)) return EventPhase.SCHEDULING;
   return EventPhase.INACTIVE;
 }
 

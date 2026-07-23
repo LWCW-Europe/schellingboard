@@ -3,6 +3,7 @@ import { getRepositories } from "@/db/container";
 import { EventProviderWrapper } from "./event-provider-wrapper";
 import type { DayWithSessions } from "@/app/(site)/context";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import { serverNow } from "@/utils/dev-clock-server";
 
 export async function EventLayoutContent({
   eventSlug,
@@ -51,8 +52,9 @@ export async function EventLayoutContent({
     guests,
     rsvps,
     // Computed on the server so SSR and hydration agree on which days
-    // default to folded (see getDefaultFoldedDayIds).
-    now: new Date(),
+    // default to folded (see getDefaultFoldedDayIds). Honours the dev fake
+    // clock so time travel drives phase/schedule UI (see docs/adr/0004-dev-fake-clock.md).
+    now: await serverNow(),
   };
 
   return (
