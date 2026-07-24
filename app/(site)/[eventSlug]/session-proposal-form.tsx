@@ -21,6 +21,7 @@ import { Path, useController, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { sessionProposalSchema } from "@/model/session";
 import { z } from "zod";
+import { MarkdownTextarea } from "@/app/components/markdown-textarea";
 
 export function SessionProposalForm(props: {
   eventID: string;
@@ -166,13 +167,16 @@ export function SessionProposalForm(props: {
           <label className="font-medium" htmlFor="proposal-description">
             Description
           </label>
-          <textarea
+          <MarkdownTextarea
             id="proposal-description"
             {...form.register("description")}
             className="rounded-md text-sm resize-y h-24 border bg-white px-4 py-2 shadow-sm transition-colors invalid:border-red-500 invalid:text-red-900 invalid:placeholder-red-300 focus:outline-none disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
             placeholder="Describe what your session will cover"
           />
           <MarkdownHint />
+          <span className="text-rose-400 text-sm">
+            {form.formState.errors.description?.message}
+          </span>
         </div>
 
         <div className="flex flex-col gap-1">
