@@ -423,6 +423,7 @@ For a release, push four tags: the full version, `major.minor`, `major`, and `la
 ```bash
 docker login
 git checkout $VERSION
+make clean
 make docker-build   # builds and locally tags :latest and :$VERSION (via git describe)
 docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MINOR
 docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MAJOR
