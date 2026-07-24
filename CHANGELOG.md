@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-07-24
+
 ### Added
 
 - **Protect your name**: attendees can secure the name they act as with a password, so on a shared device others can't pick it and act as them. A protected name shows a small lock in the name selector; choosing it asks for the password, or for a one-time code emailed to the attendee (each code works only once). To turn protection on, the attendee sets their first password from a link emailed to them — proving the address is really theirs, which is what stops anyone else from claiming the name. Forgot the password? The same emailed link resets it, from either the name selector's "Forgot your password?" or Settings. The password is changed, or protection turned off, from Settings using the current password — no email needed to start, and a heads-up email is sent afterwards so an unexpected change doesn't go unnoticed. Requires SMTP
@@ -174,7 +176,8 @@ This version corresponds to commit [9aa2a273](https://github.com/LWCW-Europe/sch
 
 The version number 1.0.0 is a retroactive label assigned here purely as a reference point to mark the upstream baseline — it was never designated as such. This is the upstream codebase at the point the fork was created, taken from commit [babcd627](https://github.com/rachelweinberg12/scheduling-app/commit/babcd6275a853f1911cd48bbdaf4f2b1725c3d47) of [rachelweinberg12/scheduling-app](https://github.com/rachelweinberg12/scheduling-app) ([full log](https://github.com/rachelweinberg12/scheduling-app/commits/babcd6275a853f1911cd48bbdaf4f2b1725c3d47/)). It was never properly released since it was deployed directly from the Git repository.
 
-[Unreleased]: https://github.com/LWCW-Europe/schellingboard/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/LWCW-Europe/schellingboard/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/LWCW-Europe/schellingboard/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/LWCW-Europe/schellingboard/compare/9aa2a273...v3.0.0
 [2.0.0]: https://github.com/LWCW-Europe/schellingboard/compare/babcd6275a853f1911cd48bbdaf4f2b1725c3d47...9aa2a273
 [1.0.0]: https://github.com/rachelweinberg12/scheduling-app/commits/babcd6275a853f1911cd48bbdaf4f2b1725c3d47
