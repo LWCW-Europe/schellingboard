@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-07-24
+
 ### Added
 
 - **Documentation website**: the attendee guide and the organizer and self-hosting documentation now live at [docs.schellingboard.org](https://docs.schellingboard.org), searchable and readable on a phone. A version selector lets you read the documentation for the release you're actually running, rather than whatever is newest
