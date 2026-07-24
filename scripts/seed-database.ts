@@ -15,6 +15,7 @@ import {
   type ProfileContact,
   type ProfilePrompt,
 } from "@/db/repositories/interfaces";
+import { hashUserPassword } from "@/utils/user-credentials";
 
 const TZ = "Europe/Berlin";
 
@@ -189,6 +190,10 @@ function assertSafeUploadsDir(dir: string): string {
   return resolved;
 }
 
+// Shared demo password for seeded guests with account protection enabled
+// (issue #370). Not a security boundary — dev/e2e seed data only.
+const SEED_PROTECTED_PASSWORD = "seed-password";
+
 interface GuestConfig {
   name: string;
   email: string;
@@ -199,6 +204,12 @@ interface GuestConfig {
   languages?: string[];
   prompts?: ProfilePrompt[];
   contacts?: ProfileContact[];
+  // Account protection (issue #370): when set, this guest is seeded with
+  // authProtected=true and this password. Left off Alice/Bob/Charlie (index-
+  // based fixtures, freely switched by most specs), Yuki/Amara (switched by
+  // name in specific specs), and Priya/Ahmad (mutate their own protection
+  // state at runtime in tests/e2e/user-auth.spec.ts) so those stay switchable.
+  password?: string;
 }
 
 // 40 guests: the 3 e2e fixture guests must stay first (proposal host
@@ -291,6 +302,7 @@ const guestConfigs: GuestConfig[] = [
     name: "Sofía Martínez",
     email: "sofia.martinez@example.com",
     pronouns: "She/Her",
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Wei Chen",
@@ -307,6 +319,7 @@ const guestConfigs: GuestConfig[] = [
       },
     ],
     contacts: [{ type: "telegram", value: "@weichen_dev" }],
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Priya Sharma",
@@ -345,6 +358,7 @@ const guestConfigs: GuestConfig[] = [
       },
     ],
     contacts: [{ type: "signal", value: "lars.eriksson.99" }],
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Fatima Al-Farsi",
@@ -361,6 +375,7 @@ const guestConfigs: GuestConfig[] = [
       },
     ],
     contacts: [{ type: "email", value: "fatima.breaks.things@example.com" }],
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Kwame Mensah",
@@ -378,6 +393,7 @@ const guestConfigs: GuestConfig[] = [
       },
     ],
     contacts: [{ type: "whatsapp", value: "+233 24 555 0187" }],
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Hiroshi Yamamoto",
@@ -393,6 +409,7 @@ const guestConfigs: GuestConfig[] = [
         answer: "Debugging a blinking LED by ear",
       },
     ],
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Aisha Diallo",
@@ -413,6 +430,7 @@ const guestConfigs: GuestConfig[] = [
       { type: "website", value: "https://aishadiallo.example.com" },
       { type: "other", label: "Mastodon", value: "@aisha@ux.social" },
     ],
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Diego Fernández",
@@ -430,6 +448,7 @@ const guestConfigs: GuestConfig[] = [
       },
     ],
     contacts: [{ type: "telegram", value: "@diego_sre" }],
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Mei-Ling Wu",
@@ -446,6 +465,7 @@ const guestConfigs: GuestConfig[] = [
         answer: "Turning a wall of Slack threads into docs people read",
       },
     ],
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Olga Petrova",
@@ -463,6 +483,7 @@ const guestConfigs: GuestConfig[] = [
       },
     ],
     contacts: [{ type: "email", value: "olga.petrova.db@example.com" }],
+    password: SEED_PROTECTED_PASSWORD,
   },
   {
     name: "Jean-Pierre Dubois",
@@ -1120,7 +1141,7 @@ function clearAll() {
   console.log("  ✅ All tables cleared");
 }
 
-function seedTestData() {
+async function seedTestData() {
   console.log("🌱 Seeding test data...");
   const db = openDb();
 
@@ -1131,37 +1152,45 @@ function seedTestData() {
   // Guests
   console.log("  📝 Creating test guests...");
   fs.mkdirSync(uploadedAvatarsDir(), { recursive: true });
-  const guestRows = guestConfigs.map((config) => {
-    const id = nanoid();
-    let avatarUrl: string | null = null;
-    if (config.avatar !== undefined) {
-      const filename = `${id}.webp`;
-      fs.copyFileSync(
-        path.join(
-          seedAvatarsDir,
-          `avatar-${String(config.avatar).padStart(2, "0")}.webp`
-        ),
-        path.join(uploadedAvatarsDir(), filename)
-      );
-      avatarUrl = `/media/avatars/${filename}?v=${Date.now()}`;
-    }
-    return {
-      id,
-      name: config.name,
-      email: config.email,
-      aboutMe: config.aboutMe ?? null,
-      pronouns: config.pronouns ?? null,
-      avatarUrl,
-      basedIn: config.basedIn ?? null,
-      languages: config.languages ?? null,
-      prompts: config.prompts ?? null,
-      contacts: config.contacts ?? null,
-    };
-  });
+  const guestRows = await Promise.all(
+    guestConfigs.map(async (config) => {
+      const id = nanoid();
+      let avatarUrl: string | null = null;
+      if (config.avatar !== undefined) {
+        const filename = `${id}.webp`;
+        fs.copyFileSync(
+          path.join(
+            seedAvatarsDir,
+            `avatar-${String(config.avatar).padStart(2, "0")}.webp`
+          ),
+          path.join(uploadedAvatarsDir(), filename)
+        );
+        avatarUrl = `/media/avatars/${filename}?v=${Date.now()}`;
+      }
+      const passwordHash = config.password
+        ? await hashUserPassword(config.password)
+        : null;
+      return {
+        id,
+        name: config.name,
+        email: config.email,
+        aboutMe: config.aboutMe ?? null,
+        pronouns: config.pronouns ?? null,
+        avatarUrl,
+        basedIn: config.basedIn ?? null,
+        languages: config.languages ?? null,
+        prompts: config.prompts ?? null,
+        contacts: config.contacts ?? null,
+        authProtected: passwordHash !== null,
+        passwordHash,
+      };
+    })
+  );
   db.insert(schema.guests).values(guestRows).run();
   const avatarCount = guestRows.filter((g) => g.avatarUrl).length;
+  const protectedCount = guestRows.filter((g) => g.authProtected).length;
   console.log(
-    `  ✅ Created ${guestRows.length} guests (${avatarCount} with avatars)`
+    `  ✅ Created ${guestRows.length} guests (${avatarCount} with avatars, ${protectedCount} with account protection)`
   );
 
   const guestIdByName = (name: string): string => {
@@ -1673,14 +1702,14 @@ function seedTestData() {
   console.log("✅ Test data seeded successfully");
 }
 
-function resetDatabase() {
+async function resetDatabase() {
   try {
     console.log("🔄 Resetting test database to known state...");
     console.log(`📍 Database: ${resolveDbPath()}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || "dev"}`);
 
     clearAll();
-    seedTestData();
+    await seedTestData();
 
     console.log("🎉 Database reset completed successfully!");
   } catch (error: unknown) {
@@ -1691,7 +1720,7 @@ function resetDatabase() {
 }
 
 if (process.argv[1] === new URL(import.meta.url).pathname) {
-  resetDatabase();
+  await resetDatabase();
 }
 
 export { resetDatabase, clearAll, seedTestData };
