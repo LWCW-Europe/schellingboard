@@ -32,6 +32,7 @@ import { buildSessionInterval } from "@/app/api/session-form-utils";
 import { revalidateEvent } from "./session-actions";
 import { detectHostClashes, type HostClash } from "./clash-actions";
 import { MarkdownHint } from "@/app/(site)/markdown";
+import { MarkdownTextarea } from "@/app/components/markdown-textarea";
 
 interface ErrorResponse {
   message: string;
@@ -392,7 +393,7 @@ export function SessionForm(props: {
       </div>
       <div className="flex flex-col gap-1">
         <label className="font-medium">Description</label>
-        <textarea
+        <MarkdownTextarea
           value={description}
           className="rounded-md text-sm resize-y h-24 border bg-white px-4 py-2 shadow-sm transition-colors invalid:border-red-500 invalid:text-red-900 invalid:placeholder-red-300 focus:outline-none disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500 border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
           onChange={(e) => setDescription(e.target.value)}
