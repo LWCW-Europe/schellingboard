@@ -32,7 +32,10 @@ const components: Components = {
       rel="noopener noreferrer nofollow"
       className="text-rose-500 underline hover:text-rose-600"
     >
-      {children}
+      {
+        children ||
+          href /* Supports links without names, like [](website.com) */
+      }
     </a>
   ),
   ul: ({ children }) => (
