@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Configurable mailpit ports**: mailpit's host ports can now be overridden with `MAILPIT_SMTP_PORT`/`MAILPIT_UI_PORT`, so multiple project instances (e.g. separate clones or workspaces) can run on one machine without port clashes. New `make mailpit` target starts it, reading these from `.env.dev.local`; CONTRIBUTING.md documents the recommended per-clone setup
 - **Email tests are opt-in locally**: tests that need mailpit are skipped (and reported as skipped) unless the mail variables are set in `.env.test.local`, so a fresh checkout passes without Docker. CI sets the variables explicitly and the tests fail there if they go missing, so they can never be silently skipped in CI. `make precommit` now includes the e2e tests
 - **Consistent verified-session checks**: three pages (profile edit, public profile, attendee directory) checked who's "logged in" by reading the plain name-selection cookie instead of the verified session, so a protected name without a verified session could still see edit controls meant only for a proven session. They now go through the same verified-session check used elsewhere
+- **Seed data exercises account protection**: 10 dev/test seed guests now have account protection enabled with a shared demo password (`seed-password`), so the lock icon and protected-name flows have real data to show off locally
 
 ## [3.0.0] - 2026-07-13
 
