@@ -8,56 +8,42 @@ import {
   vi,
 } from "vitest";
 
-const cookieJar = new Map<string, string>();
-
-vi.mock("next/headers", () => ({
-  cookies: () =>
-    Promise.resolve({
-      get: (name: string) => {
-        const value = cookieJar.get(name);
-        return value === undefined ? undefined : { name, value };
-      },
-    }),
-}));
-
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent, createGuest } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { createAdminAuthCookie } from "@/utils/auth";
+import { callThroughProxy } from "../helpers/through-proxy";
 import { POST } from "@/app/api/admin/create-proposal/route";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef"; // 32 chars
+const PATH = "/api/admin/create-proposal";
 
-function makeReq(body: unknown): Request {
-  return new Request("http://test/api/admin/create-proposal", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+function post(rawBody: string, opts?: { authed?: boolean }): Promise<Response> {
+  return callThroughProxy(POST, PATH, { method: "POST", body: rawBody }, opts);
 }
 
-async function loginAsAdmin() {
-  const c = await createAdminAuthCookie();
-  cookieJar.set(c.name, c.value);
+function postJson(
+  body: unknown,
+  opts?: { authed?: boolean }
+): Promise<Response> {
+  return post(JSON.stringify(body), opts);
 }
 
 describe("POST /api/admin/create-proposal", () => {
   beforeAll(() => setupTestDb());
 
-  beforeEach(async () => {
+  beforeEach(() => {
     resetTestDb();
-    cookieJar.clear();
     vi.stubEnv("ADMIN_PASSWORD", "admin-pw");
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
-    await loginAsAdmin();
   });
 
   afterEach(() => vi.unstubAllEnvs());
 
   it("rejects the request without an admin cookie", async () => {
-    cookieJar.clear();
     const event = await createEvent({ phase: "voting" });
-    const res = await POST(
-      makeReq({ eventSlug: event.slug, title: "T", hostIds: [] })
+    const res = await postJson(
+      { eventSlug: event.slug, title: "T", hostIds: [] },
+      { authed: false }
     );
     expect(res.status).toBe(401);
   });
@@ -65,15 +51,13 @@ describe("POST /api/admin/create-proposal", () => {
   it("creates a proposal with hosts and duration, returning its id", async () => {
     const event = await createEvent({ phase: "voting" });
     const host = await createGuest();
-    const res = await POST(
-      makeReq({
-        eventSlug: event.slug,
-        title: "Prompt engineering basics",
-        description: "hands-on intro",
-        durationMinutes: 45,
-        hostIds: [host.id],
-      })
-    );
+    const res = await postJson({
+      eventSlug: event.slug,
+      title: "Prompt engineering basics",
+      description: "hands-on intro",
+      durationMinutes: 45,
+      hostIds: [host.id],
+    });
     expect(res.status).toBe(201);
     const { id } = (await res.json()) as { id: string };
 
@@ -86,72 +70,73 @@ describe("POST /api/admin/create-proposal", () => {
   it("assigns the hosts to the event", async () => {
     const event = await createEvent({ phase: "voting" });
     const host = await createGuest();
-    await POST(
-      makeReq({ eventSlug: event.slug, title: "T", hostIds: [host.id] })
-    );
+    await postJson({ eventSlug: event.slug, title: "T", hostIds: [host.id] });
     const members = await getRepositories().guests.listByEvent(event.id);
     expect(members.map((g) => g.id)).toContain(host.id);
   });
 
   it("rejects a malformed JSON body with 400", async () => {
-    const res = await POST(
-      new Request("http://test/api/admin/create-proposal", {
-        method: "POST",
-        body: "{not json",
-      })
-    );
+    const res = await post("{not json");
     expect(res.status).toBe(400);
   });
 
   it("rejects a missing title with 400", async () => {
     const event = await createEvent({ phase: "voting" });
-    const res = await POST(
-      makeReq({ eventSlug: event.slug, title: "  ", hostIds: [] })
-    );
+    const res = await postJson({
+      eventSlug: event.slug,
+      title: "  ",
+      hostIds: [],
+    });
     expect(res.status).toBe(400);
   });
 
   it("rejects an unknown host id with 400", async () => {
     const event = await createEvent({ phase: "voting" });
-    const res = await POST(
-      makeReq({ eventSlug: event.slug, title: "T", hostIds: ["nope"] })
-    );
+    const res = await postJson({
+      eventSlug: event.slug,
+      title: "T",
+      hostIds: ["nope"],
+    });
     expect(res.status).toBe(400);
   });
 
   it("rejects a non-string title with 400", async () => {
     const event = await createEvent({ phase: "voting" });
-    const res = await POST(
-      makeReq({ eventSlug: event.slug, title: 123, hostIds: [] })
-    );
+    const res = await postJson({
+      eventSlug: event.slug,
+      title: 123,
+      hostIds: [],
+    });
     expect(res.status).toBe(400);
   });
 
   it("rejects a non-string description with 400", async () => {
     const event = await createEvent({ phase: "voting" });
-    const res = await POST(
-      makeReq({
-        eventSlug: event.slug,
-        title: "T",
-        description: 123,
-        hostIds: [],
-      })
-    );
+    const res = await postJson({
+      eventSlug: event.slug,
+      title: "T",
+      description: 123,
+      hostIds: [],
+    });
     expect(res.status).toBe(400);
   });
 
   it("rejects a non-array hostIds with 400", async () => {
     const event = await createEvent({ phase: "voting" });
-    const res = await POST(
-      makeReq({ eventSlug: event.slug, title: "T", hostIds: "nope" })
-    );
+    const res = await postJson({
+      eventSlug: event.slug,
+      title: "T",
+      hostIds: "nope",
+    });
     expect(res.status).toBe(400);
   });
 
   it("returns 404 for an unknown eventSlug", async () => {
-    const res = await POST(
-      makeReq({ eventSlug: "does-not-exist", title: "T", hostIds: [] })
-    );
+    const res = await postJson({
+      eventSlug: "does-not-exist",
+      title: "T",
+      hostIds: [],
+    });
     expect(res.status).toBe(404);
   });
 });

@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
 import { normalizeLocationColor } from "@/utils/location-colors";
 
 export const dynamic = "force-dynamic";
-
-async function isAdminRequest(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
-}
 
 type Body = {
   name?: string;
@@ -27,18 +20,14 @@ function badRequest(error: string) {
 }
 
 // Admin-only location creation over plain HTTP, for external seeding scripts.
-// The middleware already enforces site auth for /api/*; here we additionally
-// require the admin cookie, matching the admin server actions.
+// Auth is enforced by the proxy (see requireAdminAuthApi); the proxy's
+// matcher covers every path, so this route is never reachable without it.
 //
 // Always creates a new location, same as the admin UI action: locations
 // aren't unique by name, so a name matching an existing location is not
 // treated as a duplicate to reuse. Image upload stays exclusive to the
 // admin UI action.
 export async function POST(req: Request) {
-  if (!(await isAdminRequest())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   let body: Body;
   try {
     body = ((await req.json()) ?? {}) as Body;

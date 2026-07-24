@@ -8,65 +8,50 @@ import {
   vi,
 } from "vitest";
 
-const cookieJar = new Map<string, string>();
-
-vi.mock("next/headers", () => ({
-  cookies: () =>
-    Promise.resolve({
-      get: (name: string) => {
-        const value = cookieJar.get(name);
-        return value === undefined ? undefined : { name, value };
-      },
-    }),
-}));
-
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { createAdminAuthCookie } from "@/utils/auth";
+import { callThroughProxy } from "../helpers/through-proxy";
 import { DEFAULT_LOCATION_COLOR } from "@/utils/location-colors";
 import { POST } from "@/app/api/admin/create-location/route";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef"; // 32 chars
+const PATH = "/api/admin/create-location";
 
-function makeReq(body: unknown): Request {
-  return new Request("http://test/api/admin/create-location", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
+function post(rawBody: string, opts?: { authed?: boolean }): Promise<Response> {
+  return callThroughProxy(POST, PATH, { method: "POST", body: rawBody }, opts);
+}
+
+function postJson(
+  body: unknown,
+  opts?: { authed?: boolean }
+): Promise<Response> {
+  return post(JSON.stringify(body), opts);
 }
 
 async function readJson(res: Response): Promise<{ id: string }> {
   return (await res.json()) as { id: string };
 }
 
-async function loginAsAdmin() {
-  const c = await createAdminAuthCookie();
-  cookieJar.set(c.name, c.value);
-}
-
 describe("POST /api/admin/create-location", () => {
   beforeAll(() => setupTestDb());
 
-  beforeEach(async () => {
+  beforeEach(() => {
     resetTestDb();
-    cookieJar.clear();
     vi.stubEnv("ADMIN_PASSWORD", "admin-pw");
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
-    await loginAsAdmin();
   });
 
   afterEach(() => vi.unstubAllEnvs());
 
   it("rejects the request without an admin cookie", async () => {
-    cookieJar.clear();
-    const res = await POST(makeReq({ name: "Main Hall" }));
+    const res = await postJson({ name: "Main Hall" }, { authed: false });
     expect(res.status).toBe(401);
     expect(await getRepositories().locations.list()).toEqual([]);
   });
 
   it("creates a location with defaults and returns its id", async () => {
-    const res = await POST(makeReq({ name: "Main Hall" }));
+    const res = await postJson({ name: "Main Hall" });
     expect(res.status).toBe(201);
     const body = await readJson(res);
 
@@ -80,18 +65,16 @@ describe("POST /api/admin/create-location", () => {
   });
 
   it("accepts explicit fields and auto-increments sortIndex", async () => {
-    await POST(makeReq({ name: "Main Hall" }));
-    const res = await POST(
-      makeReq({
-        name: "Workshop Room",
-        description: "First floor",
-        areaDescription: "North wing",
-        capacity: 25,
-        color: "blue",
-        hidden: true,
-        bookable: true,
-      })
-    );
+    await postJson({ name: "Main Hall" });
+    const res = await postJson({
+      name: "Workshop Room",
+      description: "First floor",
+      areaDescription: "North wing",
+      capacity: 25,
+      color: "blue",
+      hidden: true,
+      bookable: true,
+    });
     const { id } = await readJson(res);
 
     const location = await getRepositories().locations.findById(id);
@@ -106,9 +89,9 @@ describe("POST /api/admin/create-location", () => {
 
   it("creates a new location even when the name matches an existing one", async () => {
     const first = await readJson(
-      await POST(makeReq({ name: "Main Hall", capacity: 100 }))
+      await postJson({ name: "Main Hall", capacity: 100 })
     );
-    const res = await POST(makeReq({ name: "main hall", capacity: 5 }));
+    const res = await postJson({ name: "main hall", capacity: 5 });
     const body = await readJson(res);
     expect(body.id).not.toBe(first.id);
 
@@ -119,9 +102,7 @@ describe("POST /api/admin/create-location", () => {
 
   it("assigns the location to the event when eventSlug is given", async () => {
     const event = await createEvent();
-    const res = await POST(
-      makeReq({ name: "Main Hall", eventSlug: event.slug })
-    );
+    const res = await postJson({ name: "Main Hall", eventSlug: event.slug });
     const { id } = await readJson(res);
 
     const assigned = await getRepositories().locations.listLocationIdsByEvent(
@@ -131,11 +112,9 @@ describe("POST /api/admin/create-location", () => {
   });
 
   it("creates a new location and assigns it to the event, even when the name matches an existing location", async () => {
-    const first = await readJson(await POST(makeReq({ name: "Main Hall" })));
+    const first = await readJson(await postJson({ name: "Main Hall" }));
     const event = await createEvent();
-    const res = await POST(
-      makeReq({ name: "Main Hall", eventSlug: event.slug })
-    );
+    const res = await postJson({ name: "Main Hall", eventSlug: event.slug });
     const body = await readJson(res);
     expect(body.id).not.toBe(first.id);
 
@@ -146,20 +125,16 @@ describe("POST /api/admin/create-location", () => {
   });
 
   it("returns 404 for an unknown eventSlug", async () => {
-    const res = await POST(
-      makeReq({ name: "Main Hall", eventSlug: "does-not-exist" })
-    );
+    const res = await postJson({
+      name: "Main Hall",
+      eventSlug: "does-not-exist",
+    });
     expect(res.status).toBe(404);
     expect(await getRepositories().locations.list()).toEqual([]);
   });
 
   it("rejects a malformed JSON body with 400", async () => {
-    const res = await POST(
-      new Request("http://test/api/admin/create-location", {
-        method: "POST",
-        body: "{not json",
-      })
-    );
+    const res = await post("{not json");
     expect(res.status).toBe(400);
   });
 
@@ -173,7 +148,7 @@ describe("POST /api/admin/create-location", () => {
     ["non-string color", { name: "Main Hall", color: 123 }],
     ["non-string eventSlug", { name: "Main Hall", eventSlug: 123 }],
   ])("rejects %s with 400", async (_label, body) => {
-    const res = await POST(makeReq(body));
+    const res = await postJson(body);
     expect(res.status).toBe(400);
     expect(await getRepositories().locations.list()).toEqual([]);
   });

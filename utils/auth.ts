@@ -16,6 +16,16 @@ export const GUEST_COOKIE_NAME = "guest";
 export type GuestAuthLevel = "open" | "verified";
 export const ADMIN_DISABLED_MESSAGE =
   "Admin UI is disabled: set the ADMIN_PASSWORD environment variable on the server to enable it. See the project documentation.";
+// Set by the proxy on requests it has verified carry a valid admin cookie,
+// and only then — route handlers trust its presence instead of
+// re-validating the cookie themselves. Safe because the proxy always runs
+// ahead of the route for real traffic and strips any client-supplied copy of
+// this header from every forwarded request before checking auth.
+export const ADMIN_VERIFIED_HEADER = "x-admin-verified";
+// Without an explicit no-store, browsers heuristically cache admin API
+// responses; some carry sensitive data (e.g. user emails) and must never be
+// served stale or from cache.
+export const NO_STORE = { headers: { "cache-control": "no-store" } };
 const ADMIN_SCOPE = "admin";
 const COOKIE_MAX_AGE_SEC = 7 * 24 * 60 * 60;
 const COOKIE_MAX_AGE_MS = COOKIE_MAX_AGE_SEC * 1000;
@@ -359,4 +369,73 @@ export async function requireAdminAuth(
     request.nextUrl.pathname + request.nextUrl.search
   );
   return NextResponse.redirect(loginUrl);
+}
+
+// CSRF defense for the cookie-authenticated admin API: `SameSite=Lax` alone
+// doesn't cover cross-site top-level GET navigations (e.g. a link or
+// auto-submitting <form method=get>), which still carry the cookie without an
+// `Origin` header. `Sec-Fetch-Site` is sent by all modern browsers for those
+// requests too, so checking both closes the gap Origin alone leaves open.
+// Non-browser clients (curl, scripts) send neither header, so they fall
+// through to "trusted" — matching this API's intended audience.
+//
+// `request.nextUrl.origin` is derived from the Host/X-Forwarded-* headers
+// Next.js sees, so this comparison is only correct if a fronting reverse
+// proxy forwards `X-Forwarded-Proto`/`Host` accurately; a misconfigured proxy
+// that drops `X-Forwarded-Proto` could make this reject legitimate
+// same-origin browser requests (e.g. nextUrl resolves to http:// while the
+// browser's real Origin is https://).
+function isTrustedOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get("origin");
+  if (origin && origin !== request.nextUrl.origin) {
+    return false;
+  }
+  const site = request.headers.get("sec-fetch-site");
+  if (site === "cross-site") {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Admin-API counterpart of {@link requireAdminAuth}: same admin-cookie check,
+ * plus a CSRF check the UI branch doesn't need (see {@link isTrustedOrigin}
+ * — the UI relies on Next's built-in server-action Origin check instead). On
+ * failure this returns JSON (matching the API's contract) instead of a
+ * redirect to the admin login page; on success it forwards the request with
+ * {@link ADMIN_VERIFIED_HEADER} set so the route handler doesn't need to
+ * re-check the cookie.
+ *
+ * Deliberate contract change from the routes' previous per-route checks:
+ * those always returned 401 regardless of why auth failed, whereas this
+ * returns 404 when the admin API is disabled (mirroring the /admin UI
+ * branch), 403 for a cross-site request, and 401 only for a missing/invalid
+ * admin cookie. External clients that only branched on 401 need to handle
+ * 404 and 403 too.
+ */
+export async function requireAdminAuthApi(
+  request: NextRequest
+): Promise<NextResponse> {
+  if (!isAdminEnabled()) {
+    return NextResponse.json(
+      { error: "Admin API is disabled" },
+      { ...NO_STORE, status: 404 }
+    );
+  }
+  if (!isTrustedOrigin(request)) {
+    return NextResponse.json(
+      { error: "Cross-site request rejected" },
+      { ...NO_STORE, status: 403 }
+    );
+  }
+  if (!(await isAdminAuthenticated(request))) {
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { ...NO_STORE, status: 401 }
+    );
+  }
+
+  const headers = new Headers(request.headers);
+  headers.set(ADMIN_VERIFIED_HEADER, "1");
+  return NextResponse.next({ request: { headers } });
 }
