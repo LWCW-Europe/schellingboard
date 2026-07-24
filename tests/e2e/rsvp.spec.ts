@@ -116,13 +116,24 @@ test("a full session blocks further RSVPs when the event enforces capacity", asy
     .getByRole("navigation", { name: "Event sections" })
     .getByRole("link", { name: "Sessions" })
     .click();
-  await page.getByRole("searchbox").fill(sessionTitle);
-  await page.getByRole("button", { name: "Search" }).click();
-  await page.getByRole("button", { name: `Edit ${sessionTitle}` }).click();
-  await page.getByLabel("Capacity").fill("1");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  const sessionsRegion = page.getByRole("region", { name: "Sessions" });
+  await sessionsRegion.getByRole("searchbox").fill(sessionTitle);
+  await sessionsRegion.getByRole("button", { name: "Search" }).click();
+  // Wait for the single-result list to commit before clicking Edit. The list is
+  // sorted by title, so unfiltered the new session sits near the bottom and the
+  // matching row jumps to the top when the search commits. A click whose
+  // mousedown and mouseup straddle that reflow is swallowed: mouseup lands on
+  // another element, so no click event fires and the edit form never opens.
+  await expect(sessionsRegion.getByRole("listitem")).toHaveCount(1);
+  await sessionsRegion
+    .getByRole("button", { name: `Edit ${sessionTitle}` })
+    .click();
+  await sessionsRegion.getByLabel("Capacity").fill("1");
+  await sessionsRegion
+    .getByRole("button", { name: "Save", exact: true })
+    .click();
   await expect(
-    page.getByRole("button", { name: `Edit ${sessionTitle}` })
+    sessionsRegion.getByRole("button", { name: `Edit ${sessionTitle}` })
   ).toBeVisible();
   // Saving triggers a router.refresh. A document navigation started while its
   // RSC fetch is in flight is aborted by Firefox (NS_BINDING_ABORTED), and

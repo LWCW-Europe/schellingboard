@@ -1396,9 +1396,13 @@ test.describe("Admin UI sessions", () => {
 
     await sessions.getByRole("button", { name: "Create", exact: true }).click();
 
-    // Search for the unique title so pagination cannot hide the new row.
+    // Search for the unique title so pagination cannot hide the new row. Wait
+    // for the single-result list to commit before clicking into the row: the
+    // list is sorted by title, so the row moves when the search commits, and a
+    // click straddling that reflow is swallowed (mouseup lands elsewhere).
     await sessions.getByRole("searchbox", { name: "Search" }).fill(title);
     await sessions.getByRole("button", { name: "Search" }).click();
+    await expect(sessions.getByRole("listitem")).toHaveCount(1);
     const row = sessions.getByRole("listitem").filter({ hasText: title });
     await expect(row).toBeVisible();
     await expect(row).toContainText("blocker");
