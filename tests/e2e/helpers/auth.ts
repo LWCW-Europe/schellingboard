@@ -3,7 +3,7 @@ import { Page, expect } from "@playwright/test";
 const DEFAULT_PASSWORD = process.env.TEST_PASSWORD || "testtest";
 
 export async function login(page: Page, password: string = DEFAULT_PASSWORD) {
-  const passwordInput = page.locator('input[name="password"]').first();
+  const passwordInput = page.getByLabel("Password");
   if (!(await passwordInput.isVisible())) {
     await page.goto("/");
   }

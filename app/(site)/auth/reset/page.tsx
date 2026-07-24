@@ -29,7 +29,11 @@ export default async function AuthResetPage({
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
       <h1 className="text-2xl font-bold">Set a password for {guest.name}</h1>
-      <ResetPasswordForm guestId={guest.id} token={token} />
+      <ResetPasswordForm
+        guestId={guest.id}
+        guestName={guest.name}
+        token={token}
+      />
     </div>
   );
 }

@@ -23,9 +23,11 @@ const inputClass =
  */
 export function AccountSecurity({
   guestId,
+  guestName,
   authProtected,
 }: {
   guestId: string;
+  guestName: string;
   authProtected: boolean;
 }) {
   const router = useRouter();
@@ -175,6 +177,18 @@ export function AccountSecurity({
               ? "Enter your current password and choose a new one."
               : "Enter your current password to turn off protection. This also removes your password."}
           </p>
+          {/* Hints the browser's password manager which guest this password
+              belongs to, so it doesn't get confused with another guest's
+              saved credential on the same device. */}
+          <input
+            type="text"
+            autoComplete="username"
+            value={guestName}
+            readOnly
+            aria-hidden="true"
+            tabIndex={-1}
+            className="hidden"
+          />
           <label
             htmlFor="security-current-password"
             className="text-sm font-medium text-gray-700"
