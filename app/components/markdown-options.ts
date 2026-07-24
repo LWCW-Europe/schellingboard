@@ -10,10 +10,13 @@ import {
 import { CodeBracketIcon } from "@heroicons/react/24/outline";
 
 type Icon = typeof BoldIcon;
+type Key =
+  RegExp | string | ((e: React.KeyboardEvent<HTMLTextAreaElement>) => boolean);
 type Option = {
   icon: Icon;
   label: string;
   onClick: (textarea: HTMLTextAreaElement) => void;
+  key: Key;
 };
 
 function tpl(
@@ -121,6 +124,19 @@ const around =
     return tpl`${newBefore}${newSelectedText}${newAfter}`;
   };
 
+export const isKey =
+  (key: Key) => (e: React.KeyboardEvent<HTMLTextAreaElement>) =>
+    typeof key === "function"
+      ? key(e)
+      : typeof key === "string"
+        ? e.key.toLowerCase() === key.toLowerCase()
+        : key.test(e.key);
+
+const ctrl = (k: Key) => (e: React.KeyboardEvent<HTMLTextAreaElement>) =>
+  (e.ctrlKey || e.metaKey) && isKey(k)(e);
+const shift = (k: Key) => (e: React.KeyboardEvent<HTMLTextAreaElement>) =>
+  e.shiftKey && isKey(k)(e);
+
 export const options: Option[] = [
   {
     icon: BoldIcon,
@@ -131,6 +147,7 @@ export const options: Option[] = [
           tpl`${before}**${selectedText}**${after}`
       )
     ),
+    key: ctrl("B"),
   },
   {
     icon: ItalicIcon,
@@ -140,6 +157,7 @@ export const options: Option[] = [
         (before, selectedText, after) => tpl`${before}*${selectedText}*${after}`
       )
     ),
+    key: ctrl("I"),
   },
   {
     icon: ChatBubbleBottomCenterTextIcon,
@@ -152,6 +170,7 @@ export const options: Option[] = [
         )
       )
     ),
+    key: ctrl("Q"),
   },
   {
     icon: NumberedListIcon,
@@ -173,6 +192,7 @@ export const options: Option[] = [
         return tpl`${before}${newSelectedText}${after}`;
       })
     ),
+    key: ctrl(/\d/),
   },
   {
     icon: ListBulletIcon,
@@ -191,6 +211,7 @@ export const options: Option[] = [
         return tpl`${before}${newSelectedText}${after}`;
       })
     ),
+    key: ctrl("-"),
   },
   {
     icon: CodeBracketIcon,
@@ -201,6 +222,7 @@ export const options: Option[] = [
           tpl`${before}\`${selectedText}\`${after}`
       )
     ),
+    key: ctrl("`"),
   },
   {
     icon: CodeBracketSquareIcon,
@@ -213,14 +235,17 @@ export const options: Option[] = [
         )
       )
     ),
+    key: ctrl(shift("~")),
   },
   {
     icon: LinkIcon,
-    label: "Insert link",
+    label: "Insert link (Ctrl+L)",
     onClick: insert(
-      around((before, selectedText, after) => {
-        return tpl`${before}[](${selectedText})${after}`;
-      })
+      around(
+        (before, selectedText, after) =>
+          tpl`${before}[](${selectedText})${after}`
+      )
     ),
+    key: ctrl("L"),
   },
 ];
