@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input } from "@/app/input";
+import { PasswordManagerHint } from "@/app/password-manager-hint";
 import clsx from "clsx";
 import { useActionState } from "react";
 import { loginAction } from "@/app/actions/auth";
@@ -35,15 +36,17 @@ function LoginForm() {
 
       <form className="mt-8 space-y-6" action={formAction}>
         <input type="hidden" name="redirect" value={redirectTo} />
+        <PasswordManagerHint username="Site Password" />
 
         <div>
-          <label htmlFor="password" className="sr-only">
+          <label htmlFor="site-password" className="sr-only">
             Password
           </label>
           <Input
-            id="password"
-            name="password"
+            id="site-password"
+            name="site-password"
             type="password"
+            autoComplete="current-password"
             required
             placeholder="Enter password"
             error={!!state?.error}

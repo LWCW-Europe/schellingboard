@@ -14,7 +14,7 @@ export async function adminLoginAction(
   prevState: { error: string } | null,
   formData: FormData
 ) {
-  const password = formData.get("password") as string;
+  const password = formData.get("admin-password") as string;
   const redirectTo = safeRedirectPath(
     formData.get("redirect") as string,
     "/admin"

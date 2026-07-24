@@ -2,14 +2,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { setPasswordWithTokenAction } from "@/app/actions/user-auth";
+import { PasswordManagerHint } from "@/app/password-manager-hint";
 
 // Sets a new password from a reset link. Grants no session, so on success it
 // points the guest at the home page to log in with the password they just set.
 export function ResetPasswordForm({
   guestId,
+  guestName,
   token,
 }: {
   guestId: string;
+  guestName: string;
   token: string;
 }) {
   const [newPassword, setNewPassword] = useState("");
@@ -68,6 +71,7 @@ export function ResetPasswordForm({
         Choose a new password. You&apos;ll use it to switch to your name from
         now on.
       </p>
+      <PasswordManagerHint username={guestName} />
       <label
         htmlFor="reset-new-password"
         className="text-sm font-medium text-gray-700"

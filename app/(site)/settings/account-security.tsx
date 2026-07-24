@@ -6,6 +6,7 @@ import {
   disableProtectionAction,
   requestPasswordLinkAction,
 } from "@/app/actions/user-auth";
+import { PasswordManagerHint } from "@/app/password-manager-hint";
 
 type Mode = "password" | "disable";
 
@@ -23,9 +24,11 @@ const inputClass =
  */
 export function AccountSecurity({
   guestId,
+  guestName,
   authProtected,
 }: {
   guestId: string;
+  guestName: string;
   authProtected: boolean;
 }) {
   const router = useRouter();
@@ -175,6 +178,7 @@ export function AccountSecurity({
               ? "Enter your current password and choose a new one."
               : "Enter your current password to turn off protection. This also removes your password."}
           </p>
+          <PasswordManagerHint username={guestName} />
           <label
             htmlFor="security-current-password"
             className="text-sm font-medium text-gray-700"
