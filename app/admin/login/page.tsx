@@ -23,15 +23,29 @@ function AdminLoginForm() {
 
       <form className="mt-8 space-y-6" action={formAction}>
         <input type="hidden" name="redirect" value={redirectTo} />
+        {/* Hints the browser's password manager to save this under a
+            distinct entry rather than confusing it with the site login,
+            which is a separate credential on the same origin. */}
+        <input
+          type="text"
+          name="username"
+          autoComplete="username"
+          value="admin-password"
+          readOnly
+          aria-hidden="true"
+          tabIndex={-1}
+          className="hidden"
+        />
 
         <div>
-          <label htmlFor="password" className="sr-only">
+          <label htmlFor="admin-password" className="sr-only">
             Password
           </label>
           <Input
-            id="password"
-            name="password"
+            id="admin-password"
+            name="admin-password"
             type="password"
+            autoComplete="current-password"
             required
             placeholder="Enter admin password"
             error={!!state?.error}

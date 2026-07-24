@@ -7,9 +7,11 @@ import { setPasswordWithTokenAction } from "@/app/actions/user-auth";
 // points the guest at the home page to log in with the password they just set.
 export function ResetPasswordForm({
   guestId,
+  guestName,
   token,
 }: {
   guestId: string;
+  guestName: string;
   token: string;
 }) {
   const [newPassword, setNewPassword] = useState("");
@@ -68,6 +70,18 @@ export function ResetPasswordForm({
         Choose a new password. You&apos;ll use it to switch to your name from
         now on.
       </p>
+      {/* Hints the browser's password manager which guest this new password
+          belongs to, so it doesn't get confused with another guest's saved
+          credential on the same device. */}
+      <input
+        type="text"
+        autoComplete="username"
+        value={guestName}
+        readOnly
+        aria-hidden="true"
+        tabIndex={-1}
+        className="hidden"
+      />
       <label
         htmlFor="reset-new-password"
         className="text-sm font-medium text-gray-700"

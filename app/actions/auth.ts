@@ -18,7 +18,7 @@ export async function loginAction(
   prevState: { error?: string; redirectTo?: string } | null,
   formData: FormData
 ) {
-  const password = formData.get("password") as string;
+  const password = formData.get("site-password") as string;
   const redirectTo = safeRedirectPath(formData.get("redirect") as string, "/");
 
   if (!isPasswordProtectionEnabled()) {

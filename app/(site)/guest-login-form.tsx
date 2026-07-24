@@ -101,6 +101,18 @@ export function GuestLoginForm({
         {guestName} has protected their account. Enter their password, or use a
         single-use code emailed to them. Forgot the password? Reset it instead.
       </p>
+      {/* Hints the browser's password manager which guest this credential
+          belongs to, so switching between guests on a shared device saves
+          distinct entries instead of overwriting one another. */}
+      <input
+        type="text"
+        autoComplete="username"
+        value={guestName}
+        readOnly
+        aria-hidden="true"
+        tabIndex={-1}
+        className="hidden"
+      />
       <label
         htmlFor="guest-credential"
         className="text-sm font-medium text-gray-700"
