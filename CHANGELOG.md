@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Saved passwords no longer get mixed up**: browsers couldn't tell this site's different passwords apart — the site password, the organizer password, and each attendee's own password all looked like the same login — so a saved password could be overwritten or offered in the wrong place. Each is now saved as its own entry
+
 ## [3.1.0] - 2026-07-24
 
 ### Added

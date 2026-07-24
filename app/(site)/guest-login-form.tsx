@@ -5,6 +5,7 @@ import {
   requestLoginCodeAction,
   requestPasswordLinkAction,
 } from "@/app/actions/user-auth";
+import { PasswordManagerHint } from "@/app/password-manager-hint";
 
 // Credential prompt for switching to a protected guest: accepts either the
 // permanent password or an emailed single-use login code in one field, with a
@@ -101,6 +102,7 @@ export function GuestLoginForm({
         {guestName} has protected their account. Enter their password, or use a
         single-use code emailed to them. Forgot the password? Reset it instead.
       </p>
+      <PasswordManagerHint username={guestName} />
       <label
         htmlFor="guest-credential"
         className="text-sm font-medium text-gray-700"

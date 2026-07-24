@@ -45,6 +45,7 @@ export default async function SettingsPage() {
       <div className="max-w-2xl mx-auto w-full px-4 sm:px-0">
         <AccountSecurity
           guestId={guest.id}
+          guestName={guest.name}
           authProtected={guest.authProtected ?? false}
         />
       </div>

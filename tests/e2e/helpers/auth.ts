@@ -3,7 +3,9 @@ import { Page, expect } from "@playwright/test";
 const DEFAULT_PASSWORD = process.env.TEST_PASSWORD || "testtest";
 
 export async function login(page: Page, password: string = DEFAULT_PASSWORD) {
-  const passwordInput = page.locator('input[name="password"]').first();
+  // Exact: other forms label their fields "Current password", "New password"
+  // or "Password or emailed code", which a substring match would also pick up.
+  const passwordInput = page.getByLabel("Password", { exact: true });
   if (!(await passwordInput.isVisible())) {
     await page.goto("/");
   }
