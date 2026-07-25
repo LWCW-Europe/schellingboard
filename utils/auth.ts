@@ -71,12 +71,27 @@ export function isPasswordProtectionEnabled(): boolean {
   return !!process.env.SITE_PASSWORD;
 }
 
+// Constant-time string comparison for the shared site/admin passwords. This
+// file must stay free of node:crypto (see utils/user-credentials.ts), so no
+// timingSafeEqual: instead XOR every byte and fold the result, always walking
+// the longer input so timing reveals nothing beyond the secret's length.
+function timingSafeEqualString(a: string, b: string): boolean {
+  const aBytes = encoder.encode(a);
+  const bBytes = encoder.encode(b);
+  let diff = aBytes.length ^ bBytes.length;
+  const len = Math.max(aBytes.length, bBytes.length);
+  for (let i = 0; i < len; i++) {
+    diff |= (aBytes[i] ?? 0) ^ (bBytes[i] ?? 0);
+  }
+  return diff === 0;
+}
+
 export function verifyPassword(inputPassword: string): boolean {
   const sitePassword = process.env.SITE_PASSWORD;
   if (!sitePassword) {
     return true; // No protection if password not set
   }
-  return inputPassword === sitePassword;
+  return timingSafeEqualString(inputPassword, sitePassword);
 }
 
 export function isAdminEnabled(): boolean {
@@ -88,7 +103,7 @@ export function verifyAdminPassword(inputPassword: string): boolean {
   if (!adminPassword) {
     return false; // Admin access disabled entirely when no password is set
   }
-  return inputPassword === adminPassword;
+  return timingSafeEqualString(inputPassword, adminPassword);
 }
 
 const MIN_AUTH_SECRET_LENGTH = 32;

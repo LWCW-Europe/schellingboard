@@ -55,6 +55,22 @@ const nextConfig = {
       bodySizeLimit: "5mb",
     },
   },
+  // Baseline browser-side hardening for every response. No frame ever embeds
+  // this app, so framing is denied outright (blocks clickjacking on the
+  // cookie-authenticated admin and attendee pages).
+  // eslint-disable-next-line @typescript-eslint/require-await -- Next requires an async function here
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
   images: {
     localPatterns: [
       // Location uploads carry a ?v=<timestamp> cache-buster; omitting `search`

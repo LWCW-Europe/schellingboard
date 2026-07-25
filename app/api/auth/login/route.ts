@@ -7,6 +7,12 @@ import {
   createAuthCookie,
   createAdminAuthCookie,
 } from "@/utils/auth";
+import {
+  TOO_MANY_ATTEMPTS_ERROR,
+  clientKeyFromHeaders,
+  isLoginBlocked,
+  recordLoginFailure,
+} from "@/utils/login-rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +40,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unknown scope" }, { status: 400 });
   }
 
+  const clientKey = clientKeyFromHeaders(req.headers);
+
   if (scope === "admin") {
     if (!isAdminEnabled()) {
       return NextResponse.json(
@@ -41,7 +49,14 @@ export async function POST(req: Request) {
         { status: 403 }
       );
     }
+    if (isLoginBlocked("admin", clientKey)) {
+      return NextResponse.json(
+        { error: TOO_MANY_ATTEMPTS_ERROR },
+        { status: 429 }
+      );
+    }
     if (!verifyAdminPassword(password)) {
+      recordLoginFailure("admin", clientKey);
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });
     }
     const res = NextResponse.json({ ok: true });
@@ -54,7 +69,14 @@ export async function POST(req: Request) {
   if (!isPasswordProtectionEnabled()) {
     return NextResponse.json({ ok: true });
   }
+  if (isLoginBlocked("site", clientKey)) {
+    return NextResponse.json(
+      { error: TOO_MANY_ATTEMPTS_ERROR },
+      { status: 429 }
+    );
+  }
   if (!verifyPassword(password)) {
+    recordLoginFailure("site", clientKey);
     return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
   const res = NextResponse.json({ ok: true });

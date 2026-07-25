@@ -21,6 +21,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The [schellingboard.org](https://schellingboard.org) marketing site moved into this repository as `www/`, and its screenshots into `docs/screenshots/` as the project's single copy — the documentation site can use the same files, so a screenshot is recaptured once instead of twice. `make www` builds it; a workflow publishes it to the `schellingboard.org` repository on every push to `main`, since GitHub Pages allows only one custom domain per repository and this one serves `docs.schellingboard.org`. See [CONTRIBUTING.md § The marketing site](CONTRIBUTING.md#the-marketing-site)
 - Documentation is built with [docmd](https://docmd.io) from `docs/public/`, which holds a single copy — the next release's documentation — with no per-version snapshots in the working tree. Published versions are reconstructed from release tags at build time, so releasing documentation is tagging the repository, and a published version can be corrected without a release by pushing a `docs-<version>` branch. Developer documentation (ADRs, design notes) moved to `docs/dev/` and stays out of the published site. See [CONTRIBUTING.md § Documentation](CONTRIBUTING.md#documentation)
 
+### Security
+
+- **Login attempts are now rate limited**: repeated wrong passwords (site password, admin password, or an attendee's name password) temporarily block further attempts, so passwords can no longer be guessed by brute force. An attendee locked out this way can still sign in with an emailed one-time code
+- Framing the site in other pages is now blocked (clickjacking protection), along with other standard browser hardening headers
+
 ## [3.1.0] - 2026-07-24
 
 ### Added

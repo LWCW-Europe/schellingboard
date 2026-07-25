@@ -45,6 +45,10 @@ import { sendMail, isMailerConfigured } from "@/utils/mailer";
 import { readGuestCookie, GUEST_COOKIE_NAME } from "@/utils/auth";
 import { hashUserPassword } from "@/utils/user-credentials";
 import {
+  MAX_LOGIN_FAILURES_PER_CLIENT,
+  resetLoginRateLimiter,
+} from "@/utils/login-rate-limit";
+import {
   changePasswordAction,
   disableProtectionAction,
   loginAsGuestAction,
@@ -106,6 +110,7 @@ describe("user auth actions", () => {
 
   beforeEach(() => {
     resetTestDb();
+    resetLoginRateLimiter();
     cookieJar.clear();
     vi.mocked(sendMail).mockReset();
     vi.mocked(isMailerConfigured).mockReturnValue(true);
@@ -269,6 +274,44 @@ describe("user auth actions", () => {
       expect(result).toEqual({ ok: true });
       expect(await currentUserId()).toBe(guest.id);
       expect(await userAuthCookieValidFor(guest.id)).toBe(true);
+    });
+
+    it("locks the password after too many failed attempts, but a fresh emailed code still works", async () => {
+      const guest = await createGuest();
+      await getRepositories().guests.setAuthProtection(guest.id, {
+        authProtected: true,
+        passwordHash: await hashUserPassword("hunter2 forever"),
+      });
+      for (let i = 0; i < MAX_LOGIN_FAILURES_PER_CLIENT; i++) {
+        expect((await loginAsGuestAction(guest.id, "wrong")).ok).toBe(false);
+      }
+      // The right password no longer gets in...
+      const blocked = await loginAsGuestAction(guest.id, "hunter2 forever");
+      expect(blocked.ok).toBe(false);
+      expect(await currentUserId()).toBeNull();
+      // ...but proving inbox access still does, so the lockout can't shut
+      // the real person out.
+      await requestLoginCodeAction(guest.id);
+      const { code } = await lastSentEmail();
+      expect((await loginAsGuestAction(guest.id, code)).ok).toBe(true);
+      expect(await currentUserId()).toBe(guest.id);
+    });
+
+    it("a lockout for one guest does not affect another", async () => {
+      const locked = await createGuest();
+      const other = await createGuest();
+      for (const g of [locked, other]) {
+        await getRepositories().guests.setAuthProtection(g.id, {
+          authProtected: true,
+          passwordHash: await hashUserPassword("hunter2 forever"),
+        });
+      }
+      for (let i = 0; i < MAX_LOGIN_FAILURES_PER_CLIENT; i++) {
+        await loginAsGuestAction(locked.id, "wrong");
+      }
+      expect((await loginAsGuestAction(other.id, "hunter2 forever")).ok).toBe(
+        true
+      );
     });
   });
 

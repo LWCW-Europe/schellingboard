@@ -8,7 +8,13 @@ import {
   safeRedirectPath,
 } from "@/utils/auth";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import {
+  TOO_MANY_ATTEMPTS_ERROR,
+  clientKeyFromHeaders,
+  isLoginBlocked,
+  recordLoginFailure,
+} from "@/utils/login-rate-limit";
 
 export async function adminLoginAction(
   prevState: { error: string } | null,
@@ -28,11 +34,17 @@ export async function adminLoginAction(
     return { error: "Password is required" };
   }
 
+  const clientKey = clientKeyFromHeaders(await headers());
+  if (isLoginBlocked("admin", clientKey)) {
+    return { error: TOO_MANY_ATTEMPTS_ERROR };
+  }
+
   if (verifyAdminPassword(password)) {
     (await cookies()).set(await createAdminAuthCookie());
     redirect(redirectTo);
   }
 
+  recordLoginFailure("admin", clientKey);
   return { error: "Invalid password" };
 }
 

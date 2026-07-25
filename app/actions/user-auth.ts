@@ -22,6 +22,11 @@ import {
   verifyUserPassword,
 } from "@/utils/user-credentials";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import {
+  TOO_MANY_ATTEMPTS_ERROR,
+  isLoginBlocked,
+  recordLoginFailure,
+} from "@/utils/login-rate-limit";
 import { isMailerConfigured, sendMail } from "@/utils/mailer";
 import { siteUrl } from "@/utils/site-url";
 import { authCodeEmail } from "@/emails/auth-code";
@@ -220,6 +225,12 @@ export async function requestPasswordLinkAction(
  * currently valid emailed login code, and makes them the current user. A code
  * is consumed on success, so it can never be replayed — it grants a session but
  * never changes credentials.
+ *
+ * The password path is rate limited per guest: after too many failures the
+ * password is refused for a while even if right. The emailed-code path stays
+ * open (codes have their own attempt cap and die after MAX_CODE_ATTEMPTS), so
+ * an attacker hammering someone's password can never lock the real person
+ * out — they can always get in by proving inbox access.
  */
 export async function loginAsGuestAction(
   guestId: string,
@@ -230,7 +241,11 @@ export async function loginAsGuestAction(
   if (!creds) {
     return { ok: false, error: "Unknown user" };
   }
-  if (await verifyUserPassword(credential, creds.passwordHash)) {
+  const passwordBlocked = isLoginBlocked("guest", guestId);
+  if (
+    !passwordBlocked &&
+    (await verifyUserPassword(credential, creds.passwordHash))
+  ) {
     await setAuthenticatedIdentity(guestId);
     return { ok: true };
   }
@@ -240,7 +255,11 @@ export async function loginAsGuestAction(
     await setAuthenticatedIdentity(guestId);
     return { ok: true };
   }
-  return { ok: false, error: "Wrong password or code" };
+  recordLoginFailure("guest", guestId);
+  return {
+    ok: false,
+    error: passwordBlocked ? TOO_MANY_ATTEMPTS_ERROR : "Wrong password or code",
+  };
 }
 
 /**
@@ -300,7 +319,13 @@ export async function changePasswordAction(
   if (!creds || !creds.authProtected) {
     return { ok: false, error: "Your name isn't protected" };
   }
+  // Shares the login limiter: a stolen session must not be able to guess the
+  // current password (and so take the account over) at unlimited speed.
+  if (isLoginBlocked("guest", guestId)) {
+    return { ok: false, error: TOO_MANY_ATTEMPTS_ERROR };
+  }
   if (!(await verifyUserPassword(currentPassword, creds.passwordHash))) {
+    recordLoginFailure("guest", guestId);
     return { ok: false, error: "Wrong password" };
   }
   await guests.setAuthProtection(guestId, {
@@ -329,7 +354,12 @@ export async function disableProtectionAction(
   if (!creds || !creds.authProtected) {
     return { ok: false, error: "Your name isn't protected" };
   }
+  // Same reasoning as changePasswordAction: gate the guess rate.
+  if (isLoginBlocked("guest", guestId)) {
+    return { ok: false, error: TOO_MANY_ATTEMPTS_ERROR };
+  }
   if (!(await verifyUserPassword(currentPassword, creds.passwordHash))) {
+    recordLoginFailure("guest", guestId);
     return { ok: false, error: "Wrong password" };
   }
   await guests.setAuthProtection(guestId, {

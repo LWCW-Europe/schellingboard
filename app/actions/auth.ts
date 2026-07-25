@@ -8,7 +8,13 @@ import {
   isPasswordProtectionEnabled,
   safeRedirectPath,
 } from "@/utils/auth";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import {
+  TOO_MANY_ATTEMPTS_ERROR,
+  clientKeyFromHeaders,
+  isLoginBlocked,
+  recordLoginFailure,
+} from "@/utils/login-rate-limit";
 
 // Deliberately does not redirect(): see logoutAction below for why a
 // server-action redirect is unsafe here — the (site) layout persists across
@@ -29,11 +35,17 @@ export async function loginAction(
     return { error: "Password is required" };
   }
 
+  const clientKey = clientKeyFromHeaders(await headers());
+  if (isLoginBlocked("site", clientKey)) {
+    return { error: TOO_MANY_ATTEMPTS_ERROR };
+  }
+
   if (verifyPassword(password)) {
     (await cookies()).set(await createAuthCookie());
     return { redirectTo };
   }
 
+  recordLoginFailure("site", clientKey);
   return { error: "Invalid password" };
 }
 
