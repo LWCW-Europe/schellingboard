@@ -19,13 +19,19 @@ function runQuiet(file, args) {
 function getAppVersion() {
   // Prefer jj: some workspaces (e.g. `jj workspace add`) have no `.git` dir,
   // where git commands always fail. Fall back to git for devs without jj.
+  //
+  // Describe the parent, not `@`: `@` is usually an empty working-copy commit,
+  // so its own hash names nothing recognisable. A tag on the parent wins over
+  // its hash, so `jj new v3.1.0` reports "v3.1.0" — matching what `git
+  // describe --tags` gives below. `-dirty` marks actual local changes.
   const jjVersion = runQuiet("jj", [
     "log",
     "-r",
     "@",
     "--no-graph",
     "-T",
-    'commit_id.short(8) ++ if(!empty, "-dirty")',
+    'parents.map(|p| if(p.tags(), p.tags().map(|t| t.name()).join("+"), ' +
+      'p.commit_id().short(8))).join("+") ++ if(!empty, "-dirty")',
   ]);
   if (jjVersion) return jjVersion;
 
