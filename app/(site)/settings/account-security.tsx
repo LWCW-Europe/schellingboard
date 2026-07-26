@@ -52,7 +52,7 @@ export function AccountSecurity({
       if (result.ok) {
         setInfo("Check your email for a link to set your password");
       } else if (result.throttled) {
-        setInfo("A recently emailed link is still valid — check your inbox");
+        setInfo(result.error);
       } else {
         setError(result.error);
       }

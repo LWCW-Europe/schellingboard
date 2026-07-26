@@ -55,7 +55,7 @@ export function GuestLoginForm({
       if (result.ok) {
         setInfo("Code sent — check your email");
       } else if (result.throttled) {
-        setInfo("A recently emailed code is still valid — check your inbox");
+        setInfo(result.error);
       } else {
         setError(result.error);
       }
@@ -76,9 +76,7 @@ export function GuestLoginForm({
       if (result.ok) {
         setInfo("Reset link sent — check your email to set a new password");
       } else if (result.throttled) {
-        setInfo(
-          "A recently emailed reset link is still valid — check your inbox"
-        );
+        setInfo(result.error);
       } else {
         setError(result.error);
       }

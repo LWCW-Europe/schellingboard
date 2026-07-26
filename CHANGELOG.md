@@ -23,7 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Security
 
-- **Login attempts are now rate limited**: repeated wrong passwords (site password, admin password, or an attendee's name password) temporarily block further attempts, so passwords can no longer be guessed by brute force. An attendee locked out this way can still sign in with an emailed one-time code
+- **Login attempts are now rate limited**: repeated wrong passwords (site password, admin password, or an attendee's name password) temporarily block further attempts, so passwords can no longer be guessed by brute force. An attendee locked out this way can still sign in with an emailed one-time code, and the message they see says so
+- **Emailed codes and reset links are harder to knock out**: entering wrong codes against an attendee's name used to use up the code or reset link that attendee had just been emailed after only ten tries, locking them out of their own name. Reset links can no longer be used up this way at all; a login code now takes ten times as many wrong tries, is unaffected by a mistyped password, and an attendee whose code was used up is told so and can request a new one a minute later
 - Framing the site in other pages is now blocked (clickjacking protection), along with other standard browser hardening headers
 
 ## [3.1.0] - 2026-07-24

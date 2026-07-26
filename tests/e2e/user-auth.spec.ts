@@ -249,7 +249,9 @@ test("forgot password: reset it via an emailed link", async ({ page }) => {
   await ahmadOption.click();
   const before2 = await emailCount(RESET_SUBJECT, AHMAD_EMAIL);
   await page.getByRole("button", { name: /forgot your password/i }).click();
-  await expect(page.getByText(/reset link sent|still valid/i)).toBeVisible();
+  await expect(
+    page.getByText(/reset link sent|emailed to you moments ago/i)
+  ).toBeVisible();
   const link2 = await newestResetLink(AHMAD_EMAIL, before2 + 1);
   await page.goto(link2);
   await page.getByLabel(/new password/i).fill(AHMAD_NEW_PASSWORD);

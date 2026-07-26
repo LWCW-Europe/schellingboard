@@ -12,6 +12,17 @@ import {
 
 export const AUTH_CODE_LENGTH = 8;
 export const AUTH_CODE_VALID_MINUTES = 10;
+// Wrong guesses retire an emailed login code, because it is otherwise an
+// unmetered online oracle and its ~40 bits don't cover that alone: the server
+// will serve thousands of guesses a second, so an uncapped code faces millions
+// of tries within its life. The cap is deliberately high (and matches NIST SP
+// 800-63B's limit for one-time codes), because retiring a code is also how an
+// attacker denies it to its owner — anyone can guess against a name they know,
+// so a low cap made shutting the emailed-code path, the path that must survive
+// a password lockout, cheap. See matchToken and recentlyIssued in
+// app/actions/user-auth.ts for the two halves of that balance. Reset tokens are
+// deliberately *not* metered — see matchToken.
+export const MAX_CODE_ATTEMPTS = 100;
 // Password-reset links live longer than login codes: the recipient may open
 // the mail on another device and still needs time to choose a new password.
 export const RESET_TOKEN_VALID_MINUTES = 30;
@@ -30,6 +41,18 @@ export function generateAuthCode(): string {
 /** Forgives case and stray whitespace in a hand-typed code. */
 export function normalizeAuthCode(input: string): string {
   return input.replace(/\s/g, "").toUpperCase();
+}
+
+/**
+ * Whether a normalized string could be a login code at all. Lets a caller
+ * whose one input field accepts either credential tell a wrong password apart
+ * from a wrong code. Never a substitute for comparing against the real code.
+ */
+export function isAuthCodeShaped(normalized: string): boolean {
+  return (
+    normalized.length === AUTH_CODE_LENGTH &&
+    [...normalized].every((char) => AUTH_CODE_ALPHABET.includes(char))
+  );
 }
 
 // Password-reset tokens travel only inside a link, never typed by hand, so

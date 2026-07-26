@@ -43,7 +43,7 @@ import { createGuest } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { sendMail, isMailerConfigured } from "@/utils/mailer";
 import { readGuestCookie, GUEST_COOKIE_NAME } from "@/utils/auth";
-import { hashUserPassword } from "@/utils/user-credentials";
+import { MAX_CODE_ATTEMPTS, hashUserPassword } from "@/utils/user-credentials";
 import {
   MAX_LOGIN_FAILURES_PER_CLIENT,
   resetLoginRateLimiter,
@@ -59,6 +59,11 @@ import {
 } from "@/app/actions/user-auth";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
+
+// A wrong login code that is nonetheless a well-formed one: right length, and
+// only alphabet characters (no I, O, 0 or 1). Guesses that *can't* be codes
+// are deliberately not counted as attempts against one.
+const CODE_SHAPED_JUNK = "ABCDEFGH";
 
 async function lastEmail(): Promise<{
   to: string;
@@ -254,13 +259,75 @@ describe("user auth actions", () => {
       expect(result.ok).toBe(false);
     });
 
-    it("locks the code after too many failed attempts", async () => {
+    it("an outstanding code survives a burst of wrong guesses", async () => {
+      // Wrong guesses must not cheaply cost the person holding the code their
+      // way in: anyone who knows a guest name can submit junk, so retiring the
+      // code after a handful handed them a lockout of the one path meant to
+      // always work.
       const { guest, code } = await protectedGuestWithCode();
-      for (let i = 0; i < 10; i++) {
-        await loginAsGuestAction(guest.id, "WRONGONE");
+      for (let i = 0; i < MAX_CODE_ATTEMPTS - 1; i++) {
+        expect((await loginAsGuestAction(guest.id, CODE_SHAPED_JUNK)).ok).toBe(
+          false
+        );
       }
-      const result = await loginAsGuestAction(guest.id, code);
-      expect(result.ok).toBe(false);
+      expect((await loginAsGuestAction(guest.id, code)).ok).toBe(true);
+      expect(await currentUserId()).toBe(guest.id);
+    });
+
+    it("retires the code once the guess cap is reached", async () => {
+      // Guessing still has to be bounded: without a cap the code is an
+      // unlimited online oracle, and ~40 bits is not enough for that.
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const { guest, code } = await protectedGuestWithCode();
+      for (let i = 0; i < MAX_CODE_ATTEMPTS; i++) {
+        await loginAsGuestAction(guest.id, CODE_SHAPED_JUNK);
+      }
+      expect((await loginAsGuestAction(guest.id, code)).ok).toBe(false);
+      // Worth noticing in the log, once.
+      expect(warn).toHaveBeenCalledTimes(1);
+      warn.mockRestore();
+    });
+
+    it("a used-up code can be replaced, and says so meanwhile", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-07-18T12:00:00Z"));
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+      const { guest } = await protectedGuestWithCode();
+      for (let i = 0; i < MAX_CODE_ATTEMPTS; i++) {
+        await loginAsGuestAction(guest.id, CODE_SHAPED_JUNK);
+      }
+      // Within the throttle window the guest is told the code is spent rather
+      // than being sent to their inbox for a code that no longer works. Not
+      // `throttled`: that flag means "a valid code is already in your inbox",
+      // which the UI shows as reassurance — this is a plain failure.
+      const spent = await requestLoginCodeAction(guest.id);
+      expect(spent.ok).toBe(false);
+      if (!spent.ok) {
+        expect(spent.throttled).toBeFalsy();
+        expect(spent.error).toMatch(/used up|wrong/i);
+      }
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(1);
+      // ...and a minute later a fresh code arrives and works.
+      vi.setSystemTime(new Date("2026-07-18T12:01:01Z"));
+      expect((await requestLoginCodeAction(guest.id)).ok).toBe(true);
+      const { code: fresh } = await lastSentEmail();
+      expect((await loginAsGuestAction(guest.id, fresh)).ok).toBe(true);
+      warn.mockRestore();
+    });
+
+    it("counts code guesses, not wrong passwords, as attempts", async () => {
+      const { guest, code } = await protectedGuestWithCode();
+      const { authCodes } = getRepositories();
+      const attempts = async () =>
+        (await authCodes.findActive(guest.id, "login", new Date()))?.attempts;
+
+      for (let i = 0; i < 3; i++) {
+        await loginAsGuestAction(guest.id, "not the password");
+      }
+      expect(await attempts()).toBe(0);
+      await loginAsGuestAction(guest.id, CODE_SHAPED_JUNK);
+      expect(await attempts()).toBe(1);
+      expect((await loginAsGuestAction(guest.id, code)).ok).toBe(true);
     });
 
     it("logs in with the permanent password", async () => {
@@ -295,6 +362,35 @@ describe("user auth actions", () => {
       const { code } = await lastSentEmail();
       expect((await loginAsGuestAction(guest.id, code)).ok).toBe(true);
       expect(await currentUserId()).toBe(guest.id);
+    });
+
+    it("the lockout message points at the code path it leaves open", async () => {
+      const guest = await createGuest();
+      await getRepositories().guests.setAuthProtection(guest.id, {
+        authProtected: true,
+        passwordHash: await hashUserPassword("hunter2 forever"),
+      });
+      for (let i = 0; i < MAX_LOGIN_FAILURES_PER_CLIENT; i++) {
+        await loginAsGuestAction(guest.id, "wrong");
+      }
+      const blocked = await loginAsGuestAction(guest.id, "hunter2 forever");
+      expect(blocked.ok).toBe(false);
+      if (!blocked.ok) expect(blocked.error).toMatch(/code/i);
+    });
+
+    it("does not promise a code in the lockout message without a mailer", async () => {
+      vi.mocked(isMailerConfigured).mockReturnValue(false);
+      const guest = await createGuest();
+      await getRepositories().guests.setAuthProtection(guest.id, {
+        authProtected: true,
+        passwordHash: await hashUserPassword("hunter2 forever"),
+      });
+      for (let i = 0; i < MAX_LOGIN_FAILURES_PER_CLIENT; i++) {
+        await loginAsGuestAction(guest.id, "wrong");
+      }
+      const blocked = await loginAsGuestAction(guest.id, "hunter2 forever");
+      expect(blocked.ok).toBe(false);
+      if (!blocked.ok) expect(blocked.error).not.toMatch(/code/i);
     });
 
     it("a lockout for one guest does not affect another", async () => {
@@ -418,6 +514,28 @@ describe("user auth actions", () => {
           )
         ).ok
       ).toBe(false);
+    });
+
+    it("a reset link survives any number of wrong tokens", async () => {
+      // A reset token carries 256 bits, so guessing it is infeasible and
+      // counting the guesses buys nothing — while retiring it after a bounded
+      // number of tries would hand anyone who knows a guest id a way to knock
+      // out the link that guest was just emailed.
+      const { guest, token } = await guestWithResetToken();
+      for (let i = 0; i < MAX_CODE_ATTEMPTS + 1; i++) {
+        expect(
+          (await setPasswordWithTokenAction(guest.id, "nope", "long enough")).ok
+        ).toBe(false);
+      }
+      expect(
+        (
+          await setPasswordWithTokenAction(
+            guest.id,
+            token,
+            "correct horse battery"
+          )
+        ).ok
+      ).toBe(true);
     });
 
     it("rejects a too-short password without consuming the token", async () => {

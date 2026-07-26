@@ -12,11 +12,13 @@ import {
 } from "@/utils/auth";
 import {
   AUTH_CODE_VALID_MINUTES,
+  MAX_CODE_ATTEMPTS,
   RESET_TOKEN_VALID_MINUTES,
   generateAuthCode,
   generateAuthCodeSalt,
   generateResetToken,
   hashAuthCode,
+  isAuthCodeShaped,
   normalizeAuthCode,
   hashUserPassword,
   verifyUserPassword,
@@ -34,7 +36,6 @@ import { authPasswordResetEmail } from "@/emails/auth-password-reset";
 import { authSecurityChangedEmail } from "@/emails/auth-security-changed";
 
 const REQUEST_THROTTLE_SECONDS = 60;
-const MAX_CODE_ATTEMPTS = 10;
 
 export type UserAuthResult =
   | { ok: true }
@@ -59,9 +60,9 @@ async function setAuthenticatedIdentity(guestId: string): Promise<void> {
 
 /**
  * Returns the guest's active token of `purpose` if `input` matches it, or null
- * otherwise — counting a failed guess so the token dies after too many tries.
- * The caller is responsible for consuming a returned token: matching alone
- * changes nothing, so a match never replays.
+ * otherwise — counting a failed guess at a login code so it dies after
+ * MAX_CODE_ATTEMPTS tries. The caller is responsible for consuming a returned
+ * token: matching alone changes nothing, so a match never replays.
  *
  * Login codes are hand-typed, so case and stray whitespace are forgiven; reset
  * tokens travel only inside a link and are matched verbatim.
@@ -77,29 +78,58 @@ async function matchToken(
   const candidate =
     purpose === "login" ? normalizeAuthCode(input) : input.trim();
   if (hashAuthCode(candidate, active.salt) === active.codeHash) return active;
+  // Only login codes are metered. A reset token carries 256 bits, so guessing
+  // it is infeasible and counting the guesses buys nothing — while retiring it
+  // after a bounded number of tries would hand anyone who knows a guest id a
+  // way to knock out the link that guest was just emailed.
+  if (purpose !== "login") return null;
+  // A login code shares one input field with the permanent password, so only
+  // input that could have been a code counts as a guess at it — otherwise a
+  // guest fumbling their password would burn the code they were emailed.
+  if (!isAuthCodeShaped(candidate)) return null;
   await authCodes.recordFailedAttempt(active.id);
+  if (active.attempts + 1 === MAX_CODE_ATTEMPTS) {
+    console.warn(
+      `Login code of guest ${guestId} hit the guess cap — retiring it`
+    );
+  }
   return null;
 }
 
 /**
- * True when a token of `purpose` was emailed within the throttle window and is
- * still valid — the UI treats this as "check your inbox", not an error.
+ * The token of `purpose` emailed within the throttle window, if one is still
+ * valid. Null means a fresh one should be emailed.
+ *
+ * A login code whose guess cap is spent still counts as recently issued:
+ * replacing it on demand would let anyone who knows a guest name mint a new
+ * code (and a new guess budget, and a new email to that guest) every
+ * MAX_CODE_ATTEMPTS tries, which is both an unbounded oracle again and an inbox
+ * flood. The guest waits out the window instead, and is told the code is spent
+ * rather than sent to their inbox for one that can no longer work.
  */
 async function recentlyIssued(
   guestId: string,
   purpose: AuthCodePurpose,
   now: Date
-): Promise<boolean> {
+): Promise<AuthCode | null> {
   const existing = await getRepositories().authCodes.findActive(
     guestId,
     purpose,
     now
   );
-  return (
-    !!existing &&
-    now.getTime() - existing.createdAt.getTime() <
+  if (
+    !existing ||
+    now.getTime() - existing.createdAt.getTime() >=
       REQUEST_THROTTLE_SECONDS * 1000
-  );
+  ) {
+    return null;
+  }
+  return existing;
+}
+
+/** Whether `token` has no guesses left, so only a replacement can help. */
+function isSpent(token: AuthCode): boolean {
+  return token.attempts >= MAX_CODE_ATTEMPTS;
 }
 
 /** Emails the guest a single-use login code (link + typeable code). */
@@ -119,13 +149,22 @@ export async function requestLoginCodeAction(
   }
 
   const now = new Date();
-  if (await recentlyIssued(guestId, "login", now)) {
-    return {
-      ok: false,
-      throttled: true,
-      error:
-        "A code was emailed to you moments ago — check your inbox and spam folder",
-    };
+  const recent = await recentlyIssued(guestId, "login", now);
+  if (recent) {
+    // A spent code is not `throttled`: nothing usable is waiting in the inbox,
+    // so this is a plain failure rather than reassurance.
+    return isSpent(recent)
+      ? {
+          ok: false,
+          error:
+            "Too many wrong codes were entered, so the one you were emailed is used up — ask for a new one in a minute",
+        }
+      : {
+          ok: false,
+          throttled: true,
+          error:
+            "A code was emailed to you moments ago — check your inbox and spam folder",
+        };
   }
 
   const code = generateAuthCode();
@@ -228,9 +267,16 @@ export async function requestPasswordLinkAction(
  *
  * The password path is rate limited per guest: after too many failures the
  * password is refused for a while even if right. The emailed-code path stays
- * open (codes have their own attempt cap and die after MAX_CODE_ATTEMPTS), so
- * an attacker hammering someone's password can never lock the real person
- * out — they can always get in by proving inbox access.
+ * open, so an attacker hammering someone's password can't lock the real person
+ * out — they get in by proving inbox access. Guessing at the code instead costs
+ * its owner only a wait, since a spent code is replaced once the request
+ * throttle lapses (see MAX_CODE_ATTEMPTS and recentlyIssued) — not nothing,
+ * though: an attacker willing to keep spending 100 guesses a minute can hold
+ * the code path shut for as long as they keep it up. Countering that needs
+ * defences this app doesn't have (a CAPTCHA, a real IP reputation store); the
+ * reset link, which is never metered, stays open meanwhile. Both escape hatches
+ * need a configured mailer; without one the password lockout is the whole
+ * story.
  */
 export async function loginAsGuestAction(
   guestId: string,
@@ -256,9 +302,18 @@ export async function loginAsGuestAction(
     return { ok: true };
   }
   recordLoginFailure("guest", guestId);
+  if (!passwordBlocked) {
+    return { ok: false, error: "Wrong password or code" };
+  }
+  // The generic lockout message would be a lie here: only the *password* is
+  // refused, and an emailed code gets in throughout — which is the whole point
+  // of the lockout not being an account lockout. Say so, unless this server
+  // can't send the mail that would make it true.
   return {
     ok: false,
-    error: passwordBlocked ? TOO_MANY_ATTEMPTS_ERROR : "Wrong password or code",
+    error: isMailerConfigured()
+      ? "Too many failed attempts — the password won't work for a few minutes, but a code emailed to you still will"
+      : TOO_MANY_ATTEMPTS_ERROR,
   };
 }
 
