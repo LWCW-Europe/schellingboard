@@ -51,52 +51,55 @@ function AddGuestForm() {
   };
 
   return (
-    <form
-      onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}
-      className="flex flex-col sm:flex-row gap-2 sm:items-center max-w-2xl"
-    >
+    <div className="max-w-2xl">
       {form.formState.errors.root && (
         <p role="alert" className="text-sm text-red-600">
           {form.formState.errors.root.message}
         </p>
       )}
-      <div className="flex flex-col gap-1 flex-1">
-        <label htmlFor="new-user-name" className="text-sm text-gray-600">
-          Name
-        </label>
-        <Input
-          id="new-user-name"
-          {...form.register("name")}
-          className="w-full h-10"
-        />
-        <span className="text-rose-400 text-sm min-h-(--text-sm)">
-          {form.formState.errors.name?.message}
-        </span>
-      </div>
-      <div className="flex flex-col gap-1 flex-1">
-        <label htmlFor="new-user-email" className="text-sm text-gray-600">
-          Email
-        </label>
-        <Input
-          id="new-user-email"
-          type="email"
-          {...form.register("email")}
-          className="w-full h-10"
-        />
-        <span className="text-rose-400 text-sm min-h-(--text-sm)">
-          {form.formState.errors.email?.message}
-        </span>
-      </div>
-      <div className="flex flex-col gap-1">
-        <button
-          type="submit"
-          disabled={form.formState.isSubmitting}
-          className={PRIMARY_BUTTON}
-        >
-          {form.formState.isSubmitting ? "Adding..." : "Add user"}
-        </button>
-      </div>
-    </form>
+      <form
+        noValidate
+        onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}
+        className="flex flex-col sm:flex-row gap-2 sm:items-center"
+      >
+        <div className="flex flex-col gap-1 flex-1">
+          <label htmlFor="new-user-name" className="text-sm text-gray-600">
+            Name
+          </label>
+          <Input
+            id="new-user-name"
+            {...form.register("name")}
+            className="w-full h-10"
+          />
+          <span className="text-rose-400 text-sm min-h-(--text-sm)">
+            {form.formState.errors.name?.message}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1 flex-1">
+          <label htmlFor="new-user-email" className="text-sm text-gray-600">
+            Email
+          </label>
+          <Input
+            id="new-user-email"
+            type="email"
+            {...form.register("email")}
+            className="w-full h-10"
+          />
+          <span className="text-rose-400 text-sm min-h-(--text-sm)">
+            {form.formState.errors.email?.message}
+          </span>
+        </div>
+        <div className="flex flex-col gap-1">
+          <button
+            type="submit"
+            disabled={form.formState.isSubmitting}
+            className={PRIMARY_BUTTON}
+          >
+            {form.formState.isSubmitting ? "Adding..." : "Add user"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -109,7 +112,10 @@ function GuestRow({
 }) {
   const [mode, setMode] = useState<"view" | "edit" | "delete">("view");
   const form = useForm({
-    defaultValues: {
+    // `values`, not `defaultValues`: a save revalidates the page and re-renders
+    // this row with the new guest, and the form has to follow — otherwise
+    // re-opening the editor would show the values from before the save.
+    values: {
       id: guest.id,
       name: guest.name,
       email: guest.info.email,
@@ -177,8 +183,9 @@ function GuestRow({
 
   if (mode === "edit") {
     return (
-      <div className="flex-col">
+      <div>
         <form
+          noValidate
           onSubmit={(e) => form.handleSubmit(handleSave)(e) as never}
           className="flex flex-col sm:flex-row gap-2 sm:items-baseline"
         >
