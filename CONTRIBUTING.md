@@ -481,6 +481,68 @@ git switch -c docs-3.2 v3.2.0
 # fix, commit, push — the docs site redeploys
 ```
 
+## The marketing site
+
+[schellingboard.org](https://schellingboard.org) is hand-written HTML in
+`www/` — a landing page and a screenshot gallery. `make www` copies it, plus
+`docs/screenshots/`, into `www-site/`; open `www-site/index.html` to preview.
+There is no generator, on purpose: the pages are two bespoke layouts, and
+rendering them through docmd would mean custom templates to make a docs tool
+stop looking like one.
+
+`.github/workflows/www.yml` publishes on pushes to `main` that touch `www/`,
+`docs/screenshots/` or the build script. It does not follow the documentation
+site's release-tag rule, because the page describes the project rather than a
+version — with the consequence that its screenshots can show interface changes
+that are merged but not yet released.
+
+### Why it deploys to another repository
+
+GitHub Pages serves one custom domain per repository and this one already
+serves `docs.schellingboard.org`, so the built site is pushed to
+[LWCW-Europe/schellingboard.org](https://github.com/LWCW-Europe/schellingboard.org),
+which holds nothing but that output and is never edited directly. Its Pages
+source is the default branch, so the site keeps working even if the workflow is
+disabled.
+
+### Screenshots
+
+`docs/screenshots/` is the only copy of the screenshots. The marketing site
+uses them directly and the documentation site can use them too — see
+[`docs/screenshots/README.md`](docs/screenshots/README.md) for the capture
+checklist and how to reference them from markdown.
+
+They are not under `docs/public/`, and cannot usefully be: docmd discovers
+markdown and nothing else, so a PNG placed there is not copied to the output.
+Both build scripts do the copying themselves. One consequence: images appear in
+`make docs-build` output but not in the `make docs` live preview, which serves
+what docmd produced.
+
+### One-time hosting setup
+
+- **GitHub App**: the workflow needs to write to a repository that is not its
+  own, so it mints a token from an organization-owned app rather than carrying
+  a standing credential. The token expires within the hour, the app belongs to
+  the organization instead of a person, and it is installed on the site
+  repository alone. (A deploy key would also work, but LWCW-Europe policy
+  restricts them.)
+
+  1. Under the organization's Settings → Developer settings → GitHub Apps,
+     create an app with the repository permission **Contents: Read and write**
+     and nothing else. It needs no webhook and no account permissions.
+  2. Install it on `LWCW-Europe/schellingboard.org` only.
+  3. In this repository, add the app's **Client ID** as the
+     `WWW_DEPLOY_APP_CLIENT_ID` variable and a generated private key as the
+     `WWW_DEPLOY_APP_PRIVATE_KEY` secret.
+
+  To rotate, generate a new private key on the app and replace the secret; the
+  client ID does not change.
+
+- **DNS**: `schellingboard.org` pointing at `lwcw-europe.github.io`, and the
+  site repository's Pages source set to its default branch — not _GitHub
+  Actions_, which would ignore the pushed files. The domain is in `www/CNAME`,
+  which the build copies verbatim.
+
 ## Releasing a New Version
 
 1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header) and add a fresh empty `## [Unreleased]` section above it. Update the compare links at the bottom of the file: the new version's link should point from the previous release's endpoint to the new tag (`vX.Y.Z`), and `[Unreleased]` should point from the new tag to `HEAD`. Commit and merge this like any other change.

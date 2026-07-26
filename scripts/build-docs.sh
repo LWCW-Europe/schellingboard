@@ -121,6 +121,29 @@ fs.writeFileSync(process.env.OUT, JSON.stringify(config, null, 2));
 rm -rf site
 bun x docmd build -c "$BUILD_CONFIG"
 
+# --- Screenshots ----------------------------------------------------------
+#
+# docmd discovers markdown and nothing else — a PNG in docs/public/ is simply
+# not copied — so images have to be placed here. They live in docs/screenshots/
+# rather than under docs/public/ because the marketing site in www/ uses the
+# same files (see scripts/build-www.sh).
+#
+# Each version gets the screenshots from its own worktree, so an old release
+# keeps the interface it shipped with. Pages should reference them relatively
+# (`../screenshots/x.png`), which resolves the same at the site root and under
+# /<id>/; a root-relative /screenshots/ would send every old version to the
+# newest images.
+
+for i in "${!version_ids[@]}"; do
+  src="${version_dirs[$i]%/public}/screenshots"
+  # Releases predating the shared screenshots have none to copy.
+  [ -d "$src" ] || continue
+
+  if [ "$i" -eq 0 ]; then dest="site/screenshots"; else dest="site/${version_ids[$i]}/screenshots"; fi
+  cp -R "$src" "$dest"
+  rm -f "$dest/README.md" # the capture checklist is for contributors
+done
+
 # GitHub Pages serves the custom domain from this file. Taken from the config's
 # `url` so the domain is stated exactly once.
 bun -e '

@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Screenshots of SchellingBoard: proposing sessions, voting, building the schedule, and more."
+    />
+    <title>Screenshots — SchellingBoard</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #fff;
+        color: #1a1a1a;
+        line-height: 1.6;
+      }
+
+      header {
+        background: #f9f9f9;
+        border-bottom: 1px solid #e5e5e5;
+        padding: 2rem 1.5rem;
+        text-align: center;
+      }
+
+      header h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+      }
+
+      header h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      header h1 span {
+        color: #e05a5a;
+      }
+
+      header p.tagline {
+        margin-top: 0.5rem;
+        font-size: 1rem;
+        color: #555;
+      }
+
+      main {
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 2.5rem 1.5rem 4rem;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-bottom: 1.5rem;
+        color: #555;
+        font-size: 0.9rem;
+        text-decoration: none;
+      }
+
+      .back-link:hover {
+        color: #1a1a1a;
+      }
+
+      h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+
+      .intro {
+        color: #555;
+        margin-bottom: 2rem;
+      }
+
+      h3.section-heading {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 2.5rem 0 -0.5rem;
+        color: #333;
+      }
+
+      .steps {
+        display: flex;
+        flex-direction: column;
+        gap: 3rem;
+      }
+
+      figure {
+        margin: 0;
+        text-align: center;
+      }
+
+      figure img {
+        display: inline-block;
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        cursor: zoom-in;
+      }
+
+      figure.mobile img {
+        max-width: 280px;
+      }
+
+      figcaption {
+        margin-top: 0.8rem;
+      }
+
+      figcaption .step-title {
+        display: block;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 0.2rem;
+      }
+
+      figcaption .step-desc {
+        color: #555;
+        font-size: 0.93rem;
+      }
+
+      /* Lightbox */
+      .lightbox {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+      }
+
+      .lightbox.open {
+        display: flex;
+      }
+
+      .lightbox img {
+        max-width: min(100%, 1000px);
+        max-height: 85vh;
+        border-radius: 6px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      }
+
+      .lightbox-caption {
+        position: absolute;
+        bottom: 1.5rem;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: #eee;
+        font-size: 0.9rem;
+      }
+
+      .lightbox-close,
+      .lightbox-prev,
+      .lightbox-next {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0.6rem 0.9rem;
+        border-radius: 6px;
+      }
+
+      .lightbox-close:hover,
+      .lightbox-prev:hover,
+      .lightbox-next:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .lightbox-close {
+        top: 1.2rem;
+        right: 1.2rem;
+      }
+
+      .lightbox-prev {
+        left: 1.2rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      .lightbox-next {
+        right: 1.2rem;
+        top: 50%;
+        transform: translateY(-50%);
+      }
+
+      footer {
+        text-align: center;
+        padding: 1.5rem;
+        font-size: 0.85rem;
+        color: #888;
+        border-top: 1px solid #e5e5e5;
+      }
+
+      footer a {
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>
+        <a href="index.html">Schelling<span>Board</span></a>
+      </h1>
+      <p class="tagline">Screenshots</p>
+    </header>
+
+    <main>
+      <a class="back-link" href="index.html">&larr; Back to home</a>
+
+      <h2>Screenshots</h2>
+      <p class="intro">
+        A look at SchellingBoard's screens, from proposing a session to seeing
+        it on the schedule. Click any screenshot to zoom in.
+      </p>
+
+      <div class="steps">
+        <figure
+          data-full="screenshots/home-multi-event.png"
+          data-caption="Manage multiple events — Every event gets its own page with phase, dates, and quick links, all listed from one home page."
+        >
+          <img
+            src="screenshots/home-multi-event.png"
+            loading="lazy"
+            alt="Home page listing multiple events, each with its dates, phase, and quick links"
+          />
+          <figcaption>
+            <span class="step-title">1. Manage multiple events</span>
+            <span class="step-desc"
+              >Every event gets its own page with phase, dates, and quick links,
+              all listed from one home page.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/proposals-browse.png"
+          data-caption="Browse proposals — Search, filter, and sort session proposals right from the list."
+        >
+          <img
+            src="screenshots/proposals-browse.png"
+            loading="lazy"
+            alt="List of session proposals with search, filters, and columns for title, host, and duration"
+          />
+          <figcaption>
+            <span class="step-title">2. Browse proposals</span>
+            <span class="step-desc"
+              >Search, filter, and sort session proposals right from the
+              list.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/proposal-edit.png"
+          data-caption="Propose a session — Attendees submit an idea in seconds, only a title is required."
+        >
+          <img
+            src="screenshots/proposal-edit.png"
+            loading="lazy"
+            alt="Session proposal form with title, description, hosts, and duration fields"
+          />
+          <figcaption>
+            <span class="step-title">3. Propose a session</span>
+            <span class="step-desc"
+              >Attendees submit an idea in seconds &mdash; only a title is
+              required.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/proposals-vote.png"
+          data-caption="Vote at a glance — Cast Interested / Maybe / Skip votes right from the list and see your choices highlighted."
+        >
+          <img
+            src="screenshots/proposals-vote.png"
+            loading="lazy"
+            alt="Proposal list with Interested / Maybe / Skip vote buttons, some already selected and highlighted"
+          />
+          <figcaption>
+            <span class="step-title">4. Vote at a glance</span>
+            <span class="step-desc"
+              >Cast Interested / Maybe / Skip votes right from the list and see
+              your choices highlighted.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/quick-voting.png"
+          data-caption="Quick Voting mode — Go through every proposal one at a time to vote quickly on all of them."
+        >
+          <img
+            src="screenshots/quick-voting.png"
+            loading="lazy"
+            alt="Quick Voting mode showing one proposal at a time with large Interested / Maybe / Skip buttons"
+          />
+          <figcaption>
+            <span class="step-title">5. Quick Voting mode</span>
+            <span class="step-desc"
+              >Go through every proposal one at a time to vote quickly on all of
+              them.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/schedule-grid.png"
+          data-caption="Build the schedule — Hosts drag proposals onto a time-and-room grid, with room photos, capacity, and location shown inline."
+        >
+          <img
+            src="screenshots/schedule-grid.png"
+            loading="lazy"
+            alt="Drag-and-drop scheduling grid with rooms as columns, time slots as rows, and room photos shown for each column"
+          />
+          <figcaption>
+            <span class="step-title">6. Build the schedule</span>
+            <span class="step-desc"
+              >Hosts drag proposals onto a time-and-room grid, with room photos,
+              capacity, and location shown inline.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/session-details.png"
+          data-caption="Session details, at a glance — Click any scheduled session for hosts, attendees, timing, and the full description."
+        >
+          <img
+            src="screenshots/session-details.png"
+            loading="lazy"
+            alt="Session detail popup with host, location, time, attendee list, and full description"
+          />
+          <figcaption>
+            <span class="step-title">7. Session details, at a glance</span>
+            <span class="step-desc"
+              >Click any scheduled session for hosts, attendees, timing, and the
+              full description.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/add-session.png"
+          data-caption="Add sessions directly — Hosts can skip the proposal queue and add a session straight to the schedule, including closed-session and capacity settings."
+        >
+          <img
+            src="screenshots/add-session.png"
+            loading="lazy"
+            alt="Form for adding a session directly to the schedule, with closed-session checkbox, hosts, and location fields"
+          />
+          <figcaption>
+            <span class="step-title">8. Add sessions directly</span>
+            <span class="step-desc"
+              >Hosts can skip the proposal queue and add a session straight to
+              the schedule, including closed-session and capacity
+              settings.</span
+            >
+          </figcaption>
+        </figure>
+
+        <h3 class="section-heading">Attendees &amp; profiles</h3>
+
+        <figure
+          data-full="screenshots/attendees.png"
+          data-caption="Attendee directory — Search everyone at the event and see who's hosting a session at a glance."
+        >
+          <img
+            src="screenshots/attendees.png"
+            loading="lazy"
+            alt="Searchable attendee directory with avatars, bios, and Session host badges"
+          />
+          <figcaption>
+            <span class="step-title">9. Attendee directory</span>
+            <span class="step-desc"
+              >Search everyone at the event and see who's hosting a session at a
+              glance.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/participant-profile.png"
+          data-caption="Participant profiles — Everyone gets a profile with their bio, proposals, and the sessions they're attending."
+        >
+          <img
+            src="screenshots/participant-profile.png"
+            loading="lazy"
+            alt="Participant profile page showing bio, proposals made, and sessions they're attending"
+          />
+          <figcaption>
+            <span class="step-title">10. Participant profiles</span>
+            <span class="step-desc"
+              >Everyone gets a profile with their bio, proposals, and the
+              sessions they're attending.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/edit-profile.png"
+          data-caption="Edit your profile — Set your name, pronouns, avatar, and a Markdown bio."
+        >
+          <img
+            src="screenshots/edit-profile.png"
+            loading="lazy"
+            alt="Edit profile form with name, pronouns, avatar, and a Markdown-supported about-me field"
+          />
+          <figcaption>
+            <span class="step-title">11. Edit your profile</span>
+            <span class="step-desc"
+              >Set your name, pronouns, avatar, and a Markdown bio.</span
+            >
+          </figcaption>
+        </figure>
+
+        <h3 class="section-heading">On mobile</h3>
+
+        <figure
+          class="mobile"
+          data-full="screenshots/mobile-schedule.png"
+          data-caption="Works great on mobile — The full schedule is usable on a phone, so attendees can check it on the go."
+        >
+          <img
+            src="screenshots/mobile-schedule.png"
+            loading="lazy"
+            alt="The scheduling grid rendered on a mobile phone screen"
+          />
+          <figcaption>
+            <span class="step-title">12. Works great on mobile</span>
+            <span class="step-desc"
+              >The full schedule is usable on a phone, so attendees can check it
+              on the go.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          class="mobile"
+          data-full="screenshots/mobile-session-details.png"
+          data-caption="Closed-session notices — Attendees are warned about late-arrival rules before they RSVP."
+        >
+          <img
+            src="screenshots/mobile-session-details.png"
+            loading="lazy"
+            alt="Mobile session detail popup with a closed-session warning about late arrivals"
+          />
+          <figcaption>
+            <span class="step-title">13. Closed-session notices</span>
+            <span class="step-desc"
+              >Attendees are warned about late-arrival rules before they
+              RSVP.</span
+            >
+          </figcaption>
+        </figure>
+
+        <h3 class="section-heading">Admin</h3>
+
+        <figure
+          data-full="screenshots/admin-events.png"
+          data-caption="Admin: manage all your events — See every event's dates and jump straight into managing one."
+        >
+          <img
+            src="screenshots/admin-events.png"
+            loading="lazy"
+            alt="Admin panel listing all events with their dates and a Manage button for each"
+          />
+          <figcaption>
+            <span class="step-title">14. Admin: manage all your events</span>
+            <span class="step-desc"
+              >See every event's dates and jump straight into managing
+              one.</span
+            >
+          </figcaption>
+        </figure>
+
+        <figure
+          data-full="screenshots/admin-event-settings.png"
+          data-caption="Admin: configure each event — Set the name, description, dates, timezone, and scheduling rules per event."
+        >
+          <img
+            src="screenshots/admin-event-settings.png"
+            loading="lazy"
+            alt="Admin event configuration form with name, description, dates, timezone, and scheduling settings"
+          />
+          <figcaption>
+            <span class="step-title">15. Admin: configure each event</span>
+            <span class="step-desc"
+              >Set the name, description, dates, timezone, and scheduling rules
+              per event.</span
+            >
+          </figcaption>
+        </figure>
+      </div>
+    </main>
+
+    <footer>
+      <p>
+        MIT License &mdash;
+        <a href="https://github.com/LWCW-Europe/schellingboard"
+          >github.com/LWCW-Europe/schellingboard</a
+        >
+      </p>
+    </footer>
+
+    <div class="lightbox" id="lightbox">
+      <button class="lightbox-close" id="lightbox-close" aria-label="Close">
+        &times;
+      </button>
+      <button class="lightbox-prev" id="lightbox-prev" aria-label="Previous">
+        &#8249;
+      </button>
+      <img id="lightbox-img" src="" alt="" />
+      <button class="lightbox-next" id="lightbox-next" aria-label="Next">
+        &#8250;
+      </button>
+      <p class="lightbox-caption" id="lightbox-caption"></p>
+    </div>
+
+    <script>
+      var figures = Array.prototype.slice.call(
+        document.querySelectorAll(".steps figure")
+      );
+      var lightbox = document.getElementById("lightbox");
+      var lightboxImg = document.getElementById("lightbox-img");
+      var lightboxCaption = document.getElementById("lightbox-caption");
+      var current = 0;
+
+      function show(index) {
+        current = (index + figures.length) % figures.length;
+        var fig = figures[current];
+        lightboxImg.src = fig.getAttribute("data-full");
+        lightboxImg.alt = fig.querySelector("img").alt;
+        lightboxCaption.textContent = fig.getAttribute("data-caption");
+        lightbox.classList.add("open");
+      }
+
+      function close() {
+        lightbox.classList.remove("open");
+      }
+
+      figures.forEach(function (fig, index) {
+        fig.querySelector("img").addEventListener("click", function () {
+          show(index);
+        });
+      });
+
+      document
+        .getElementById("lightbox-close")
+        .addEventListener("click", close);
+      document
+        .getElementById("lightbox-prev")
+        .addEventListener("click", function () {
+          show(current - 1);
+        });
+      document
+        .getElementById("lightbox-next")
+        .addEventListener("click", function () {
+          show(current + 1);
+        });
+
+      lightbox.addEventListener("click", function (e) {
+        if (e.target === lightbox) close();
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (!lightbox.classList.contains("open")) return;
+        if (e.key === "Escape") close();
+        if (e.key === "ArrowLeft") show(current - 1);
+        if (e.key === "ArrowRight") show(current + 1);
+      });
+    </script>
+  </body>
+</html>
