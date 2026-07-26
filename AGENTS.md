@@ -97,6 +97,10 @@ Follow red → green → refactor strictly. **No skipping steps.**
 
 Exceptions (be very conservative): pure UI/styling-only changes; refactors where existing tests already give full coverage.
 
-# Misc
+## Coding Guidelines
+
+Code comments must be succint unless verbosity is really necessary. Focus on the "why" and only explain the "what" when the code is complex.
+
+## Misc
 
 When adding a link to session/proposal modal, see `modal-nav.ts`, there are gotchas (anchor: MnpjIo7Y).
