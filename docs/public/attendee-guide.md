@@ -1,3 +1,9 @@
+---
+title: "Attendee guide"
+description: "How to pick your name, propose a session, vote, RSVP, and protect your name."
+type: guide
+---
+
 # Using SchellingBoard as an attendee
 
 ## Pick your name

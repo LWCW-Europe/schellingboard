@@ -6,9 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Documentation website**: the attendee guide and the organizer and self-hosting documentation now live at [docs.schellingboard.org](https://docs.schellingboard.org), searchable and readable on a phone. A version selector lets you read the documentation for the release you're actually running, rather than whatever is newest
+
 ### Fixed
 
 - **Saved passwords no longer get mixed up**: browsers couldn't tell this site's different passwords apart — the site password, the organizer password, and each attendee's own password all looked like the same login — so a saved password could be overwritten or offered in the wrong place. Each is now saved as its own entry
+
+### Internal
+
+- Documentation is built with [docmd](https://docmd.io) from `docs/public/`, which holds a single copy — the next release's documentation — with no per-version snapshots in the working tree. Published versions are reconstructed from release tags at build time, so releasing documentation is tagging the repository, and a published version can be corrected without a release by pushing a `docs-<version>` branch. Developer documentation (ADRs, design notes) moved to `docs/dev/` and stays out of the published site. See [CONTRIBUTING.md § Documentation](CONTRIBUTING.md#documentation)
 
 ## [3.1.0] - 2026-07-24
 

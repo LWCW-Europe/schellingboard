@@ -1,3 +1,9 @@
+---
+title: "How it works"
+description: "Phases, identity, voting, scheduling, kiosk mode, multi-event installs, and emails."
+type: concept
+---
+
 # How SchellingBoard works
 
 ## Attendee identity
@@ -21,7 +27,7 @@ event-wide. Once a name is protected:
   never a dead end.
 
 Protection needs `AUTH_SECRET`, and enabling it needs working email
-([SMTP settings](README.md#environment-variables)) so the attendee can
+([SMTP settings](../self-hosting/configuration.md#environment-variables)) so the attendee can
 receive a code.
 
 ## Who can change a session or proposal

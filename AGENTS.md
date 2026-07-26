@@ -18,6 +18,17 @@ Next.js scheduling app for managing conference/event sessions with three phases:
 
 Update `CHANGELOG.md` under `[Unreleased]` for any user-facing change — audience is event organizers, so keep it non-technical. Dev-only changes go under `Internal`. See [CONTRIBUTING.md § Changelog](CONTRIBUTING.md#changelog) for section types and conventions.
 
+## Documentation
+
+- **Attendee/organizer docs** live in `docs/public/` — one copy, no per-version
+  directories. It documents the _next_ release; published versions of
+  docs.schellingboard.org are rebuilt from release tags, so a docs change ships
+  when the release is tagged. Edit docs in the same commit as the change they
+  describe, and run `make docs-validate` after changing links.
+- **Developer docs** live in `docs/dev/` (ADRs, design notes) and are linked
+  from CONTRIBUTING.md. They are never published.
+- See [CONTRIBUTING.md § Documentation](CONTRIBUTING.md#documentation).
+
 ## GitHub Issues
 
 When creating or editing GitHub issues, set Issue Type and the Priority field to match existing

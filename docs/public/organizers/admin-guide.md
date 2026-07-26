@@ -1,3 +1,9 @@
+---
+title: "Admin UI guide"
+description: "Every setting in the SchellingBoard admin UI and why it is there."
+type: guide
+---
+
 # Admin UI guide
 
 The admin UI lives at `/admin`, gated by `ADMIN_PASSWORD`. It is completely

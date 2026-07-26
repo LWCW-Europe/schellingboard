@@ -1,0 +1,91 @@
+{
+  "title": "SchellingBoard",
+  "url": "https://docs.schellingboard.org",
+  "src": "docs/public",
+  "out": "site",
+  "engine": "js",
+  "layout": {
+    "spa": true,
+    "header": {
+      "enabled": true
+    },
+    "sidebar": {
+      "collapsible": true,
+      "defaultCollapsed": false
+    },
+    "optionsMenu": {
+      "position": "sidebar-top",
+      "components": {
+        "search": true,
+        "themeSwitch": true
+      }
+    },
+    "footer": {
+      "style": "minimal",
+      "content": "SchellingBoard — MIT licensed. [Source on GitHub](https://github.com/LWCW-Europe/schellingboard).",
+      "branding": true
+    }
+  },
+  "theme": {
+    "name": "default",
+    "appearance": "system",
+    "codeHighlight": true
+  },
+  "minify": true,
+  "autoTitleFromH1": true,
+  "copyCode": true,
+  "pageNavigation": true,
+  "navigation": [
+    { "title": "Overview", "path": "/", "icon": "home" },
+    { "title": "Attendee guide", "path": "/attendee-guide/", "icon": "users" },
+    {
+      "title": "For organizers",
+      "icon": "calendar-days",
+      "collapsible": false,
+      "children": [
+        {
+          "title": "How it works",
+          "path": "/organizers/how-it-works/",
+          "icon": "compass"
+        },
+        {
+          "title": "Admin UI guide",
+          "path": "/organizers/admin-guide/",
+          "icon": "sliders-horizontal"
+        }
+      ]
+    },
+    {
+      "title": "Self-hosting",
+      "icon": "server",
+      "collapsible": false,
+      "children": [
+        {
+          "title": "Deployment",
+          "path": "/self-hosting/deployment/",
+          "icon": "container"
+        },
+        {
+          "title": "Configuration",
+          "path": "/self-hosting/configuration/",
+          "icon": "settings"
+        }
+      ]
+    },
+    {
+      "title": "GitHub",
+      "path": "https://github.com/LWCW-Europe/schellingboard",
+      "icon": "github",
+      "external": true
+    }
+  ],
+  "plugins": {
+    "git": {
+      "commitHistory": true,
+      "maxCommits": 5
+    },
+    "seo": {
+      "defaultDescription": "Documentation for attendees and organizers of events run on SchellingBoard."
+    }
+  }
+}

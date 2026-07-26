@@ -22,11 +22,11 @@ More screenshots at [schellingboard.org](https://schellingboard.org).
 
 ## Hosting
 
-See [docs/hosting](docs/hosting/README.md) for deployment and administration instructions.
+See [docs.schellingboard.org](https://docs.schellingboard.org/self-hosting/deployment/) for deployment and administration instructions.
 
 ## Attendees
 
-See the [attendee guide](docs/attendee-guide.md) for how to propose, vote, and use the schedule — worth sharing with your event's attendees.
+See the [attendee guide](https://docs.schellingboard.org/attendee-guide/) for how to propose, vote, and use the schedule — worth sharing with your event's attendees.
 
 ## Changelog
 

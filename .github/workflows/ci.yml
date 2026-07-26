@@ -23,6 +23,9 @@ jobs:
       - name: Lint
         run: make lint
 
+      - name: Validate docs links
+        run: make docs-validate
+
   build:
     runs-on: ubuntu-latest
 

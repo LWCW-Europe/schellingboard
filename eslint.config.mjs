@@ -16,7 +16,16 @@ function dropTsPlugin(configs) {
 
 export default tseslint.config(
   {
-    ignores: ["tailwind.config.ts", ".next/**", "**/*.mjs", ".jj/**"],
+    // `site/` is the generated docs site (see CONTRIBUTING.md § Documentation);
+    // its JS comes from docmd, not from us.
+    ignores: [
+      "tailwind.config.ts",
+      ".next/**",
+      "**/*.mjs",
+      ".jj/**",
+      "site/**",
+      "coverage/**",
+    ],
   },
   ...dropTsPlugin(coreWebVitals),
   ...dropTsPlugin(nextTypescript),

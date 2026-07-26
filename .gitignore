@@ -67,3 +67,10 @@ result*
 
 # Config file for jip, a stacked PR tool (see: https://github.com/omarkohl/jip)
 .jip.local.toml
+
+# Generated documentation site (see CONTRIBUTING.md § Documentation)
+site/
+
+# Build config assembled by scripts/build-docs.sh from docmd.config.json plus
+# the versions it reconstructs from git tags.
+.docmd.build.json
