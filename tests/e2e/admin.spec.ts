@@ -159,13 +159,33 @@ test.describe("Admin UI", () => {
     const name = `E2E Admin User ${unique}`;
     const renamed = `${name} Renamed`;
 
-    // Create
+    // Errors render inside the form, next to the offending field — the
+    // page-level message sits outside it.
+    const addForm = page
+      .locator("form")
+      .filter({ has: page.getByRole("button", { name: "Add user" }) });
+
+    // A bad email is reported on the field itself, not as a browser popup
     await page.getByLabel("Name").fill(name);
+    await page.getByLabel("Email").fill("not-an-email");
+    await page.getByRole("button", { name: "Add user" }).click();
+    await expect(addForm.getByText("Invalid email address")).toBeVisible();
+
+    // Create
     await page.getByLabel("Email").fill(email);
     await page.getByRole("button", { name: "Add user" }).click();
     const row = page.getByRole("listitem").filter({ hasText: email });
     await expect(row).toBeVisible();
     await expect(row.getByText(name)).toBeVisible();
+
+    // A duplicate email — rejected by the server, not the schema — lands on
+    // the email field too
+    await page.getByLabel("Name").fill(name);
+    await page.getByLabel("Email").fill(email);
+    await page.getByRole("button", { name: "Add user" }).click();
+    await expect(
+      addForm.getByText("A user with this email already exists")
+    ).toBeVisible();
 
     // Edit (in edit mode the row shows inputs, so locate it via its Save button)
     await row.getByRole("button", { name: "Edit" }).click();
@@ -175,6 +195,11 @@ test.describe("Admin UI", () => {
     await editRow.getByLabel("Name").fill(renamed);
     await editRow.getByRole("button", { name: "Save" }).click();
     await expect(row.getByText(renamed)).toBeVisible();
+
+    // Re-opening the editor shows what was saved, not the pre-edit values
+    await row.getByRole("button", { name: "Edit" }).click();
+    await expect(editRow.getByLabel("Name")).toHaveValue(renamed);
+    await editRow.getByRole("button", { name: "Cancel" }).click();
 
     // Delete requires confirmation and can be cancelled
     await row.getByRole("button", { name: "Delete", exact: true }).click();
