@@ -76,7 +76,7 @@ changes materially. Check off `[ ]` as you go.
 - [ ] `proposal-edit.webp` — Session proposal form (title, description, hosts, duration)
 - [ ] `proposals-vote.webp` — Proposal list with Interested / Maybe / Skip voting
 - [ ] `quick-voting.webp` — Quick Voting mode, one proposal at a time
-- [ ] `schedule-grid.webp` — Drag-and-drop scheduling grid with room photos (also used as the site hero; also regenerates `www/og-image.jpg`, see above)
+- [ ] `schedule-grid.webp` — Simple scheduling grid with room photos (also used as the site hero; also regenerates `www/og-image.jpg`, see above)
 - [ ] `session-details.webp` — Session detail popup (host, location, time, attendees, description)
 - [ ] `add-session.webp` — Form for adding a session directly to the schedule
 - [ ] `attendees.webp` — Searchable attendee directory with avatars and host badges
