@@ -71,6 +71,9 @@ result*
 # Generated documentation site (see CONTRIBUTING.md § Documentation)
 site/
 
+# Generated marketing site (see CONTRIBUTING.md § The marketing site)
+www-site/
+
 # Build config assembled by scripts/build-docs.sh from docmd.config.json plus
 # the versions it reconstructs from git tags.
 .docmd.build.json

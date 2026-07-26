@@ -1,4 +1,4 @@
-.PHONY: help dev mailpit build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate
+.PHONY: help dev mailpit build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate www
 
 SHELL := /usr/bin/env bash
 
@@ -34,6 +34,8 @@ help:
 	@printf "  %-28s %s\n" "make docs"               "Preview the docs in docs/public"
 	@printf "  %-28s %s\n" "make docs-build"         "Build the public docs site into site/"
 	@printf "  %-28s %s\n" "make docs-validate"      "Check the docs for broken links"
+	@printf "\nMarketing site:\n"
+	@printf "  %-28s %s\n" "make www"               "Build schellingboard.org into www-site/"
 	@printf "\nDependencies:\n"
 	@printf "  %-28s %s\n" "make install"            "Install dependencies"
 	@printf "  %-28s %s\n" "make install-playwright" "Install Playwright browsers"
@@ -141,6 +143,11 @@ docs-build: install
 
 docs-validate: install
 	bun x docmd validate
+
+# Hand-written HTML plus a copy step — no toolchain, so no `install` dependency.
+# The output is static and link-relative; open www-site/index.html to preview.
+www:
+	bash scripts/build-www.sh
 
 docker-build:
 	$(eval APP_VERSION := $(shell git describe --tags --always --dirty))

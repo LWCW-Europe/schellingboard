@@ -1,0 +1,91 @@
+name: Website
+
+# schellingboard.org describes the project, not a release, so unlike the
+# documentation site it publishes from main rather than from tags. A
+# consequence worth knowing: its screenshots can show interface changes that
+# are merged but not yet released.
+#
+# GitHub Pages serves one custom domain per repository and docs.schellingboard.org
+# already uses this one, so the built site is pushed to
+# LWCW-Europe/schellingboard.org, which holds nothing else.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "www/**"
+      - "docs/screenshots/**"
+      - "scripts/build-www.sh"
+      - ".github/workflows/www.yml"
+  workflow_dispatch:
+
+# Two deploys racing would push conflicting commits to the site repository.
+concurrency:
+  group: www
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v7.0.1
+
+      - name: Build site
+        run: make www
+
+      # A GitHub App rather than a deploy key or a personal access token: the
+      # token below expires within the hour, the app is owned by the
+      # organization instead of a person, and it is installed on the site
+      # repository alone. See CONTRIBUTING.md § The marketing site for setup.
+      - name: Mint a token for the site repository
+        id: token
+        uses: actions/create-github-app-token@v3.2.0
+        with:
+          client-id: ${{ vars.WWW_DEPLOY_APP_CLIENT_ID }}
+          private-key: ${{ secrets.WWW_DEPLOY_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: schellingboard.org
+          # Narrower than whatever the installation is granted, so widening the
+          # app later does not silently widen this job. The action revokes the
+          # token when the job ends.
+          permission-contents: write
+
+      - name: Publish to LWCW-Europe/schellingboard.org
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          APP_SLUG: ${{ steps.token.outputs.app-slug }}
+        run: |
+          set -euo pipefail
+
+          # The site repository is public, so only the push needs the token.
+          # Cloning anonymously and passing it as a one-off header keeps it out
+          # of the checkout's .git/config, which a URL-embedded token would not.
+          git clone --depth 1 https://github.com/LWCW-Europe/schellingboard.org.git target
+
+          # --delete so a removed screenshot disappears from the site;
+          # --exclude .git so the clone survives it.
+          rsync -a --delete --exclude .git www-site/ target/
+
+          cd target
+          # Name the app that actually pushed, so the site repository's history
+          # says where its commits come from.
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${APP_SLUG}[bot]@users.noreply.github.com"
+          git add -A
+
+          # A push touching www/ that changes nothing in the output (a comment,
+          # a reordered path filter) should not leave an empty commit behind.
+          if git diff --cached --quiet; then
+            echo "Site output unchanged — nothing to publish."
+            exit 0
+          fi
+
+          git commit -m "Deploy ${GITHUB_REPOSITORY}@${GITHUB_SHA:0:7}"
+
+          AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -c "http.extraheader=Authorization: Basic ${AUTH}" push
