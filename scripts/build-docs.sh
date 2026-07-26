@@ -130,7 +130,7 @@ bun x docmd build -c "$BUILD_CONFIG"
 #
 # Each version gets the screenshots from its own worktree, so an old release
 # keeps the interface it shipped with. Pages should reference them relatively
-# (`../screenshots/x.png`), which resolves the same at the site root and under
+# (`../screenshots/x.webp`), which resolves the same at the site root and under
 # /<id>/; a root-relative /screenshots/ would send every old version to the
 # newest images.
 

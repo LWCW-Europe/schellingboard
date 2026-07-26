@@ -42,15 +42,18 @@ EOF
 
 # A screenshot renamed in docs/screenshots/ without updating the HTML is the
 # failure this split invites, and it would otherwise reach production as a
-# broken image. Absolute references (the OpenGraph tags) resolve to the same
-# place, so match on the path alone.
+# broken image.
 missing=0
 while read -r ref; do
   [ -e "$OUT/$ref" ] || {
     echo "$ref is referenced by www/*.html but does not exist in docs/screenshots/" >&2
     missing=1
   }
-done < <(grep -ho 'screenshots/[A-Za-z0-9._-]*\.png' www/*.html | sort -u)
+done < <(grep -ho 'screenshots/[A-Za-z0-9._-]*\.webp' www/*.html | sort -u)
+[ -e "$OUT/og-image.jpg" ] || {
+  echo "og-image.jpg is referenced by www/index.html but missing from www/" >&2
+  missing=1
+}
 [ "$missing" -eq 0 ] || exit 1
 
 echo "Marketing site built in $OUT/ — open $OUT/index.html"
