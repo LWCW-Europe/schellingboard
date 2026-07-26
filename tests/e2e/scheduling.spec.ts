@@ -2,6 +2,7 @@ import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
+import { dismissToast, toast } from "./helpers/toast";
 
 // All tests run in Conference Gamma (scheduling phase). Each test creates its
 // own uniquely-titled session on the LAST event day at a fixed location and
@@ -55,11 +56,8 @@ async function createSessionViaForm(
   const submit = page.getByRole("button", { name: "Submit" });
   await expect(submit).toBeEnabled();
   await submit.click();
-  await expect(
-    page.getByRole("heading", { name: /Session added/i })
-  ).toBeVisible();
-  await page.getByRole("link", { name: /Back to schedule/i }).click();
   await expect(page.getByRole("link", { name: title })).toBeVisible();
+  await dismissToast(page);
 }
 
 async function openEditForm(page: Page, title: string) {
@@ -85,10 +83,10 @@ test("a host can edit a session's title and the change persists", async ({
   await openEditForm(page, title);
   await page.getByRole("textbox").first().fill(renamed);
   await page.getByRole("button", { name: "Submit" }).click();
-  await expect(
-    page.getByRole("heading", { name: /Session updated/i })
-  ).toBeVisible();
-  await page.getByRole("link", { name: /Back to schedule/i }).click();
+  await expect(toast(page)).toContainText(
+    /Your session .* has been updated successfully/i
+  );
+  await dismissToast(page);
   await expect(page.getByRole("link", { name: renamed })).toBeVisible();
 
   // The rename must survive a full reload
@@ -109,11 +107,10 @@ test("a host can delete a session and it disappears from the grid", async ({
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.getByText("Delete session?")).toBeVisible();
   await page.getByRole("button", { name: "Yes" }).click();
-  await expect(
-    page.getByRole("heading", { name: /Session deleted/i })
-  ).toBeVisible();
-
-  await page.getByRole("link", { name: /Back to schedule/i }).click();
+  await expect(toast(page)).toContainText(
+    /Your session .* has been deleted successfully/i
+  );
+  await dismissToast(page);
   await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
   await expect(page.getByRole("link", { name: title })).toHaveCount(0);
 

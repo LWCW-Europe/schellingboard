@@ -2,6 +2,7 @@ import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
+import { dismissToast, toast } from "./helpers/toast";
 import {
   getMessage,
   searchBySubject,
@@ -60,13 +61,11 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
   const submit = page.getByRole("button", { name: "Submit" });
   await expect(submit).toBeEnabled();
   await submit.click();
-  await expect(
-    page.getByRole("heading", { name: /Session added/i })
-  ).toBeVisible();
-  await Promise.all([
-    page.waitForURL(/\/Conference-Gamma$/),
-    page.getByRole("link", { name: /Back to schedule/i }).click(),
-  ]);
+  await page.waitForURL(/\/Conference-Gamma$/);
+  await expect(toast(page)).toContainText(
+    /Your session .* has been added successfully/i
+  );
+  await dismissToast(page);
 
   // Bob RSVPs to it. Wait for the navigation above to land before switching:
   // switching now hard-reloads the *current* page (see logoutAction), so a
@@ -102,9 +101,9 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
   await page.getByRole("option", { name: /Alice Test/i }).click();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Submit" }).click();
-  await expect(
-    page.getByRole("heading", { name: /Session updated/i })
-  ).toBeVisible();
+  await expect(toast(page)).toContainText(
+    /Your session .* has been updated successfully/i
+  );
 
   // Three emails arrive: Bob is told as an attendee, Alice both that she is
   // a co-host now and, as a host, that the session changed. Charlie made the
@@ -123,10 +122,16 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
   // email html for us, so hrefs come out entity-decoded. page.request shares
   // the browser's cookies, so the site-password gate doesn't redirect to
   // /login.
+  //
+  // Parse the emails in a throwaway page, never in `page`: setContent replaces
+  // the document out from under the mounted React tree, and the app the test
+  // ends on (the schedule, not a static confirmation page) then re-renders
+  // against nodes that no longer exist, throwing NotFoundError.
+  const mailPage = await page.context().newPage();
   for (const summary of messages) {
     const message = await getMessage(summary.ID);
-    await page.setContent(message.HTML);
-    const links = await page
+    await mailPage.setContent(message.HTML);
+    const links = await mailPage
       .locator("a[href]")
       .evaluateAll((anchors) => anchors.map((a) => a.getAttribute("href")!));
     expect(

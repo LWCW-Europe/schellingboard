@@ -8,6 +8,7 @@ import { AUTH_COOKIE_NAME, isAuthCookieValid } from "@/utils/auth";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { isDevToolsEnabled } from "@/utils/dev-clock";
 import { DevToolbar } from "./dev-toolbar";
+import { ToastProvider } from "./toast";
 
 export default async function SiteLayout({
   children,
@@ -37,21 +38,23 @@ export default async function SiteLayout({
 
   return (
     <UserProvider initialUser={initialUser}>
-      <NavBar
-        navItems={navItems}
-        guests={guests}
-        showGuestsLink={isAuthenticated}
-        mapImageUrl={mapImageUrl}
-      />
-      <main className="lg:px-24 sm:p-3 flex-1 pt-20 sm:pt-24 lg:pb-16">
-        {children}
-      </main>
-      <Footer />
-      {isDevToolsEnabled() && (
-        <Suspense fallback={null}>
-          <DevToolbar />
-        </Suspense>
-      )}
+      <ToastProvider>
+        <NavBar
+          navItems={navItems}
+          guests={guests}
+          showGuestsLink={isAuthenticated}
+          mapImageUrl={mapImageUrl}
+        />
+        <main className="lg:px-24 sm:p-3 flex-1 pt-20 sm:pt-24 lg:pb-16">
+          {children}
+        </main>
+        <Footer />
+        {isDevToolsEnabled() && (
+          <Suspense fallback={null}>
+            <DevToolbar />
+          </Suspense>
+        )}
+      </ToastProvider>
     </UserProvider>
   );
 }

@@ -28,6 +28,7 @@ import type {
 import { ConfirmDeletionModal } from "../modals";
 import { UserContext } from "../context";
 import { newEmptySession } from "../session_utils";
+import { useToast } from "../toast";
 import { buildSessionInterval } from "@/app/api/session-form-utils";
 import { revalidateEvent } from "./session-actions";
 import { detectHostClashes, type HostClash } from "./clash-actions";
@@ -248,6 +249,7 @@ export function SessionForm(props: {
   });
 
   const router = useRouter();
+  const showToast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const Submit = async () => {
     setIsSubmitting(true);
@@ -281,9 +283,8 @@ export function SessionForm(props: {
     if (res.ok) {
       const actionType = sessionID ? "updated" : "added";
       await revalidateEvent(event.slug);
-      router.push(
-        `/${event.slug}/add-session/confirmation?actionType=${actionType}`
-      );
+      showToast(`Your session “${title}” has been ${actionType} successfully!`);
+      router.push(`/${event.slug}`);
       console.log(`Session ${actionType} successfully`);
     } else {
       let errorMessage = "Failed to update session";
@@ -316,7 +317,8 @@ export function SessionForm(props: {
     if (res.ok) {
       console.log("Session deleted successfully");
       await revalidateEvent(event.slug);
-      router.push(`/${event.slug}/edit-session/deletion-confirmation`);
+      showToast(`Your session “${title}” has been deleted successfully.`);
+      router.push(`/${event.slug}`);
     } else {
       let errorMessage = "Failed to delete session";
       try {

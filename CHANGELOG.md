@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Footer always visible in the text and RSVP'd schedule views**: on a large screen it now stays at the bottom of the window instead of following the last session, so it no longer floats mid-page when there is little to show — the same as the proposals list. On phones it still ends the page, and the grid view keeps it at the end of the schedule, where a fixed footer would add an extra scrollbar
 
+### Changed
+
+- **One less click after creating/updating/deleting a session**: now goes straight back to the schedule, replacing the intermediate confirmation page with a message you dismiss when you've read it
+
 ### Fixed
 
 - **"RSVP'd" view no longer shows every session**: before you had RSVP'd to anything, the RSVP'd view listed the whole schedule instead of nothing. It now always shows only the sessions you have RSVP'd to or are hosting
