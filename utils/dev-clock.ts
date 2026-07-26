@@ -1,4 +1,4 @@
-// Development-only fake clock. See docs/adr/0004-dev-fake-clock.md.
+// Development-only fake clock. See docs/dev/adr/0004-dev-fake-clock.md.
 //
 // The override is a single integer offset (milliseconds) applied to real time:
 // effective time is always `Date.now() + offsetMs`. It is stored in the

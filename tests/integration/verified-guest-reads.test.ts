@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-// Guards step 6 of docs/design/auth-improvements-plan.md: server components
+// Guards step 6 of docs/dev/design/auth-improvements-plan.md: server components
 // that read the current guest must use verifiedCurrentUser, not the raw
 // `user` cookie, so a protected guest without a verified session isn't
 // treated as logged in.

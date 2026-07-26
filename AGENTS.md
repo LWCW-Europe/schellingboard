@@ -21,7 +21,7 @@ Update `CHANGELOG.md` under `[Unreleased]` for any user-facing change — audien
 ## GitHub Issues
 
 When creating or editing GitHub issues, set Issue Type and the Priority field to match existing
-conventions — see [docs/github-issues.md](docs/github-issues.md) for the required `gh api
+conventions — see [docs/dev/github-issues.md](docs/dev/github-issues.md) for the required `gh api
 graphql` commands (neither field is settable via plain `gh issue create`/`edit`).
 
 ## Version Control

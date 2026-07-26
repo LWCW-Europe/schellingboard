@@ -53,7 +53,7 @@ export async function EventLayoutContent({
     rsvps,
     // Computed on the server so SSR and hydration agree on which days
     // default to folded (see getDefaultFoldedDayIds). Honours the dev fake
-    // clock so time travel drives phase/schedule UI (see docs/adr/0004-dev-fake-clock.md).
+    // clock so time travel drives phase/schedule UI (see docs/dev/adr/0004-dev-fake-clock.md).
     now: await serverNow(),
   };
 

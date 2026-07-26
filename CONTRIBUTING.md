@@ -78,7 +78,7 @@ toolbar for time-traveling the app (real time / `+1h` / `+1d` / `+7d` / pick a
 date), so you can walk an event through its proposal → voting → scheduling
 phases without editing dates in the database. It's a request-scoped cookie,
 inert unless the env var is set — safe to enable on a shared staging/demo
-instance. See [ADR 0004](docs/adr/0004-dev-fake-clock.md) for details.
+instance. See [ADR 0004](docs/dev/adr/0004-dev-fake-clock.md) for details.
 
 ## Environment Variables
 
@@ -293,7 +293,7 @@ can't live in `utils/auth.ts`, which must stay importable from the proxy).
 
 ### Test strategy
 
-See [ADR 0002](docs/adr/0002-testing-strategy.md) for the full rationale. Three tiers, each with a distinct role:
+See [ADR 0002](docs/dev/adr/0002-testing-strategy.md) for the full rationale. Three tiers, each with a distinct role:
 
 **Unit tests** (Vitest, `tests/unit/`) — pure functions and isolated business rules only. No DB, no I/O.
 

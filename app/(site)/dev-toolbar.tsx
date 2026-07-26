@@ -2,7 +2,7 @@
 
 // Development-only clock toolbar. Rendered only when SB_ENABLE_DEV_TOOLS is set
 // (checked server-side in the layout) and shown when `?dev=1` is in the URL.
-// See docs/adr/0004-dev-fake-clock.md.
+// See docs/dev/adr/0004-dev-fake-clock.md.
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TIME_OFFSET_COOKIE } from "@/utils/dev-clock";

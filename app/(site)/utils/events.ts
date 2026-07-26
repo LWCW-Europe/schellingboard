@@ -18,7 +18,7 @@ export enum EventPhase {
  * start) hand over cleanly at the boundary instead of overlapping for one
  * instant.
  *
- * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
+ * @param now - The effective current time (see docs/dev/adr/0004-dev-fake-clock.md)
  * @param start - The start date of the period
  * @param end - The end date of the period (optional, defaults to no end limit)
  * @returns true if current time is within the period
@@ -39,7 +39,7 @@ function inDatePeriod(now: Date, start: Date, end?: Date): boolean {
  * an intentional inactive gap.
  *
  * @param event - The event to check
- * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
+ * @param now - The effective current time (see docs/dev/adr/0004-dev-fake-clock.md)
  * @returns true if the event is in the proposal phase
  */
 export function inProposalPhase(event: Event, now: Date): boolean {
@@ -62,7 +62,7 @@ export function inProposalPhase(event: Event, now: Date): boolean {
  * An open-ended voting phase is treated as ending when scheduling starts.
  *
  * @param event - The event to check
- * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
+ * @param now - The effective current time (see docs/dev/adr/0004-dev-fake-clock.md)
  * @returns true if the event is in the voting phase
  */
 export function inVotingPhase(event: Event, now: Date): boolean {
@@ -76,7 +76,7 @@ export function inVotingPhase(event: Event, now: Date): boolean {
 /**
  * Checks if an event is currently in the scheduling phase
  * @param event - The event to check
- * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
+ * @param now - The effective current time (see docs/dev/adr/0004-dev-fake-clock.md)
  * @returns true if the event is in the scheduling phase
  */
 export function inSchedPhase(event: Event, now: Date): boolean {
@@ -96,7 +96,7 @@ export function inSchedPhase(event: Event, now: Date): boolean {
 /**
  * Gets the current phase of an event
  * @param event - The event to check
- * @param now - The effective current time (see docs/adr/0004-dev-fake-clock.md)
+ * @param now - The effective current time (see docs/dev/adr/0004-dev-fake-clock.md)
  * @returns The current phase of the event
  */
 export function getCurrentPhase(event: Event, now: Date): EventPhase {

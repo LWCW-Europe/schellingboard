@@ -12,7 +12,7 @@ import { DateTime } from "luxon";
 //
 // Time travel goes through the dev fake clock (?dev=1), not the browser clock:
 // the now line follows the app's simulated "now" (server-seeded, cookie-driven
-// — see docs/adr/0004-dev-fake-clock.md), which a browser-only clock jump wouldn't move.
+// — see docs/dev/adr/0004-dev-fake-clock.md), which a browser-only clock jump wouldn't move.
 // Berlin timezone so the toolbar's datetime-local picker maps 16:00 to 16:00
 // Berlin, squarely inside Gamma's first day.
 test.use({ timezoneId: "Europe/Berlin" });

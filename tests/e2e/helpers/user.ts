@@ -9,7 +9,7 @@ import { login } from "./auth";
 // logs out first, landing on the anonymous state, then opens the modal.
 // Logout clears the site login too, so on a password-protected site this
 // re-prompts for the site password (deliberate friction — see
-// docs/design/auth-improvements-plan.md).
+// docs/dev/design/auth-improvements-plan.md).
 export async function openNameSwitcher(page: Page): Promise<Locator> {
   const nameBox = page.getByLabel("My name is:");
   // A just-closed switcher modal fades out; wait for it to unmount so the

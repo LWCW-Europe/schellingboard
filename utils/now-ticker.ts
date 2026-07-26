@@ -9,7 +9,7 @@ export const NOW_REFRESH_INTERVAL_MS = 60_000;
 //
 // offsetMs shifts every reported time by a fixed amount so the dev fake clock
 // keeps ticking forward from the simulated instant instead of snapping back to
-// real time (see docs/adr/0004-dev-fake-clock.md). It is ~0 in normal operation.
+// real time (see docs/dev/adr/0004-dev-fake-clock.md). It is ~0 in normal operation.
 export function startNowTicker(
   onTick: (now: Date) => void,
   intervalMs: number = NOW_REFRESH_INTERVAL_MS,
