@@ -4,6 +4,9 @@
   "src": "docs/public",
   "out": "site",
   "engine": "js",
+  "markdown": {
+    "breaks": false
+  },
   "layout": {
     "spa": true,
     "header": {
