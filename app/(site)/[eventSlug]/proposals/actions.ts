@@ -32,14 +32,7 @@ export async function createProposal(
   }
 
   const {
-    data: {
-      eventId,
-      eventSlug,
-      title,
-      description,
-      hostIds: hostIds,
-      durationMinutes,
-    },
+    data: { eventId, eventSlug, title, description, hostIds, durationMinutes },
   } = parseResult;
 
   try {
