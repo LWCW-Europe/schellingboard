@@ -1,5 +1,6 @@
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
+import { dismissToast, toast } from "./helpers/toast";
 
 test("a newly added session appears on the overview and can be opened", async ({
   page,
@@ -33,15 +34,18 @@ test("a newly added session appears on the overview and can be opened", async ({
   await expect(submit).toBeEnabled();
   await submit.click();
 
-  // Lands on the confirmation page.
-  await expect(
-    page.getByRole("heading", { name: /Session added/i })
-  ).toBeVisible();
-
-  // Click the in-app "Back to schedule" link. This is the client-side
-  // navigation that previously served a stale (pre-mutation) overview.
-  await page.getByRole("link", { name: /Back to schedule/i }).click();
+  // Lands straight back on the overview, with a confirmation toast. This is
+  // the client-side navigation that previously served a stale (pre-mutation)
+  // overview.
   await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
+  await expect(toast(page)).toContainText(
+    /Your session .* has been added successfully/i
+  );
+
+  // The toast stays until dismissed by hand — nothing times it out.
+  await page.waitForTimeout(3000);
+  await expect(toast(page)).toBeVisible();
+  await dismissToast(page);
 
   // The new session must be visible WITHOUT reloading (see #253).
   const newSessionLink = page.getByRole("link", { name: sessionTitle });

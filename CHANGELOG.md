@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Documentation website**: the attendee guide and the organizer and self-hosting documentation now live at [docs.schellingboard.org](https://docs.schellingboard.org), searchable and readable on a phone. A version selector lets you read the documentation for the release you're actually running, rather than whatever is newest
 
+### Changed
+
+- **One less click after creating/updating/deleting a session**: now goes straight back to the schedule, replacing the intermediate confirmation page with a message you dismiss when you've read it
+
 ### Fixed
 
 - **Saved passwords no longer get mixed up**: browsers couldn't tell this site's different passwords apart — the site password, the organizer password, and each attendee's own password all looked like the same login — so a saved password could be overwritten or offered in the wrong place. Each is now saved as its own entry

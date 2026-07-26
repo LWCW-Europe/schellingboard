@@ -2,6 +2,7 @@ import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
+import { toast } from "./helpers/toast";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
 
@@ -101,9 +102,13 @@ test("a full session blocks further RSVPs when the event enforces capacity", asy
   await listboxButton(page, /^Start Time/).click();
   await page.getByRole("option", { name: "16:10" }).click();
   await page.getByRole("button", { name: "Submit" }).click();
-  await expect(
-    page.getByRole("heading", { name: /Session added/i })
-  ).toBeVisible();
+  // Let the post-submit navigation to the overview land fully before leaving
+  // for /admin: aborting its in-flight RSC fetch logs a console error, which
+  // the console guard fails on.
+  await expect(toast(page)).toContainText(
+    /Your session .* has been added successfully/i
+  );
+  await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
 
   // Admin: shrink the new session to a single seat.
   await page.goto("/admin/events");
