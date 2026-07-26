@@ -49,6 +49,8 @@ One global row shown when there's more than one event (see
   cascades to its days, proposals, sessions, RSVPs, and guest/location
   assignments.
 
+![Admin event configuration form with name, dates, timezone, and scheduling settings](../../screenshots/admin-event-settings.webp)
+
 ## Locations
 
 Locations are a **global pool**, not per-event — one location can be

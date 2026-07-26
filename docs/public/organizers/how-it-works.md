@@ -95,6 +95,8 @@ display in kiosk mode — until you turn it off with `?kiosk=0`. Add
 `&loc=Main+Hall` (repeatable) to show only specific locations — handy for a
 kiosk in one room or a shareable filtered link.
 
+![Schedule grid in kiosk mode with a red line marking the current time](../../screenshots/kiosk-mode.webp)
+
 ## Multi-event installs
 
 One deployment can host multiple events. If more than one event exists, the
@@ -103,6 +105,8 @@ map (set in [Site settings](admin-guide.md#site-settings)). With exactly one
 event it redirects straight to it. Each event lives entirely under its own
 `/{slug}` route — there's no cross-event attendee state beyond the shared
 guest pool and the picked name.
+
+![Home page listing multiple events, each with its dates, phase, and quick links](../../screenshots/home-multi-event.webp)
 
 ## Email
 

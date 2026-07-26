@@ -15,15 +15,20 @@ please only pick your own. If you'd rather it _were_ a login, see
 
 ## Propose a session
 
-During the **proposal** phase, click "Add Proposal" to suggest a session:
-title, description, and optionally co-hosts. You can edit your own
-proposals until scheduling starts.
+You can browse, search, and sort existing proposals at any time. During the
+**proposal** phase, click "Add Proposal" to suggest a session: title,
+description, and optionally co-hosts. You can edit your own proposals until
+scheduling starts.
+
+![Session proposal form with title, description, hosts, and duration fields](../screenshots/proposal-edit.webp)
 
 ## Vote
 
 During the **voting** phase, react to each proposal with Interested, Maybe,
 or Skip. Click your choice again to remove it. "Quick Voting" walks through
 proposals you haven't voted on yet, one at a time.
+
+![Proposal list with Interested / Maybe / Skip vote buttons](../screenshots/proposals-vote.webp)
 
 ## The schedule
 
@@ -32,15 +37,29 @@ Once **scheduling** opens:
 - A proposal's host can click "Schedule" to place it on the grid.
 - Some locations allow booking an empty slot directly, without a proposal.
 - Click a session to see details and **RSVP**. If the event caps capacity,
-  RSVPs may be rejected once a session is full.
+  RSVPs may be rejected once a session is full. A session marked **closed**
+  warns that latecomers shouldn't join, but doesn't block your RSVP.
+
+![Session detail popup with host, location, time, attendee list, and full description](../screenshots/session-details.webp)
 
 Proposing and voting close once scheduling starts.
+
+## Attendee directory & profiles
+
+Every attendee gets a profile page with their bio, proposals, and the
+sessions they're hosting or attending — click any name wherever it appears
+to see it. The attendee directory lets you search everyone at the event and
+see who's hosting a session at a glance.
+
+![Searchable attendee directory with avatars, bios, and Session host badges](../screenshots/attendees.webp)
 
 ## Your profile
 
 After picking your name, open "Edit profile" to set your About me,
 pronouns, and avatar. These are visible to other attendees wherever your
 name appears (proposals, hosting, RSVPs).
+
+![Edit profile form with name, pronouns, avatar, and a Markdown-supported about-me field](../screenshots/edit-profile.webp)
 
 ## Protect your name
 
@@ -49,6 +68,8 @@ rather that took a login, open **Settings → Account security** and click
 **Enable protection**. You'll be emailed an 8-character code, valid for 10
 minutes; type it in to confirm. You can optionally set a password at the same
 time.
+
+![Settings page with email notification checkboxes and an Enable protection button](../screenshots/user-settings.webp)
 
 Once protected, picking your name from the list asks for your password or a
 fresh emailed code. Anything done as you — voting, RSVPing, editing your
