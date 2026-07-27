@@ -1,0 +1,86 @@
+name: E2E
+
+# By far the slowest part of CI — a browser download plus a real app run — and
+# it exercises only the application, so changes that cannot reach the app (the
+# marketing site, the documentation, repository prose) skip it.
+#
+# It lives in its own workflow because path filters apply to a whole workflow:
+# putting these on ci.yml would also skip lint, which validates docs links.
+#
+# The lists below are deliberately identical. GitHub Actions does not support
+# YAML anchors, so they cannot be shared — keep them in sync.
+#
+# Caveat: a workflow skipped by path filters reports no status check at all,
+# rather than a passing one. Harmless today (main requires no status checks);
+# were that to change, this workflow must not be among the required ones, or a
+# docs-only pull request would wait for a check that never arrives.
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "www/**"
+      - "scripts/build-docs.sh"
+      - "scripts/build-www.sh"
+      - "docmd.config.json"
+      - ".claude/**"
+      - ".github/workflows/docs.yml"
+      - ".github/workflows/www.yml"
+      - "*.md"
+      - "LICENSE.txt"
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "docs/**"
+      - "www/**"
+      - "scripts/build-docs.sh"
+      - "scripts/build-www.sh"
+      - "docmd.config.json"
+      - ".claude/**"
+      - ".github/workflows/docs.yml"
+      - ".github/workflows/www.yml"
+      - "*.md"
+      - "LICENSE.txt"
+  workflow_dispatch:
+
+jobs:
+  test-e2e:
+    runs-on: ubuntu-latest
+
+    # Email tests are opt-in via these vars (unset means skip — see
+    # CONTRIBUTING.md § Running tests), but CI must always run them: they
+    # fail loudly here if the vars are missing, rather than silently skip.
+    env:
+      MAILPIT_API_URL: http://localhost:8025
+      SMTP_URL: smtp://localhost:1025
+      SMTP_FROM: Test <mailer-test@test.example>
+
+    services:
+      # e2e tests send real email to mailpit (see CONTRIBUTING.md § Running
+      # tests). Same pinned image as docker-compose.yml.
+      mailpit:
+        image: axllent/mailpit@sha256:956d688cbd13dca36c72d8e94c34d6d1cdf4a005aa6aa4ff6edaaac56c34d8df
+        ports:
+          - 1025:1025
+          - 8025:8025
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v7.0.1
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright Browsers
+        run: bunx playwright install --with-deps firefox
+
+      - name: E2E Tests
+        run: make test-e2e

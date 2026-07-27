@@ -348,9 +348,15 @@ SMTP_FROM='Test <mailer-test@test.example>'
 
 When these are unset (the default on a fresh checkout), the email tests are
 reported as skipped; when they are set but mailpit is unreachable, the tests
-fail. CI always sets them (in `.github/workflows/ci.yml`, alongside a mailpit
-service container) and the tests fail there if the variables go missing, so
-they can never be silently skipped in CI.
+fail. CI always sets them (in `.github/workflows/ci.yml` and
+`.github/workflows/ci-e2e.yml`, alongside a mailpit service container) and the
+tests fail there if the variables go missing, so they can never be silently
+skipped in CI.
+
+E2E tests run in their own workflow so that they can be skipped for changes
+that cannot affect the app — documentation, the marketing site, repository
+prose. Adding a top-level path that the app doesn't use? Add it to both
+`paths-ignore` lists in `.github/workflows/ci-e2e.yml`.
 
 Running another clone or workspace of this project alongside this one? See [Running Multiple Instances](#running-multiple-instances) for the ports that have to be kept apart.
 
