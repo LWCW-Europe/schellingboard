@@ -45,16 +45,21 @@ a {
   flex-wrap: wrap;
 }
 
+/* The logo is one SVG (mark plus wordmark) rather than styled text, so the
+   name is set in Montserrat here exactly as it is in the app and the docs. */
 .brand {
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: -0.4px;
-  color: #1a1a1a;
+  display: flex;
+  align-items: center;
   text-decoration: none;
 }
 
-.brand span {
-  color: #e05a5a;
+/* width:auto is required: the img's width="486" attribute is a presentational
+   hint that survives setting only height, leaving a 486px-wide box in which the
+   SVG renders 197px wide and horizontally centred. */
+.brand img {
+  display: block;
+  height: 26px;
+  width: auto;
 }
 
 .topbar nav {
@@ -122,6 +127,15 @@ a.btn-secondary {
   border-bottom: 1px solid #e5e5e5;
   padding: 3rem 1.5rem;
   text-align: center;
+}
+
+/* The mark sits above the heading rather than replacing it — the name has to
+   stay real text for search engines and screen readers. */
+.page-header .mark {
+  display: block;
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 1.1rem;
 }
 
 .page-header h1 {

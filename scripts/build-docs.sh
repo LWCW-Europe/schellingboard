@@ -144,6 +144,20 @@ for i in "${!version_ids[@]}"; do
   rm -f "$dest/README.md" # the capture checklist is for contributors
 done
 
+# --- Logo ------------------------------------------------------------------
+#
+# Same story as the screenshots: docmd copies its own theme assets and nothing
+# else, so the header logo and favicon configured in docmd.config.json have to
+# be placed here. Unlike the screenshots this is deliberately *not* versioned —
+# branding is the site's, not the release's, so every version gets the current
+# logo, including releases tagged before docs/logo/ existed.
+
+for i in "${!version_ids[@]}"; do
+  if [ "$i" -eq 0 ]; then dest="site/logo"; else dest="site/${version_ids[$i]}/logo"; fi
+  cp -R "$REPO_ROOT/docs/logo" "$dest"
+  rm -f "$dest/README.md" # the usage guide is for contributors
+done
+
 # GitHub Pages serves the custom domain from this file. Taken from the config's
 # `url` so the domain is stated exactly once.
 bun -e '

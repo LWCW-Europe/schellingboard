@@ -22,6 +22,9 @@ mkdir -p "$OUT"
 # `www/.` rather than `www/*` so .nojekyll comes along.
 cp -R www/. "$OUT/"
 cp -R docs/screenshots "$OUT/screenshots"
+# docs/logo/ is shared with the documentation site and the app the same way
+# the screenshots are — one copy, referenced from all three.
+cp -R docs/logo "$OUT/logo"
 
 # The capture checklist is for contributors, not for visitors.
 rm -f "$OUT/screenshots/README.md"
@@ -62,6 +65,14 @@ while read -r ref; do
     missing=1
   }
 done < <(grep -ho 'href="[A-Za-z0-9._-]*\.css"' www/*.html | sed 's/href="//;s/"//' | sort -u)
+# The logo is the site's own branding and appears in every header and favicon
+# link, so a rename in docs/logo/ would otherwise ship an unbranded site.
+while read -r ref; do
+  [ -e "$OUT/$ref" ] || {
+    echo "$ref is referenced by www/*.html but does not exist in docs/logo/" >&2
+    missing=1
+  }
+done < <(grep -ho 'logo/[A-Za-z0-9._-]*\.\(svg\|png\)' www/*.html | sort -u)
 [ "$missing" -eq 0 ] || exit 1
 
 echo "Landing page built in $OUT/ — open $OUT/index.html"
