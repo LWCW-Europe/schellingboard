@@ -1,0 +1,178 @@
+/* Shared by index.html and screenshots.html. Both pages are hand-written and
+   have no build step, so this file is the only way they stay in sync. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #fff;
+  color: #1a1a1a;
+  line-height: 1.6;
+}
+
+a {
+  color: #b03c3c;
+}
+
+/* --- Top bar -------------------------------------------------------------
+   Sticky so the documentation link stays one click away anywhere on the page,
+   including part-way down the long screenshots list. */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.topbar-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0.7rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.brand {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.brand span {
+  color: #e05a5a;
+}
+
+.topbar nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.topbar nav a {
+  color: #444;
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 500;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+}
+
+.topbar nav a:hover {
+  background: #f0f0f0;
+  color: #1a1a1a;
+}
+
+.topbar nav a.nav-docs {
+  background: #e05a5a;
+  color: #fff;
+}
+
+.topbar nav a.nav-docs:hover {
+  background: #c94b4b;
+  color: #fff;
+}
+
+/* --- Buttons -------------------------------------------------------------- */
+
+a.btn {
+  display: inline-block;
+  padding: 0.6rem 1.3rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.98rem;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+
+a.btn:hover {
+  opacity: 0.85;
+}
+
+a.btn-primary {
+  background: #e05a5a;
+  color: #fff;
+}
+
+a.btn-secondary {
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid #d5d5d5;
+}
+
+/* --- Page header ---------------------------------------------------------- */
+
+.page-header {
+  background: #f9f9f9;
+  border-bottom: 1px solid #e5e5e5;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.page-header h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.page-header h1 span {
+  color: #e05a5a;
+}
+
+.page-header p.tagline {
+  margin: 0.6rem auto 0;
+  max-width: 34rem;
+  font-size: 1.15rem;
+  color: #555;
+}
+
+.page-header .actions {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.page-header .docs-hint {
+  margin-top: 0.9rem;
+  font-size: 0.9rem;
+  color: #777;
+}
+
+/* --- Footer --------------------------------------------------------------- */
+
+footer {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  font-size: 0.85rem;
+  color: #888;
+  border-top: 1px solid #e5e5e5;
+}
+
+footer .footer-links {
+  display: flex;
+  gap: 1.2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+footer a {
+  color: #555;
+}

@@ -54,6 +54,14 @@ done < <(grep -ho 'screenshots/[A-Za-z0-9._-]*\.webp' www/*.html | sort -u)
   echo "og-image.jpg is referenced by www/index.html but missing from www/" >&2
   missing=1
 }
+# Both pages share one stylesheet, so a typo in either href silently unstyles a
+# whole page.
+while read -r ref; do
+  [ -e "$OUT/$ref" ] || {
+    echo "$ref is linked as a stylesheet by www/*.html but missing from www/" >&2
+    missing=1
+  }
+done < <(grep -ho 'href="[A-Za-z0-9._-]*\.css"' www/*.html | sed 's/href="//;s/"//' | sort -u)
 [ "$missing" -eq 0 ] || exit 1
 
 echo "Marketing site built in $OUT/ — open $OUT/index.html"

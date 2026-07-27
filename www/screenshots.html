@@ -8,49 +8,14 @@
       content="Screenshots of SchellingBoard: proposing sessions, voting, building the schedule, and more."
     />
     <title>Screenshots — SchellingBoard</title>
+    <link rel="stylesheet" href="style.css" />
     <style>
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+      .page-header h1 {
+        font-size: 1.8rem;
       }
 
-      body {
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background: #fff;
-        color: #1a1a1a;
-        line-height: 1.6;
-      }
-
-      header {
-        background: #f9f9f9;
-        border-bottom: 1px solid #e5e5e5;
+      .page-header {
         padding: 2rem 1.5rem;
-        text-align: center;
-      }
-
-      header h1 {
-        font-size: 1.6rem;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-      }
-
-      header h1 a {
-        color: inherit;
-        text-decoration: none;
-      }
-
-      header h1 span {
-        color: #e05a5a;
-      }
-
-      header p.tagline {
-        margin-top: 0.5rem;
-        font-size: 1rem;
-        color: #555;
       }
 
       main {
@@ -130,6 +95,29 @@
         font-size: 0.93rem;
       }
 
+      /* Closing hand-off to the documentation, for visitors who reached the
+         bottom of the list and want the detail behind what they just saw. */
+      .docs-cta {
+        margin-top: 3.5rem;
+        background: #fdf6f6;
+        border: 1px solid #f0dcdc;
+        border-radius: 10px;
+        padding: 1.8rem 1.5rem;
+        text-align: center;
+      }
+
+      .docs-cta h3 {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+      }
+
+      .docs-cta p {
+        color: #555;
+        font-size: 0.95rem;
+        margin-bottom: 1.2rem;
+      }
+
       /* Lightbox */
       .lightbox {
         display: none;
@@ -199,25 +187,24 @@
         top: 50%;
         transform: translateY(-50%);
       }
-
-      footer {
-        text-align: center;
-        padding: 1.5rem;
-        font-size: 0.85rem;
-        color: #888;
-        border-top: 1px solid #e5e5e5;
-      }
-
-      footer a {
-        color: #555;
-      }
     </style>
   </head>
   <body>
-    <header>
-      <h1>
-        <a href="index.html">Schelling<span>Board</span></a>
-      </h1>
+    <div class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="index.html">Schelling<span>Board</span></a>
+        <nav>
+          <a href="screenshots.html">Screenshots</a>
+          <a href="https://github.com/LWCW-Europe/schellingboard">GitHub</a>
+          <a class="nav-docs" href="https://docs.schellingboard.org"
+            >Documentation</a
+          >
+        </nav>
+      </div>
+    </div>
+
+    <header class="page-header">
+      <h1>Schelling<span>Board</span></h1>
       <p class="tagline">Screenshots</p>
     </header>
 
@@ -227,7 +214,9 @@
       <h2>Screenshots</h2>
       <p class="intro">
         A look at SchellingBoard's screens, from proposing a session to seeing
-        it on the schedule. Click any screenshot to zoom in.
+        it on the schedule. Click any screenshot to zoom in — or read the
+        <a href="https://docs.schellingboard.org">documentation</a> for what
+        each screen does.
       </p>
 
       <div class="steps">
@@ -548,9 +537,25 @@
           </figcaption>
         </figure>
       </div>
+
+      <section class="docs-cta">
+        <h3>Want the detail behind these screens?</h3>
+        <p>
+          The documentation covers the attendee experience, the phase model,
+          every admin setting, and how to run your own instance.
+        </p>
+        <a class="btn btn-primary" href="https://docs.schellingboard.org"
+          >Read the documentation</a
+        >
+      </section>
     </main>
 
     <footer>
+      <p class="footer-links">
+        <a href="https://docs.schellingboard.org">Documentation</a>
+        <a href="index.html">Home</a>
+        <a href="https://github.com/LWCW-Europe/schellingboard">GitHub</a>
+      </p>
       <p>
         MIT License &mdash;
         <a href="https://github.com/LWCW-Europe/schellingboard"
