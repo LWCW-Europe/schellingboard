@@ -1,4 +1,12 @@
-# SchellingBoard
+<p align="center">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="docs/logo/logo-reversed.svg"
+    />
+    <img src="docs/logo/logo.svg" alt="SchellingBoard" width="420" />
+  </picture>
+</p>
 
 A web app for managing event scheduling — attendees can propose sessions, vote on them, and view the final schedule. Built with Next.js and SQLite.
 
