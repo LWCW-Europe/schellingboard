@@ -135,8 +135,8 @@ dev-db-seed: install
 # the working tree alone.
 # DOCMD_CONTAINER is the only switch docmd offers for "don't open a browser";
 # `make dev` doesn't either, so keep them consistent.
-# docmd doesn't copy docs/screenshots/ (see the note above scripts/build-docs.sh),
-# so screenshot references in docs/public/*.md 404 in the dev server unless we
+# docmd doesn't copy docs/screenshots/ or docs/logo/ (see the note above
+# scripts/build-docs.sh), so those references 404 in the dev server unless we
 # copy them into its output ourselves. `rm -rf site` first, then wait for
 # docmd's own initial build to (re)create site/index.html, closes the race
 # where our copy lands before docmd's fresh build and gets wiped by it.
@@ -148,6 +148,8 @@ docs: install
 	   until [ -f site/index.html ]; do sleep 0.2; done; \
 	   cp -R docs/screenshots site/screenshots; \
 	   rm -f site/screenshots/README.md; \
+	   cp -R docs/logo site/logo; \
+	   rm -f site/logo/README.md; \
 	   wait $$pid )
 
 docs-build: install

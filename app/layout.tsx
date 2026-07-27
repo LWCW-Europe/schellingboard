@@ -21,7 +21,13 @@ export async function generateMetadata(): Promise<Metadata> {
     title: settings.title,
     description: settings.description,
     icons: {
-      icon: "/favicon.ico",
+      // favicon.ico carries the heavier small-size cut of the mark; icon.svg
+      // is the same drawing for browsers that prefer a scalable icon.
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/icon.svg", type: "image/svg+xml" },
+      ],
+      apple: "/apple-touch-icon.png",
     },
   };
 }

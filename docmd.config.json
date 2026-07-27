@@ -3,6 +3,13 @@
   "url": "https://docs.schellingboard.org",
   "src": "docs/public",
   "out": "site",
+  "logo": {
+    "light": "logo/logo.svg",
+    "dark": "logo/logo-reversed.svg",
+    "alt": "SchellingBoard",
+    "height": "1.5rem"
+  },
+  "favicon": "logo/favicon.svg",
   "engine": "js",
   "markdown": {
     "breaks": false

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="t d">
+  <title id="t">SchellingBoard</title>
+  <desc id="d">The SchellingBoard mark in a single colour.</desc>
+  <g stroke="#1a1a1a" stroke-width="5.5" stroke-linecap="round">
+    <path d="M22 4 L22 60"/>
+    <path d="M46 4 L46 60"/>
+    <path d="M4 20 L60 20"/>
+    <path d="M4 44 L60 44"/>
+  </g>
+  <rect x="24.75" y="22.75" width="18.5" height="18.5" rx="2.5" fill="#1a1a1a"/>
+</svg>
