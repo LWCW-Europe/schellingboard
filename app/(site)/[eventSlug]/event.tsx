@@ -121,7 +121,8 @@ export function EventDisplay() {
                   day={day}
                   search={search}
                   locations={locationsForEvent}
-                  rsvps={view === "rsvp" ? rsvps : []}
+                  rsvps={rsvps}
+                  rsvpOnly={view === "rsvp"}
                   eventSlug={event.slug}
                 />
               )}

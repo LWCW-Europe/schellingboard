@@ -12,9 +12,11 @@ export function DayText(props: {
   day: DayWithSessions;
   search: string;
   rsvps: Rsvp[];
+  /** RSVP'd view: keep only the guest's own sessions, even if they have none. */
+  rsvpOnly: boolean;
   eventSlug: string;
 }) {
-  const { day, locations, search, rsvps, eventSlug } = props;
+  const { day, locations, search, rsvps, rsvpOnly, eventSlug } = props;
   const searchParams = useSearchParams();
   const { user: currentUser } = useContext(UserContext);
   const { event } = useContext(EventContext);
@@ -45,7 +47,7 @@ export function DayText(props: {
   });
 
   let sessions = sessionsSortedByTime;
-  if (rsvps.length > 0) {
+  if (rsvpOnly) {
     const rsvpSet = new Set(rsvps.map((rsvp) => rsvp.sessionId));
     sessions = sessions.filter(
       (session) =>

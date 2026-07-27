@@ -60,6 +60,26 @@ test("RSVP to a session persists across reloads and can be removed again", async
   await expect(dialog.getByText(/Bob Test/)).toHaveCount(0);
 });
 
+test("the RSVP'd view lists nothing when the guest has no RSVPs", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Gamma");
+  // No name selected, so the guest has no RSVPs at all — the deterministic
+  // "no RSVPs" state, since every seeded guest gets random RSVPs.
+
+  await page.getByRole("button", { name: "Text" }).click();
+  await expect(
+    page.getByRole("link", { name: /Opening Keynote/ }).first()
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "RSVP'd" }).click();
+  await expect(page.getByRole("link", { name: /Opening Keynote/ })).toHaveCount(
+    0
+  );
+  await expect(page.getByText("No sessions").first()).toBeVisible();
+});
+
 test("a full session blocks further RSVPs when the event enforces capacity", async ({
   page,
 }) => {
