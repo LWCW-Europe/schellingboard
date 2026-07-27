@@ -9,12 +9,14 @@ export default function Footer({ inline }: { inline?: boolean }) {
   const appVersion = getAppVersion();
 
   const content = (
-    <div className="px-3 flex justify-between items-center text-xs text-gray-500">
+    // Wrapping matters on narrow phones: the version can be a long dev string
+    // (`a1b2c3d4-dirty`), and three links plus it no longer fit on one line.
+    <div className="px-3 flex flex-wrap gap-x-2 justify-between items-center text-xs text-gray-500">
       <span className="flex gap-1">
         <span className="hidden sm:block">Version: </span>
         {appVersion}
       </span>
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap justify-end items-center gap-1">
         <span className="hidden sm:block">Powered by</span>
         <a
           href="https://schellingboard.org"
@@ -23,6 +25,15 @@ export default function Footer({ inline }: { inline?: boolean }) {
           className="text-blue-600 hover:underline"
         >
           SchellingBoard
+        </a>
+        <span>·</span>
+        <a
+          href="https://docs.schellingboard.org"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:underline"
+        >
+          Help
         </a>
         <span>·</span>
         <a
