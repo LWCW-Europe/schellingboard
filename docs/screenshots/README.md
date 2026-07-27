@@ -80,7 +80,7 @@ changes materially. Check off `[ ]` as you go.
 - [ ] `session-details.webp` — Session detail popup (host, location, time, attendees, description)
 - [ ] `add-session.webp` — Form for adding a session directly to the schedule
 - [ ] `attendees.webp` — Searchable attendee directory with avatars and host badges
-- [ ] `participant-profile.webp` — Participant profile page (bio, proposals, sessions attending)
+- [ ] `participant-profile.webp` — Participant profile page (bio, proposals, sessions they're hosting)
 - [ ] `edit-profile.webp` — Edit profile form (name, pronouns, avatar, Markdown bio)
 - [ ] `admin-events.webp` — Admin panel listing all events with a Manage button
 - [ ] `admin-event-settings.webp` — Admin event configuration form (name, dates, timezone, rules)
