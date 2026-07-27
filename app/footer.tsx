@@ -1,10 +1,11 @@
 "use client";
 import { getAppVersion } from "@/utils/git";
 
-// `inline` renders the footer as normal content at the end of the schedule's
-// scroll container (see EventDisplay) instead of the site-wide bar: the bar
-// spans the full — possibly horizontally overflowing — grid width, while the
-// text stays pinned to the visible area.
+// `inline` renders the footer as normal content inside the schedule's fixed
+// frame (see EventDisplay) instead of as the site-wide bar: at the end of the
+// grid's scroll container, or as the bottom row of the frame in the text and
+// RSVP views. The bar spans the full — possibly horizontally overflowing —
+// grid width, while the text stays pinned to the visible area.
 export default function Footer({ inline }: { inline?: boolean }) {
   const appVersion = getAppVersion();
 

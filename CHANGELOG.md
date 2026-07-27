@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Documentation website**: the attendee guide and the organizer and self-hosting documentation now live at [docs.schellingboard.org](https://docs.schellingboard.org), searchable and readable on a phone. A version selector lets you read the documentation for the release you're actually running, rather than whatever is newest
 - **Help link in the footer**: every page, including `/admin`, now links to the documentation next to "Report a Bug". On narrow phones the footer wraps onto a second line instead of squeezing the links together
 
+### Changed
+
+- **Footer always visible in the text and RSVP'd schedule views**: on a large screen it now stays at the bottom of the window instead of following the last session, so it no longer floats mid-page when there is little to show — the same as the proposals list. On phones it still ends the page, and the grid view keeps it at the end of the schedule, where a fixed footer would add an extra scrollbar
+
 ### Fixed
 
 - **"RSVP'd" view no longer shows every session**: before you had RSVP'd to anything, the RSVP'd view listed the whole schedule instead of nothing. It now always shows only the sessions you have RSVP'd to or are hosting

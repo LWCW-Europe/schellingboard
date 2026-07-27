@@ -52,7 +52,14 @@ export function EventDisplay() {
   // inside it (as the first item) so it scrolls away with the content, leaving
   // only the sticky room headers pinned in the grid view. globals.css locks
   // window scrolling and hides the site footer while [data-schedule-frame] is
-  // mounted; a footer copy ends the schedule content instead.
+  // mounted; a footer copy is rendered below instead.
+  //
+  // That copy follows the site-wide footer (see Footer): on wide screens the
+  // text and RSVP views pin it to the bottom of the frame, so it stays visible
+  // and isn't left mid-page when the content is short — a handful of RSVPs,
+  // say — while narrower screens end the scrolled content with it. The grid
+  // never pins it: it can overflow horizontally, where a pinned footer costs a
+  // second scrollbar for little gain.
   const scheduleBody =
     view === "grid" ? (
       <div
@@ -103,7 +110,9 @@ export function EventDisplay() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-        <div className="flex flex-col gap-12 w-full">
+        {/* `lg:grow` fills the frame when there is little to show, so the
+            footer below lands at its bottom rather than mid-page. */}
+        <div className="flex flex-col gap-12 w-full lg:grow">
           {daysForEvent.map((day) => (
             <div key={day.id}>
               {defaultFoldedDayIds.has(day.id) && (
@@ -129,7 +138,11 @@ export function EventDisplay() {
             </div>
           ))}
         </div>
-        <Footer inline />
+        {/* Sticky rather than a row of the frame: pinned to the bottom of the
+            scroll surface on wide screens, plain end-of-content below lg. */}
+        <div className="lg:sticky lg:bottom-0">
+          <Footer inline />
+        </div>
       </div>
     );
 

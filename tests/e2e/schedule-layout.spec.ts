@@ -78,6 +78,87 @@ test("the footer ends the schedule content", async ({ page }) => {
   ).toBeInViewport();
 });
 
+// The text and RSVP views follow the rest of the site (the proposals list, for
+// one): on a wide screen the footer is pinned to the bottom of the viewport, so
+// it stays visible and isn't stranded mid-page when the content is short (a
+// handful of RSVPs); on a phone it ends the content instead. The grid view
+// never pins it — see "the footer ends the schedule content" above.
+const footerLink = (page: import("@playwright/test").Page) =>
+  page.getByRole("link", { name: "Report a Bug" }).locator("visible=true");
+
+const scrollToEnd = async (page: import("@playwright/test").Page) => {
+  await page.mouse.move(250, 400);
+  for (let i = 0; i < 12; i++) {
+    await page.mouse.wheel(0, 2000);
+    await page.waitForTimeout(50);
+  }
+  await page.waitForTimeout(500);
+};
+
+for (const view of ["Text", "RSVP'd"]) {
+  test.describe("on a wide screen", () => {
+    test.use({ viewport: { width: 1280, height: 800 } });
+
+    test(`the footer stays at the bottom of the viewport in the ${view} view`, async ({
+      page,
+    }) => {
+      await page.getByRole("button", { name: view }).click();
+      const footer = footerLink(page);
+      const viewportHeight = page.viewportSize()!.height;
+      const atViewportBottom = async () => {
+        await expect(footer).toBeInViewport();
+        const box = (await footer.boundingBox())!;
+        expect(box.y + box.height).toBeGreaterThan(viewportHeight - 40);
+        expect(box.y + box.height).toBeLessThan(viewportHeight + 5);
+      };
+
+      await atViewportBottom();
+      // Still there after scrolling through the sessions …
+      await scrollToEnd(page);
+      await atViewportBottom();
+      // … and when a search leaves almost nothing to show, the case that
+      // otherwise leaves the footer stranded mid-page.
+      await page
+        .getByPlaceholder("Search sessions")
+        .fill("zzz no session matches this");
+      await atViewportBottom();
+    });
+  });
+}
+
+test("the footer ends the content in the Text view on a phone", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Text" }).click();
+  // The search box exists only in this view: wait for the switch before
+  // measuring, so the grid's own footer isn't what gets measured.
+  await expect(page.getByPlaceholder("Search sessions")).toBeVisible();
+  const footer = footerLink(page);
+  const viewportHeight = page.viewportSize()!.height;
+
+  // Below the fold — the content ends with it, the viewport doesn't.
+  await expect(footer).toBeVisible();
+  expect((await footer.boundingBox())!.y).toBeGreaterThan(viewportHeight);
+
+  await scrollToEnd(page);
+  await expect(footer).toBeInViewport();
+});
+
+test("the footer follows short content in the RSVP'd view on a phone", async ({
+  page,
+}) => {
+  // With no name selected there is nothing to list, so this is the phone
+  // counterpart of the wide-screen "short content" case above: the footer
+  // ends the content mid-page instead of being pinned to the viewport.
+  await page.getByRole("button", { name: "RSVP'd" }).click();
+  await expect(page.getByText("No sessions").first()).toBeVisible();
+  const footer = footerLink(page);
+  const viewportHeight = page.viewportSize()!.height;
+
+  const box = (await footer.boundingBox())!;
+  expect(box.y + box.height).toBeLessThan(viewportHeight - 40);
+});
+
 test("dragging the schedule pans it sideways", async ({ page }) => {
   // The last location's header starts beyond the right edge of the viewport.
   // (Each day repeats the header row — the first one is the visible one.)
