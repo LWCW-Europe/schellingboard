@@ -90,7 +90,7 @@ changes materially. Check off `[ ]` as you go.
 ### Mobile (Galaxy Note 9)
 
 - [ ] `mobile-schedule.webp` — Scheduling grid rendered on a phone screen
-- [ ] `mobile-session-details.webp` — Mobile session detail popup with closed-session warning
+- [ ] `mobile-session-details.webp` — Mobile session detail popup **with closed-session warning**
 
 After capturing, run `make www`, open `www-site/screenshots.html`, and click
 through the lightbox to confirm captions still match what's on screen.
