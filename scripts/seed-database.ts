@@ -761,6 +761,7 @@ const guestConfigs: GuestConfig[] = [
     aboutMe:
       "# Hi, I'm Hana!\n\nDeveloper advocate based in Kyoto. I write tutorials, give talks, and collect conference stickers *competitively*.",
     pronouns: "She/Her",
+    avatar: 21,
     basedIn: "Kyoto, Japan",
     languages: ["Japanese", "English"],
     prompts: [
