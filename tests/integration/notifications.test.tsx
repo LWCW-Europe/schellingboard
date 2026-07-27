@@ -138,8 +138,8 @@ describe("notifySessionChanged", () => {
     expect(html).toContain("A session you RSVP’d to");
     // The description is markdown, rendered to html.
     expect(html).toContain("A <em>hands-on</em> session.");
-    expect(html).toContain("Saturday 1 August, 15:00–16:00");
-    expect(html).toContain("(was Saturday 1 August, 10:00–11:00)");
+    expect(html).toContain("Saturday 1 August, 15:10–16:00");
+    expect(html).toContain("(was Saturday 1 August, 10:10–11:00)");
     expect(html).toContain("Room A");
     // The location did not change, so no old location is given.
     expect(html.match(/\(was /g)).toHaveLength(1);
@@ -400,7 +400,7 @@ describe("notifyCohostsAdded", () => {
     const html = await renderWithoutComments(message.body);
     expect(html).toContain("co-host");
     expect(html).toContain("A <em>hands-on</em> session.");
-    expect(html).toContain("Saturday 1 August, 10:00–11:00");
+    expect(html).toContain("Saturday 1 August, 10:10–11:00");
     expect(html).toContain("Room A");
     expect(html).toContain(
       `href="https://site.example/${event.slug}?viewSession=${session.id}"`

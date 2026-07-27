@@ -5,6 +5,7 @@ import { sendMail, type EmailMessage } from "@/utils/mailer";
 import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
 import { cohostAddedEmail } from "@/emails/cohost-added";
+import { getStartTimePlusBreak } from "@/utils/utils";
 
 // Send `message` to the guest, iff they have opted in to emails for
 // `setting` (see EmailSettings).
@@ -87,9 +88,9 @@ async function notifySessionChangedUnsafe({
     sessionUrl: sessionUrl(base, event.slug, after.id),
     title: after.title,
     description: after.description,
-    newTime: formatSessionTime(after, event.timezone),
+    newTime: formatSessionTime(after, event.timezone, event.breakMinutes),
     oldTime: timeChanged
-      ? formatSessionTime(before, event.timezone)
+      ? formatSessionTime(before, event.timezone, event.breakMinutes)
       : undefined,
     newLocation: formatLocations(after),
     oldLocation: locationChanged ? formatLocations(before) : undefined,
@@ -173,7 +174,7 @@ async function notifyCohostsAddedUnsafe({
   const message = cohostAddedEmail({
     title: session.title,
     description: session.description,
-    time: formatSessionTime(session, event.timezone),
+    time: formatSessionTime(session, event.timezone, event.breakMinutes),
     location: formatLocations(session),
     sessionUrl: sessionUrl(base, event.slug, session.id),
   });
@@ -196,11 +197,12 @@ function sameLocations(a: { id: string }[], b: { id: string }[]): boolean {
 }
 
 function formatSessionTime(
-  session: { startTime?: Date; endTime?: Date },
-  timezone: string
+  session: Session,
+  timezone: string,
+  breakMinutes: number
 ): string {
   if (!session.startTime || !session.endTime) return "Unscheduled";
-  const start = DateTime.fromJSDate(session.startTime).setZone(timezone);
+  const start = getStartTimePlusBreak(session, breakMinutes).setZone(timezone);
   const end = DateTime.fromJSDate(session.endTime).setZone(timezone);
   return `${start.toFormat("cccc d LLLL, HH:mm")}–${end.toFormat("HH:mm")}`;
 }
