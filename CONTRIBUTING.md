@@ -354,7 +354,7 @@ tests fail there if the variables go missing, so they can never be silently
 skipped in CI.
 
 E2E tests run in their own workflow so that they can be skipped for changes
-that cannot affect the app — documentation, the marketing site, repository
+that cannot affect the app — documentation, the landing page, repository
 prose. Adding a top-level path that the app doesn't use? Add it to both
 `paths-ignore` lists in `.github/workflows/ci-e2e.yml`.
 
@@ -487,7 +487,7 @@ git switch -c docs-3.2 v3.2.0
 # fix, commit, push — the docs site redeploys
 ```
 
-## The marketing site
+## The landing page
 
 [schellingboard.org](https://schellingboard.org) is hand-written HTML in
 `www/` — a landing page and a screenshot gallery. `make www` copies it, plus
@@ -513,7 +513,7 @@ disabled.
 
 ### Screenshots
 
-`docs/screenshots/` is the only copy of the screenshots. The marketing site
+`docs/screenshots/` is the only copy of the screenshots. The landing page
 uses them directly and the documentation site can use them too — see
 [`docs/screenshots/README.md`](docs/screenshots/README.md) for the capture
 checklist and how to reference them from markdown.

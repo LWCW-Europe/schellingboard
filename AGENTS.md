@@ -28,11 +28,11 @@ Update `CHANGELOG.md` under `[Unreleased]` for any user-facing change — audien
 - **Developer docs** live in `docs/dev/` (ADRs, design notes) and are linked
   from CONTRIBUTING.md. They are never published.
 - **Screenshots** live in `docs/screenshots/` — the project's only copy, shared
-  by the docs site and the marketing site. Reference them relatively from
+  by the docs site and the landing page. Reference them relatively from
   markdown (`../screenshots/x.webp`), never root-relative.
-- **The marketing site** (schellingboard.org) is hand-written HTML in `www/`,
+- **The landing page** (schellingboard.org) is hand-written HTML in `www/`,
   built with `make www` and deployed to a separate repository. Don't move it to
-  docmd; see [CONTRIBUTING.md § The marketing site](CONTRIBUTING.md#the-marketing-site).
+  docmd; see [CONTRIBUTING.md § The landing page](CONTRIBUTING.md#the-landing-page).
 - See [CONTRIBUTING.md § Documentation](CONTRIBUTING.md#documentation).
 
 ## GitHub Issues

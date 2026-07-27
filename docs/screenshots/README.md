@@ -4,7 +4,7 @@ The screenshots in this directory are the only copies in the project. Two
 sites use them:
 
 - **[schellingboard.org](https://schellingboard.org)** — the hand-written
-  marketing site in `www/`, which references them as `screenshots/<name>.webp`.
+  landing page in `www/`, which references them as `screenshots/<name>.webp`.
   `scripts/build-www.sh` copies this directory next to the HTML.
 - **[docs.schellingboard.org](https://docs.schellingboard.org)** —
   `scripts/build-docs.sh` copies this directory into each published version, so
@@ -51,7 +51,7 @@ cwebp -q 80 -resize 900 0 ~/Downloads/capture.png -o docs/screenshots/<name>.web
 (`apt install webp`, `brew install webp`).
 
 If `schedule-grid.webp` changed, also regenerate `www/og-image.jpg` — the
-Open Graph / Twitter card image on the marketing site. It's a separate JPEG
+Open Graph / Twitter card image on the landing page. It's a separate JPEG
 copy rather than a reference to the WebP because link-preview crawlers
 (Slack, iMessage, older scrapers) have inconsistent WebP support:
 

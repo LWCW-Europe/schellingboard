@@ -34,7 +34,7 @@ help:
 	@printf "  %-28s %s\n" "make docs"               "Preview the docs in docs/public"
 	@printf "  %-28s %s\n" "make docs-build"         "Build the public docs site into site/"
 	@printf "  %-28s %s\n" "make docs-validate"      "Check the docs for broken links"
-	@printf "\nMarketing site:\n"
+	@printf "\nLanding page:\n"
 	@printf "  %-28s %s\n" "make www"               "Build schellingboard.org into www-site/"
 	@printf "\nDependencies:\n"
 	@printf "  %-28s %s\n" "make install"            "Install dependencies"

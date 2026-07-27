@@ -125,7 +125,7 @@ bun x docmd build -c "$BUILD_CONFIG"
 #
 # docmd discovers markdown and nothing else — a PNG in docs/public/ is simply
 # not copied — so images have to be placed here. They live in docs/screenshots/
-# rather than under docs/public/ because the marketing site in www/ uses the
+# rather than under docs/public/ because the landing page in www/ uses the
 # same files (see scripts/build-www.sh).
 #
 # Each version gets the screenshots from its own worktree, so an old release

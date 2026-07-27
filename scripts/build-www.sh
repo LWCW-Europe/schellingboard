@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the marketing site (schellingboard.org) into www-site/.
+# Build the landing page (schellingboard.org) into www-site/.
 #
 # The site is hand-written HTML in www/ plus the screenshots in
 # docs/screenshots/. Those screenshots are shared with the documentation site,
@@ -64,4 +64,4 @@ while read -r ref; do
 done < <(grep -ho 'href="[A-Za-z0-9._-]*\.css"' www/*.html | sed 's/href="//;s/"//' | sort -u)
 [ "$missing" -eq 0 ] || exit 1
 
-echo "Marketing site built in $OUT/ — open $OUT/index.html"
+echo "Landing page built in $OUT/ — open $OUT/index.html"
