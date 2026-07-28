@@ -36,6 +36,9 @@ vi.mock("@/app/(site)/guests/edit/profile-form", () => ({
 vi.mock("@/app/(site)/guests/attendee-list", () => ({
   AttendeeList: () => "ATTENDEE_LIST_STUB",
 }));
+vi.mock("@/app/(site)/guests/zoomable-avatar", () => ({
+  ZoomableAvatar: () => "ZOOMABLE_AVATAR_STUB",
+}));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createGuest } from "../helpers/factories";

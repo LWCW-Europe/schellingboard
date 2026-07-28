@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Documentation website**: the attendee guide and the organizer and self-hosting documentation now live at [docs.schellingboard.org](https://docs.schellingboard.org), searchable and readable on a phone. A version selector lets you read the documentation for the release you're actually running, rather than whatever is newest
 - **Help link in the footer**: every page, including `/admin`, now links to the documentation next to "Report a Bug". On narrow phones the footer wraps onto a second line instead of squeezing the links together
 - **A logo**: SchellingBoard now has one — two schedule grid lines crossing at a single filled slot. It appears on [schellingboard.org](https://schellingboard.org) and [docs.schellingboard.org](https://docs.schellingboard.org), and replaces the generic calendar icon that used to show in the browser tab and on a phone home screen
+- **Bigger profile photos**: on an attendee's page, click their profile picture to see it enlarged; press Escape, tap outside it, or use the close button to dismiss
 
 ### Changed
 

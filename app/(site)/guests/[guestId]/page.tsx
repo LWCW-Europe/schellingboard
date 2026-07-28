@@ -23,7 +23,7 @@ import { CORE_PROMPTS } from "@/model/prompt-pool";
 import { eventNameToSlug } from "@/utils/utils";
 import { sanitizeGuest } from "@/utils/guests";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
-import { Avatar } from "../avatar";
+import { ZoomableAvatar } from "../zoomable-avatar";
 import { Markdown } from "@/app/(site)/markdown";
 import { ComponentType, JSX, PropsWithChildren, SVGProps } from "react";
 import {
@@ -84,7 +84,10 @@ export default async function GuestProfilePage(props: {
       </div>
 
       <header className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Avatar name={guest.name} image={guest.avatarUrl ?? undefined} />
+        <ZoomableAvatar
+          name={guest.name}
+          image={guest.avatarUrl ?? undefined}
+        />
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">{guest.name}</h1>
           {(guest.pronouns || isSessionHost) && (
