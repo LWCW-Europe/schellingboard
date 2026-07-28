@@ -47,9 +47,9 @@ Proposing and voting close once scheduling starts.
 ## Attendee directory & profiles
 
 Every attendee gets a profile page with their bio, proposals, and the sessions
-they're hosting — click any name wherever it appears to see it. The attendee
-directory lets you search everyone at the event and see who's hosting a session
-at a glance.
+they're hosting — click any name wherever it appears to see it. Click their
+profile photo to see it enlarged. The attendee directory lets you search
+everyone at the event and see who's hosting a session at a glance.
 
 ![Searchable attendee directory with avatars, bios, and Session host badges](../screenshots/attendees.webp)
 
