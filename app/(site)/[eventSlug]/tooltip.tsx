@@ -80,7 +80,9 @@ export function Tooltip(props: {
     <div className={className}>
       <span
         suppressHydrationWarning={suppressHydrationWarning}
-        ref={refs.setReference}
+        ref={(node) => {
+          refs.setReference(node);
+        }}
         {...getReferenceProps()}
       >
         {children}
@@ -96,8 +98,9 @@ export function Tooltip(props: {
         as="div"
         // refs.setFloating is a callback ref from useFloating; assigning it
         // here is the documented Floating UI pattern.
-        // eslint-disable-next-line react-hooks/refs
-        ref={refs.setFloating}
+        ref={(node) => {
+          refs.setFloating(node);
+        }}
         role="tooltip"
         style={{ position: strategy, top: y ?? 0, left: x ?? 0 }}
         className="z-40 max-w-lg w-120 whitespace-normal rounded bg-white px-2 py-1 border shadow-md border-gray-100"
