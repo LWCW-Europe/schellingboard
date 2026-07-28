@@ -116,3 +116,31 @@ export function getStartTimePlusBreak(
     minutes: breakMinutes,
   });
 }
+
+/**
+ * Trims, transforms to lowercase and removes accents from a string.
+ *
+ * `normalize("äùàÆåñ") === "auaæan"`
+ *
+ * @author https://stackoverflow.com/a/37511463/1181553
+ */
+export function normalizeSearchQuery(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+/**
+ * Like `String.includes`, but ignoring case and diacritics
+ *
+ * @param haystack The string to search in
+ * @param needle The string to search for
+ */
+export function containsIgnoringAccents(
+  haystack: string,
+  needle: string
+): boolean {
+  return normalizeSearchQuery(haystack).includes(normalizeSearchQuery(needle));
+}
