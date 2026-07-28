@@ -46,6 +46,34 @@ describe("searchAttendees", () => {
     expect(result.map((r) => r.name)).toEqual(["Speaker", "Foodie"]);
   });
 
+  it("ranks a partial language hit as free text, not a declared language", () => {
+    const rows = [
+      attendee({ name: "Foodie", aboutMe: "I adore Italian food" }),
+      attendee({ name: "Speaker", languages: ["Italian"] }),
+    ];
+
+    // "ital" is nobody's declared language, so both are free-text hits and
+    // sort by name.
+    const result = searchAttendees(rows, "ital");
+    expect(result.map((r) => r.name)).toEqual(["Foodie", "Speaker"]);
+  });
+
+  it("ignores accents in names and declared languages", () => {
+    const rows = [
+      attendee({ name: "Amélie", aboutMe: "Español food blog" }),
+      attendee({ name: "Bruno", languages: ["Español"] }),
+    ];
+
+    expect(searchAttendees(rows, "amelie").map((r) => r.name)).toEqual([
+      "Amélie",
+    ]);
+    // Bruno declares the language, Amélie only mentions it.
+    expect(searchAttendees(rows, "espanol").map((r) => r.name)).toEqual([
+      "Bruno",
+      "Amélie",
+    ]);
+  });
+
   it("ranks a name match above everything else", () => {
     const rows = [
       attendee({ name: "Zoe", languages: ["Kim"] }),

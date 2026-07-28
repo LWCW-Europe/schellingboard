@@ -118,13 +118,14 @@ export function getStartTimePlusBreak(
 }
 
 /**
- * Trims, transforms to lowercase and removes accents from a string.
+ * Trims, transforms to lowercase and removes accents from a string. Applied to
+ * both sides of a search comparison, so "jose" finds "José" and vice versa.
  *
- * `normalize("äùàÆåñ") === "auaæan"`
+ * `normalizeForSearch("äùàÆåñ") === "auaæan"`
  *
- * @author https://stackoverflow.com/a/37511463/1181553
+ * Accent stripping from https://stackoverflow.com/a/37511463/1181553
  */
-export function normalizeSearchQuery(input: string): string {
+export function normalizeForSearch(input: string): string {
   return input
     .trim()
     .toLowerCase()
@@ -142,5 +143,10 @@ export function containsIgnoringAccents(
   haystack: string,
   needle: string
 ): boolean {
-  return normalizeSearchQuery(haystack).includes(normalizeSearchQuery(needle));
+  return normalizeForSearch(haystack).includes(normalizeForSearch(needle));
+}
+
+/** Like `===`, but ignoring case and diacritics */
+export function equalsIgnoringAccents(a: string, b: string): boolean {
+  return normalizeForSearch(a) === normalizeForSearch(b);
 }

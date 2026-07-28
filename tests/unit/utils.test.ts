@@ -8,6 +8,9 @@ import {
   getPercentThroughDay,
   getStartTimePlusBreak,
   votesApiUrl,
+  normalizeForSearch,
+  containsIgnoringAccents,
+  equalsIgnoringAccents,
 } from "@/utils/utils";
 import type { Day, Session } from "@/db/repositories/interfaces";
 
@@ -206,5 +209,42 @@ describe("getStartTimePlusBreak", () => {
     expect(adjusted.toJSDate().getTime()).toBe(
       new Date("2025-06-15T10:05:00Z").getTime()
     );
+  });
+});
+
+// ── search normalization ─────────────────────────────────────────────────────
+
+describe("normalizeForSearch", () => {
+  it("trims, lowercases and strips accents", () => {
+    expect(normalizeForSearch("  ÄùàÆåÑ ")).toBe("auaæan");
+  });
+
+  it("leaves already-normalized text untouched", () => {
+    expect(normalizeForSearch("berlin")).toBe("berlin");
+  });
+});
+
+describe("containsIgnoringAccents", () => {
+  it("matches regardless of case and accents in either string", () => {
+    expect(containsIgnoringAccents("Café Münchén", "cafe mun")).toBe(true);
+    expect(containsIgnoringAccents("cafe munchen", "Münch")).toBe(true);
+  });
+
+  it("does not match unrelated text", () => {
+    expect(containsIgnoringAccents("Café", "tea")).toBe(false);
+  });
+
+  it("matches everything for an empty needle", () => {
+    expect(containsIgnoringAccents("Café", "  ")).toBe(true);
+  });
+});
+
+describe("equalsIgnoringAccents", () => {
+  it("compares whole strings ignoring case and accents", () => {
+    expect(equalsIgnoringAccents("Español", " espanol ")).toBe(true);
+  });
+
+  it("rejects a substring", () => {
+    expect(equalsIgnoringAccents("Español", "espa")).toBe(false);
   });
 });

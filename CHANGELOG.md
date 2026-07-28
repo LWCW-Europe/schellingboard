@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **Search ignores accents**: searching the schedule or the attendee list for "Jose", "Munchen" or "Espanol" now finds "José", "München" and "Español" — and the other way round, so a name typed with accents still finds it. The same applies to the suggestion lists when editing your profile and to picking session hosts
 - **Footer always visible in the text and RSVP'd schedule views**: on a large screen it now stays at the bottom of the window instead of following the last session, so it no longer floats mid-page when there is little to show — the same as the proposals list. On phones it still ends the page, and the grid view keeps it at the end of the schedule, where a fixed footer would add an extra scrollbar
 
 ### Changed

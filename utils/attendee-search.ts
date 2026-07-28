@@ -1,5 +1,5 @@
 import type { Attendee } from "@/db/repositories/interfaces";
-import { containsIgnoringAccents } from "./utils";
+import { containsIgnoringAccents, equalsIgnoringAccents } from "./utils";
 
 // Rank tiers, higher wins. Exact declared-language matches must beat
 // incidental free-text mentions ("Italian" the speaker vs. "Italian food"
@@ -12,8 +12,7 @@ function rank(attendee: Attendee, query: string): number {
   if (containsIgnoringAccents(attendee.name, query)) return NAME;
 
   const languages = attendee.languages ?? [];
-  if (languages.some((l) => containsIgnoringAccents(l, query)))
-    return STRUCTURED;
+  if (languages.some((l) => equalsIgnoringAccents(l, query))) return STRUCTURED;
 
   // Contacts are deliberately not searched: matching them serves scrapers,
   // not people scanning the directory.
