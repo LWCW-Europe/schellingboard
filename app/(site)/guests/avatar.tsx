@@ -31,6 +31,10 @@ export function Avatar({
   onClick?: MouseEventHandler<HTMLDivElement>;
 }) {
   const dimensions = size === "lg" ? "h-28 w-28 text-3xl" : "h-12 w-12 text-sm";
+  // Matches the box above (h-28 = 112px, h-12 = 48px). Stored avatars are up to
+  // 1024px, so declaring the displayed size is what keeps next/image's 2x
+  // srcset entry at a thumbnail-sized rendition instead of a 640px one.
+  const renderedSize = size === "lg" ? 112 : 48;
 
   return (
     <div
@@ -48,8 +52,8 @@ export function Avatar({
           className="w-full h-full object-cover"
           src={image}
           alt={`Profile avatar of ${name}`}
-          width="256"
-          height="256"
+          width={renderedSize}
+          height={renderedSize}
         />
       ) : (
         initials(name) || "?"

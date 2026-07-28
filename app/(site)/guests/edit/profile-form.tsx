@@ -17,6 +17,7 @@ import { Avatar } from "../avatar";
 import type { Guest } from "@/db/repositories/interfaces";
 import { CONTACT_TYPES } from "@/db/repositories/interfaces";
 import { resizeImage } from "@/utils/images-client";
+import { AVATAR_MAX_SIZE } from "@/utils/avatar-image-constraints";
 import clsx from "clsx";
 import {
   Controller,
@@ -166,7 +167,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
     // So this operation doesn't block the submission
     if (profile.avatar) {
       try {
-        const resized = await resize(profile.avatar, 256);
+        const resized = await resize(profile.avatar, AVATAR_MAX_SIZE);
         if ("error" in resized) {
           form.setError("avatar", { message: resized.error });
           return;
