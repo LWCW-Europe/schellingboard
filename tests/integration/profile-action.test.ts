@@ -111,7 +111,27 @@ describe("updateProfileAction", () => {
     expect(fs.existsSync(imagePath)).toBe(true);
   });
 
-  it("resizes avatar to 256 and keeps extension", async () => {
+  it("resizes a large avatar to 1024 and keeps extension", async () => {
+    const guest = await createGuest({ name: "Old" });
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
+    const result = await updateProfileAction({
+      name: "New Name",
+      aboutMe: "Hello there",
+      avatar: await createImageFile(2048, 2048, "avatar.png"),
+    });
+    expect(result).toEqual({ ok: true });
+    const updated = await getRepositories().guests.findById(guest.id);
+    const imagePath = path.join(uploadsDir, "avatars", `${updated?.id}.png`);
+    expect(fs.existsSync(imagePath)).toBe(true);
+    const imageMetadata = await sharp(fs.readFileSync(imagePath)).metadata();
+    expect(imageMetadata).toMatchObject({
+      width: 1024,
+      height: 1024,
+      format: "png",
+    });
+  });
+
+  it("never upscales an avatar smaller than 1024", async () => {
     const guest = await createGuest({ name: "Old" });
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
     const result = await updateProfileAction({
@@ -122,13 +142,23 @@ describe("updateProfileAction", () => {
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
     const imagePath = path.join(uploadsDir, "avatars", `${updated?.id}.png`);
-    expect(fs.existsSync(imagePath)).toBe(true);
     const imageMetadata = await sharp(fs.readFileSync(imagePath)).metadata();
-    expect(imageMetadata).toMatchObject({
-      width: 256,
-      height: 256,
-      format: "png",
+    expect(imageMetadata).toMatchObject({ width: 512, height: 512 });
+  });
+
+  it("crops a non-square avatar to its shorter side rather than upscaling", async () => {
+    const guest = await createGuest({ name: "Old" });
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
+    const result = await updateProfileAction({
+      name: "New Name",
+      aboutMe: "Hello there",
+      avatar: await createImageFile(900, 400, "avatar.png"),
     });
+    expect(result).toEqual({ ok: true });
+    const updated = await getRepositories().guests.findById(guest.id);
+    const imagePath = path.join(uploadsDir, "avatars", `${updated?.id}.png`);
+    const imageMetadata = await sharp(fs.readFileSync(imagePath)).metadata();
+    expect(imageMetadata).toMatchObject({ width: 400, height: 400 });
   });
 
   it("saves basedIn, prompts, languages, and contacts", async () => {
@@ -252,6 +282,19 @@ describe("updateProfileAction", () => {
       name: "New Name",
       aboutMe: "Hello there",
       avatar: await createImageFile(128, 128, "avatar.png"),
+    });
+    expect(result).toMatchObject({ ok: false });
+  });
+
+  // The square crop can't be bigger than the shorter side, so a wide-but-flat
+  // image would otherwise be stored below the 256px minimum.
+  it("rejects a wide image whose shorter side is below the minimum", async () => {
+    const guest = await createGuest({ name: "Old" });
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
+    const result = await updateProfileAction({
+      name: "New Name",
+      aboutMe: "Hello there",
+      avatar: await createImageFile(2000, 100, "avatar.png"),
     });
     expect(result).toMatchObject({ ok: false });
   });

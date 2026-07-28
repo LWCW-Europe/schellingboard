@@ -4,6 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import { Avatar } from "@/app/(site)/guests/avatar";
 import { Modal } from "@/app/(site)/modals";
+import {
+  AVATAR_ENLARGED_MAX_CSS_PX,
+  AVATAR_MAX_SIZE,
+} from "@/utils/avatar-image-constraints";
 
 /**
  * An {@link Avatar} that, when it has an uploaded image, can be clicked to open a
@@ -41,17 +45,18 @@ export function ZoomableAvatar({
       {/* z-40 so the enlarged photo (and its dismiss-on-outside-click backdrop)
           covers the fixed nav bar, which is z-30. */}
       <Modal open={open} setOpen={setOpen} zIndex="z-40">
-        {/* User-uploaded image of arbitrary dimensions: serve it directly
-            (unoptimized) and bound it to the viewport so tall/wide photos stay
-            fully visible. */}
+        {/* Avatars are stored as squares of at most AVATAR_MAX_SIZE, so the
+            width/height below give the right aspect ratio and let next/image
+            serve a rendition that fits the screen. maxWidth caps the displayed
+            size: past this the image would be upscaled and look soft. */}
         <Image
           src={image}
           alt={`Enlarged profile picture of ${name}`}
           className="mx-auto h-auto w-full max-h-[80vh] object-contain"
-          width={0}
-          height={0}
-          sizes="100vw"
-          unoptimized
+          style={{ maxWidth: AVATAR_ENLARGED_MAX_CSS_PX }}
+          width={AVATAR_MAX_SIZE}
+          height={AVATAR_MAX_SIZE}
+          sizes={`(max-width: ${AVATAR_ENLARGED_MAX_CSS_PX}px) 100vw, ${AVATAR_ENLARGED_MAX_CSS_PX}px`}
         />
       </Modal>
     </>

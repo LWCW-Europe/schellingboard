@@ -1,4 +1,5 @@
 import "client-only";
+import { coverSquareSize } from "@/utils/avatar-image-constraints";
 
 function drawCover(
   ctx: CanvasRenderingContext2D,
@@ -57,8 +58,12 @@ export async function resizeImage(
 ): Promise<{ blob: Blob } | { error: string }> {
   const bitmap = await createImageBitmap(file);
 
-  canvas.width = maxSize;
-  canvas.height = maxSize;
+  // Never upscale here either: otherwise a small upload would arrive at the
+  // server already enlarged, and the server could no longer tell.
+  const size = coverSquareSize(maxSize, bitmap.width, bitmap.height);
+
+  canvas.width = size;
+  canvas.height = size;
 
   const ctx = canvas.getContext("2d")!;
 

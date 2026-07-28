@@ -7,6 +7,11 @@ import {
   MIN_IMAGE_WIDTH,
   REQUIRED_ASPECT_RATIO,
 } from "@/utils/location-image-constraints";
+import {
+  AVATAR_MAX_SIZE,
+  MIN_AVATAR_WIDTH,
+  coverSquareSize,
+} from "@/utils/avatar-image-constraints";
 import { uploadsDir } from "@/utils/uploads-dir";
 
 // Images are stored on the filesystem under SB_UPLOADS_DIR
@@ -170,7 +175,7 @@ const CONTENT_TYPES: Record<string, string> = {
 export class AvatarImageResourceRepository extends BaseImageResourceRepository<string> {
   override directory = "avatars";
 
-  override minImageWidth = 256;
+  override minImageWidth = MIN_AVATAR_WIDTH;
 
   protected override getEndpoint(filename: string): string {
     return `/media/avatars/${filename}`;
@@ -186,7 +191,23 @@ export class AvatarImageResourceRepository extends BaseImageResourceRepository<s
       return decodeResult;
     }
 
-    return { ok: decodeResult.ok.resize(256, 256, { fit: "cover" }) };
+    // Crop to a square without ever enlarging: upscaling invents no detail and
+    // only costs bytes, so a small upload stays at its own size.
+    const size = coverSquareSize(
+      AVATAR_MAX_SIZE,
+      metadata.width,
+      metadata.height
+    );
+
+    // The base check only looks at the width, which a flat panorama passes
+    // while its square crop lands well under the minimum.
+    if (size < MIN_AVATAR_WIDTH) {
+      return {
+        error: `Image is too small (min ${MIN_AVATAR_WIDTH}×${MIN_AVATAR_WIDTH}px)`,
+      };
+    }
+
+    return { ok: decodeResult.ok.resize(size, size, { fit: "cover" }) };
   }
 }
 
