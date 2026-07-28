@@ -45,6 +45,7 @@ import {
 } from "@headlessui/react";
 import { ArrowPathIcon, ChevronUpDownIcon } from "@heroicons/react/16/solid";
 import { MarkdownHint } from "@/app/(site)/markdown";
+import { containsIgnoringAccents } from "@/utils/utils";
 
 const profileFormSchema = profileSchema.extend({
   avatar: z.instanceof(FileList).nullable().optional(),
@@ -655,10 +656,10 @@ function FreeformCombobox({
     }
   };
 
-  const query = (value ?? "").trim().toLowerCase();
+  const query = value?.trim();
   const shownOptions =
     filterOptions && query
-      ? options.filter((o) => o.toLowerCase().includes(query))
+      ? options.filter((o) => containsIgnoringAccents(o, query))
       : options;
 
   return (

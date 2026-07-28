@@ -5,6 +5,7 @@ import { Combobox, Transition } from "@headlessui/react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/16/solid";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { LockIcon } from "@/app/(site)/lock-icon";
+import { containsIgnoringAccents } from "@/utils/utils";
 
 export function SelectHosts<
   T extends { id: string; name: string; authProtected?: boolean },
@@ -23,7 +24,7 @@ export function SelectHosts<
   const { guests, hosts, setHosts, id, selectMany, showProtected } = props;
   const [query, setQuery] = useState("");
   const filteredGuests = guests
-    .filter((guest) => guest.name.toLowerCase().includes(query.toLowerCase()))
+    .filter((guest) => containsIgnoringAccents(guest.name, query))
     .filter((guest) => guest.name.trim().length > 0)
     .sort((a, b) => a.name.localeCompare(b.name))
     .slice(0, 20);

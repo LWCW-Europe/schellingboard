@@ -1,4 +1,5 @@
 import type { Attendee } from "@/db/repositories/interfaces";
+import { containsIgnoringAccents, equalsIgnoringAccents } from "./utils";
 
 // Rank tiers, higher wins. Exact declared-language matches must beat
 // incidental free-text mentions ("Italian" the speaker vs. "Italian food"
@@ -8,10 +9,10 @@ const STRUCTURED = 2;
 const FREE_TEXT = 1;
 
 function rank(attendee: Attendee, query: string): number {
-  if (attendee.name.toLowerCase().includes(query)) return NAME;
+  if (containsIgnoringAccents(attendee.name, query)) return NAME;
 
   const languages = attendee.languages ?? [];
-  if (languages.some((l) => l.toLowerCase() === query)) return STRUCTURED;
+  if (languages.some((l) => equalsIgnoringAccents(l, query))) return STRUCTURED;
 
   // Contacts are deliberately not searched: matching them serves scrapers,
   // not people scanning the directory.
@@ -22,7 +23,8 @@ function rank(attendee: Attendee, query: string): number {
     ...languages,
     ...(attendee.prompts ?? []).map((p) => p.answer),
   ];
-  if (freeText.some((t) => t?.toLowerCase().includes(query))) return FREE_TEXT;
+  if (freeText.some((t) => t && containsIgnoringAccents(t, query)))
+    return FREE_TEXT;
 
   return 0;
 }
@@ -40,7 +42,7 @@ export function searchAttendees<A extends Attendee>(
   const byName = (a: A, b: A) =>
     a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
 
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   if (!q) return [...attendees].sort(byName);
 
   return attendees

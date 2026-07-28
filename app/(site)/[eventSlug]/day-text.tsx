@@ -6,6 +6,7 @@ import { useContext } from "react";
 import { UserContext, EventContext } from "../context";
 import type { DayWithSessions } from "@/app/(site)/context";
 import type { Rsvp, Location, Session } from "@/db/repositories/interfaces";
+import { containsIgnoringAccents } from "@/utils/utils";
 
 export function DayText(props: {
   locations: Location[];
@@ -88,13 +89,15 @@ export function DayText(props: {
 
 function sessionMatchesSearch(session: Session, search: string) {
   return (
-    checkStringForSearch(search, session.title ?? "") ||
-    checkStringForSearch(search, session.description ?? "") ||
-    checkStringForSearch(search, session.hosts.map((h) => h.name).join(" ")) ||
-    checkStringForSearch(search, session.locations.map((l) => l.name).join(" "))
+    containsIgnoringAccents(session.title ?? "", search) ||
+    containsIgnoringAccents(session.description ?? "", search) ||
+    containsIgnoringAccents(
+      session.hosts.map((h) => h.name).join(" "),
+      search
+    ) ||
+    containsIgnoringAccents(
+      session.locations.map((l) => l.name).join(" "),
+      search
+    )
   );
-}
-
-function checkStringForSearch(search: string, string: string) {
-  return string.toLowerCase().includes(search.toLowerCase());
 }
