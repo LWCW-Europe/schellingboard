@@ -709,7 +709,7 @@ function FreeformCombobox({
             ))}
           </div>
           <div className="border-t border-gray-100 px-4 py-2 text-xs text-gray-500">
-            Pick one or type your own
+            Pick one or type any text
           </div>
         </ComboboxOptions>
       </Combobox>
