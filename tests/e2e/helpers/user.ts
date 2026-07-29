@@ -44,8 +44,19 @@ export async function openNameSwitcher(page: Page): Promise<Locator> {
   return nameBox;
 }
 
-// Selects the current identity via the site header.
+// Selects the current identity via the site header. Only for unprotected
+// guests: a protected one answers the pick with a password form instead, which
+// keeps the modal open (see user-auth.spec.ts, which drives that by hand).
 export async function selectUser(page: Page, name: string | RegExp) {
   await openNameSwitcher(page);
   await page.getByRole("option", { name }).click();
+  // Picking a name is a server round trip (selectUserAction); only once it
+  // lands does the modal close and the header chip take the new name.
+  // Returning any earlier hands the next step a page whose identity is still
+  // the old one, under a modal that is still covering it — the usual cause of
+  // "the click did nothing" flakes once parallel workers slow the server down.
+  await expect(page.getByLabel("My name is:")).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: /^Your name: / })
+  ).toBeVisible();
 }
