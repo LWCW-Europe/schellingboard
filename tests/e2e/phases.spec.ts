@@ -8,6 +8,12 @@ import { selectUser } from "./helpers/user";
 //   Conference Gamma — scheduling phase
 // Assertions target the deterministic event-specific "Lightning Talks" seed
 // proposals, which other parallel tests never modify.
+//
+// The vote buttons on a proposal row are rendered for anyone who is not one of
+// its hosts, and the phase only decides whether they are *enabled*. So these
+// tests always act as a non-host of the row they assert on (Alice hosts
+// Alpha's Lightning Talks, Bob Beta's, Charlie Gamma's) — asserting the
+// buttons are absent for a host would pass no matter what the phase is.
 
 test("proposal phase: proposing is open, voting is not yet available", async ({
   page,
@@ -18,15 +24,15 @@ test("proposal phase: proposing is open, voting is not yet available", async ({
   await expect(page).toHaveURL(/\/Conference-Alpha\/proposals$/);
 
   // Even with a user selected, voting is not available because of the phase:
-  // proposal rows offer no voting buttons and quick voting is disabled
-  await selectUser(page, /Alice Test/i);
+  // every vote button on a proposal row is disabled and quick voting is too
+  await selectUser(page, /Bob Test/i);
   const row = page.getByRole("row", {
     name: /Conference Alpha Lightning Talks/,
   });
   await expect(row).toBeVisible();
-  await expect(row.getByRole("button", { name: "❤️" })).toHaveCount(0);
-  await expect(row.getByRole("button", { name: "⭐" })).toHaveCount(0);
-  await expect(row.getByRole("button", { name: "👋🏽" })).toHaveCount(0);
+  await expect(row.getByRole("button", { name: "❤️" })).toBeDisabled();
+  await expect(row.getByRole("button", { name: "⭐" })).toBeDisabled();
+  await expect(row.getByRole("button", { name: "👋🏽" })).toBeDisabled();
   await expect(
     page.getByRole("link", { name: /Go to Quick Voting!/i })
   ).toHaveClass(/opacity-50|cursor-not-allowed/);
@@ -78,8 +84,8 @@ test("dev fake clock: time travel moves a proposal-phase event into voting", asy
   const row = page.getByRole("row", {
     name: /Conference Alpha Lightning Talks/,
   });
-  // Proposal phase: no voting buttons yet.
-  await expect(row.getByRole("button", { name: "❤️" })).toHaveCount(0);
+  // Proposal phase: the interested-vote button is there but not yet usable.
+  await expect(row.getByRole("button", { name: "❤️" })).toBeDisabled();
 
   // Alpha's voting phase opens 7 days out; jump +14 days to land inside it.
   await page.getByRole("button", { name: "+7d" }).click();
@@ -113,5 +119,7 @@ test("scheduling phase: grid is interactive, proposing and voting are over", asy
     name: /Conference Gamma Lightning Talks/,
   });
   await expect(row).toBeVisible();
+  // Alice hosts none of Gamma's Lightning Talks, so this really is the phase
+  // taking the vote buttons away, not host status hiding them.
   await expect(row.getByRole("button", { name: "❤️" })).toHaveCount(0);
 });

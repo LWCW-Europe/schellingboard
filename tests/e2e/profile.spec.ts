@@ -210,16 +210,15 @@ test.describe("Edit profile", () => {
     await page.getByLabel("Ask me about").fill("Urban beekeeping");
 
     // Suggested prompts can be swapped in place for a different one. The
-    // suggestion is random, so find which pool prompt is on screen.
-    const visiblePoolPrompts = async () => {
-      const shown: string[] = [];
-      for (const prompt of PROMPT_POOL) {
-        if (await page.getByText(prompt, { exact: true }).isVisible()) {
-          shown.push(prompt);
-        }
-      }
-      return shown;
-    };
+    // suggestion is random, so find which pool prompt is on screen. One
+    // locator matching the whole pool, not one round trip per prompt: this
+    // runs on every iteration of the poll below, and 60 round trips a go is
+    // what pushed this test past its timeout under parallel load.
+    const anyPoolPrompt = new RegExp(
+      `^(${PROMPT_POOL.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})$`
+    );
+    const visiblePoolPrompts = () =>
+      page.getByText(anyPoolPrompt).filter({ visible: true }).allTextContents();
     await page.getByRole("button", { name: "Suggest a prompt" }).click();
     const [suggestedPrompt, ...extraBefore] = await visiblePoolPrompts();
     expect(suggestedPrompt).toBeDefined();
@@ -364,6 +363,12 @@ test("Back to attendees preserves the search query", async ({ page }) => {
 
   await page.getByLabel("Search").fill("Test");
   await page.getByRole("button", { name: "Search", exact: true }).click();
+  // Search is a server round trip. Wait for the query to reach the URL before
+  // going on: the seeded directory lists everyone alphabetically, so the "Test"
+  // guests are on page 1 unfiltered too — asserting only on them would let the
+  // test proceed on the pre-search page and then follow a link that carries no
+  // query at all, which is what "Back to attendees" is supposed to restore.
+  await expect(page).toHaveURL(/[?&]q=Test/);
   await expect(page.getByRole("link", { name: "Alice Test" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Bob Test" })).toBeVisible();
 
