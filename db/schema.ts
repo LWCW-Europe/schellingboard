@@ -5,6 +5,8 @@ import {
   integer,
   primaryKey,
   uniqueIndex,
+  index,
+  type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
 import type { ProfileContact, ProfilePrompt } from "./repositories/interfaces";
 
@@ -254,6 +256,36 @@ export const rsvps = sqliteTable(
       .references(() => guests.id, { onDelete: "cascade" }),
   },
   (t) => [uniqueIndex("rsvps_session_guest_unique").on(t.sessionId, t.guestId)]
+);
+
+export const comments = sqliteTable("comments", {
+  id: text("id").primaryKey(),
+  authorId: text("author_id").references(() => guests.id, {
+    onDelete: "set null",
+  }),
+  parentId: text("parent_id").references((): AnySQLiteColumn => comments.id, {
+    onDelete: "cascade",
+  }),
+  body: text("body").notNull(),
+  deleted: integer("deleted", { mode: "boolean" }).notNull().default(false),
+  createdTime: text("created_time").notNull(),
+  editedTime: text("edited_time"),
+});
+
+export const proposalComments = sqliteTable(
+  "proposal_comments",
+  {
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    proposalId: text("proposal_id")
+      .notNull()
+      .references(() => sessionProposals.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.commentId] }),
+    index("proposal_comments_proposal_idx").on(t.proposalId),
+  ]
 );
 
 export const votes = sqliteTable(

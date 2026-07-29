@@ -4,6 +4,7 @@ import path from "path";
 import * as schema from "./schema";
 import { resolveDbPath, runMigrations } from "./migrate";
 import { SqliteAuthCodesRepository } from "./repositories/sqlite/auth-codes";
+import { SqliteCommentsRepository } from "./repositories/sqlite/comments";
 import { SqliteDaysRepository } from "./repositories/sqlite/days";
 import { SqliteEventsRepository } from "./repositories/sqlite/events";
 import { SqliteGuestsRepository } from "./repositories/sqlite/guests";
@@ -15,6 +16,7 @@ import { SqliteSessionsRepository } from "./repositories/sqlite/sessions";
 import { SqliteVotesRepository } from "./repositories/sqlite/votes";
 import type {
   AuthCodesRepository,
+  CommentsRepository,
   DaysRepository,
   EventsRepository,
   GuestsRepository,
@@ -28,6 +30,7 @@ import type {
 
 export type Repositories = {
   authCodes: AuthCodesRepository;
+  comments: CommentsRepository;
   days: DaysRepository;
   events: EventsRepository;
   guests: GuestsRepository;
@@ -46,6 +49,7 @@ function buildRepositories(sqlite: Database.Database): Repositories {
   const db = drizzle(sqlite, { schema });
   return {
     authCodes: new SqliteAuthCodesRepository(db),
+    comments: new SqliteCommentsRepository(db),
     days: new SqliteDaysRepository(db),
     events: new SqliteEventsRepository(db),
     guests: new SqliteGuestsRepository(db),

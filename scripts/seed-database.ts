@@ -1117,6 +1117,8 @@ function clearAll() {
   // Validate the uploads dir before opening the DB or deleting anything.
   const uploadsBase = assertSafeUploadsDir(uploadsDir());
   const db = openDb();
+  db.delete(schema.proposalComments).run();
+  db.delete(schema.comments).run();
   db.delete(schema.votes).run();
   db.delete(schema.rsvps).run();
   db.delete(schema.sessionLocations).run();
@@ -1548,6 +1550,151 @@ async function seedTestData() {
     db.insert(schema.votes).values(voteRows).run();
   }
   console.log(`  ✅ Created ${voteRows.length} votes`);
+
+  console.log("  💬 Creating test comments...");
+  const commentRows: (typeof schema.comments.$inferInsert)[] = [];
+  const proposalCommentRows: (typeof schema.proposalComments.$inferInsert)[] =
+    [];
+
+  const commentOpeners = [
+    "Really keen on this one — I've wanted to talk about it for ages.",
+    "Would you be open to **co-hosting**? I've run something similar before.",
+    "How much background knowledge are you assuming? Asking for a friend who is me.",
+    "This overlaps a bit with the other proposal on the same topic — worth merging?",
+    "Could this be scheduled later in the day? It clashes with the workshop block.",
+  ];
+  const commentReplies = [
+    "Good question — no background needed, I'll start from scratch.",
+    "Yes please, drop me a message and we'll plan it together.",
+    "I'd rather keep them separate, they go in quite different directions.",
+    "Later works for me. I'll flag it when scheduling opens.",
+  ];
+  const commentFollowUps = [
+    "Perfect, count me in.",
+    "That makes sense, thanks for explaining!",
+  ];
+
+  const addComment = (
+    proposalId: string,
+    guestId: string,
+    body: string,
+    minutesAgo: number,
+    parentId?: string,
+    edited?: boolean
+  ) => {
+    const id = nanoid();
+    const createdTime = new Date(Date.now() - minutesAgo * 60_000);
+    commentRows.push({
+      id,
+      authorId: guestId,
+      parentId: parentId ?? null,
+      body,
+      createdTime: createdTime.toISOString(),
+      editedTime: edited
+        ? new Date(createdTime.getTime() + 4 * 60_000).toISOString()
+        : null,
+    });
+    proposalCommentRows.push({ commentId: id, proposalId });
+    return id;
+  };
+
+  eventRows.forEach((ev) => {
+    const commentable = proposalRows.filter(
+      (p) =>
+        p.eventId === ev.id &&
+        !eventSpecificTitlePatterns.some((re) => re.test(p.title))
+    );
+
+    commentable.forEach((proposal, index) => {
+      if (seededRandom() < 0.45) return;
+
+      const nonHosts = guestRows.filter(
+        (g) =>
+          !proposalHostRows.some(
+            (ph) => ph.proposalId === proposal.id && ph.guestId === g.id
+          )
+      );
+      if (nonHosts.length < 3) return;
+      const host = proposalHostRows.find(
+        (ph) => ph.proposalId === proposal.id
+      )?.guestId;
+
+      const opener = addComment(
+        proposal.id,
+        nonHosts[index % nonHosts.length].id,
+        commentOpeners[index % commentOpeners.length],
+        600 - index * 7,
+        undefined,
+        index % 5 === 0
+      );
+
+      if (host && seededRandom() < 0.7) {
+        const reply = addComment(
+          proposal.id,
+          host,
+          commentReplies[index % commentReplies.length],
+          540 - index * 7,
+          opener
+        );
+        if (seededRandom() < 0.5) {
+          addComment(
+            proposal.id,
+            nonHosts[(index + 1) % nonHosts.length].id,
+            commentFollowUps[index % commentFollowUps.length],
+            480 - index * 7,
+            reply
+          );
+        }
+      }
+
+      if (seededRandom() < 0.3) {
+        addComment(
+          proposal.id,
+          nonHosts[(index + 2) % nonHosts.length].id,
+          "Seconding the above — this is the session I'd most like to attend.",
+          420 - index * 7
+        );
+      }
+    });
+  });
+
+  // A known thread with two sibling replies, so tests can assert on branching
+  // without having to build it by hand.
+  const branching = proposalRows.find(
+    (p) =>
+      p.title ===
+      "Conference Gamma Panel: Industry Leaders Share Their Insights"
+  );
+  if (branching) {
+    const asker = guestRows[3].id;
+    const root = addComment(
+      branching.id,
+      asker,
+      "Who else is on the panel?",
+      300
+    );
+    addComment(branching.id, guestRows[4].id, "I'd like to join.", 240, root);
+    addComment(branching.id, guestRows[5].id, "So would I.", 180, root);
+  }
+
+  const deletedWithReply = commentRows.find(
+    (c) => c.parentId && commentRows.some((p) => p.id === c.parentId)
+  );
+  if (deletedWithReply?.parentId) {
+    const tombstone = commentRows.find(
+      (c) => c.id === deletedWithReply.parentId
+    )!;
+    tombstone.authorId = null;
+    tombstone.body = "";
+    tombstone.deleted = true;
+    tombstone.editedTime = null;
+  }
+
+  if (commentRows.length > 0) {
+    db.insert(schema.comments).values(commentRows).run();
+    db.insert(schema.proposalComments).values(proposalCommentRows).run();
+  }
+  console.log(`  ✅ Created ${commentRows.length} comments`);
 
   // Sessions: one keynote + lunch blockers per event, plus a filled-out
   // schedule for Conference Gamma (scheduling phase).

@@ -640,6 +640,40 @@ export interface SessionProposalsRepository {
   delete(id: string): Promise<void>;
 }
 
+// ── Comments ──────────────────────────────────────────────────────────────────
+
+export type CommentAuthor = Pick<Guest, "id" | "name">;
+
+export type Comment = {
+  id: string;
+  parentId: string | null;
+  body: string;
+  deleted: boolean;
+  createdTime: Date;
+  editedTime: Date | null;
+  author: CommentAuthor | null;
+};
+
+export interface CommentsRepository {
+  listByProposal(proposalId: string): Promise<Comment[]>;
+  findById(id: string): Promise<Comment | undefined>;
+  findProposalId(commentId: string): Promise<string | undefined>;
+  createForProposal(data: {
+    proposalId: string;
+    authorId: string;
+    parentId?: string;
+    body: string;
+    createdTime: Date;
+  }): Promise<Comment>;
+  update(id: string, data: { body: string; editedTime: Date }): Promise<void>;
+  /**
+   * Erases the comment. One with replies is kept as a tombstone holding
+   * nothing but its place in the thread; one without is removed outright,
+   * along with any tombstone ancestors it was the last reply to.
+   */
+  delete(id: string): Promise<void>;
+}
+
 // ── Votes ─────────────────────────────────────────────────────────────────────
 
 export type Vote = {
