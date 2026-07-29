@@ -1,4 +1,4 @@
-.PHONY: help dev mailpit build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate www
+.PHONY: help dev mailpit build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed test-e2e-docker format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate www
 
 SHELL := /usr/bin/env bash
 
@@ -17,6 +17,7 @@ help:
 	@printf "  %-28s %s\n" "make test-integration"   "Run integration tests only"
 	@printf "  %-28s %s\n" "make test-e2e"           "Run E2E tests (headless)"
 	@printf "  %-28s %s\n" "make test-e2e-headed"    "Run E2E tests (headed, for local dev)"
+	@printf "  %-28s %s\n" "make test-e2e-docker"    "Run E2E tests against the Docker image"
 	@printf "  %-28s %s\n" "make test-watch"         "Run tests in watch mode"
 	@printf "  %-28s %s\n" "make test-coverage"      "Run tests with coverage"
 	@printf "\nLinting & Formatting:\n"
@@ -40,7 +41,7 @@ help:
 	@printf "  %-28s %s\n" "make install"            "Install dependencies"
 	@printf "  %-28s %s\n" "make install-playwright" "Install Playwright browsers"
 	@printf "\nDocker:\n"
-	@printf "  %-28s %s\n" "make docker-build"       "Build Docker image (tags with git describe output)"
+	@printf "  %-28s %s\n" "make docker-build"       "Build Docker image (tagged with the working tree's version)"
 	@printf "\nCleanup:\n"
 	@printf "  %-28s %s\n" "make clean"              "Remove dev and build artifacts as well as test output"
 	@printf "  %-28s %s\n" "make clean-all"          "Clean + remove node_modules"
@@ -99,6 +100,13 @@ test-e2e: install-playwright
 test-e2e-headed: install-playwright
 	bun set-env.ts test bun x playwright test --headed
 
+# Runs the suite against the production image instead of `next start` — the
+# release sanity check. Builds the image first unless IMAGE names one.
+# Through set-env.ts so the script inherits the test credentials it has to
+# hand to the container.
+test-e2e-docker: install-playwright
+	bun set-env.ts test bash scripts/e2e-docker.sh
+
 format: install
 	bun x prettier --write .
 
@@ -111,7 +119,7 @@ clean:
 	rm -rf .next
 	rm -f next-env.d.ts
 	rm -f data.db data.test.db
-	rm -rf playwright-report test-results
+	rm -rf playwright-report test-results .e2e-docker
 	rm -f tsconfig.tsbuildinfo
 	rm -rf site
 
@@ -164,7 +172,7 @@ www:
 	bash scripts/build-www.sh
 
 docker-build:
-	$(eval APP_VERSION := $(shell git describe --tags --always --dirty))
+	$(eval APP_VERSION := $(shell bun scripts/app-version.js))
 	APP_VERSION=$(APP_VERSION) docker compose build
 	docker tag schellingboard/schellingboard:latest schellingboard/schellingboard:$(APP_VERSION)
 

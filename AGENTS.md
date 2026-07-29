@@ -82,6 +82,7 @@ jj squash --from <commit> --to @ -m "message" -- <path>
 ### Test tiers (short form)
 
 - **E2E** (Playwright): important user workflows only — quality over quantity
+- **E2E against the Docker image** (`make test-e2e-docker`): the same suite against a container. Not part of `make precommit` — run it before a release and after touching the `Dockerfile`, the standalone build, or anything path-, upload- or migration-related. The container runs in UTC, so it catches dates formatted in the ambient time zone; format in the event's zone
 - **Integration** (Vitest, real DB): high coverage of business logic via repositories/server actions
 - **Unit** (Vitest): only for complex isolated functions; never duplicate integration-test coverage
 

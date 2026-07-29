@@ -1,48 +1,4 @@
-import { execFileSync } from "child_process";
-
-/**
- * @param {string} file
- * @param {readonly string[]} args
- */
-function runQuiet(file, args) {
-  try {
-    return execFileSync(file, args, {
-      encoding: "utf-8",
-      cwd: process.cwd(),
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-  } catch {
-    return null;
-  }
-}
-
-function getAppVersion() {
-  // Prefer jj: some workspaces (e.g. `jj workspace add`) have no `.git` dir,
-  // where git commands always fail. Fall back to git for devs without jj.
-  //
-  // Describe the parent, not `@`: `@` is usually an empty working-copy commit,
-  // so its own hash names nothing recognisable. A tag on the parent wins over
-  // its hash, so `jj new v3.1.0` reports "v3.1.0" — matching what `git
-  // describe --tags` gives below. `-dirty` marks actual local changes.
-  const jjVersion = runQuiet("jj", [
-    "log",
-    "-r",
-    "@",
-    "--no-graph",
-    "-T",
-    'parents.map(|p| if(p.tags(), p.tags().map(|t| t.name()).join("+"), ' +
-      'p.commit_id().short(8))).join("+") ++ if(!empty, "-dirty")',
-  ]);
-  if (jjVersion) return jjVersion;
-
-  const gitVersion = runQuiet("git", [
-    "describe",
-    "--tags",
-    "--always",
-    "--dirty",
-  ]);
-  return gitVersion ?? "unknown";
-}
+import { getAppVersion } from "./scripts/app-version.js";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

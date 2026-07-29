@@ -12,3 +12,4 @@ tests
 .github
 coverage
 site
+.e2e-docker

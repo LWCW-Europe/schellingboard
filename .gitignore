@@ -60,6 +60,10 @@ data.*.db-journal
 /uploads
 /uploads-test
 
+# Database and uploads bind-mounted into the container by
+# `make test-e2e-docker` (see CONTRIBUTING.md § Testing the Docker image)
+/.e2e-docker
+
 # Nix
 flake.nix
 flake.lock

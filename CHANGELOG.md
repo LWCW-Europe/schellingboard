@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **"Voting will be enabled at …" now shows the time on your own clock**: on the proposals list and a proposal's page, the note saying when voting or scheduling opens was given in the time zone of the machine running the site, so a site hosted abroad announced the wrong time. It now shows the time in your own time zone — useful when you are reading it weeks before travelling to the venue — and names that zone whenever it differs from the event's, the same way comment timestamps do
 
+### Internal
+
+- `make test-e2e-docker` runs the E2E suite against a container built from the working tree, instead of the `next start` server the other E2E runs use — the only tier that exercises the image we actually publish, including its standalone build, its `/data` volume and its UTC clock. It is a step in the release checklist, between tagging and pushing the tag, and it is what found the time zone bug fixed above. See [CONTRIBUTING.md § Testing the Docker image](CONTRIBUTING.md#testing-the-docker-image)
+
 ## [3.2.0] - 2026-07-29
 
 ### Added

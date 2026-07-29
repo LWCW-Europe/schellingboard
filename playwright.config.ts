@@ -47,6 +47,16 @@ function findFreePort(): number {
   return port;
 }
 
+// `make test-e2e-docker` starts the production image itself and points this run
+// at it (see scripts/e2e-docker.sh), so no server may be started here — not even
+// on CI, where reuseExistingServer is off.
+const externalServer = process.env.E2E_EXTERNAL_SERVER === "1";
+if (externalServer && !process.env.E2E_PORT) {
+  throw new Error(
+    "E2E_EXTERNAL_SERVER=1 requires E2E_PORT — the port the running server listens on"
+  );
+}
+
 // This config module is re-evaluated in every Playwright worker process, so the
 // chosen port is frozen into E2E_PORT (inherited by workers) to keep baseURL and
 // the web server in agreement. E2E_PORT can also be set by hand to target an
@@ -130,12 +140,14 @@ export default defineConfig({
   /* Run a production build before starting the tests. Testing against
    * `next dev` is flaky: chunks are compiled on demand and parallel
    * workers can race, causing intermittent ChunkLoadErrors. */
-  webServer: {
-    command: `bun set-env.ts test "next build && next start -p ${port}"`,
-    url: baseURL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-  },
+  webServer: externalServer
+    ? undefined
+    : {
+        command: `bun set-env.ts test "next build && next start -p ${port}"`,
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 180_000,
+      },
 
   expect: { timeout: 10_000 },
 });

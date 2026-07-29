@@ -331,6 +331,7 @@ Every code change must follow red → green → refactor. **Do not skip or reord
 make test                # Run unit and integration tests (Vitest)
 make test-e2e            # Run E2E tests (headless)
 make test-e2e-headed     # Run E2E tests (headed, for local dev)
+make test-e2e-docker     # Run E2E tests against the production Docker image
 ```
 
 **Warning**: E2E tests reset the test database before each run. Do not run against production data.
@@ -379,6 +380,68 @@ Run against a different environment (e.g. dev database — still resets it):
 ```bash
 bun set-env.ts dev bun x playwright test
 ```
+
+### Testing the Docker image
+
+`make test-e2e` runs the suite against `next build && next start`, which is not
+what we ship. The image runs the standalone build as `node server.js`, as a
+different user, with the database, migrations and uploads on a mounted `/data`
+volume. `make test-e2e-docker` runs the same suite against a container built
+from the working tree, which is the only tier that covers that gap:
+
+```bash
+make test-e2e-docker                     # build the image, then run the suite against it
+IMAGE=schellingboard/schellingboard:v3.1.0 \
+  bun set-env.ts test bash scripts/e2e-docker.sh    # test an existing image instead of building
+
+# A subset, same arguments as `playwright test`:
+bun set-env.ts test bash scripts/e2e-docker.sh tests/e2e/proposals.spec.ts
+```
+
+It is not part of `make precommit` — it builds an image and takes a few
+minutes. Run it before a release (see
+[Releasing a New Version](#releasing-a-new-version)) and after changing the
+`Dockerfile`, the standalone build, or anything touching paths, uploads or
+migrations.
+
+What it does, and why each piece is there:
+
+- **Picks a free port** and starts the container on it, then waits for
+  `/api/health`.
+- **Builds `schellingboard/schellingboard:<version>`**, so a throwaway test
+  build never takes the place of the published
+  `schellingboard/schellingboard:latest` in `docker images`. The version is the
+  one `scripts/app-version.js` prints, which is also what `make docker-build`
+  passes as `APP_VERSION` and what the footer shows.
+- **Bind-mounts `.e2e-docker/`** (gitignored) as `/data`. Seeding runs on the
+  host, as usual, and writes to the same SQLite file and uploads directory the
+  container reads — so no seeding code has to exist inside the image. The
+  directory is deleted at the start of every run, since a stale database hides
+  exactly the failures this run looks for. Seeding migrates the database first,
+  so what the container's own migration run covers is that `drizzle/` shipped
+  and loads, not applying migrations to an empty database.
+- **Runs the container as your own uid** (`--user`), so the files it writes
+  into the bind mount don't end up owned by the image's uid 1001 and
+  unremovable. As a consequence `/app` isn't writable, so Next's image
+  optimizer gets a tmpfs for its cache — otherwise every optimized image logs
+  an `EACCES`.
+- **Starts mailpit if it isn't already running**, because once the mail
+  variables are set the email specs fail rather than skip. One it started
+  itself is stopped again afterwards, unless the run failed — then it is left
+  up, since its web UI is where a failing email test is diagnosed.
+- **Points `SITE_URL` and the SMTP host at the container's view of the host**
+  (`host.docker.internal`), so emails link back to the right port and reach
+  mailpit.
+
+Playwright starts no server of its own here: the script sets
+`E2E_EXTERNAL_SERVER=1` and `E2E_PORT`, and `playwright.config.ts` omits its
+`webServer` when it sees them.
+
+**The container runs in UTC.** That is what makes this tier worth having: with
+`next start`, the server and the browser share your machine's timezone, so a
+component that formats a date in the ambient zone renders identically on both
+sides and its hydration mismatch stays invisible. In the image it does not.
+Dates must be formatted in an explicit zone — the event's — never the process's.
 
 ### E2E conventions
 
@@ -552,7 +615,7 @@ what docmd produced.
 ## Releasing a New Version
 
 1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header) and add a fresh empty `## [Unreleased]` section above it. Update the compare links at the bottom of the file: the new version's link should point from the previous release's endpoint to the new tag (`vX.Y.Z`), and `[Unreleased]` should point from the new tag to `HEAD`. Commit and merge this like any other change.
-2. **Tag the resulting commit on `main`**. jj cannot push tags to a Git remote, so use `git` for this step:
+2. **Tag the resulting commit on `main`, locally for now**. jj cannot push tags to a Git remote, so use `git` for this step:
 
    ```bash
    VERSION=v3.0.0
@@ -561,12 +624,34 @@ what docmd produced.
 
    git fetch origin main
    git tag $VERSION origin/main
+   ```
+
+3. **Sanity-check the image that will be published** — build it from the tag and
+   run the E2E suite against a container. This is the last chance to catch a
+   fault that exists only in the packaged image (a file the standalone build
+   didn't copy, a path that resolves differently under `/data`, a date rendered
+   in the server's timezone rather than the event's) — no other test tier runs
+   the artifact we actually ship. See
+   [Testing the Docker image](#testing-the-docker-image).
+
+   ```bash
+   git checkout $VERSION
+   make test-e2e-docker
+   ```
+
+   The tag is still local at this point, so a failure costs nothing: fix it on
+   `main`, delete the tag (`git tag -d $VERSION`), and start again from step 1.
+
+4. **Push the tag**, which is the point of no return — it publishes the
+   documentation:
+
+   ```bash
    git push origin $VERSION
    ```
 
-3. **Publish the Docker images** — see below.
+5. **Publish the Docker images** — see below.
 
-Pushing the tag also publishes the documentation: the docs site rebuilds and
+Pushing the tag publishes the documentation: the docs site rebuilds and
 serves `docs/public/` as of that tag at its root. Docs are versioned per minor
 release, so `v3.2.1` republishes the `3.2` documentation.
 
@@ -580,7 +665,7 @@ For a release, push four tags: the full version, `major.minor`, `major`, and `la
 docker login
 git checkout $VERSION
 make clean
-make docker-build   # builds and locally tags :latest and :$VERSION (via git describe)
+make docker-build   # builds and locally tags :$VERSION
 docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MINOR
 docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MAJOR
 
@@ -590,7 +675,7 @@ docker push schellingboard/schellingboard:$MAJOR
 docker push schellingboard/schellingboard:latest   # omit if not the newest release
 ```
 
-`make docker-build` derives `$VERSION` from `git describe --tags`, so the release commit must already be tagged with the exact version (e.g. `v3.0.0`) before running it.
+`make docker-build` derives `$VERSION` with `scripts/app-version.js` (the nearest tag, via `jj` or `git`), so the release commit must already be tagged with the exact version (e.g. `v3.0.0`) before running it.
 
 ## Version Control
 
