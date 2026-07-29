@@ -1017,6 +1017,45 @@ describe("adminDeleteSessionAction", () => {
     expect(await repos.locations.findById(loc.id)).toBeDefined();
   });
 
+  it("emails hosts and RSVP'd attendees after deletion", async () => {
+    vi.stubEnv("SITE_URL", "https://site.example");
+    const repos = getRepositories();
+    const event = await createEvent();
+    const host = await createGuest({
+      name: "Host",
+      email: "host@test.example",
+    });
+    const attendee = await createGuest({
+      name: "Attendee",
+      email: "attendee@test.example",
+    });
+    const session = await createSession(event.id, {
+      title: "Workshop",
+      hostIds: [host.id],
+    });
+    await repos.rsvps.create({
+      sessionId: session.id,
+      guestId: attendee.id,
+    });
+    vi.mocked(sendMail).mockReset();
+
+    const result = await adminDeleteSessionAction({ id: session.id });
+    expect(result.ok).toBe(true);
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((call) => call[0].to);
+    expect(recipients.sort()).toEqual([
+      "attendee@test.example",
+      "host@test.example",
+    ]);
+    expect(
+      vi
+        .mocked(sendMail)
+        .mock.calls.every(([message]) =>
+          message.subject.startsWith("Session deleted:")
+        )
+    ).toBe(true);
+  });
+
   it("revalidates the public event layout so attendees see the removal", async () => {
     const event = await createEvent();
     const session = await createSession(event.id);

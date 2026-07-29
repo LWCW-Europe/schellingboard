@@ -8,6 +8,8 @@ import { sessionSlotAlignmentError } from "@/utils/day-window";
 import {
   notifyCohostsAdded,
   notifySessionChanged,
+  notifySessionDeleted,
+  rsvpGuestIdsToNotify,
 } from "@/utils/notifications";
 import type { AdminActionResult } from "./admin-guests";
 
@@ -234,6 +236,8 @@ export async function adminDeleteSessionAction(input: {
   const session = await sessions.findById(input.id);
   if (!session) return { ok: false, error: "Session not found" };
 
+  const rsvpGuestIds = await rsvpGuestIdsToNotify(input.id);
+
   try {
     await sessions.delete(input.id);
   } catch {
@@ -241,5 +245,10 @@ export async function adminDeleteSessionAction(input: {
   }
 
   await revalidateEventPaths(session.eventId);
+  await notifySessionDeleted({
+    session,
+    rsvpGuestIds,
+    changedById: null,
+  });
   return { ok: true };
 }

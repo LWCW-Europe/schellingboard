@@ -30,6 +30,7 @@ import { POST as addPOST } from "@/app/api/add-session/route";
 import { POST } from "@/app/api/delete-session/route";
 import type { SessionParams } from "@/app/api/session-form-utils";
 import type { Day, Guest, Location } from "@/db/repositories/interfaces";
+import { sendMail } from "@/utils/mailer";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
@@ -177,6 +178,58 @@ describe("POST /api/delete-session", () => {
 
     const after = await getRepositories().rsvps.listByGuest(attendee.id);
     expect(after).toHaveLength(0);
+  });
+
+  it("emails other hosts and RSVP'd attendees after deletion", async () => {
+    vi.stubEnv("SITE_URL", "https://site.example");
+    const event = await createEvent({ phase: "scheduling" });
+    const deletingHost = await createGuest({
+      name: "Deleting Host",
+      email: "deleting@test.example",
+      eventId: event.id,
+    });
+    const otherHost = await createGuest({
+      name: "Other Host",
+      email: "other-host@test.example",
+      eventId: event.id,
+    });
+    const attendee = await createGuest({
+      name: "Attendee",
+      email: "attendee@test.example",
+    });
+    const location = await createLocation();
+    const day = await createDay(event.id);
+    const sessionId = await createScheduledSession(
+      event.id,
+      deletingHost,
+      location,
+      day,
+      { hosts: [deletingHost, otherHost] }
+    );
+    await getRepositories().rsvps.create({
+      sessionId,
+      guestId: attendee.id,
+    });
+    vi.mocked(sendMail).mockReset();
+
+    const res = await POST(
+      makeDeleteReq(sessionId, { editorGuestId: deletingHost.id })
+    );
+    expect(res.ok).toBe(true);
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((call) => call[0].to);
+    expect(recipients.sort()).toEqual([
+      "attendee@test.example",
+      "other-host@test.example",
+    ]);
+    expect(recipients).not.toContain("deleting@test.example");
+    expect(
+      vi
+        .mocked(sendMail)
+        .mock.calls.every(([message]) =>
+          message.subject.startsWith("Session deleted:")
+        )
+    ).toBe(true);
   });
 
   it("rejects a non-host attempting to delete", async () => {

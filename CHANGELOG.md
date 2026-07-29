@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Emails when a session is deleted**: hosts and RSVP'd attendees are now told when a session disappears, not only when it moves. It uses the same two settings attendees already have for session changes, so nobody has anything new to turn on
+
 ## [3.2.0] - 2026-07-29
 
 ### Added
