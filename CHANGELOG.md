@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Email configuration in Docker Compose**: `SITE_URL` now reaches the app when it is set in the Docker environment file, so enabling email no longer prevents the container from starting
 - **"RSVP'd" view no longer shows every session**: before you had RSVP'd to anything, the RSVP'd view listed the whole schedule instead of nothing. It now always shows only the sessions you have RSVP'd to or are hosting
 - **Saved passwords no longer get mixed up**: browsers couldn't tell this site's different passwords apart — the site password, the organizer password, and each attendee's own password all looked like the same login — so a saved password could be overwritten or offered in the wrong place. Each is now saved as its own entry
 - **Emails about a session's time now match the schedule**: when a session was rescheduled or you were added as a co-host, the emailed start time didn't account for the break at the start of the slot, showing a time earlier than what the schedule actually displayed
