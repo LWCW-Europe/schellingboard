@@ -11,18 +11,18 @@ filled in — the board, and the focal point the name refers to.
 
 ## Files
 
-| File                   | Use                                                    |
-| ---------------------- | ------------------------------------------------------ |
-| `logo.svg`             | The default: mark plus wordmark, on light backgrounds  |
-| `logo-reversed.svg`    | The same, on dark backgrounds                          |
-| `logo-mono.svg`        | Single ink, for print or anywhere colour is a problem  |
-| `logo-stacked.svg`     | Mark above the wordmark, for narrow or square space    |
-| `icon.svg`             | The mark alone, at 32px and up                         |
-| `icon-reversed.svg`    | The mark alone, on dark backgrounds                    |
-| `icon-mono.svg`        | The mark alone, single ink                             |
-| `wordmark.svg`         | The name alone                                         |
-| `favicon.svg`          | A heavier cut of the mark, for 16–48px only            |
-| `apple-touch-icon.png` | 180×180, white background (iOS renders alpha as black) |
+| File                   | Use                                                          |
+| ---------------------- | ------------------------------------------------------------ |
+| `logo.svg`             | The default: mark plus wordmark, on light backgrounds        |
+| `logo-reversed.svg`    | The same, on dark backgrounds                                |
+| `logo-mono.svg`        | Single ink, for print or anywhere colour is a problem        |
+| `logo-stacked.svg`     | Mark above the wordmark, for narrow or square space          |
+| `icon.svg`             | The mark alone, at 32px and up                               |
+| `icon-reversed.svg`    | The mark alone, on dark backgrounds                          |
+| `icon-mono.svg`        | The mark alone, single ink                                   |
+| `wordmark.svg`         | The name alone                                               |
+| `favicon.svg`          | A heavier cut of the mark, for 16–48px only, dark-mode aware |
+| `apple-touch-icon.png` | 180×180, white background (iOS renders alpha as black)       |
 
 ## The two cuts
 
@@ -31,6 +31,16 @@ Montserrat Bold beside it in the lockup. That stroke turns to grey mush below
 about 32px, so `favicon.svg` redraws the same mark at 8 units on coordinates
 that land on whole pixels at 16px. **Use `favicon.svg` for browser chrome and
 `icon.svg` everywhere else.**
+
+## Dark mode
+
+`favicon.svg` carries its own `prefers-color-scheme: dark` rule, turning the ink
+grid white the way `icon-reversed.svg` does — a tab strip is dark in dark mode
+and the ink mark vanishes into it. The other files have separate reversed cuts
+instead, because the background they sit on is the page's, not the browser's.
+
+`public/favicon.ico` can't do this (ICO has no media queries), so it stays the
+light cut for browsers with no SVG icon support.
 
 ## Colours
 
