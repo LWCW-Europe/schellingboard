@@ -22,6 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { sessionProposalSchema } from "@/model/session";
 import { z } from "zod";
 import { MarkdownTextarea } from "@/app/components/markdown-textarea";
+import { FormErrorSummary } from "@/app/components/form-error-summary";
 import { setActionErrors } from "@/utils/forms";
 
 export function SessionProposalForm(props: {
@@ -228,13 +229,7 @@ export function SessionProposalForm(props: {
           </span>
         </div>
 
-        {form.formState.errors.root && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-            <p className="text-sm font-medium">
-              Error: {form.formState.errors.root.message}
-            </p>
-          </div>
-        )}
+        <FormErrorSummary form={form} />
 
         <button
           type="submit"

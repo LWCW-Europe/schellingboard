@@ -26,6 +26,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { locationSchema, updateLocationSchema } from "@/model/location";
 import { z } from "zod";
 import { setActionErrors } from "@/utils/forms";
+import { FormErrorSummary } from "@/app/components/form-error-summary";
 
 export type AdminLocation = {
   location: Location;
@@ -307,6 +308,8 @@ function LocationForm({
         </span>
       </div>
 
+      <FormErrorSummary form={form} />
+
       <div className="flex gap-2 items-baseline">
         <button
           type="submit"
@@ -323,11 +326,6 @@ function LocationForm({
         >
           Cancel
         </button>
-        {form.formState.errors.root && (
-          <p role="alert" className="text-sm text-red-600">
-            {form.formState.errors.root.message}
-          </p>
-        )}
       </div>
     </form>
   );

@@ -12,6 +12,26 @@ async function selectCurrentUser(page: import("@playwright/test").Page) {
   await page.getByRole("option", { name: /Alice Test/i }).click();
 }
 
+/**
+ * Opens one of the optional profile sections, which sit behind expandable
+ * disclosures. Already-filled sections start open — on a retry the profile
+ * saved by the previous attempt is what loads — so only closed summaries are
+ * clicked. Retried as a whole: a toggle that lands before hydration is undone
+ * by React, since the disclosure's open state is controlled.
+ */
+async function ensureSectionOpen(
+  page: import("@playwright/test").Page,
+  title: string,
+  probe: import("@playwright/test").Locator
+) {
+  await expect(async () => {
+    if (!(await probe.isVisible())) {
+      await page.getByText(title, { exact: true }).click();
+    }
+    await expect(probe).toBeVisible({ timeout: 1000 });
+  }).toPass();
+}
+
 async function makeImage(width: number, height: number): Promise<Buffer> {
   return sharp({
     create: { width, height, channels: 3, background: { r: 90, g: 60, b: 30 } },
@@ -177,31 +197,23 @@ test.describe("Edit profile", () => {
 
     await page.getByLabel("Based in").fill("Berlin");
 
-    // The optional sections sit behind expandable disclosures. A retry of
-    // this test runs against the profile saved by the previous attempt:
-    // filled sections then start open and contain the saved rows, so only
-    // click closed summaries and clear leftover rows before adding new ones.
-    const ensureSectionOpen = async (
-      title: string,
-      probe: import("@playwright/test").Locator
-    ) => {
-      if (!(await probe.isVisible())) {
-        await page.getByText(title, { exact: true }).click();
-      }
-      await expect(probe).toBeVisible();
-    };
     await ensureSectionOpen(
+      page,
       "Conversation starters",
       page.getByLabel("Ask me about")
     );
     await ensureSectionOpen(
+      page,
       "Languages",
       page.getByRole("button", { name: "Add language" })
     );
     await ensureSectionOpen(
+      page,
       "Contact details",
       page.getByRole("button", { name: "Add contact" })
     );
+    // A retry of this test runs against the profile saved by the previous
+    // attempt, so clear the rows it left behind before adding new ones.
     const leftoverRows = page.getByRole("button", { name: "Remove" });
     while ((await leftoverRows.count()) > 0) {
       await leftoverRows.first().click();
@@ -326,6 +338,76 @@ test.describe("Edit profile", () => {
       page.locator("strong", { hasText: "hello world" })
     ).toBeVisible();
   });
+});
+
+test("summarizes validation errors next to the Save button", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Alpha/proposals");
+
+  await selectCurrentUser(page);
+  await page.getByRole("link", { name: "Attendees", exact: true }).click();
+  await page.getByRole("link", { name: /Edit profile/i }).click();
+
+  // Languages sits in a disclosure far above the Save button, so a bad value
+  // there is the case where an inline message alone tells the attendee
+  // nothing about why saving did nothing.
+  const addLanguage = page.getByRole("button", { name: "Add language" });
+  await ensureSectionOpen(page, "Languages", addLanguage);
+  await addLanguage.click();
+  const language = page.getByRole("combobox", { name: "Language" }).last();
+  await language.fill("x".repeat(60));
+  await page.keyboard.press("Escape");
+  // Collapsed, the inline message would be hidden entirely.
+  await page.getByText("Languages", { exact: true }).click();
+  await expect(addLanguage).toBeHidden();
+
+  await page.getByRole("button", { name: /^Save$/ }).click();
+
+  // Next.js' route announcer is an alert too, hence the filter.
+  const summary = page.getByRole("alert").filter({ hasText: /problem/ });
+  await expect(summary).toContainText(
+    "Keep language names under 50 characters"
+  );
+  await expect(summary).toBeInViewport();
+  await expect(page).toHaveURL(/\/guests\/edit$/);
+
+  // Nothing shifted under the attendee: the section is still collapsed until
+  // the summary entry is used, which reopens it and focuses the field.
+  await expect(addLanguage).toBeHidden();
+  await summary.getByRole("button", { name: /Keep language names/ }).click();
+  await expect(addLanguage).toBeVisible();
+  await expect(language).toBeFocused();
+});
+
+test("sends a rejected picture back to the picker that chose it", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Alpha/proposals");
+
+  await selectCurrentUser(page);
+  await page.getByRole("link", { name: "Attendees", exact: true }).click();
+  await page.getByRole("link", { name: /Edit profile/i }).click();
+
+  // hidden inputs aren't interactable through `getByLabel` in playwright
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "tiny.png",
+    mimeType: "image/png",
+    buffer: await makeImage(100, 100),
+  });
+  await page.getByRole("button", { name: /^Save$/ }).click();
+
+  const summary = page.getByRole("alert").filter({ hasText: /problem/ });
+  await expect(summary).toContainText("Image is too small");
+
+  // The file input behind the picture is hidden, so nothing can be focused
+  // there: the jump has to land on the visible picker instead.
+  await summary.getByRole("button", { name: /Image is too small/ }).click();
+  await expect(
+    page.getByRole("button", { name: /Change profile picture/ })
+  ).toBeFocused();
 });
 
 test("shows an error on the edit page when no user is selected", async ({

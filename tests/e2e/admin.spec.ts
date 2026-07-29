@@ -1563,20 +1563,24 @@ test.describe("Admin UI locations", () => {
     await region.getByRole("button", { name: "New location" }).click();
     await region.getByLabel("Capacity").fill("");
     await region.getByRole("button", { name: "Add location" }).click();
-    await expect(region.getByText("Name is required")).toBeVisible();
-    await expect(
-      region.getByText("Capacity must be a non-negative whole number")
-    ).toBeVisible();
+    // Each message shows twice: inline at its field, and in the summary by
+    // the submit button.
+    await expect(region.getByText("Name is required").first()).toBeVisible();
+    const problems = region.getByRole("alert");
+    await expect(problems).toContainText("Name is required");
+    await expect(problems).toContainText(
+      "Capacity must be a non-negative whole number"
+    );
 
     // A fractional capacity must produce the same message rather than the
     // browser's own step-mismatch bubble.
     await region.getByLabel("Name", { exact: true }).fill("Half a room");
     await region.getByLabel("Capacity").fill("1.5");
     await region.getByRole("button", { name: "Add location" }).click();
-    await expect(region.getByText("Name is required")).toBeHidden();
-    await expect(
-      region.getByText("Capacity must be a non-negative whole number")
-    ).toBeVisible();
+    await expect(region.getByText("Name is required")).toHaveCount(0);
+    await expect(problems).toContainText(
+      "Capacity must be a non-negative whole number"
+    );
 
     await region.getByRole("button", { name: "Cancel" }).click();
   });
@@ -1671,8 +1675,9 @@ test.describe("Admin UI locations", () => {
       buffer: await makeImage(800, 800),
     });
     await region.getByRole("button", { name: "Add location" }).click();
+    // Reported inline and repeated in the summary by the submit button.
     await expect(
-      page.getByText("Image must have a 4:3 aspect ratio (got 800×800)")
+      page.getByText("Image must have a 4:3 aspect ratio (got 800×800)").first()
     ).toBeVisible();
 
     // A valid 4:3 image is accepted and shown in the list
