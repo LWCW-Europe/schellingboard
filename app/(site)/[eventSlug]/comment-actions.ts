@@ -1,0 +1,153 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { z } from "zod";
+
+import { getRepositories } from "@/db/container";
+import {
+  commentDeleteSchema,
+  commentUpdateSchema,
+  proposalCommentSchema,
+} from "@/model/comment";
+import { serverNow } from "@/utils/dev-clock-server";
+import {
+  NAME_PROTECTED_ERROR,
+  verifiedCurrentUser,
+} from "@/utils/acting-guest";
+
+export type CommentActionResult =
+  { error: string | z.core.$ZodIssue[] } | { success: true };
+
+const NO_NAME_ERROR = `Select your name before commenting — ${NAME_PROTECTED_ERROR.toLowerCase()}`;
+
+class Refusal extends Error {
+  constructor(readonly payload: string | z.core.$ZodIssue[]) {
+    super(typeof payload === "string" ? payload : JSON.stringify(payload));
+  }
+}
+
+function toResult(error: unknown, failure: string): CommentActionResult {
+  if (error instanceof Refusal) {
+    return { error: error.payload };
+  }
+  console.error(failure, error);
+  return { error: failure };
+}
+
+async function requireGuest(): Promise<string> {
+  const guest = await verifiedCurrentUser(await cookies());
+  if (!guest) {
+    throw new Refusal(NO_NAME_ERROR);
+  }
+  return guest;
+}
+
+async function requireParsed<Schema extends z.ZodType>(
+  schema: Schema,
+  input: unknown
+): Promise<z.output<Schema>> {
+  const parsed = await schema.safeParseAsync(input);
+  if (!parsed.success) {
+    throw new Refusal(parsed.error.issues);
+  }
+  return parsed.data;
+}
+
+async function requireOwnComment(
+  commentId: string,
+  actor: string
+): Promise<void> {
+  const comment = await getRepositories().comments.findById(commentId);
+  if (!comment || comment.deleted) {
+    throw new Refusal("Comment not found");
+  } else if (comment.author?.id !== actor) {
+    throw new Refusal("Comment owned by another guest");
+  }
+}
+
+export async function createProposalComment(
+  comment: z.input<typeof proposalCommentSchema>
+): Promise<CommentActionResult>;
+export async function createProposalComment(
+  input: unknown
+): Promise<CommentActionResult> {
+  try {
+    const guest = await requireGuest();
+    const { proposalId, parentId, body, eventSlug } = await requireParsed(
+      proposalCommentSchema,
+      input
+    );
+
+    // validation
+    if (!(await getRepositories().sessionProposals.findById(proposalId))) {
+      return { error: "Proposal not found" };
+    }
+    if (parentId) {
+      const parentOf =
+        await getRepositories().comments.findProposalId(parentId);
+      if (!parentOf || parentOf !== proposalId) {
+        return { error: "The comment being replied to is invalid" };
+      }
+    }
+
+    await getRepositories().comments.createForProposal({
+      proposalId,
+      authorId: guest,
+      parentId,
+      body,
+      createdTime: await serverNow(),
+    });
+    revalidatePath(`/${eventSlug}`, "layout");
+    return { success: true };
+  } catch (error) {
+    return toResult(error, "Failed to post comment");
+  }
+}
+
+export async function updateComment(
+  comment: z.input<typeof commentUpdateSchema>
+): Promise<CommentActionResult>;
+export async function updateComment(
+  input: unknown
+): Promise<CommentActionResult> {
+  try {
+    const guest = await requireGuest();
+    const { commentId, body, eventSlug } = await requireParsed(
+      commentUpdateSchema,
+      input
+    );
+    await requireOwnComment(commentId, guest);
+
+    await getRepositories().comments.update(commentId, {
+      body,
+      editedTime: await serverNow(),
+    });
+    revalidatePath(`/${eventSlug}`, "layout");
+    return { success: true };
+  } catch (error) {
+    return toResult(error, "Failed to update comment");
+  }
+}
+
+export async function deleteComment(
+  comment: z.input<typeof commentDeleteSchema>
+): Promise<CommentActionResult>;
+export async function deleteComment(
+  input: unknown
+): Promise<CommentActionResult> {
+  try {
+    const guest = await requireGuest();
+    const { commentId, eventSlug } = await requireParsed(
+      commentDeleteSchema,
+      input
+    );
+    await requireOwnComment(commentId, guest);
+
+    await getRepositories().comments.delete(commentId);
+    revalidatePath(`/${eventSlug}`, "layout");
+    return { success: true };
+  } catch (error) {
+    return toResult(error, "Failed to delete comment");
+  }
+}

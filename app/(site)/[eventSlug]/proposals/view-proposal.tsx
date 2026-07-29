@@ -14,10 +14,12 @@ import HoverTooltip from "@/app/(site)/hover-tooltip";
 import { EventContext, UserContext, VotesContext } from "@/app/(site)/context";
 import { Proposal } from "@/app/(site)/[eventSlug]/proposal";
 import type {
+  Comment,
   Event,
   SessionProposal,
   Session,
 } from "@/db/repositories/interfaces";
+import { ProposalComments } from "./proposal-comments";
 import { VotingButtons } from "@/app/(site)/[eventSlug]/proposals/voting-buttons";
 import { VoteChoice } from "@/app/(site)/votes";
 import { DateTime } from "luxon";
@@ -27,6 +29,7 @@ import { viewSessionLinkFromElsewhere } from "../modal-nav";
 export function ViewProposal(props: {
   proposal: SessionProposal;
   sessions: Session[];
+  comments: Comment[];
   eventSlug: string;
   event: Event;
   isInModal?: boolean;
@@ -36,6 +39,7 @@ export function ViewProposal(props: {
     eventSlug,
     event,
     sessions: allSessions,
+    comments,
     isInModal = false,
   } = props;
   const { user: currentUserId } = useContext(UserContext);
@@ -211,6 +215,13 @@ export function ViewProposal(props: {
           )}
         </div>
       )}
+
+      <ProposalComments
+        proposalId={proposal.id}
+        eventSlug={eventSlug}
+        timezone={event.timezone}
+        comments={comments}
+      />
     </div>
   );
 }

@@ -24,9 +24,12 @@ export default async function ProposalsPage({
     return <div>Event not found</div>;
   }
 
-  const [proposals, sessions] = await Promise.all([
+  const [proposals, sessions, comments] = await Promise.all([
     repos.sessionProposals.listByEvent(event.id),
     viewProposal ? repos.sessions.listByEvent(event.id) : Promise.resolve([]),
+    viewProposal
+      ? repos.comments.listByProposal(viewProposal)
+      : Promise.resolve([]),
   ]);
   const viewedProposal = viewProposal
     ? proposals.find((proposal) => proposal.id === viewProposal)
@@ -74,6 +77,7 @@ export default async function ProposalsPage({
         <ProposalModal
           proposal={viewedProposal}
           sessions={sessions}
+          comments={comments}
           eventSlug={eventSlug}
           event={event}
         />

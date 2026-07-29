@@ -4,6 +4,7 @@ import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import type {
+  Comment,
   Event,
   Session,
   SessionProposal,
@@ -14,11 +15,13 @@ import { ViewProposal } from "./view-proposal";
 export function ProposalModal({
   proposal,
   sessions,
+  comments,
   eventSlug,
   event,
 }: {
   proposal?: SessionProposal;
   sessions: Session[];
+  comments: Comment[];
   eventSlug: string;
   event: Event;
 }) {
@@ -76,6 +79,7 @@ export function ProposalModal({
           <ViewProposal
             proposal={proposal}
             sessions={sessions}
+            comments={comments}
             eventSlug={eventSlug}
             event={event}
             isInModal={true}

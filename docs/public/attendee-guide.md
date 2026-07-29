@@ -26,6 +26,21 @@ how the text will look before you save.
 
 ![Session proposal form with title, description, hosts, and duration fields](../screenshots/proposal-edit.webp)
 
+## Discuss a proposal
+
+Open a proposal to see its comments. Pick your name first, then leave a
+comment or reply to someone else's — a good place to ask what background is
+assumed, offer to co-host, or work out whether two proposals should merge.
+Replies are threaded, and the `[-]` next to a comment folds it and everything
+under it away.
+
+You can edit or delete your own comments. Deleting is permanent — there is no
+history and no undo. If the comment already has replies, a "Comment deleted"
+placeholder stays behind so the replies still make sense.
+
+Each comment's timestamp links to that comment alone, so you can point
+someone at one particular remark.
+
 ## Vote
 
 During the **voting** phase, react to each proposal with Interested, Maybe,

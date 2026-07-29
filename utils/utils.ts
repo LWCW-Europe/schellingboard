@@ -6,6 +6,22 @@ export const TIME_FORMAT = "HH:mm";
 // Note: if you want to change this to am/pm, the timestamp column in day-grid.tsx,
 // needs to be wider (see https://github.com/LWCW-Europe/schellingboard/pull/402/changes)
 
+export const DATETIME_FORMAT = `${TIME_FORMAT} - dd MMM`;
+
+export function formatInLocalZone(
+  date: Date,
+  eventZone: string,
+  localZone: string | null
+): string {
+  const shown = DateTime.fromJSDate(date).setZone(localZone ?? eventZone);
+  const atEvent = DateTime.fromJSDate(date).setZone(eventZone);
+  return shown.toFormat(
+    shown.offset === atEvent.offset
+      ? DATETIME_FORMAT
+      : `${DATETIME_FORMAT} ZZZZ`
+  );
+}
+
 export const getPercentThroughDay = (now: Date, start: Date, end: Date) =>
   ((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100;
 
