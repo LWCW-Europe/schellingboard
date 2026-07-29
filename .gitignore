@@ -77,3 +77,7 @@ www-site/
 # Build config assembled by scripts/build-docs.sh from docmd.config.json plus
 # the versions it reconstructs from git tags.
 .docmd.build.json
+
+# Spec-Kit for Claude
+.specify/
+.claude/skills/speckit-*/
