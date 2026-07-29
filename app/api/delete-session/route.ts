@@ -3,6 +3,10 @@ import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
 import { requestNow } from "@/utils/dev-clock";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import {
+  notifySessionDeleted,
+  rsvpGuestIdsToNotify,
+} from "@/utils/notifications";
 
 export const dynamic = "force-dynamic"; // defaults to auto
 
@@ -35,6 +39,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const rsvpGuestIds = await rsvpGuestIdsToNotify(id);
+
   try {
     await repos.sessions.delete(id);
     console.log(`Deleted session: ${id}`);
@@ -43,5 +49,10 @@ export async function POST(req: NextRequest) {
     return Response.error();
   }
 
+  await notifySessionDeleted({
+    session,
+    rsvpGuestIds,
+    changedById: actor,
+  });
   return Response.json({ success: true });
 }

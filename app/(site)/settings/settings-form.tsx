@@ -73,11 +73,11 @@ export function SettingsForm({
           </p>
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" {...form.register("rsvpChange")} />a session
-            I&rsquo;ve RSVP&rsquo;d to changes time or location
+            I&rsquo;ve RSVP&rsquo;d to changes time or location, or is deleted
           </label>
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" {...form.register("hostChange")} />a session
-            I&rsquo;m hosting changes time or location
+            I&rsquo;m hosting changes time or location, or is deleted
           </label>
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" {...form.register("cohostAdd")} />

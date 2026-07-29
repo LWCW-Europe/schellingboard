@@ -4,6 +4,7 @@ import type { EmailSettings, Session } from "@/db/repositories/interfaces";
 import { sendMail, type EmailMessage } from "@/utils/mailer";
 import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
+import { sessionDeletedEmail } from "@/emails/session-deleted";
 import { cohostAddedEmail } from "@/emails/cohost-added";
 import { getStartTimePlusBreak } from "@/utils/utils";
 
@@ -104,23 +105,123 @@ async function notifySessionChangedUnsafe({
     recipient: "attendee",
   });
 
+  await notifySessionRecipients({
+    hostIds: after.hosts.map((host) => host.id),
+    rsvpGuestIds: (await rsvps.listBySession(after.id)).map(
+      (rsvp) => rsvp.guestId
+    ),
+    changedById,
+    hostMessage,
+    attendeeMessage,
+  });
+}
+
+// The guests to tell about a session's deletion, to be called *before*
+// deleting it: the delete cascades to its RSVP rows, so afterwards there is
+// nobody left to look up. Pass the result to notifySessionDeleted.
+//
+// Never throws: failing to find the recipients must not fail the deletion.
+export async function rsvpGuestIdsToNotify(
+  sessionId: string
+): Promise<string[]> {
+  try {
+    const rsvps = await getRepositories().rsvps.listBySession(sessionId);
+    return rsvps.map((rsvp) => rsvp.guestId);
+  } catch (err) {
+    console.error(
+      `Failed to load deletion notification recipients for session ${sessionId}:`,
+      err
+    );
+    return [];
+  }
+}
+
+// Email the session's hosts and RSVP'd guests (who have opted in) after a
+// deletion. `rsvpGuestIds` comes from rsvpGuestIdsToNotify, called before the
+// deletion.
+//
+// Never throws: notification failures must not make a successful deletion
+// look unsuccessful.
+export async function notifySessionDeleted(args: {
+  session: Session;
+  rsvpGuestIds: string[];
+  changedById: string | null;
+}): Promise<void> {
+  try {
+    await notifySessionDeletedUnsafe(args);
+  } catch (err) {
+    console.error("Failed to send session-deleted notifications:", err);
+  }
+}
+
+async function notifySessionDeletedUnsafe({
+  session,
+  rsvpGuestIds,
+  changedById,
+}: {
+  session: Session;
+  rsvpGuestIds: string[];
+  changedById: string | null;
+}): Promise<void> {
+  const event = await getRepositories().events.findById(session.eventId);
+  if (!event) return;
+
+  const base = siteUrl();
+  if (base === null) {
+    console.warn(
+      "SITE_URL is not set - not sending session deletion notifications"
+    );
+    return;
+  }
+  const messageProps = {
+    title: session.title,
+    description: session.description,
+    time: formatSessionTime(session, event.timezone, event.breakMinutes),
+    location: formatLocations(session),
+    eventUrl: `${base}/${event.slug}`,
+  };
+
+  await notifySessionRecipients({
+    hostIds: session.hosts.map((host) => host.id),
+    rsvpGuestIds,
+    changedById,
+    hostMessage: sessionDeletedEmail({
+      ...messageProps,
+      recipient: "host",
+    }),
+    attendeeMessage: sessionDeletedEmail({
+      ...messageProps,
+      recipient: "attendee",
+    }),
+  });
+}
+
+async function notifySessionRecipients({
+  hostIds,
+  rsvpGuestIds,
+  changedById,
+  hostMessage,
+  attendeeMessage,
+}: {
+  hostIds: string[];
+  rsvpGuestIds: string[];
+  changedById: string | null;
+  hostMessage: EmailMessage;
+  attendeeMessage: EmailMessage;
+}): Promise<void> {
   // Guards against telling anyone twice (or the editor at all), should a
   // guest ever be both host and RSVP'd.
   const done = new Set(changedById === null ? [] : [changedById]);
 
-  // We could exclude hosts who were already hosts before the change, since they
-  // also get an email for being added. But that email might not make it clear
-  // the session has changed, if they were previously RSVP'd; and they might
-  // have that email disabled but not this one.
-  for (const host of after.hosts) {
-    if (done.has(host.id)) continue;
-    done.add(host.id);
-    await tryNotifyGuest(host.id, "hostChange", hostMessage);
+  for (const hostId of hostIds) {
+    if (done.has(hostId)) continue;
+    done.add(hostId);
+    await tryNotifyGuest(hostId, "hostChange", hostMessage);
   }
-  for (const rsvp of await rsvps.listBySession(after.id)) {
-    if (done.has(rsvp.guestId)) continue;
-    done.add(rsvp.guestId);
-    await tryNotifyGuest(rsvp.guestId, "rsvpChange", attendeeMessage);
+  for (const guestId of rsvpGuestIds) {
+    if (done.has(guestId)) continue;
+    done.add(guestId);
+    await tryNotifyGuest(guestId, "rsvpChange", attendeeMessage);
   }
 }
 

@@ -27,6 +27,7 @@ import {
   notifyCohostsAdded,
   notifyGuest,
   notifySessionChanged,
+  notifySessionDeleted,
 } from "@/utils/notifications";
 
 const MESSAGE = {
@@ -332,6 +333,106 @@ describe("notifySessionChanged", () => {
       "new-host@test.example",
       "rsvper@test.example",
     ]);
+  });
+});
+
+describe("notifySessionDeleted", () => {
+  beforeAll(() => setupTestDb());
+
+  beforeEach(() => {
+    resetTestDb();
+    vi.mocked(sendMail).mockReset();
+    vi.stubEnv("SITE_URL", "https://site.example");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  async function renderWithoutComments(body: ReactElement): Promise<string> {
+    return (await render(body)).replace(/<!--.*?-->/g, "");
+  }
+
+  it("emails hosts and RSVP'd attendees that the session was deleted", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const room = await createLocation({ name: "Room A" });
+    const host = await createGuest({ email: "host@test.example" });
+    const attendee = await createGuest({ email: "attendee@test.example" });
+    const session = await createSession(event.id, {
+      title: "Fun Workshop",
+      description: "A *hands-on* session.",
+      hostIds: [host.id],
+      locationIds: [room.id],
+      startTime: new Date("2026-08-01T10:00:00Z"),
+      endTime: new Date("2026-08-01T11:00:00Z"),
+    });
+
+    await notifySessionDeleted({
+      session,
+      rsvpGuestIds: [attendee.id],
+      changedById: null,
+    });
+
+    expect(sendMail).toHaveBeenCalledTimes(2);
+    const messages = vi.mocked(sendMail).mock.calls.map((call) => call[0]);
+    const hostMessage = messages.find((m) => m.to === "host@test.example");
+    const attendeeMessage = messages.find(
+      (m) => m.to === "attendee@test.example"
+    );
+    expect(hostMessage?.subject).toBe("Session deleted: Fun Workshop");
+    expect(attendeeMessage?.subject).toBe("Session deleted: Fun Workshop");
+
+    const hostHtml = await renderWithoutComments(hostMessage!.body);
+    const attendeeHtml = await renderWithoutComments(attendeeMessage!.body);
+    expect(hostHtml).toContain("A session you");
+    expect(hostHtml).toContain("hosting");
+    expect(attendeeHtml).toContain("A session you RSVP");
+    expect(hostHtml).toContain("has been deleted");
+    expect(attendeeHtml).toContain("has been deleted");
+    expect(hostHtml).toContain("A <em>hands-on</em> session.");
+    expect(hostHtml).toContain("Saturday 1 August, 10:10");
+    expect(hostHtml).toContain("Room A");
+    expect(hostHtml).toContain(`href="https://site.example/${event.slug}"`);
+  });
+
+  it("uses hostChange and rsvpChange settings for deletion recipients", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const optedOutHost = await createGuest({
+      email: "host-off@test.example",
+      emailSettings: {
+        hostChange: false,
+        rsvpChange: true,
+        cohostAdd: true,
+      },
+    });
+    const optedOutAttendee = await createGuest({
+      email: "rsvp-off@test.example",
+      emailSettings: {
+        hostChange: true,
+        rsvpChange: false,
+        cohostAdd: true,
+      },
+    });
+    const optedInAttendee = await createGuest({
+      email: "rsvp-on@test.example",
+      emailSettings: {
+        hostChange: false,
+        rsvpChange: true,
+        cohostAdd: false,
+      },
+    });
+    const session = await createSession(event.id, {
+      hostIds: [optedOutHost.id],
+    });
+
+    await notifySessionDeleted({
+      session,
+      rsvpGuestIds: [optedOutAttendee.id, optedInAttendee.id],
+      changedById: null,
+    });
+
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect(vi.mocked(sendMail).mock.calls[0][0].to).toBe(
+      "rsvp-on@test.example"
+    );
   });
 });
 
