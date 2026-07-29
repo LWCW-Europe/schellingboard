@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Saving a form that has errors now says why, right where you clicked**: on longer forms — editing your profile, proposing a session, adding or editing a location — a summary of everything that needs fixing appears next to the Save button, instead of the page simply not moving because the message sits somewhere further up. Each entry is clickable and takes you to the field it belongs to, opening the "Languages", "Contact details" or "Conversation starters" section first if the field is hidden inside it
 
+### Fixed
+
+- **"Voting will be enabled at …" now shows the time on your own clock**: on the proposals list and a proposal's page, the note saying when voting or scheduling opens was given in the time zone of the machine running the site, so a site hosted abroad announced the wrong time. It now shows the time in your own time zone — useful when you are reading it weeks before travelling to the venue — and names that zone whenever it differs from the event's, the same way comment timestamps do
+
 ## [3.2.0] - 2026-07-29
 
 ### Added

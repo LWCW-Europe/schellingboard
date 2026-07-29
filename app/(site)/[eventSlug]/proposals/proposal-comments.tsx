@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -20,6 +14,7 @@ import {
   deleteComment,
   updateComment,
 } from "../comment-actions";
+import { useLocalZone } from "@/utils/hooks";
 import { formatInLocalZone } from "@/utils/utils";
 
 type CommentNode = Comment & { replies: CommentNode[] };
@@ -39,19 +34,6 @@ function buildTree(comments: Comment[]): CommentNode[] {
     }
   }
   return roots;
-}
-
-// The server can't know the viewer's zone, so the first paint uses the event's
-// and swaps to local after mount — rendering local time directly would not
-// survive hydration.
-const subscribeToNothing = () => () => {};
-
-function useLocalZone(): string | null {
-  return useSyncExternalStore(
-    subscribeToNothing,
-    () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-    () => null
-  );
 }
 
 // The highlight has to be rendered rather than poked onto the node with

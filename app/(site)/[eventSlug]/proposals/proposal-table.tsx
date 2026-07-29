@@ -23,6 +23,7 @@ import {
   inProposalPhase,
 } from "@/app/(site)/utils/events";
 import type { Event } from "@/db/repositories/interfaces";
+import { useLocalZone } from "@/utils/hooks";
 import { formatDuration, durationMinusBreak } from "@/utils/utils";
 
 import { VotingButtons } from "./voting-buttons";
@@ -71,6 +72,7 @@ export function ProposalTable({
   );
   const { user: currentUserId } = useContext(UserContext);
   const { votes, proposalVoteEmoji } = useContext(VotesContext);
+  const localZone = useLocalZone();
   const router = useRouter();
   // Derived: filter only applies when a user is selected. Hidden from data
   // and UI when logged out, without discarding the selection.
@@ -99,12 +101,13 @@ export function ProposalTable({
   if (inSchedPhase(event, now)) {
     votingDisabledText = `The voting phase is over`;
   } else if (inProposalPhase(event, now)) {
-    votingDisabledText = `Voting ${dateStartDescription(event.votingPhaseStart)}`;
+    votingDisabledText = `Voting ${dateStartDescription(event.votingPhaseStart, event.timezone, localZone)}`;
   } else if (!currentUserId) {
     votingDisabledText = "Select a user first";
   }
   const schedDisabledText =
-    "Scheduling " + dateStartDescription(event.schedulingPhaseStart);
+    "Scheduling " +
+    dateStartDescription(event.schedulingPhaseStart, event.timezone, localZone);
 
   function updateResultFilter(newFilter: Filter) {
     setPage(1);

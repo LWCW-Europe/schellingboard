@@ -1,5 +1,9 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { EventPhase, getCurrentPhase } from "@/app/(site)/utils/events";
+import {
+  EventPhase,
+  dateStartDescription,
+  getCurrentPhase,
+} from "@/app/(site)/utils/events";
 import type { Event } from "@/db/repositories/interfaces";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -128,5 +132,31 @@ describe("getCurrentPhase with implicit phase ends", () => {
 
       expect(getCurrentPhase(event, NOW())).toBe(EventPhase.VOTING);
     });
+  });
+});
+
+// Only what this wrapper adds to formatInLocalZone, which
+// tests/unit/comment-time.test.ts covers on its own: that both zones reach it
+// and neither is taken from whatever zone the process runs in (#734).
+describe("dateStartDescription", () => {
+  // 01:30 on 27 June in Berlin, 19:30 on 26 June in New York.
+  const instant = new Date("2026-06-26T23:30:00.000Z");
+
+  it("uses the event's zone before the viewer's is known", () => {
+    expect(dateStartDescription(instant, "Europe/Berlin", null)).toBe(
+      "will be enabled at 01:30 - 27 Jun"
+    );
+  });
+
+  it("shows the viewer's own time and names the zone when it differs", () => {
+    expect(
+      dateStartDescription(instant, "Europe/Berlin", "America/New_York")
+    ).toMatch(/^will be enabled at 19:30 - 26 Jun \S/);
+  });
+
+  it("still reports an unset date as not enabled", () => {
+    expect(dateStartDescription(undefined, "Europe/Berlin", null)).toBe(
+      "is not enabled"
+    );
   });
 });

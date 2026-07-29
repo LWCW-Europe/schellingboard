@@ -23,6 +23,7 @@ import { ProposalComments } from "./proposal-comments";
 import { VotingButtons } from "@/app/(site)/[eventSlug]/proposals/voting-buttons";
 import { VoteChoice } from "@/app/(site)/votes";
 import { DateTime } from "luxon";
+import { useLocalZone } from "@/utils/hooks";
 import { TIME_FORMAT } from "@/utils/utils";
 import { viewSessionLinkFromElsewhere } from "../modal-nav";
 
@@ -45,6 +46,7 @@ export function ViewProposal(props: {
   const { user: currentUserId } = useContext(UserContext);
   const { proposalVoteEmoji, votes } = useContext(VotesContext);
   const { now } = useContext(EventContext);
+  const localZone = useLocalZone();
   const router = useRouter();
 
   const canEdit = () => {
@@ -69,11 +71,11 @@ export function ViewProposal(props: {
   const schedEnabled = inSchedPhase(event, now);
   let votingDisabledText = "";
   if (!inVotingPhase(event, now)) {
-    votingDisabledText = `Voting ${dateStartDescription(event.votingPhaseStart)}`;
+    votingDisabledText = `Voting ${dateStartDescription(event.votingPhaseStart, event.timezone, localZone)}`;
   } else if (!currentUserId) {
     votingDisabledText = "Select a user first";
   }
-  const schedDisabledText = `Scheduling ${dateStartDescription(event.schedulingPhaseStart)}`;
+  const schedDisabledText = `Scheduling ${dateStartDescription(event.schedulingPhaseStart, event.timezone, localZone)}`;
 
   const sessions = (proposal.sessionIds || [])
     .map((sesId) => allSessions.find((s) => s.id === sesId))

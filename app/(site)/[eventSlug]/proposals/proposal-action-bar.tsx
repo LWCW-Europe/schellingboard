@@ -16,6 +16,7 @@ import {
   inProposalPhase,
 } from "@/app/(site)/utils/events";
 import { EventContext, UserContext } from "@/app/(site)/context";
+import { useLocalZone } from "@/utils/hooks";
 import type { Event } from "@/db/repositories/interfaces";
 
 export function ProposalActionBar({
@@ -27,19 +28,20 @@ export function ProposalActionBar({
 }) {
   const { user: currentUserId } = useContext(UserContext);
   const { now } = useContext(EventContext);
+  const localZone = useLocalZone();
   const votingEnabled = !!currentUserId && inVotingPhase(event, now);
 
   let votingDisabledText = "";
   if (inSchedPhase(event, now)) {
     votingDisabledText = `The voting phase is over`;
   } else if (inProposalPhase(event, now)) {
-    votingDisabledText = `Voting ${dateStartDescription(event.votingPhaseStart)}`;
+    votingDisabledText = `Voting ${dateStartDescription(event.votingPhaseStart, event.timezone, localZone)}`;
   } else if (!currentUserId) {
     votingDisabledText = "Select a user first";
   }
 
   const schedEnabled = inSchedPhase(event, now);
-  const schedDisabledText = `Scheduling ${dateStartDescription(event.schedulingPhaseStart)}`;
+  const schedDisabledText = `Scheduling ${dateStartDescription(event.schedulingPhaseStart, event.timezone, localZone)}`;
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-6">
