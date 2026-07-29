@@ -47,6 +47,7 @@ import { ArrowPathIcon, ChevronUpDownIcon } from "@heroicons/react/16/solid";
 import { MarkdownHint } from "@/app/(site)/markdown";
 import { containsIgnoringAccents } from "@/utils/utils";
 import { MarkdownTextarea } from "@/app/components/markdown-textarea";
+import { FormErrorSummary } from "@/app/components/form-error-summary";
 import { setActionErrors } from "@/utils/forms";
 
 const profileFormSchema = profileSchema.extend({
@@ -117,8 +118,12 @@ export function ProfileForm({ guest }: { guest: Guest }) {
   });
   const avatar = avatarFileList === null ? null : avatarFileList?.[0];
   const [isDragging, setIsDragging] = useState(false);
+  // Field the error summary was last asked to jump to: the disclosure holding
+  // it has to open before the field can be seen or focused.
+  const [jumpTarget, setJumpTarget] = useState<string | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const avatarPicker = useRef<HTMLButtonElement>(null);
 
   const languageOptions = useMemo(() => languageSuggestions(), []);
 
@@ -254,6 +259,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
                 : "border-gray-500"
             )}
             type="button"
+            ref={avatarPicker}
             {...avatarAreaController}
           >
             <Avatar
@@ -322,6 +328,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
               value={pronounController.field.value}
               onChange={pronounController.field.onChange}
               invalid={pronounController.fieldState.invalid}
+              fieldRef={pronounController.field.ref}
             />
             <span className="text-rose-400 text-sm">
               {form.formState.errors.pronouns?.message}
@@ -364,6 +371,8 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           title="Conversation starters"
           hint="Optional prompts that give people something to ask you about"
           defaultOpen={(guest.prompts ?? []).length > 0}
+          forceOpen={!!jumpTarget?.startsWith("prompts")}
+          onCollapse={() => setJumpTarget(null)}
         >
           {prompts.fields.map((field, i) => {
             const isCore = CORE_PROMPTS.includes(field.prompt);
@@ -424,6 +433,8 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           title="Languages"
           hint="Languages you're happy to talk in"
           defaultOpen={(guest.languages ?? []).length > 0}
+          forceOpen={!!jumpTarget?.startsWith("languages")}
+          onCollapse={() => setJumpTarget(null)}
         >
           {languages.fields.map((field, i) => (
             <div key={field.id} className="flex items-center gap-2">
@@ -441,6 +452,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
                         value={f.value}
                         onChange={(v) => f.onChange(v ?? "")}
                         invalid={fieldState.invalid}
+                        fieldRef={f.ref}
                       />
                       {fieldState.error && (
                         <span className="text-rose-400 text-sm">
@@ -478,6 +490,8 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           title="Contact details"
           hint="Shown publicly on your profile — only add what you want visible"
           defaultOpen={(guest.contacts ?? []).length > 0}
+          forceOpen={!!jumpTarget?.startsWith("contacts")}
+          onCollapse={() => setJumpTarget(null)}
         >
           {contacts.fields.map((field, i) => (
             <div key={field.id} className="flex flex-col gap-1">
@@ -545,13 +559,15 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           </span>
         </DisclosureSection>
 
-        {form.formState.errors.root && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-            <p className="text-sm font-medium">
-              Error: {form.formState.errors.root.message}
-            </p>
-          </div>
-        )}
+        <FormErrorSummary
+          form={form}
+          onJump={(name) => {
+            setJumpTarget(name);
+            // The picture's file input is hidden, so focus can't reach it:
+            // send the attendee to the picker that opens it instead.
+            if (name === "avatar") avatarPicker.current?.focus();
+          }}
+        />
 
         <button
           type="submit"
@@ -569,19 +585,29 @@ function DisclosureSection({
   title,
   hint,
   defaultOpen,
+  forceOpen = false,
+  onCollapse,
   children,
 }: PropsWithChildren<{
   title: string;
   hint: string;
   defaultOpen: boolean;
+  /** Reveals a field the error summary is jumping to. */
+  forceOpen?: boolean;
+  onCollapse?: () => void;
 }>) {
   // Controlled so React re-renders (e.g. form state changes) don't snap the
   // section back to its initial state after the user toggles it.
   const [open, setOpen] = useState(defaultOpen);
   return (
     <details
-      open={open}
-      onToggle={(e) => setOpen(e.currentTarget.open)}
+      open={open || forceOpen}
+      onToggle={(e) => {
+        setOpen(e.currentTarget.open);
+        // Drops the jump that forced this open, so closing it sticks. Only
+        // this section's own jump: another section's is none of its business.
+        if (!e.currentTarget.open && forceOpen) onCollapse?.();
+      }}
       className="rounded-md border border-gray-200 bg-white shadow-sm"
     >
       <summary className="cursor-pointer select-none px-4 py-3">
@@ -612,6 +638,7 @@ function FreeformCombobox({
   options,
   placeholder,
   filterOptions = false,
+  fieldRef,
 }: {
   id?: string;
   ariaLabel?: string;
@@ -622,6 +649,8 @@ function FreeformCombobox({
   placeholder?: string;
   /** Narrow the suggestion list to entries matching the typed text. */
   filterOptions?: boolean;
+  /** The controller's ref, so the error summary can focus this field. */
+  fieldRef?: (instance: HTMLInputElement | null) => void;
 }) {
   const mode = useRef<"navigation" | "typing">("navigation");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -664,7 +693,10 @@ function FreeformCombobox({
           )}
           id={id}
           aria-label={ariaLabel}
-          ref={inputRef}
+          ref={(el) => {
+            inputRef.current = el;
+            fieldRef?.(el);
+          }}
           placeholder={placeholder}
           onChange={(e) => {
             onChange(e.target.value);

@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Comments on proposals**: attendees can discuss a proposal by leaving a comment on it. Replies are threaded and can be folded away; you can edit or delete your own comments, and link to any single comment. Deleting discards the text for good — there is no history and no undo.
 - **Emails when a session is deleted**: hosts and RSVP'd attendees are now told when a session disappears, not only when it moves. It uses the same two settings attendees already have for session changes, so nobody has anything new to turn on
 
+### Changed
+
+- **Saving a form that has errors now says why, right where you clicked**: on longer forms — editing your profile, proposing a session, adding or editing a location — a summary of everything that needs fixing appears next to the Save button, instead of the page simply not moving because the message sits somewhere further up. Each entry is clickable and takes you to the field it belongs to, opening the "Languages", "Contact details" or "Conversation starters" section first if the field is hidden inside it
+
 ## [3.2.0] - 2026-07-29
 
 ### Added
