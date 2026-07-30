@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Comments on proposals**: attendees can discuss a proposal by leaving a comment on it. Replies are threaded and can be folded away; you can edit or delete your own comments, and link to any single comment. Deleting discards the text for good — there is no history and no undo.
 - **Emails when a session is deleted**: hosts and RSVP'd attendees are now told when a session disappears, not only when it moves. It uses the same two settings attendees already have for session changes, so nobody has anything new to turn on
+- **`SCHELLINGBOARD_VERSION` in `docker-compose.yml`**: self-hosters can now pin the image to a specific release tag instead of always running `latest`
 
 ### Changed
 

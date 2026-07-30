@@ -4,7 +4,7 @@
 # https://docs.schellingboard.org/self-hosting/deployment/
 services:
   app:
-    image: schellingboard/schellingboard
+    image: schellingboard/schellingboard:${SCHELLINGBOARD_VERSION:-latest}
     restart: unless-stopped
     ports:
       - "${HOST_PORT:-3000}:3000"
