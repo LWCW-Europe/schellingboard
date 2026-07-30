@@ -17,6 +17,8 @@ const ANONYMOUS_PROPOSAL =
   /Conference Alpha Lightning Talks: Community Showcase/;
 const BRANCHING_PROPOSAL =
   /Conference Gamma Panel: Industry Leaders Share Their Insights/;
+const LIKE_PROPOSAL =
+  /Networking & Coffee Chat: Connect with Conference Gamma Peers/;
 
 async function openProposal(page: Page, title: RegExp) {
   await page.getByRole("row", { name: title }).locator("td").first().click();
@@ -151,16 +153,12 @@ test("replies to a comment, collapses the thread, and permalinks to a reply", as
   );
 
   // Each comment's timestamp links to that comment alone, parent and reply
-  // getting distinct targets.
-  const parentPermalink = await modal
-    .getByRole("link", { name: /^\d/ })
-    .first()
-    .getAttribute("href");
-
-  const permalink = await modal
-    .getByRole("link", { name: /^\d/ })
-    .last()
-    .getAttribute("href");
+  // getting distinct targets. Both have to be on the page before comparing:
+  // with only the parent rendered, first and last are the same link.
+  const timestamps = modal.getByRole("link", { name: /^\d/ });
+  await expect(timestamps).toHaveCount(2);
+  const parentPermalink = await timestamps.first().getAttribute("href");
+  const permalink = await timestamps.last().getAttribute("href");
   expect(permalink).toMatch(/#comment-/);
   expect(permalink).not.toBe(parentPermalink);
 
@@ -214,6 +212,58 @@ test("keeps replies readable when their parent is deleted", async ({
   await expect(modal.getByText("a doomed parent")).toHaveCount(0);
   await expect(modal.getByText("Comment deleted")).toBeVisible();
   await expect(modal.getByText("a surviving reply")).toBeVisible();
+});
+
+test("likes a comment and shows who liked it", async ({ page, browser }) => {
+  await login(page);
+  await page.goto("/Conference-Gamma/proposals");
+  await actAs(page, /Alice Test/i);
+
+  const modal = await openProposal(page, LIKE_PROPOSAL);
+  await modal.getByPlaceholder("Add a comment").fill("a likeable comment");
+  await modal.getByRole("button", { name: "Comment" }).click();
+  await expect(modal.getByText("a likeable comment")).toBeVisible();
+
+  const like = modal.getByRole("button", { name: "Like", exact: true });
+  const liked = modal.getByRole("button", { name: "Liked", exact: true });
+  await like.click();
+  await expect(liked).toBeVisible();
+  await expect(modal.getByRole("button", { name: "1 like" })).toBeVisible();
+
+  // A second context, not a second page: pages share the identity cookie.
+  const bobContext = await browser.newContext();
+  const bob = await bobContext.newPage();
+  await login(bob);
+  await bob.goto("/Conference-Gamma/proposals");
+  await actAs(bob, /Bob Test/i);
+  const bobModal = await openProposal(bob, LIKE_PROPOSAL);
+  await bobModal.getByRole("button", { name: "Like", exact: true }).click();
+  await expect(bobModal.getByRole("button", { name: "2 likes" })).toBeVisible();
+  await bobContext.close();
+
+  await page.reload();
+  // Hovering previews the likers, newest first, without opening anything.
+  const count = page.getByRole("button", { name: "2 likes" });
+  const tooltip = page.getByRole("tooltip");
+  await expect(tooltip).toHaveCSS("opacity", "0");
+  await count.hover();
+  await expect(tooltip).toHaveCSS("opacity", "1");
+  await expect(tooltip).toHaveText(/^Bob TestAlice Test$/);
+
+  await count.click();
+  const likers = page.getByRole("dialog", { name: "Liked by" });
+  await expect(likers.getByRole("link", { name: "Alice Test" })).toBeVisible();
+  await expect(likers.getByRole("link", { name: "Bob Test" })).toBeVisible();
+  // One avatar per liker — an uploaded image or the initials fallback, both
+  // decorative and so hidden from the accessibility tree.
+  await expect(likers.locator("li [aria-hidden='true']")).toHaveCount(2);
+  await likers.getByRole("button", { name: "Close" }).click();
+  // The pointer never left the count, but the click dismissed its preview.
+  await expect(tooltip).toHaveCSS("opacity", "0");
+
+  await liked.click();
+  await expect(like).toBeVisible();
+  await expect(page.getByRole("button", { name: "1 like" })).toBeVisible();
 });
 
 test("asks visitors without a name to select one before commenting", async ({

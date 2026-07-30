@@ -272,6 +272,23 @@ export const comments = sqliteTable("comments", {
   editedTime: text("edited_time"),
 });
 
+export const commentLikes = sqliteTable(
+  "comment_likes",
+  {
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    guestId: text("guest_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+    createdTime: text("created_time").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.commentId, t.guestId] }),
+    index("comment_likes_guest_idx").on(t.guestId),
+  ]
+);
+
 export const proposalComments = sqliteTable(
   "proposal_comments",
   {

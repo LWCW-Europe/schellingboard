@@ -1117,6 +1117,7 @@ function clearAll() {
   // Validate the uploads dir before opening the DB or deleting anything.
   const uploadsBase = assertSafeUploadsDir(uploadsDir());
   const db = openDb();
+  db.delete(schema.commentLikes).run();
   db.delete(schema.proposalComments).run();
   db.delete(schema.comments).run();
   db.delete(schema.votes).run();
@@ -1690,11 +1691,30 @@ async function seedTestData() {
     tombstone.editedTime = null;
   }
 
+  const likeRows: (typeof schema.commentLikes.$inferInsert)[] = [];
+  commentRows.forEach((comment, index) => {
+    if (comment.deleted) return;
+    const likers = guestRows.filter((g) => g.id !== comment.authorId);
+    const count = Math.min(Math.floor(seededRandom() * 4), likers.length);
+    for (let i = 0; i < count; i++) {
+      likeRows.push({
+        commentId: comment.id,
+        guestId: likers[(index + i) % likers.length].id,
+        createdTime: new Date(Date.now() - (60 + i) * 60_000).toISOString(),
+      });
+    }
+  });
+
   if (commentRows.length > 0) {
     db.insert(schema.comments).values(commentRows).run();
     db.insert(schema.proposalComments).values(proposalCommentRows).run();
   }
-  console.log(`  ✅ Created ${commentRows.length} comments`);
+  if (likeRows.length > 0) {
+    db.insert(schema.commentLikes).values(likeRows).run();
+  }
+  console.log(
+    `  ✅ Created ${commentRows.length} comments and ${likeRows.length} likes`
+  );
 
   // Sessions: one keynote + lunch blockers per event, plus a filled-out
   // schedule for Conference Gamma (scheduling phase).

@@ -34,6 +34,10 @@ assumed, offer to co-host, or work out whether two proposals should merge.
 Replies are threaded, and the `[-]` next to a comment folds it and everything
 under it away.
 
+Like a comment to agree with it without adding another comment to the thread.
+Click the like count next to the button to see who liked it, and click "Liked"
+again to take your like back.
+
 You can edit or delete your own comments. Deleting is permanent — there is no
 history and no undo. If the comment already has replies, a "Comment deleted"
 placeholder stays behind so the replies still make sense.

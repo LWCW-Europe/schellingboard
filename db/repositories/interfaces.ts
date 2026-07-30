@@ -644,6 +644,8 @@ export interface SessionProposalsRepository {
 
 export type CommentAuthor = Pick<Guest, "id" | "name">;
 
+export type CommentLiker = Pick<Guest, "id" | "name" | "avatarUrl">;
+
 export type Comment = {
   id: string;
   parentId: string | null;
@@ -652,6 +654,7 @@ export type Comment = {
   createdTime: Date;
   editedTime: Date | null;
   author: CommentAuthor | null;
+  likes: CommentLiker[];
 };
 
 export interface CommentsRepository {
@@ -666,6 +669,11 @@ export interface CommentsRepository {
     createdTime: Date;
   }): Promise<Comment>;
   update(id: string, data: { body: string; editedTime: Date }): Promise<void>;
+  toggleLike(data: {
+    commentId: string;
+    guestId: string;
+    createdTime: Date;
+  }): Promise<boolean>;
   /**
    * Erases the comment. One with replies is kept as a tombstone holding
    * nothing but its place in the thread; one without is removed outright,
