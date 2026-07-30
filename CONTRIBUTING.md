@@ -97,6 +97,14 @@ openssl rand -base64 32
 
 `NEXT_PUBLIC_` variables are exposed to the browser; all others are server-side only.
 
+A new variable a self-hoster can set has to reach three files: the reference
+table above, `docker-compose.yml` (which forwards it into the container) and
+`.env.docker.example` (where they fill it in). Nothing runs `docker-compose.yml`
+— it is the one file here whose only user is a stranger — so
+`tests/unit/docker-compose-env.test.ts` compares the three and names whichever
+variable fell out of step. If a variable deliberately doesn't go through
+compose, record the reason in that test instead.
+
 ## Development Commands
 
 Run `make` to see all available commands:
@@ -128,9 +136,11 @@ first. Neither file is committed:
 | `.env.dev.local`  | `make dev`, `make mailpit`   | dev server port, mailpit's host ports, email        |
 | `.env.test.local` | `make test`, `make test-e2e` | email (opt-in, see [Running tests](#running-tests)) |
 
-Start mailpit with `make mailpit` rather than `docker compose up mailpit`: on its
-own, compose reads only a file literally named `.env`, so the make target points
-it at `.env.dev.local` instead. That keeps each clone's ports in one place.
+Start mailpit with `make mailpit` rather than a bare `docker compose up mailpit`:
+mailpit is defined in `docker-compose.dev.yml` (not in the `docker-compose.yml`
+self-hosters copy), and on its own compose reads only a file literally named
+`.env`, so the make target passes both `-f` and `--env-file .env.dev.local`. That
+keeps each clone's ports in one place.
 
 ### Example: two clones side by side
 
@@ -210,9 +220,12 @@ link back to the site; a stale value sends readers to the _other_ instance.
 `COMPOSE_PROJECT_NAME` only matters when two clones share a directory name —
 compose derives the project from the directory, so `~/a/sb` and `~/b/sb` would
 otherwise fight over a single mailpit container. Setting it is cheap insurance.
-Note that mailpit is behind a compose profile, so a bare `docker compose down`
-won't stop it; use `docker compose --profile dev down` (or just Ctrl-C the
-foreground `make mailpit`).
+Note that mailpit lives in its own compose file, so a bare `docker compose down`
+won't stop it; use the same two flags `make mailpit` passes —
+`docker compose -f docker-compose.dev.yml --env-file .env.dev.local down` —
+since without the env file compose looks for the container under the
+directory-derived project name instead. (Or just Ctrl-C the foreground
+`make mailpit`.)
 
 Some things need no attention: `DATABASE_URL` and `SB_UPLOADS_DIR` are relative
 paths, so each clone already gets its own database and uploads. E2E runs pick a
@@ -408,11 +421,11 @@ What it does, and why each piece is there:
 
 - **Picks a free port** and starts the container on it, then waits for
   `/api/health`.
-- **Builds `schellingboard/schellingboard:<version>`**, so a throwaway test
-  build never takes the place of the published
-  `schellingboard/schellingboard:latest` in `docker images`. The version is the
-  one `scripts/app-version.js` prints, which is also what `make docker-build`
-  passes as `APP_VERSION` and what the footer shows.
+- **Builds through `scripts/docker-build.sh`**, the script `make docker-build`
+  runs too — same build arguments, same `:<version>` tag, so the release build
+  is a cache hit of this one and what gets published is what was tested here.
+  The version is the one `scripts/app-version.js` prints, which is also what
+  the footer shows.
 - **Bind-mounts `.e2e-docker/`** (gitignored) as `/data`. Seeding runs on the
   host, as usual, and writes to the same SQLite file and uploads directory the
   container reads — so no seeding code has to exist inside the image. The
@@ -668,12 +681,19 @@ make clean
 make docker-build   # builds and locally tags :$VERSION
 docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MINOR
 docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MAJOR
+# omit if not the newest release
+docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:latest
 
 docker push schellingboard/schellingboard:$VERSION
 docker push schellingboard/schellingboard:$MINOR
 docker push schellingboard/schellingboard:$MAJOR
-docker push schellingboard/schellingboard:latest   # omit if not the newest release
+# omit if not the newest release
+docker push schellingboard/schellingboard:latest
 ```
+
+All four tags are set here rather than by `make docker-build`, which only ever
+tags `:$VERSION`: that target runs on any working tree, and `:latest` has to
+keep meaning the newest published release.
 
 `make docker-build` derives `$VERSION` with `scripts/app-version.js` (the nearest tag, via `jj` or `git`), so the release commit must already be tagged with the exact version (e.g. `v3.0.0`) before running it.
 

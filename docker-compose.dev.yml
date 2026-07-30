@@ -1,0 +1,23 @@
+# Development-only services. Never part of a deployment — docker-compose.yml is
+# the file self-hosters copy, and keeping this one separate means they don't have
+# to wonder what mailpit is for.
+#
+# Start it with `make mailpit`, which points compose at `.env.dev.local`. Compose
+# reads only a file literally named `.env` on its own, and that is where each
+# clone keeps its own ports. See CONTRIBUTING.md#running-multiple-instances.
+services:
+  # Mailpit[1] receives email locally and shows it in a web UI. You need it to
+  # send email from a development app, and for the email tests.
+  #
+  # MAILPIT_SMTP_PORT/MAILPIT_UI_PORT let you run several instances of this
+  # project (separate clones or workspaces) on one machine without port clashes.
+  #
+  # [1]: https://mailpit.axllent.org/
+  mailpit:
+    # If you update this pin, update it in the CI service containers too:
+    # the `test` job in .github/workflows/ci.yml and the `test-e2e` job in
+    # .github/workflows/ci-e2e.yml.
+    image: axllent/mailpit@sha256:956d688cbd13dca36c72d8e94c34d6d1cdf4a005aa6aa4ff6edaaac56c34d8df
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP
+      - "${MAILPIT_UI_PORT:-8025}:8025" # web UI

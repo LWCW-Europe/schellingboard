@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **A simpler `docker-compose.yml` for self-hosting**: the file you copy to run SchellingBoard now describes only SchellingBoard itself. It used to also include a mail-catching tool that only developers of SchellingBoard need, and instructions for building the app from source rather than using the published image — both of which invited the question of whether you were supposed to run them. `.env.docker.example` also drops `COMMIT_HASH`, a setting that had no effect. Nothing to do if you already run it: your existing file and settings keep working
 - **Saving a form that has errors now says why, right where you clicked**: on longer forms — editing your profile, proposing a session, adding or editing a location — a summary of everything that needs fixing appears next to the Save button, instead of the page simply not moving because the message sits somewhere further up. Each entry is clickable and takes you to the field it belongs to, opening the "Languages", "Contact details" or "Conversation starters" section first if the field is hidden inside it
 
 ### Fixed
@@ -21,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- Dev-only services moved to `docker-compose.dev.yml`, so `docker-compose.yml` is purely the deployment file self-hosters copy. `make mailpit` is unchanged; a bare `docker compose up mailpit` now needs `-f docker-compose.dev.yml`. `make docker-build` builds via `docker build`, since the deployment file no longer carries a build context, and tags only `:$VERSION` — `:latest` is now tagged in the release checklist next to the `major` and `major.minor` tags, so a build from an arbitrary working tree can't claim to be the newest release. That build now lives in `scripts/docker-build.sh`, which `make docker-build` and `scripts/e2e-docker.sh` both run, so the release build stays a cache hit of the image the E2E suite tested
+- `tests/unit/docker-compose-env.test.ts` guards the environment variables in `docker-compose.yml` against the Configuration reference and `.env.docker.example`. Nothing executes that file — its only user is a self-hoster — so a variable the app started needing could be documented and set in a `.env` yet never reach the container, with nothing to say why the feature was inert
 - `make test-e2e-docker` runs the E2E suite against a container built from the working tree, instead of the `next start` server the other E2E runs use — the only tier that exercises the image we actually publish, including its standalone build, its `/data` volume and its UTC clock. It is a step in the release checklist, between tagging and pushing the tag, and it is what found the time zone bug fixed above. See [CONTRIBUTING.md § Testing the Docker image](CONTRIBUTING.md#testing-the-docker-image)
 
 ## [3.2.0] - 2026-07-29

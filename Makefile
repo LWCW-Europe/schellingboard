@@ -60,7 +60,7 @@ dev: dev-migrate-up install
 # (and COMPOSE_PROJECT_NAME), letting several clones run mailpit side by side.
 # The flag is conditional because compose errors out on a missing --env-file.
 mailpit:
-	docker compose $(if $(wildcard .env.dev.local),--env-file .env.dev.local,) up mailpit
+	docker compose -f docker-compose.dev.yml $(if $(wildcard .env.dev.local),--env-file .env.dev.local,) up mailpit
 
 build: install
 	bun x next build
@@ -171,10 +171,12 @@ docs-validate: install
 www:
 	bash scripts/build-www.sh
 
+# Builds the image to publish, tagged :$VERSION. The build itself lives in the
+# script because scripts/e2e-docker.sh has to run the identical one — see the
+# comment there. Not via `docker compose build`: docker-compose.yml is the
+# deployment file self-hosters copy and only names the published image.
 docker-build:
-	$(eval APP_VERSION := $(shell bun scripts/app-version.js))
-	APP_VERSION=$(APP_VERSION) docker compose build
-	docker tag schellingboard/schellingboard:latest schellingboard/schellingboard:$(APP_VERSION)
+	bash scripts/docker-build.sh
 
 # Deprecated aliases (hidden from help) — remove after a deprecation period.
 # They print a warning pointing to the new name, then run it.

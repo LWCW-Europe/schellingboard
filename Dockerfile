@@ -11,7 +11,7 @@ WORKDIR /app
 COPY --from=oven/bun:1 /usr/local/bin/bun /usr/local/bin/bun
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Pass via --build-arg APP_VERSION=$(bun scripts/app-version.js)
+# Passed by scripts/docker-build.sh; empty builds show no version in the footer.
 ARG APP_VERSION
 ENV APP_VERSION=$APP_VERSION
 ENV BUILD_STANDALONE=1

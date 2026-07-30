@@ -1,10 +1,10 @@
 // The version of the working tree, e.g. `v3.2.0` or `802a340f-dirty`.
 //
-// Three consumers, one definition, because they have to agree: next.config.js
+// Two consumers, one definition, because they have to agree: next.config.js
 // bakes it into the build as NEXT_PUBLIC_APP_VERSION (the footer shows it, see
-// utils/git.ts), and `make docker-build` and scripts/e2e-docker.sh both pass it
-// as the APP_VERSION build arg and use it as the image tag — so the release
-// build reuses the layers the E2E run built instead of compiling its own.
+// utils/git.ts), and scripts/docker-build.sh passes it as the APP_VERSION build
+// arg and uses it as the image tag — so the release build reuses the layers the
+// E2E run built instead of compiling its own.
 //
 // Run directly (`bun scripts/app-version.js`) to print it.
 import { execFileSync } from "child_process";

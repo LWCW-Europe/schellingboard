@@ -28,23 +28,17 @@ DATA_DIR="$PWD/.e2e-docker"
 CONTAINER="schellingboard-e2e-$$"
 
 # Build from the working tree unless the caller named an image (e.g. to run the
-# suite against a release image that was already built or pulled). The build
-# gets a local name of its own: `schellingboard/schellingboard:latest` is the
-# published release image, and a throwaway test build must not take its place.
+# suite against a release image that was already built or pulled).
 #
-# APP_VERSION comes from the same script `make docker-build` and next.config.js
-# use, for two reasons: the version the UI displays is baked in at build time,
-# so leaving it empty tests an image nobody ships; and passing the same value
-# makes the release build a cache hit of this one, so what gets published is
-# what was tested here. It is also the tag, so a leftover image says which tree
-# it came from and successive runs don't overwrite each other.
+# Through the same script `make docker-build` runs, so the release build is a
+# cache hit of this one and what gets published is what was tested here. That
+# guarantee is the reason the build command isn't inlined here.
 if [ -n "${IMAGE:-}" ]; then
   echo "==> Using existing image $IMAGE"
 else
-  APP_VERSION="$(bun scripts/app-version.js)"
-  IMAGE="schellingboard/schellingboard:$APP_VERSION"
-  echo "==> Building $IMAGE"
-  docker build --build-arg "APP_VERSION=$APP_VERSION" -t "$IMAGE" .
+  echo "==> Building the image"
+  IMAGE="$(bash scripts/docker-build.sh)"
+  echo "==> Built $IMAGE"
 fi
 
 # Playwright's own port picking is bypassed here (E2E_EXTERNAL_SERVER), so pick
@@ -85,7 +79,7 @@ env_args+=(-e "SITE_URL=$BASE_URL")
 # release check shouldn't fall over because a background service wasn't
 # started by hand. Ports come from .env.dev.local, the file `make mailpit`
 # feeds compose (see the note above that target).
-mailpit_compose=(docker compose)
+mailpit_compose=(docker compose -f docker-compose.dev.yml)
 if [ -f .env.dev.local ]; then
   mailpit_compose+=(--env-file .env.dev.local)
 fi
