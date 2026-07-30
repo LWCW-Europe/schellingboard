@@ -27,3 +27,8 @@ export const commentDeleteSchema = z.object({
   commentId: z.string().min(1),
   eventSlug: z.string().min(1),
 });
+
+export const commentLikeSchema = z.object({
+  commentId: z.string().min(1),
+  eventSlug: z.string().min(1),
+});

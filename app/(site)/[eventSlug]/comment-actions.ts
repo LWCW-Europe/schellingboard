@@ -7,6 +7,7 @@ import { z } from "zod";
 import { getRepositories } from "@/db/container";
 import {
   commentDeleteSchema,
+  commentLikeSchema,
   commentUpdateSchema,
   proposalCommentSchema,
 } from "@/model/comment";
@@ -19,6 +20,9 @@ import {
 export type CommentActionResult =
   { error: string | z.core.$ZodIssue[] } | { success: true };
 
+export type CommentLikeResult =
+  { error: string | z.core.$ZodIssue[] } | { success: true; liked: boolean };
+
 const NO_NAME_ERROR = `Select your name before commenting — ${NAME_PROTECTED_ERROR.toLowerCase()}`;
 
 class Refusal extends Error {
@@ -27,7 +31,10 @@ class Refusal extends Error {
   }
 }
 
-function toResult(error: unknown, failure: string): CommentActionResult {
+function toResult(
+  error: unknown,
+  failure: string
+): { error: string | z.core.$ZodIssue[] } {
   if (error instanceof Refusal) {
     return { error: error.payload };
   }
@@ -127,6 +134,36 @@ export async function updateComment(
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to update comment");
+  }
+}
+
+export async function toggleCommentLike(
+  like: z.input<typeof commentLikeSchema>
+): Promise<CommentLikeResult>;
+export async function toggleCommentLike(
+  input: unknown
+): Promise<CommentLikeResult> {
+  try {
+    const guest = await requireGuest();
+    const { commentId, eventSlug } = await requireParsed(
+      commentLikeSchema,
+      input
+    );
+    const comment = await getRepositories().comments.findById(commentId);
+
+    if (!comment || comment.deleted) {
+      return { error: "Comment not found" };
+    }
+
+    const liked = await getRepositories().comments.toggleLike({
+      commentId,
+      guestId: guest,
+      createdTime: await serverNow(),
+    });
+    revalidatePath(`/${eventSlug}`, "layout");
+    return { success: true, liked };
+  } catch (error) {
+    return toResult(error, "Failed to like comment");
   }
 }
 

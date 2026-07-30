@@ -1,8 +1,8 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
-import type { Comment, CommentsRepository } from "../interfaces";
+import type { Comment, CommentLiker, CommentsRepository } from "../interfaces";
 
 type DB = BetterSQLite3Database<typeof schema>;
 
@@ -20,7 +20,7 @@ type CommentRow = {
 export class SqliteCommentsRepository implements CommentsRepository {
   constructor(private readonly db: DB) {}
 
-  async listByProposal(proposalId: string): Promise<Comment[]> {
+  private selectByProposal(proposalId: string): CommentRow[] {
     return this.db
       .select({
         id: schema.comments.id,
@@ -40,8 +40,44 @@ export class SqliteCommentsRepository implements CommentsRepository {
       .leftJoin(schema.guests, eq(schema.comments.authorId, schema.guests.id))
       .where(eq(schema.proposalComments.proposalId, proposalId))
       .orderBy(asc(schema.comments.createdTime), asc(schema.comments.id))
-      .all()
-      .map(toComment);
+      .all();
+  }
+
+  private selectLikes(commentIds: string[]): Map<string, CommentLiker[]> {
+    const byComment = new Map<string, CommentLiker[]>();
+    if (commentIds.length === 0) {
+      return byComment;
+    }
+    const rows = this.db
+      .select({
+        commentId: schema.commentLikes.commentId,
+        id: schema.guests.id,
+        name: schema.guests.name,
+        avatarUrl: schema.guests.avatarUrl,
+      })
+      .from(schema.commentLikes)
+      .innerJoin(
+        schema.guests,
+        eq(schema.commentLikes.guestId, schema.guests.id)
+      )
+      .where(inArray(schema.commentLikes.commentId, commentIds))
+      .orderBy(
+        asc(schema.commentLikes.createdTime),
+        asc(schema.commentLikes.guestId)
+      )
+      .all();
+    for (const { commentId, id, name, avatarUrl } of rows) {
+      const likes = byComment.get(commentId) ?? [];
+      likes.push({ id, name, avatarUrl });
+      byComment.set(commentId, likes);
+    }
+    return byComment;
+  }
+
+  async listByProposal(proposalId: string): Promise<Comment[]> {
+    const rows = this.selectByProposal(proposalId);
+    const likes = this.selectLikes(rows.map((r) => r.id));
+    return rows.map((row) => toComment(row, likes.get(row.id)));
   }
 
   async findById(id: string): Promise<Comment | undefined> {
@@ -60,7 +96,7 @@ export class SqliteCommentsRepository implements CommentsRepository {
       .leftJoin(schema.guests, eq(schema.comments.authorId, schema.guests.id))
       .where(eq(schema.comments.id, id))
       .get();
-    return row && toComment(row);
+    return row && toComment(row, this.selectLikes([id]).get(id));
   }
 
   async findProposalId(commentId: string): Promise<string | undefined> {
@@ -106,7 +142,38 @@ export class SqliteCommentsRepository implements CommentsRepository {
       createdTime: data.createdTime,
       editedTime: null,
       author: author ?? null,
+      likes: [],
     };
+  }
+
+  async toggleLike(data: {
+    commentId: string;
+    guestId: string;
+    createdTime: Date;
+  }): Promise<boolean> {
+    return this.db.transaction((tx) => {
+      const match = and(
+        eq(schema.commentLikes.commentId, data.commentId),
+        eq(schema.commentLikes.guestId, data.guestId)
+      );
+      const existing = tx
+        .select({ commentId: schema.commentLikes.commentId })
+        .from(schema.commentLikes)
+        .where(match)
+        .get();
+      if (existing) {
+        tx.delete(schema.commentLikes).where(match).run();
+        return false;
+      }
+      tx.insert(schema.commentLikes)
+        .values({
+          commentId: data.commentId,
+          guestId: data.guestId,
+          createdTime: data.createdTime.toISOString(),
+        })
+        .run();
+      return true;
+    });
   }
 
   async update(
@@ -138,6 +205,9 @@ export class SqliteCommentsRepository implements CommentsRepository {
             editedTime: null,
           })
           .where(eq(schema.comments.id, id))
+          .run();
+        tx.delete(schema.commentLikes)
+          .where(eq(schema.commentLikes.commentId, id))
           .run();
         return;
       }
@@ -176,7 +246,7 @@ export class SqliteCommentsRepository implements CommentsRepository {
   }
 }
 
-function toComment(row: CommentRow): Comment {
+function toComment(row: CommentRow, likes: CommentLiker[] = []): Comment {
   return {
     id: row.id,
     parentId: row.parentId,
@@ -188,5 +258,6 @@ function toComment(row: CommentRow): Comment {
       row.authorId && row.authorName
         ? { id: row.authorId, name: row.authorName }
         : null,
+    likes,
   };
 }

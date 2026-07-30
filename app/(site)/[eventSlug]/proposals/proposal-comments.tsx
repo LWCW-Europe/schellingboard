@@ -15,6 +15,7 @@ import {
   updateComment,
 } from "../comment-actions";
 import { useLocalZone } from "@/utils/hooks";
+import { CommentLikes } from "../comment-likes";
 import { formatInLocalZone } from "@/utils/utils";
 
 type CommentNode = Comment & { replies: CommentNode[] };
@@ -251,7 +252,8 @@ function CommentThread({
             )}
 
             {!editing && (
-              <div className="mt-1 flex flex-wrap gap-3 text-xs text-gray-500">
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                <CommentLikes comment={node} eventSlug={eventSlug} />
                 {currentUserId && (
                   <button
                     type="button"
