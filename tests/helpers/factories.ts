@@ -1,4 +1,5 @@
 import { getRepositories } from "@/db/container";
+import { DEFAULT_EMAIL_SETTINGS } from "@/db/repositories/interfaces";
 import type {
   EmailSettings,
   Event,
@@ -89,7 +90,7 @@ export async function createEvent(opts?: {
 export async function createGuest(opts?: {
   name?: string;
   email?: string;
-  emailSettings?: EmailSettings;
+  emailSettings?: Partial<EmailSettings>;
   /** When set, the guest is also assigned to this event. */
   eventId?: string;
 }): Promise<Guest> {
@@ -104,7 +105,10 @@ export async function createGuest(opts?: {
   if (opts?.emailSettings) {
     // Guests are created with default settings; non-default settings are
     // applied the way a real guest would, via their settings.
-    await guests.updateEmailSettings(guest.id, opts.emailSettings);
+    await guests.updateEmailSettings(guest.id, {
+      ...DEFAULT_EMAIL_SETTINGS,
+      ...opts.emailSettings,
+    });
   }
   if (opts?.eventId) {
     await guests.assignToEvent(opts.eventId, [guest.id]);

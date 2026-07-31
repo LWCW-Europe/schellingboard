@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { z } from "zod";
 
 import { getRepositories } from "@/db/container";
@@ -11,6 +12,7 @@ import {
   commentUpdateSchema,
   proposalCommentSchema,
 } from "@/model/comment";
+import { notifyProposalCommented } from "@/utils/notifications";
 import { serverNow } from "@/utils/dev-clock-server";
 import {
   NAME_PROTECTED_ERROR,
@@ -98,7 +100,7 @@ export async function createProposalComment(
       }
     }
 
-    await getRepositories().comments.createForProposal({
+    const comment = await getRepositories().comments.createForProposal({
       proposalId,
       authorId: guest,
       parentId,
@@ -106,6 +108,7 @@ export async function createProposalComment(
       createdTime: await serverNow(),
     });
     revalidatePath(`/${eventSlug}`, "layout");
+    after(() => notifyProposalCommented({ proposalId, comment }));
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to post comment");

@@ -1,11 +1,16 @@
 import { DateTime } from "luxon";
 import { getRepositories } from "@/db/container";
-import type { EmailSettings, Session } from "@/db/repositories/interfaces";
+import type {
+  Comment,
+  EmailSettings,
+  Session,
+} from "@/db/repositories/interfaces";
 import { sendMail, type EmailMessage } from "@/utils/mailer";
 import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
 import { sessionDeletedEmail } from "@/emails/session-deleted";
 import { cohostAddedEmail } from "@/emails/cohost-added";
+import { proposalCommentEmail } from "@/emails/proposal-comment";
 import { getStartTimePlusBreak } from "@/utils/utils";
 
 // Send `message` to the guest, iff they have opted in to emails for
@@ -283,6 +288,93 @@ async function notifyCohostsAddedUnsafe({
   for (const host of added) {
     await tryNotifyGuest(host.id, "cohostAdd", message);
   }
+}
+
+// Email a new comment to the proposal's hosts (who have opted in) and to the
+// authors of its earlier comments (who have opted in — off by default). The
+// comment's own author is never told about their own comment, and nobody is
+// told twice, whichever way they qualify.
+//
+// Never throws: any failure (including a bad SITE_URL, or a lookup error) is
+// logged and must not break the comment it trails, nor the sends to the other
+// guests.
+export async function notifyProposalCommented(args: {
+  proposalId: string;
+  comment: Comment;
+}): Promise<void> {
+  try {
+    await notifyProposalCommentedUnsafe(args);
+  } catch (err) {
+    console.error("Failed to send proposal-comment notifications:", err);
+  }
+}
+
+async function notifyProposalCommentedUnsafe({
+  proposalId,
+  comment,
+}: {
+  proposalId: string;
+  comment: Comment;
+}): Promise<void> {
+  const { comments, events, sessionProposals } = getRepositories();
+  const proposal = await sessionProposals.findById(proposalId);
+  if (!proposal) {
+    return;
+  }
+  const event = await events.findById(proposal.eventId);
+  if (!event) {
+    return;
+  }
+
+  const base = siteUrl();
+  if (base === null) {
+    console.warn("SITE_URL is not set - not sending comment notifications");
+    return;
+  }
+
+  const messageProps = {
+    proposalTitle: proposal.title,
+    commenterName: comment.author?.name ?? "Someone",
+    body: comment.body,
+    url: commentUrl(base, event.slug, proposalId, comment.id),
+  };
+
+  const done = new Set(comment.author ? [comment.author.id] : []);
+  for (const host of proposal.hosts) {
+    if (done.has(host.id)) {
+      continue;
+    }
+    done.add(host.id);
+    await tryNotifyGuest(
+      host.id,
+      "proposalComment",
+      proposalCommentEmail({ ...messageProps, recipient: "host" })
+    );
+  }
+
+  for (const earlier of await comments.listByProposal(proposalId)) {
+    const author = earlier.author;
+    if (!author || done.has(author.id)) {
+      continue;
+    }
+    done.add(author.id);
+    await tryNotifyGuest(
+      author.id,
+      "commentThread",
+      proposalCommentEmail({ ...messageProps, recipient: "commenter" })
+    );
+  }
+}
+
+// Deep link to the comment inside the proposal modal, same shape as
+// modal-nav's viewProposalLinkFromElsewhere plus the comment's anchor.
+function commentUrl(
+  base: string,
+  eventSlug: string,
+  proposalId: string,
+  commentId: string
+) {
+  return `${base}/${eventSlug}/proposals?viewProposal=${proposalId}#comment-${commentId}`;
 }
 
 // Deep link to the session, same shape as modal-nav's

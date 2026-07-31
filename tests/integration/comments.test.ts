@@ -4,6 +4,24 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
+
+const { afterTasks } = vi.hoisted(() => ({
+  afterTasks: [] as Promise<unknown>[],
+}));
+
+vi.mock("next/server", () => ({
+  after: (task: () => unknown) => {
+    afterTasks.push(Promise.resolve(task()));
+  },
+}));
+
+async function flushAfter(): Promise<void> {
+  await Promise.all(afterTasks);
+}
+
 const cookieJar = new Map<string, string>();
 
 vi.mock("next/headers", () => ({
@@ -29,6 +47,7 @@ import {
   updateComment,
   deleteComment,
 } from "@/app/(site)/[eventSlug]/comment-actions";
+import { sendMail } from "@/utils/mailer";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
@@ -49,6 +68,31 @@ describe("comments", () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    vi.mocked(sendMail).mockReset();
+    afterTasks.length = 0;
+  });
+
+  it("emails the proposal's host about a new comment", async () => {
+    const event = await createEvent({ phase: "voting" });
+    const host = await createGuest({
+      eventId: event.id,
+      email: "host@test.example",
+    });
+    const commenter = await createGuest({ eventId: event.id });
+    const proposal = await createProposal(event.id, [host.id]);
+    act(commenter.id);
+    vi.stubEnv("SITE_URL", "https://site.example");
+
+    await createComment({
+      proposalId: proposal.id,
+      eventSlug: event.slug,
+      body: "Sounds great",
+    });
+    await flushAfter();
+
+    expect(vi.mocked(sendMail).mock.calls.map((c) => c[0].to)).toEqual([
+      "host@test.example",
+    ]);
   });
 
   it("stores a comment and reads it back with its author and time", async () => {

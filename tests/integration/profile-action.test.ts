@@ -68,6 +68,8 @@ describe("updateProfileAction", () => {
       rsvpChange: false,
       hostChange: false,
       cohostAdd: true,
+      proposalComment: true,
+      commentThread: false,
     });
   });
 

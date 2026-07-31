@@ -34,6 +34,8 @@ describe("updateEmailSettingsAction", () => {
       rsvpChange: false,
       hostChange: false,
       cohostAdd: true,
+      proposalComment: false,
+      commentThread: true,
     });
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
@@ -41,6 +43,8 @@ describe("updateEmailSettingsAction", () => {
       rsvpChange: false,
       hostChange: false,
       cohostAdd: true,
+      proposalComment: false,
+      commentThread: true,
     });
   });
 
@@ -50,6 +54,8 @@ describe("updateEmailSettingsAction", () => {
       rsvpChange: false,
       hostChange: false,
       cohostAdd: false,
+      proposalComment: false,
+      commentThread: false,
     });
     expect(result).toEqual({ ok: false, error: "No user is logged in" });
     const unchanged = await getRepositories().guests.findById(guest.id);

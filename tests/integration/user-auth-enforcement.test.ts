@@ -276,6 +276,8 @@ describe("write enforcement for protected guests", () => {
         rsvpChange: false,
         hostChange: false,
         cohostAdd: false,
+        proposalComment: false,
+        commentThread: false,
       });
       expect(settingsResult.ok).toBe(false);
     });

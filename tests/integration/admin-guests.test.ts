@@ -243,7 +243,7 @@ describe("admin guest actions", () => {
   });
 
   describe("email settings", () => {
-    it("defaults email settings to on for new guests", async () => {
+    it("gives new guests the default email settings", async () => {
       const result = await createGuestAction({
         name: "Alice",
         email: "alice@test.example",
@@ -255,6 +255,8 @@ describe("admin guest actions", () => {
         rsvpChange: true,
         hostChange: true,
         cohostAdd: true,
+        proposalComment: true,
+        commentThread: false,
       });
     });
   });
