@@ -35,6 +35,12 @@ test("header user menu reaches profile, edit profile, and settings; email prefer
 
   const rsvpToggle = page.getByLabel(/RSVP.d to changes time or location/i);
   await expect(rsvpToggle).toBeChecked();
+  await expect(
+    page.getByLabel(/comments on a proposal I.m hosting/i)
+  ).toBeChecked();
+  await expect(
+    page.getByLabel(/comments on a proposal I.ve commented on/i)
+  ).not.toBeChecked();
   await rsvpToggle.uncheck();
   await page.getByRole("button", { name: /^Save$/ }).click();
   await expect(page.getByText(/saved/i)).toBeVisible();

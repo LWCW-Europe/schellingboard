@@ -83,6 +83,14 @@ export function SettingsForm({
             <input type="checkbox" {...form.register("cohostAdd")} />
             someone adds me as a session co-host
           </label>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" {...form.register("proposalComment")} />
+            someone comments on a proposal I&rsquo;m hosting
+          </label>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" {...form.register("commentThread")} />
+            someone comments on a proposal I&rsquo;ve commented on
+          </label>
         </fieldset>
 
         {form.formState.errors.root && (

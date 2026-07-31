@@ -126,6 +126,8 @@ address, and you can unlock from there.
 ## Email settings
 
 If the event has email enabled, Settings also controls which notifications
-you get: when a session you host or RSVP'd to is moved or deleted, and when
-someone adds you as a co-host. These are on by default and can be turned off
-independently.
+you get: when a session you host or RSVP'd to is moved or deleted, when
+someone adds you as a co-host, and when someone comments on a proposal you're
+hosting. These are on by default and can be turned off independently. One
+further setting is off by default: emails about every new comment on a
+proposal you have commented on yourself.

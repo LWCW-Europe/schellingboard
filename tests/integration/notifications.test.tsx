@@ -18,14 +18,17 @@ import {
   createEvent,
   createGuest,
   createLocation,
+  createProposal,
   createSession,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
+import { DEFAULT_EMAIL_SETTINGS } from "@/db/repositories/interfaces";
 import { render } from "@react-email/render";
 import { sendMail } from "@/utils/mailer";
 import {
   notifyCohostsAdded,
   notifyGuest,
+  notifyProposalCommented,
   notifySessionChanged,
   notifySessionDeleted,
 } from "@/utils/notifications";
@@ -548,6 +551,166 @@ describe("notifyCohostsAdded", () => {
       changedById: null,
     });
 
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+});
+
+describe("notifyProposalCommented", () => {
+  beforeAll(() => setupTestDb());
+
+  beforeEach(() => {
+    resetTestDb();
+    vi.mocked(sendMail).mockReset();
+    vi.stubEnv("SITE_URL", "https://site.example");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  async function renderWithoutComments(body: ReactElement): Promise<string> {
+    return (await render(body)).replace(/<!--.*?-->/g, "");
+  }
+
+  // A proposal hosted by host@test.example, already carrying one comment by
+  // earlier@test.example.
+  async function setup() {
+    const event = await createEvent({ phase: "proposal" });
+    const host = await createGuest({ email: "host@test.example" });
+    const earlier = await createGuest({ email: "earlier@test.example" });
+    const proposal = await createProposal(event.id, [host.id], {
+      title: "Fun Workshop",
+    });
+    await addComment(proposal.id, earlier.id, "Sounds good");
+    return { event, host, earlier, proposal };
+  }
+
+  async function addComment(
+    proposalId: string,
+    authorId: string,
+    body: string
+  ) {
+    return getRepositories().comments.createForProposal({
+      proposalId,
+      authorId,
+      body,
+      createdTime: new Date("2026-08-01T10:00:00Z"),
+    });
+  }
+
+  async function optIntoThread(guestId: string) {
+    await getRepositories().guests.updateEmailSettings(guestId, {
+      ...DEFAULT_EMAIL_SETTINGS,
+      commentThread: true,
+    });
+  }
+
+  it("emails the proposal's hosts and the opted-in earlier commenters", async () => {
+    const { event, earlier, proposal } = await setup();
+    await optIntoThread(earlier.id);
+    const commenter = await createGuest({
+      name: "Rosa Diaz",
+      email: "commenter@test.example",
+    });
+    const posted = await addComment(
+      proposal.id,
+      commenter.id,
+      "A *great* idea"
+    );
+
+    await notifyProposalCommented({ proposalId: proposal.id, comment: posted });
+
+    expect(sendMail).toHaveBeenCalledTimes(2);
+    const messages = vi.mocked(sendMail).mock.calls.map((call) => call[0]);
+    const hostMessage = messages.find((m) => m.to === "host@test.example");
+    const earlierMessage = messages.find(
+      (m) => m.to === "earlier@test.example"
+    );
+    expect(hostMessage?.subject).toBe("New comment on: Fun Workshop");
+    expect(earlierMessage).toBeDefined();
+
+    const hostHtml = await renderWithoutComments(hostMessage!.body);
+    expect(hostHtml).toContain("Rosa Diaz");
+    expect(hostHtml).toContain("proposal you");
+    // The comment body is markdown, rendered to html.
+    expect(hostHtml).toContain("A <em>great</em> idea");
+    expect(hostHtml).toContain(
+      `href="https://site.example/${event.slug}/proposals?viewProposal=${proposal.id}#comment-${posted.id}"`
+    );
+
+    const earlierHtml = await renderWithoutComments(earlierMessage!.body);
+    expect(earlierHtml).toContain("commented on");
+  });
+
+  it("does not email the guest who wrote the comment", async () => {
+    const { host, proposal } = await setup();
+    const posted = await addComment(proposal.id, host.id, "My own thoughts");
+
+    await notifyProposalCommented({ proposalId: proposal.id, comment: posted });
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
+    expect(recipients).not.toContain("host@test.example");
+  });
+
+  it("leaves earlier commenters alone by default", async () => {
+    const { proposal } = await setup();
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(proposal.id, commenter.id, "Hello");
+
+    await notifyProposalCommented({ proposalId: proposal.id, comment: posted });
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
+    expect(recipients).toEqual(["host@test.example"]);
+  });
+
+  it("skips a host who opted out of proposal comment emails", async () => {
+    const event = await createEvent({ phase: "proposal" });
+    const host = await createGuest({
+      email: "host-off@test.example",
+      emailSettings: { proposalComment: false },
+    });
+    const proposal = await createProposal(event.id, [host.id]);
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(proposal.id, commenter.id, "Hello");
+
+    await notifyProposalCommented({ proposalId: proposal.id, comment: posted });
+
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("emails a host once, even when they also commented earlier", async () => {
+    const { host, proposal } = await setup();
+    await optIntoThread(host.id);
+    await addComment(proposal.id, host.id, "Looking forward to it");
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(proposal.id, commenter.id, "Hello");
+
+    await notifyProposalCommented({ proposalId: proposal.id, comment: posted });
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
+    expect(recipients.filter((to) => to === "host@test.example")).toHaveLength(
+      1
+    );
+  });
+
+  it("sends nothing when SITE_URL is not set", async () => {
+    vi.stubEnv("SITE_URL", "");
+    const { proposal } = await setup();
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(proposal.id, commenter.id, "Hello");
+
+    await notifyProposalCommented({ proposalId: proposal.id, comment: posted });
+
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when the proposal is gone", async () => {
+    const { proposal } = await setup();
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(proposal.id, commenter.id, "Hello");
+    await getRepositories().sessionProposals.delete(proposal.id);
+
+    await expect(
+      notifyProposalCommented({ proposalId: proposal.id, comment: posted })
+    ).resolves.toBeUndefined();
     expect(sendMail).not.toHaveBeenCalled();
   });
 });

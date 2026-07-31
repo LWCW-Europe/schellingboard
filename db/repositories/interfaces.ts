@@ -109,12 +109,18 @@ export type EmailSettings = {
   hostChange: boolean;
   /** The guest was added as a co-host of a session. */
   cohostAdd: boolean;
+  /** Someone commented on a proposal the guest is hosting. */
+  proposalComment: boolean;
+  /** Someone commented on a proposal the guest has commented on. */
+  commentThread: boolean;
 };
 
 export const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   rsvpChange: true,
   hostChange: true,
   cohostAdd: true,
+  proposalComment: true,
+  commentThread: false,
 };
 
 type GuestPrivateInfo = {

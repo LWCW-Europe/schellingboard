@@ -120,6 +120,7 @@ these are the only messages ever sent:
 | **Session moved**    | Hosts and RSVP'd attendees, when a session's time or location changes | Per-attendee, in their settings |
 | **Session deleted**  | Hosts and RSVP'd attendees, when their session is deleted             | Per-attendee, in their settings |
 | **Added as co-host** | Attendees newly added as a co-host of a session                       | Per-attendee, in their settings |
+| **New comment**      | A proposal's hosts, and earlier commenters who opted in               | Per-attendee, in their settings |
 | **Test email**       | One guest, from the admin Users page                                  | n/a                             |
 
 Nothing is emailed on votes, RSVPs, phase transitions, or edits to a

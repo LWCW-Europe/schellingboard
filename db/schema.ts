@@ -44,6 +44,16 @@ export const guests = sqliteTable(
     emailOnCohostAdd: integer("email_on_cohost_add", { mode: "boolean" })
       .notNull()
       .default(true),
+    emailOnProposalComment: integer("email_on_proposal_comment", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(true),
+    emailOnCommentThread: integer("email_on_comment_thread", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(false),
     avatarUrl: text("avatar_url"),
     // Account security (issue #370): when set, acting as this guest requires
     // a verified session (password or emailed code) instead of the open
