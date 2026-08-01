@@ -96,7 +96,15 @@ Exceptions (be very conservative): pure UI/styling-only changes; refactors where
 
 ## Coding Guidelines
 
-Code comments must be succint unless verbosity is really necessary. Focus on the "why" and only explain the "what" when the code is complex.
+**Comments: read [docs/dev/coding-guidelines.md](docs/dev/coding-guidelines.md#comments) before writing any.**
+The short version: comment the WHY, not the WHAT. Default to no comment. Never
+restate what the code plainly says (`// toggle the like` above `toggleLike`), and
+never add doc blocks or `@param`/`@returns` that only repeat the signature.
+Comment a line only when it looks wrong or arbitrary without the reason behind it.
+
+This rule **overrides consistency with the surrounding code** — if the
+neighbouring code is over-commented, do not match its density, write the sparse
+version.
 
 ## Misc
 

@@ -5,6 +5,7 @@ This file covers what you need day to day. Longer chapters live under
 
 | Document                                                        | For                                                                        |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| [Coding guidelines](docs/dev/coding-guidelines.md)              | when to write a comment, and what never to put in one                      |
 | [Testing](docs/dev/testing.md)                                  | test strategy, TDD workflow, running tests, the Docker tier                |
 | [Database migrations](docs/dev/migrations.md)                   | generating migrations, resolving drizzle conflicts                         |
 | [Running multiple instances](docs/dev/multiple-instances.md)    | ports and env files when several clones share a machine                    |
@@ -158,6 +159,11 @@ hand-edit them, regenerate as described in
 - Prefer server components; use server actions for mutations
 - Tailwind CSS for all styling
 - All UI must be mobile-responsive
+
+Comments: comment the WHY, not the WHAT, and default to writing none. The full
+rules — when a comment earns its place, what never to write, and why they
+outrank consistency with the surrounding file — are in
+[Coding guidelines](docs/dev/coding-guidelines.md#comments).
 
 ## Authorization
 
