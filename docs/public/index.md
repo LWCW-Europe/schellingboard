@@ -33,6 +33,8 @@ Organizers: this is the page worth sharing with your attendees.
   Docker or `docker compose`.
 - [Configuration](self-hosting/configuration.md) — every environment
   variable, plus how to set up email.
+- [Backup and restore](self-hosting/backup.md) — what to back up, how to do
+  it without stopping the site, and how to restore.
 
 SchellingBoard is open source (MIT). The code lives on
 [GitHub](https://github.com/LWCW-Europe/schellingboard).

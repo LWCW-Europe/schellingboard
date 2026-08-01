@@ -32,7 +32,8 @@ docker compose up -d
 `docker-compose.yml`, so you don't need to pass variables on the command line.
 
 See [Configuration](configuration.md) for every environment variable, including
-how to set up email.
+how to set up email, and [Backup and restore](backup.md) for keeping a copy of
+your data.
 
 ## Administration
 

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **A guide to backing up your instance**: self-hosters now have a documented way to take a copy of their data — the database and everything uploaded through the admin UI — while the site keeps running, along with how to restore it and what else to keep safe. See [Backup and restore](https://docs.schellingboard.org/self-hosting/backup/)
+
 ## [3.3.0] - 2026-08-01
 
 ### Added
