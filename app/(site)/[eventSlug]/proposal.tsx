@@ -12,19 +12,25 @@ export function Proposal(props: { proposal: SessionProposal }) {
   return (
     <>
       <h1 className="text-xl font-semibold mb-2 mt-5">{proposal.title}</h1>
-      <p className="text-lg font-medium text-gray-700 mb-4">
-        {proposal.hosts.map((h, i) => (
-          <span key={h.id}>
-            {i > 0 && ", "}
-            <Link
-              href={`/guests/${h.id}`}
-              className="text-rose-500 hover:text-rose-600 hover:underline"
-            >
-              {h.name}
-            </Link>
-          </span>
-        ))}
-      </p>
+      {proposal.hosts.length === 0 ? (
+        <p className="text-lg font-medium italic text-gray-500 mb-4">
+          No host yet — someone would like this session to be offered
+        </p>
+      ) : (
+        <p className="text-lg font-medium text-gray-700 mb-4">
+          {proposal.hosts.map((h, i) => (
+            <span key={h.id}>
+              {i > 0 && ", "}
+              <Link
+                href={`/guests/${h.id}`}
+                className="text-rose-500 hover:text-rose-600 hover:underline"
+              >
+                {h.name}
+              </Link>
+            </span>
+          ))}
+        </p>
+      )}
       <div className="mb-3">
         <Markdown>{proposal.description}</Markdown>
       </div>

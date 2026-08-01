@@ -87,6 +87,13 @@ export function ViewProposal(props: {
     >
       <Proposal proposal={proposal} />
 
+      {proposal.hosts.length === 0 && (
+        <p className="mt-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-gray-700">
+          Nobody is offering this session yet. If you could give it, take it on:
+          click Edit and add yourself as a host.
+        </p>
+      )}
+
       {canEdit() && (
         <div className="mt-6 flex gap-2 flex-wrap">
           <div className="relative inline-block group">

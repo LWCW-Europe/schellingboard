@@ -176,7 +176,8 @@ export function SessionProposalForm(props: {
             Host(s)
           </label>
           <p className="text-sm text-gray-500 mt-1">
-            Leave empty if you would like someone to volunteer.
+            Leave empty to ask for a session without offering to give it
+            yourself — anyone who can host it may add themselves here later.
           </p>
           <SelectHosts
             id="proposal-hosts"

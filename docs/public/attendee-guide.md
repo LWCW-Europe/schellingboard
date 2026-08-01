@@ -20,6 +20,12 @@ You can browse, search, and sort existing proposals at any time. During the
 description, and optionally co-hosts. You can edit your own proposals until
 scheduling starts.
 
+A proposal doesn't need a host. Leaving the host field empty is a way of
+saying "I'd like someone to offer this" rather than "I'll give this" — a
+request instead of an offer. Anyone who can give such a session takes it on by
+editing the proposal and adding themselves as a host; nobody's permission is
+needed.
+
 Description fields accept Markdown. A small toolbar above the box adds bold,
 italics, links, lists, quotes and code for you, and a **Preview** tab shows
 how the text will look before you save.

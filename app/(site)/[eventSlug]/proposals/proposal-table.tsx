@@ -505,19 +505,21 @@ export function ProposalTable({
                   </td>
                   <td className="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="truncate">
-                      {proposal.hosts.length === 0
-                        ? "-"
-                        : proposal.hosts.map((h, i) => (
-                            <span key={h.id}>
-                              {i > 0 && ", "}
-                              <Link
-                                href={`/guests/${h.id}`}
-                                className="hover:text-blue-600 transition-colors"
-                              >
-                                {h.name}
-                              </Link>
-                            </span>
-                          ))}
+                      {proposal.hosts.length === 0 ? (
+                        <span className="italic">No host yet</span>
+                      ) : (
+                        proposal.hosts.map((h, i) => (
+                          <span key={h.id}>
+                            {i > 0 && ", "}
+                            <Link
+                              href={`/guests/${h.id}`}
+                              className="hover:text-blue-600 transition-colors"
+                            >
+                              {h.name}
+                            </Link>
+                          </span>
+                        ))
+                      )}
                     </div>
                   </td>
                   <td className="px-4 lg:px-6 py-4" title={plainDescription}>
@@ -680,8 +682,11 @@ export function ProposalTable({
                     </Link>
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    Host(s):{" "}
-                    {proposal.hosts.map((h) => h.name).join(", ") || "-"}
+                    {proposal.hosts.length === 0 ? (
+                      <span className="italic">No host yet</span>
+                    ) : (
+                      `Host(s): ${proposal.hosts.map((h) => h.name).join(", ")}`
+                    )}
                   </p>
                 </div>
 
