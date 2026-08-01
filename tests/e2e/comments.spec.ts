@@ -152,15 +152,10 @@ test("replies to a comment, collapses the thread, and permalinks to a reply", as
 
   // Each comment's timestamp links to that comment alone, parent and reply
   // getting distinct targets.
-  const parentPermalink = await modal
-    .getByRole("link", { name: /^\d/ })
-    .first()
-    .getAttribute("href");
-
-  const permalink = await modal
-    .getByRole("link", { name: /^\d/ })
-    .last()
-    .getAttribute("href");
+  const timestamps = modal.getByRole("link", { name: /^\d/ });
+  await expect(timestamps).toHaveCount(2);
+  const parentPermalink = await timestamps.first().getAttribute("href");
+  const permalink = await timestamps.last().getAttribute("href");
   expect(permalink).toMatch(/#comment-/);
   expect(permalink).not.toBe(parentPermalink);
 
