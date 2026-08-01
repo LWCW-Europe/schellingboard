@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **The "Scheduling will be enabled at …" note is no longer cut off**: on a proposal's page, hovering the greyed-out Schedule button showed a note that was clipped at the left edge of the window it opened in, so it started mid-word. It is now shown in full
 - **"Voting will be enabled at …" now shows the time on your own clock**: on the proposals list and a proposal's page, the note saying when voting or scheduling opens was given in the time zone of the machine running the site, so a site hosted abroad announced the wrong time. It now shows the time in your own time zone — useful when you are reading it weeks before travelling to the venue — and names that zone whenever it differs from the event's, the same way comment timestamps do
 
 ### Internal
