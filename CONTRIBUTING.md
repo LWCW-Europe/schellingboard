@@ -1,5 +1,18 @@
 # Contributing
 
+This file covers what you need day to day. Longer chapters live under
+`docs/dev/` and are linked from the relevant section below:
+
+| Document                                                        | For                                                                        |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| [Testing](docs/dev/testing.md)                                  | test strategy, TDD workflow, running tests, the Docker tier                |
+| [Database migrations](docs/dev/migrations.md)                   | generating migrations, resolving drizzle conflicts                         |
+| [Running multiple instances](docs/dev/multiple-instances.md)    | ports and env files when several clones share a machine                    |
+| [Documentation and the landing page](docs/dev/documentation.md) | how docs.schellingboard.org and schellingboard.org are built and published |
+| [Releasing a new version](docs/dev/releasing.md)                | tagging, the release checklist, publishing Docker images                   |
+| [GitHub issues](docs/dev/github-issues.md)                      | setting Issue Type and Priority via `gh api graphql`                       |
+| [ADRs](docs/dev/adr/)                                           | why the significant decisions were made                                    |
+
 ## Technology Stack
 
 - **Framework**: Next.js 16 (App Router)
@@ -125,161 +138,19 @@ make precommit  # Format, lint, type check, and run all tests (incl. e2e)
 
 ## Running Multiple Instances
 
-Several clones or `jj` workspaces of this project on one machine compete for the
-same ports. The recommended pattern is to give each clone explicit, distinct
-ports in its two local env files, rather than leaning on defaults or automatic
-port selection — then nothing depends on which instance you happened to start
-first. Neither file is committed:
-
-| File              | Read by                      | Sets                                                |
-| ----------------- | ---------------------------- | --------------------------------------------------- |
-| `.env.dev.local`  | `make dev`, `make mailpit`   | dev server port, mailpit's host ports, email        |
-| `.env.test.local` | `make test`, `make test-e2e` | email (opt-in, see [Running tests](#running-tests)) |
-
-Start mailpit with `make mailpit` rather than a bare `docker compose up mailpit`:
-mailpit is defined in `docker-compose.dev.yml` (not in the `docker-compose.yml`
-self-hosters copy), and on its own compose reads only a file literally named
-`.env`, so the make target passes both `-f` and `--env-file .env.dev.local`. That
-keeps each clone's ports in one place.
-
-### Example: two clones side by side
-
-Clone A in `~/src/sb-a` keeps the defaults:
-
-```bash
-# .env.dev.local
-DATABASE_URL=file:./data.db
-AUTH_SECRET=<openssl rand -base64 32>
-PORT=3000
-SITE_URL=http://localhost:3000
-COMPOSE_PROJECT_NAME=sb-a
-MAILPIT_SMTP_PORT=1025
-MAILPIT_UI_PORT=8025
-SMTP_FROM=dev@example.test
-SMTP_URL=smtp://localhost:1025
-```
-
-```bash
-# .env.test.local
-SMTP_URL=smtp://localhost:1025
-MAILPIT_API_URL=http://localhost:8025
-SMTP_FROM='Test <mailer-test@test.example>'
-```
-
-Clone B in `~/src/sb-b` shifts every port by one:
-
-```bash
-# .env.dev.local
-DATABASE_URL=file:./data.db
-AUTH_SECRET=<openssl rand -base64 32>
-PORT=3001
-SITE_URL=http://localhost:3001
-COMPOSE_PROJECT_NAME=sb-b
-MAILPIT_SMTP_PORT=1026
-MAILPIT_UI_PORT=8026
-SMTP_FROM=dev@example.test
-SMTP_URL=smtp://localhost:1026
-```
-
-```bash
-# .env.test.local
-SMTP_URL=smtp://localhost:1026
-MAILPIT_API_URL=http://localhost:8026
-SMTP_FROM='Test <mailer-test@test.example>'
-```
-
-Each clone can now run `make mailpit`, `make dev`, `make test`, and
-`make test-e2e` at the same time as the other. Not every line is always needed:
-`COMPOSE_PROJECT_NAME`, `MAILPIT_SMTP_PORT`, and `MAILPIT_UI_PORT` are consumed
-by `docker compose` rather than the app, and the `SMTP_*`/`SITE_URL` lines only
-matter if you want the dev server itself to send email — `PORT` alone is enough
-otherwise.
-
-### What each variable is for
-
-Mailpit publishes two host ports, and the two app-side variables that point at
-them are unrelated to each other — each tracks a different one:
-
-| Compose variable    | Default | Mailpit port for            | App-side variable to match |
-| ------------------- | ------- | --------------------------- | -------------------------- |
-| `MAILPIT_SMTP_PORT` | `1025`  | receiving mail over SMTP    | `SMTP_URL`                 |
-| `MAILPIT_UI_PORT`   | `8025`  | the web UI and its REST API | `MAILPIT_API_URL`          |
-
-- `SMTP_URL` (`utils/mailer.ts`) is how schellingboard **sends** mail: an
-  ordinary SMTP connection string, with mailpit merely one possible server
-  behind it.
-- `MAILPIT_API_URL` (`tests/helpers/mailpit.ts`) is how the **test suite** reads
-  mail back out of mailpit to assert on it. It is test-only and
-  mailpit-specific; the app itself never reads it.
-
-`PORT` is read by `next dev`. Without it a second `make dev` won't fail — it
-quietly retries the next free port (3001, 3002, …), which is easy to miss.
-`SITE_URL` must then agree with `PORT`, since it's the base URL emails use to
-link back to the site; a stale value sends readers to the _other_ instance.
-
-`COMPOSE_PROJECT_NAME` only matters when two clones share a directory name —
-compose derives the project from the directory, so `~/a/sb` and `~/b/sb` would
-otherwise fight over a single mailpit container. Setting it is cheap insurance.
-Note that mailpit lives in its own compose file, so a bare `docker compose down`
-won't stop it; use the same two flags `make mailpit` passes —
-`docker compose -f docker-compose.dev.yml --env-file .env.dev.local down` —
-since without the env file compose looks for the container under the
-directory-derived project name instead. (Or just Ctrl-C the foreground
-`make mailpit`.)
-
-Some things need no attention: `DATABASE_URL` and `SB_UPLOADS_DIR` are relative
-paths, so each clone already gets its own database and uploads. E2E runs pick a
-free port per run and override `SITE_URL` to match (`playwright.config.ts`), so
-don't set `SITE_URL` in `.env.test.local` expecting it to apply — only `SMTP_URL`
-and `MAILPIT_API_URL` matter there. `make test` binds no port at all.
+Several clones or `jj` workspaces on one machine compete for the same ports.
+Give each clone explicit, distinct ports in `.env.dev.local` and
+`.env.test.local` — see
+[Running multiple instances](docs/dev/multiple-instances.md) for which variable
+does what and a worked two-clone example.
 
 ## Database Migrations
 
-`make dev-migrate-create` (`drizzle-kit generate`) diffs `db/schema.ts` against the latest
-snapshot in `drizzle/meta/` and writes a new `NNNN_*.sql` file plus an updated
-`drizzle/meta/NNNN_snapshot.json` and `drizzle/meta/_journal.json`.
-
-### Resolving migration conflicts
-
-When two branches each add a migration, `drizzle/meta/_journal.json` and the latest
-`drizzle/meta/NNNN_snapshot.json` conflict — both branches claim the same index. Don't hand-edit
-the conflicted JSON; regenerate it instead:
-
-1. Move your own new `.sql` migration file out of the way (e.g. to `/tmp`) so it doesn't confuse
-   `drizzle-kit`. Note its name.
-2. Restore `drizzle/meta/` to the stable version (`main`), discarding your branch's snapshot/journal
-   changes — `db/schema.ts` is unaffected, only the generated meta files reset:
-
-   ```bash
-   # jj
-   jj restore --from main -- drizzle/meta
-
-   # Git
-   git checkout main -- drizzle/meta
-   ```
-
-3. Regenerate against the restored snapshot, in a real terminal (not piped/non-interactive — see
-   below):
-
-   ```bash
-   make dev-migrate-create NAME=<original-migration-name>
-   ```
-
-   `--name` gets you the right filename directly; without it you'd rename the auto-generated file
-   afterward (keep drizzle-kit's index, drop the random suffix). If your change looks like a column
-   rename to drizzle-kit (e.g. drop one column, add another), it opens an interactive prompt asking
-   whether to treat it as a rename or a create+drop — it needs a real TTY, so this step can't run
-   from a script or CI.
-
-4. Diff the regenerated `.sql` file against the copy you moved aside in step 1. For a plain
-   mechanical schema change they'll match — delete the moved-aside copy. But if your original
-   migration had hand-written SQL beyond what `schema.ts` alone implies (a data backfill, a value
-   transform, choosing "rename" over "create+drop"), the regenerated file won't reproduce it —
-   drizzle-kit only knows what it can infer from the schema diff. In that case keep the _regenerated_
-   `drizzle/meta/*_snapshot.json` and journal entry (they carry the correct index), but replace the
-   regenerated file's SQL body with your original hand-written SQL.
-5. Run `make dev-migrate-up` to confirm the migration applies cleanly, then continue resolving the
-   rest of the conflict as usual.
+`make dev-migrate-create` (`drizzle-kit generate`) diffs `db/schema.ts` against
+the latest snapshot in `drizzle/meta/` and writes a new migration plus updated
+meta files. When two branches each add one, the meta files conflict — don't
+hand-edit them, regenerate as described in
+[Database migrations](docs/dev/migrations.md#resolving-migration-conflicts).
 
 ## Code Style
 
@@ -305,166 +176,23 @@ can't live in `utils/auth.ts`, which must stay importable from the proxy).
 
 ## Testing
 
-### Test strategy
+Read [Testing](docs/dev/testing.md) before writing any test — it has the full
+strategy, the mandatory TDD loop, and the E2E conventions.
 
-See [ADR 0002](docs/dev/adr/0002-testing-strategy.md) for the full rationale. Three tiers, each with a distinct role:
-
-**Unit tests** (Vitest, `tests/unit/`) — pure functions and isolated business rules only. No DB, no I/O.
-
-**Integration tests** (Vitest, `tests/integration/`) — server actions and API route handlers against a real in-memory SQLite DB. Verify post-condition state through a read surface in order of preference: (1) the corresponding GET endpoint, (2) repo read methods, (3) direct DB rows (last resort). Only `redirect()` and `revalidatePath()` are mocked.
-
-**E2E tests** (Playwright, `tests/e2e/`) — behavior that only manifests in a browser: routing, phase-dependent UI, modals, form interaction, mobile layout. Prefer fewer, high-confidence tests over broad coverage.
-
-### Test quality guardrails
-
-- A test that breaks on an internal rename without a user-visible behavior change is a bad test. Rewrite or delete it.
-- Never assert on call counts of internal helpers.
-- If making a test pass requires reaching into a private, the test is wrong.
-- Factories produce minimal entities; tests override only the fields they care about. If a test sets 12 fields, the factory is wrong.
-- No cross-test state. Each test builds what it needs.
-
-### TDD workflow
-
-Every code change must follow red → green → refactor. **Do not skip or reorder steps.**
-
-1. Write a failing test that captures the expected behavior.
-2. Run the test and confirm it actually fails (see commands below).
-3. Implement the minimum code to make it pass.
-4. Run the test again and confirm it is green.
-5. Refactor if needed — do not touch the test during refactor.
-
-**Exceptions** (apply conservatively):
-
-- Pure UI/layout/styling changes with no behavior change
-- Refactors where existing tests already fully cover the changed code
-
-### Running tests
+Three tiers: **unit** (Vitest, pure functions only), **integration** (Vitest
+against a real in-memory SQLite DB — where most business logic is covered), and
+**E2E** (Playwright, for behavior that only manifests in a browser). A fourth
+run, [`make test-e2e-docker`](docs/dev/testing.md#testing-the-docker-image),
+exercises the image we actually ship; it is not part of `make precommit`.
 
 ```bash
-make test                # Run unit and integration tests (Vitest)
-make test-e2e            # Run E2E tests (headless)
-make test-e2e-headed     # Run E2E tests (headed, for local dev)
-make test-e2e-docker     # Run E2E tests against the production Docker image
+make test          # Unit and integration tests (Vitest)
+make test-e2e      # E2E tests (headless)
 ```
 
-**Warning**: E2E tests reset the test database before each run. Do not run against production data.
-
-Tests that send real email (in `make test` and `make test-e2e`) are opt-in:
-they need a local [mailpit](https://mailpit.axllent.org/) (start it with
-`make mailpit`) and the mail variables set in `.env.test.local`:
-
-```bash
-# .env.test.local
-MAILPIT_API_URL=http://localhost:8025
-SMTP_URL=smtp://localhost:1025
-SMTP_FROM='Test <mailer-test@test.example>'
-```
-
-When these are unset (the default on a fresh checkout), the email tests are
-reported as skipped; when they are set but mailpit is unreachable, the tests
-fail. CI always sets them (in `.github/workflows/ci.yml` and
-`.github/workflows/ci-e2e.yml`, alongside a mailpit service container) and the
-tests fail there if the variables go missing, so they can never be silently
-skipped in CI.
-
-E2E tests run in their own workflow so that they can be skipped for changes
-that cannot affect the app — documentation, the landing page, repository
-prose. Adding a top-level path that the app doesn't use? Add it to both
-`paths-ignore` lists in `.github/workflows/ci-e2e.yml`.
-
-Running another clone or workspace of this project alongside this one? See [Running Multiple Instances](#running-multiple-instances) for the ports that have to be kept apart.
-
-Install Playwright browsers before first use:
-
-```bash
-make install-playwright
-```
-
-Run a single E2E spec, or filter by test title with `-g`:
-
-```bash
-bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts
-bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts:42   # single test by line
-bun set-env.ts test bun x playwright test -g "creates a proposal"          # by title substring
-```
-
-Run against a different environment (e.g. dev database — still resets it):
-
-```bash
-bun set-env.ts dev bun x playwright test
-```
-
-### Testing the Docker image
-
-`make test-e2e` runs the suite against `next build && next start`, which is not
-what we ship. The image runs the standalone build as `node server.js`, as a
-different user, with the database, migrations and uploads on a mounted `/data`
-volume. `make test-e2e-docker` runs the same suite against a container built
-from the working tree, which is the only tier that covers that gap:
-
-```bash
-make test-e2e-docker                     # build the image, then run the suite against it
-IMAGE=schellingboard/schellingboard:v3.1.0 \
-  bun set-env.ts test bash scripts/e2e-docker.sh    # test an existing image instead of building
-
-# A subset, same arguments as `playwright test`:
-bun set-env.ts test bash scripts/e2e-docker.sh tests/e2e/proposals.spec.ts
-```
-
-It is not part of `make precommit` — it builds an image and takes a few
-minutes. Run it before a release (see
-[Releasing a New Version](#releasing-a-new-version)) and after changing the
-`Dockerfile`, the standalone build, or anything touching paths, uploads or
-migrations.
-
-What it does, and why each piece is there:
-
-- **Picks a free port** and starts the container on it, then waits for
-  `/api/health`.
-- **Builds through `scripts/docker-build.sh`**, the script `make docker-build`
-  runs too — same build arguments, same `:<version>` tag, so the release build
-  is a cache hit of this one and what gets published is what was tested here.
-  The version is the one `scripts/app-version.js` prints, which is also what
-  the footer shows.
-- **Bind-mounts `.e2e-docker/`** (gitignored) as `/data`. Seeding runs on the
-  host, as usual, and writes to the same SQLite file and uploads directory the
-  container reads — so no seeding code has to exist inside the image. The
-  directory is deleted at the start of every run, since a stale database hides
-  exactly the failures this run looks for. Seeding migrates the database first,
-  so what the container's own migration run covers is that `drizzle/` shipped
-  and loads, not applying migrations to an empty database.
-- **Runs the container as your own uid** (`--user`), so the files it writes
-  into the bind mount don't end up owned by the image's uid 1001 and
-  unremovable. As a consequence `/app` isn't writable, so Next's image
-  optimizer gets a tmpfs for its cache — otherwise every optimized image logs
-  an `EACCES`.
-- **Starts mailpit if it isn't already running**, because once the mail
-  variables are set the email specs fail rather than skip. One it started
-  itself is stopped again afterwards, unless the run failed — then it is left
-  up, since its web UI is where a failing email test is diagnosed.
-- **Points `SITE_URL` and the SMTP host at the container's view of the host**
-  (`host.docker.internal`), so emails link back to the right port and reach
-  mailpit.
-
-Playwright starts no server of its own here: the script sets
-`E2E_EXTERNAL_SERVER=1` and `E2E_PORT`, and `playwright.config.ts` omits its
-`webServer` when it sees them.
-
-**The container runs in UTC.** That is what makes this tier worth having: with
-`next start`, the server and the browser share your machine's timezone, so a
-component that formats a date in the ambient zone renders identically on both
-sides and its hydration mismatch stays invisible. In the image it does not.
-Dates must be formatted in an explicit zone — the event's — never the process's.
-
-### E2E conventions
-
-- Imitate human behavior — click visible elements, navigate naturally
-- Use semantic locators (`getByRole`, `getByText`, `getByLabel`), not IDs or CSS classes
-- Never construct URLs with internal IDs or replay raw API payloads
-
-### Test data
-
-Each E2E run starts from a clean database with 3 events (Alpha/Beta/Gamma) in different phases, plus pre-created proposals, sessions, users, and auth. See `tests/reset-database.ts` for details. Auth helpers: `tests/helpers/auth.ts` (`login`, `loginAndGoto`).
+**Warning**: E2E tests reset the test database before each run. Do not run
+against production data. Tests that send real email are opt-in and need a local
+mailpit — see [Running tests](docs/dev/testing.md#running-tests).
 
 ## Changelog
 
@@ -493,209 +221,25 @@ Update `CHANGELOG.md` under `[Unreleased]` alongside any user-facing change.
 
 Two audiences, two places:
 
-- **Developers** — `CONTRIBUTING.md` (this file) plus the markdown under
-  `docs/dev/` it links to (ADRs, `github-issues.md`, design notes). Not
-  published anywhere; read it in the repo.
+- **Developers** — this file plus the markdown under `docs/dev/` it links to
+  (ADRs, `github-issues.md`, design notes). Not published anywhere; read it in
+  the repo.
 - **Attendees and organizers** — `docs/public/`, published to
-  [docs.schellingboard.org](https://docs.schellingboard.org).
+  [docs.schellingboard.org](https://docs.schellingboard.org) from release tags.
+  It holds one copy — the _next_ release's documentation — so edit it in the
+  same commit as the change it describes.
 
-### The public docs site
-
-Built with [docmd](https://docmd.io) from `docs/public/`, which holds one copy
-of the documentation and no snapshots. Published versions are reconstructed
-from git: `scripts/build-docs.sh` walks the release tags, checks each one out
-into a temporary worktree, and builds it as a version. The newest is served at
-the site root, older ones under `/<major.minor>/`, all listed in the version
-dropdown.
-
-So `docs/public/` is the _next_ release's documentation. Edit it in the same
-commit as the change it describes; it is published when that release is
-tagged.
-
-| Command              | What it does                                 |
-| -------------------- | -------------------------------------------- |
-| `make docs`          | Live preview of `docs/public`                |
-| `make docs-build`    | Build the published site into `site/`        |
-| `make docs-validate` | Check for broken internal links (runs in CI) |
-
-`.github/workflows/docs.yml` deploys on tag pushes and on pushes to `docs-*`
-branches. Pushing to `main` deliberately publishes nothing — until a release is
-tagged, `make docs` is the only place the new documentation exists.
-
-Two consequences worth knowing:
-
-- **Releasing documentation is tagging the repository.** There is no snapshot
-  step, so nothing can drift out of sync with the release it documents.
-- **A release tag that predates the docs site publishes nothing.** The build
-  skips any tag without `docs/public/index.md`, which is why `v3.0.0` and
-  `v3.1.0` never appear on the site.
-
-`robots.txt`, `sitemap.xml` and `404.html` are generated by docmd from the
-config's `url`; don't hand-write them.
-
-#### One-time hosting setup
-
-Two things live outside the repository, so a fresh fork or a moved domain needs
-them set up again before the first tag push can publish anything:
-
-- **GitHub Pages**: repository Settings → Pages → Source must be _GitHub
-  Actions_. `actions/deploy-pages` fails without it.
-- **DNS**: a `CNAME` record for `docs.schellingboard.org` pointing at
-  `lwcw-europe.github.io`. The domain itself comes from `url` in
-  `docmd.config.json` — the build writes it to `site/CNAME` from there.
-
-Until both are in place and `v3.2.0` is tagged, the
-[docs.schellingboard.org](https://docs.schellingboard.org) links in
-`README.md` are dead; the same pages are readable in `docs/public/`.
-
-#### Correcting published documentation
-
-To fix published docs without cutting a release, commit to a `docs-<version>`
-branch — `docs-3.2` for the 3.2 docs. The build prefers that branch over the
-tag, so pushing it republishes that version, and the deploy log names the ref
-each version came from (`Version 3.2 ← docs-3.2`).
-
-Create the branch from the release tag, and merge it back into `main` so the
-fix reaches the next release too:
-
-```bash
-git switch -c docs-3.2 v3.2.0
-# fix, commit, push — the docs site redeploys
-```
-
-## The landing page
-
-[schellingboard.org](https://schellingboard.org) is hand-written HTML in
-`www/` — a landing page and a screenshot gallery. `make www` copies it, plus
-`docs/screenshots/`, into `www-site/`; open `www-site/index.html` to preview.
-There is no generator, on purpose: the pages are two bespoke layouts, and
-rendering them through docmd would mean custom templates to make a docs tool
-stop looking like one.
-
-`.github/workflows/www.yml` publishes on pushes to `main` that touch `www/`,
-`docs/screenshots/` or the build script. It does not follow the documentation
-site's release-tag rule, because the page describes the project rather than a
-version — with the consequence that its screenshots can show interface changes
-that are merged but not yet released.
-
-### Why it deploys to another repository
-
-GitHub Pages serves one custom domain per repository and this one already
-serves `docs.schellingboard.org`, so the built site is pushed to
-[LWCW-Europe/schellingboard.org](https://github.com/LWCW-Europe/schellingboard.org),
-which holds nothing but that output and is never edited directly. Its Pages
-source is the default branch, so the site keeps working even if the workflow is
-disabled.
-
-### Screenshots
-
-`docs/screenshots/` is the only copy of the screenshots. The landing page
-uses them directly and the documentation site can use them too — see
-[`docs/screenshots/README.md`](docs/screenshots/README.md) for the capture
-checklist and how to reference them from markdown.
-
-They are not under `docs/public/`, and cannot usefully be: docmd discovers
-markdown and nothing else, so a PNG placed there is not copied to the output.
-Both build scripts do the copying themselves. One consequence: images appear in
-`make docs-build` output but not in the `make docs` live preview, which serves
-what docmd produced.
-
-### One-time hosting setup
-
-- **GitHub App**: the workflow needs to write to a repository that is not its
-  own, so it mints a token from an organization-owned app rather than carrying
-  a standing credential. The token expires within the hour, the app belongs to
-  the organization instead of a person, and it is installed on the site
-  repository alone. (A deploy key would also work, but LWCW-Europe policy
-  restricts them.)
-
-  1. Under the organization's Settings → Developer settings → GitHub Apps,
-     create an app with the repository permission **Contents: Read and write**
-     and nothing else. It needs no webhook and no account permissions.
-  2. Install it on `LWCW-Europe/schellingboard.org` only.
-  3. In this repository, add the app's **Client ID** as the
-     `WWW_DEPLOY_APP_CLIENT_ID` variable and a generated private key as the
-     `WWW_DEPLOY_APP_PRIVATE_KEY` secret.
-
-  To rotate, generate a new private key on the app and replace the secret; the
-  client ID does not change.
-
-- **DNS**: `schellingboard.org` pointing at `lwcw-europe.github.io`, and the
-  site repository's Pages source set to its default branch — not _GitHub
-  Actions_, which would ignore the pushed files. The domain is in `www/CNAME`,
-  which the build copies verbatim.
+`make docs` previews the site, `make docs-validate` checks internal links.
+[Documentation and the landing page](docs/dev/documentation.md) explains how
+both sites are built and published, how to correct already-published docs, and
+where screenshots live.
 
 ## Releasing a New Version
 
-1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header) and add a fresh empty `## [Unreleased]` section above it. Update the compare links at the bottom of the file: the new version's link should point from the previous release's endpoint to the new tag (`vX.Y.Z`), and `[Unreleased]` should point from the new tag to `HEAD`. Commit and merge this like any other change.
-2. **Tag the resulting commit on `main`, locally for now**. jj cannot push tags to a Git remote, so use `git` for this step:
-
-   ```bash
-   VERSION=v3.0.0
-   MINOR=${VERSION%.*}   # v3.0
-   MAJOR=${MINOR%.*}     # v3
-
-   git fetch origin main
-   git tag $VERSION origin/main
-   ```
-
-3. **Sanity-check the image that will be published** — build it from the tag and
-   run the E2E suite against a container. This is the last chance to catch a
-   fault that exists only in the packaged image (a file the standalone build
-   didn't copy, a path that resolves differently under `/data`, a date rendered
-   in the server's timezone rather than the event's) — no other test tier runs
-   the artifact we actually ship. See
-   [Testing the Docker image](#testing-the-docker-image).
-
-   ```bash
-   git checkout $VERSION
-   make test-e2e-docker
-   ```
-
-   The tag is still local at this point, so a failure costs nothing: fix it on
-   `main`, delete the tag (`git tag -d $VERSION`), and start again from step 1.
-
-4. **Push the tag**, which is the point of no return — it publishes the
-   documentation:
-
-   ```bash
-   git push origin $VERSION
-   ```
-
-5. **Publish the Docker images** — see below.
-
-Pushing the tag publishes the documentation: the docs site rebuilds and
-serves `docs/public/` as of that tag at its root. Docs are versioned per minor
-release, so `v3.2.1` republishes the `3.2` documentation.
-
-### Publishing Docker Images
-
-Image: `schellingboard/schellingboard` on Docker Hub.
-
-For a release, push four tags: the full version, `major.minor`, `major`, and `latest`. Skip `latest` when publishing a patch for an older major/minor (i.e. when it wouldn't be the newest release).
-
-```bash
-docker login
-git checkout $VERSION
-make clean
-make docker-build   # builds and locally tags :$VERSION
-docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MINOR
-docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MAJOR
-# omit if not the newest release
-docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:latest
-
-docker push schellingboard/schellingboard:$VERSION
-docker push schellingboard/schellingboard:$MINOR
-docker push schellingboard/schellingboard:$MAJOR
-# omit if not the newest release
-docker push schellingboard/schellingboard:latest
-```
-
-All four tags are set here rather than by `make docker-build`, which only ever
-tags `:$VERSION`: that target runs on any working tree, and `:latest` has to
-keep meaning the newest published release.
-
-`make docker-build` derives `$VERSION` with `scripts/app-version.js` (the nearest tag, via `jj` or `git`), so the release commit must already be tagged with the exact version (e.g. `v3.0.0`) before running it.
+Finalize the changelog, tag `main`, verify the tagged image with
+`make test-e2e-docker`, push the tag (which publishes the documentation), then
+publish the Docker images. Full checklist:
+[Releasing a new version](docs/dev/releasing.md).
 
 ## Version Control
 

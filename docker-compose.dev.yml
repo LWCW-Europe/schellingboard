@@ -4,7 +4,7 @@
 #
 # Start it with `make mailpit`, which points compose at `.env.dev.local`. Compose
 # reads only a file literally named `.env` on its own, and that is where each
-# clone keeps its own ports. See CONTRIBUTING.md#running-multiple-instances.
+# clone keeps its own ports. See docs/dev/multiple-instances.md.
 services:
   # Mailpit[1] receives email locally and shows it in a web UI. You need it to
   # send email from a development app, and for the email tests.

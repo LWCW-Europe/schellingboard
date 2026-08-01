@@ -119,7 +119,7 @@ test("protect a name via emailed link, then log in with password and single-use 
 }) => {
   test.skip(
     skipWithoutMailpit(),
-    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see CONTRIBUTING.md § Running tests)"
+    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see docs/dev/testing.md § Running tests)"
   );
   // Many identity switches, each a real logout-then-login round trip, add up
   // to just over the 30s default once parallel workers compete for the server.
@@ -219,7 +219,7 @@ test("protect a name via emailed link, then log in with password and single-use 
 test("forgot password: reset it via an emailed link", async ({ page }) => {
   test.skip(
     skipWithoutMailpit(),
-    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see CONTRIBUTING.md § Running tests)"
+    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see docs/dev/testing.md § Running tests)"
   );
   test.slow();
 

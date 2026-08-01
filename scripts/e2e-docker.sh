@@ -7,7 +7,7 @@
 # only exist there (a file the standalone tracer failed to copy, a path that
 # resolves differently under a different working directory) are invisible to
 # every other test tier, which is why this is a release checklist item — see
-# CONTRIBUTING.md § Testing the Docker image.
+# docs/dev/testing.md § Testing the Docker image.
 #
 # Run through set-env.ts (`make test-e2e-docker`) so the test credentials and
 # the optional mail variables are already in the environment; they are handed
@@ -75,7 +75,7 @@ done
 env_args+=(-e "SITE_URL=$BASE_URL")
 
 # Once the mail variables are set, the email specs fail rather than skip
-# (CONTRIBUTING.md § Running tests), so start mailpit if it isn't up — a
+# (docs/dev/testing.md § Running tests), so start mailpit if it isn't up — a
 # release check shouldn't fall over because a background service wasn't
 # started by hand. Ports come from .env.dev.local, the file `make mailpit`
 # feeds compose (see the note above that target).

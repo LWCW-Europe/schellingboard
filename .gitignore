@@ -61,7 +61,7 @@ data.*.db-journal
 /uploads-test
 
 # Database and uploads bind-mounted into the container by
-# `make test-e2e-docker` (see CONTRIBUTING.md § Testing the Docker image)
+# `make test-e2e-docker` (see docs/dev/testing.md § Testing the Docker image)
 /.e2e-docker
 
 # Nix
@@ -72,10 +72,10 @@ result*
 # Config file for jip, a stacked PR tool (see: https://github.com/omarkohl/jip)
 .jip.local.toml
 
-# Generated documentation site (see CONTRIBUTING.md § Documentation)
+# Generated documentation site (see docs/dev/documentation.md)
 site/
 
-# Generated marketing site (see CONTRIBUTING.md § The marketing site)
+# Generated marketing site (see docs/dev/documentation.md § The landing page)
 www-site/
 
 # Build config assembled by scripts/build-docs.sh from docmd.config.json plus

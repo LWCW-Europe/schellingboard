@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Email tests are opt-in via these vars (unset means skip — see
-    # CONTRIBUTING.md § Running tests), but CI must always run them: they
+    # docs/dev/testing.md § Running tests), but CI must always run them: they
     # fail loudly here if the vars are missing, rather than silently skip.
     env:
       MAILPIT_API_URL: http://localhost:8025
@@ -56,8 +56,8 @@ jobs:
       SMTP_FROM: Test <mailer-test@test.example>
 
     services:
-      # e2e tests send real email to mailpit (see CONTRIBUTING.md § Running
-      # tests). Same pinned image as docker-compose.dev.yml.
+      # e2e tests send real email to mailpit (see docs/dev/testing.md
+      # § Running tests). Same pinned image as docker-compose.dev.yml.
       mailpit:
         image: axllent/mailpit@sha256:956d688cbd13dca36c72d8e94c34d6d1cdf4a005aa6aa4ff6edaaac56c34d8df
         ports:

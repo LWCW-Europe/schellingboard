@@ -7,7 +7,7 @@ import {
 } from "../helpers/mailpit";
 
 // This suite runs only when MAILPIT_API_URL points at a mailpit instance
-// (start one with `make mailpit`, see CONTRIBUTING.md § Running tests). Skips
+// (start one with `make mailpit`, see docs/dev/testing.md § Running tests). Skips
 // when MAILPIT_API_URL is unset (throws instead in CI); fails when it's set
 // but mailpit is unreachable.
 describe.skipIf(skipWithoutMailpit())("sendMail via mailpit", () => {

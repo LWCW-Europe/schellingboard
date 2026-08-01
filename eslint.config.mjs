@@ -16,7 +16,7 @@ function dropTsPlugin(configs) {
 
 export default tseslint.config(
   {
-    // `site/` is the generated docs site (see CONTRIBUTING.md § Documentation);
+    // `site/` is the generated docs site (see docs/dev/documentation.md);
     // its JS comes from docmd, not from us.
     ignores: [
       "tailwind.config.ts",

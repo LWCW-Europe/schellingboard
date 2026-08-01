@@ -30,7 +30,7 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
 }) => {
   test.skip(
     skipWithoutMailpit(),
-    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see CONTRIBUTING.md § Running tests)"
+    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see docs/dev/testing.md § Running tests)"
   );
   // Three identity switches, each now a real logout-then-login round trip
   // (see logoutAction), add up to just over the 30s default once parallel

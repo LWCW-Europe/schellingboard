@@ -41,7 +41,7 @@ jobs:
       # A GitHub App rather than a deploy key or a personal access token: the
       # token below expires within the hour, the app is owned by the
       # organization instead of a person, and it is installed on the site
-      # repository alone. See CONTRIBUTING.md § The marketing site for setup.
+      # repository alone. See docs/dev/documentation.md § The landing page for setup.
       - name: Mint a token for the site repository
         id: token
         uses: actions/create-github-app-token@v3.2.0

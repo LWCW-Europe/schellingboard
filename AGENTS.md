@@ -1,6 +1,6 @@
 # Project Instructions
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for architecture, code style, common patterns, testing guidelines, and version control conventions.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for architecture, code style, common patterns, and version control conventions. It indexes the longer chapters under `docs/dev/`.
 
 ## Project Overview
 
@@ -20,20 +20,16 @@ Update `CHANGELOG.md` under `[Unreleased]` for any user-facing change — audien
 
 ## Documentation
 
-- **Attendee/organizer docs** live in `docs/public/` — one copy, no per-version
-  directories. It documents the _next_ release; published versions of
-  docs.schellingboard.org are rebuilt from release tags, so a docs change ships
-  when the release is tagged. Edit docs in the same commit as the change they
-  describe, and run `make docs-validate` after changing links.
-- **Developer docs** live in `docs/dev/` (ADRs, design notes) and are linked
-  from CONTRIBUTING.md. They are never published.
-- **Screenshots** live in `docs/screenshots/` — the project's only copy, shared
-  by the docs site and the landing page. Reference them relatively from
-  markdown (`../screenshots/x.webp`), never root-relative.
-- **The landing page** (schellingboard.org) is hand-written HTML in `www/`,
-  built with `make www` and deployed to a separate repository. Don't move it to
-  docmd; see [CONTRIBUTING.md § The landing page](CONTRIBUTING.md#the-landing-page).
-- See [CONTRIBUTING.md § Documentation](CONTRIBUTING.md#documentation).
+- **Attendee/organizer docs**: `docs/public/` — one copy, documenting the _next_
+  release. Edit in the same commit as the change they describe, and run
+  `make docs-validate` after changing links.
+- **Developer docs**: `docs/dev/` (ADRs, design notes, the long chapters split
+  out of CONTRIBUTING.md). Never published.
+- **Screenshots**: `docs/screenshots/` — the project's only copy. Reference them
+  relatively from markdown (`../screenshots/x.webp`), never root-relative.
+- **The landing page** (schellingboard.org): hand-written HTML in `www/`. Don't
+  move it to docmd.
+- Details: [docs/dev/documentation.md](docs/dev/documentation.md).
 
 ## GitHub Issues
 
@@ -45,7 +41,7 @@ graphql` commands (neither field is settable via plain `gh issue create`/`edit`)
 
 - Use `jj` (jujutsu) if available, otherwise `git`
 - Pre-commit: run `make precommit` to format, lint, type check, and run tests
-- Check [CONTRIBUTING.md](CONTRIBUTING.md) for resolving `drizzle` migration conflicts
+- See [docs/dev/migrations.md](docs/dev/migrations.md) for resolving `drizzle` migration conflicts
 
 ### jj paths with special characters
 
@@ -76,7 +72,7 @@ jj squash --from <commit> --to @ -m "message" -- <path>
   - `bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts` (one file)
   - `bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts:42` (one test by line)
   - `bun set-env.ts test bun x playwright test -g "creates a proposal"` (by title substring)
-- Full test strategy and TDD rules are in [CONTRIBUTING.md § Testing](CONTRIBUTING.md#testing) — read it before writing any test
+- Full test strategy and TDD rules are in [docs/dev/testing.md](docs/dev/testing.md) — read it before writing any test
 - Before running tests for the first time in a session, check whether mailpit is running (`docker compose -f docker-compose.dev.yml $(test -f .env.dev.local && echo --env-file .env.dev.local) ps mailpit` — mirrors the `mailpit` Makefile target, including its `--env-file` conditional, since `.env.dev.local` can set a per-clone `COMPOSE_PROJECT_NAME`); if not, ask the user whether to start it (`make mailpit`)
 
 ### Test tiers (short form)

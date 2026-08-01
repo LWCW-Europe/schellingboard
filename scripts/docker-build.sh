@@ -26,7 +26,7 @@ APP_VERSION="${APP_VERSION:-$(bun scripts/app-version.js)}"
 # It is the tag too, so a leftover image says which tree it came from and
 # successive builds don't overwrite each other. Never :latest — that means the
 # newest published release, which the release checklist tags deliberately (see
-# CONTRIBUTING.md § Releasing a New Version).
+# docs/dev/releasing.md).
 IMAGE="schellingboard/schellingboard:$APP_VERSION"
 
 docker build --build-arg "APP_VERSION=$APP_VERSION" -t "$IMAGE" . >&2
