@@ -1,6 +1,6 @@
 # Releasing a New Version
 
-1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header) and add a fresh empty `## [Unreleased]` section above it. Update the compare links at the bottom of the file: the new version's link should point from the previous release's endpoint to the new tag (`vX.Y.Z`), and `[Unreleased]` should point from the new tag to `HEAD`. Commit and merge this like any other change.
+1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header), and replace the `[Unreleased]` compare link at the bottom of the file with the new version's, pointing from the previous release's endpoint to the new tag (`vX.Y.Z`). Do _not_ add a fresh `## [Unreleased]` section here — the released tag should carry no empty section, since that is what the documentation site publishes. Step 6 reopens it afterwards. Commit and merge this like any other change.
 2. **Tag the resulting commit on `main`, locally for now**. jj cannot push tags to a Git remote, so use `git` for this step:
 
    ```bash
@@ -36,6 +36,8 @@
    ```
 
 5. **Publish the Docker images** — see below.
+
+6. **Reopen the changelog** — in a follow-up commit on `main`, add an empty `## [Unreleased]` section above `## [X.Y.Z]` and an `[Unreleased]` compare link from `vX.Y.Z` to `HEAD`. It comes last because the Docker build derives its version from the nearest tag: a commit on top of the release tag would make `make docker-build` tag the image with a hash instead of `$VERSION`.
 
 Pushing the tag publishes the documentation: the docs site rebuilds and
 serves `docs/public/` as of that tag at its root. Docs are versioned per minor
