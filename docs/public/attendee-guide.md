@@ -6,6 +6,25 @@ type: guide
 
 # Using SchellingBoard as an attendee
 
+## The three phases
+
+An event moves through up to three phases, and what you can do depends on
+which one it is in. Buttons that belong to another phase are greyed out rather
+than hidden — hover one to see when it opens.
+
+| Phase          | What you can do                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Proposal**   | Propose sessions, edit your own, and comment on any of them. Voting is not open yet.                                  |
+| **Voting**     | All of the above, plus vote on proposals. Vote counts stay hidden.                                                    |
+| **Scheduling** | Vote counts become visible; put proposals on the schedule, book empty slots, and RSVP. Proposing and voting are over. |
+
+Nothing you do before the scheduling phase commits you to anything: proposing
+a session is not a promise to give it, and voting is not a promise to attend.
+**RSVPs are the exception** — see [RSVP](#rsvp).
+
+Organizers can skip phases, and an event with no phase dates at all is simply
+always in the scheduling phase.
+
 ## Pick your name
 
 Open the event link, enter the site password if asked, then pick your name
@@ -18,7 +37,8 @@ please only pick your own. If you'd rather it _were_ a login, see
 You can browse, search, and sort existing proposals at any time. During the
 **proposal** phase, click "Add Proposal" to suggest a session: title,
 description, and optionally co-hosts. You can edit your own proposals until
-scheduling starts.
+scheduling starts. Proposing is not a commitment — a proposal only becomes a
+real session once someone puts it on the schedule.
 
 A proposal doesn't need a host. Leaving the host field empty is a way of
 saying "I'd like someone to offer this" rather than "I'll give this" — a
@@ -53,25 +73,102 @@ someone at one particular remark.
 
 ## Vote
 
-During the **voting** phase, react to each proposal with Interested, Maybe,
-or Skip. Click your choice again to remove it. "Quick Voting" walks through
-proposals you haven't voted on yet, one at a time.
+During the **voting** phase, react to each proposal with ❤️ Interested,
+⭐ Maybe, or 👋 Skip. Click your choice again to remove it. Voting is not a
+commitment: when you vote you have no idea what else will be running at the
+same time, so nobody reads your votes as a promise to turn up.
 
 ![Proposal list with Interested / Maybe / Skip vote buttons](../screenshots/proposals-vote.webp)
 
+### The fastest way to vote
+
+Click **"Go to Quick Voting!"** on the proposals page. It shows you one
+proposal at a time, skipping the ones you have already voted on, and counts
+down how many are left.
+
+![Quick Voting screen showing one proposal with large Interested / Maybe / Skip buttons](../screenshots/quick-voting.webp)
+
+You can see and change your own votes at any time while voting is open: your
+choice is highlighted on each proposal, and the **"Only voted"** and
+**"Only unvoted"** filters on the proposals page narrow the list to either
+group. You don't vote on your own proposals — the buttons aren't shown there.
+
+### Why the vote buttons are greyed out
+
+Greyed-out vote buttons mean voting isn't available to you _right now_. Hover
+one to see why:
+
+- **"Voting will be enabled at …"** — the event is still in the proposal
+  phase. Add and discuss proposals now; come back to vote when it opens.
+- **"Select a user first"** — you haven't picked your name yet.
+- **"The voting phase is over"** — scheduling has started. Vote counts are
+  visible now.
+
+### Results stay hidden until voting closes
+
+Nobody can see the vote counts while voting is running, so early votes can't
+sway later ones. The counts appear for everyone when the scheduling phase
+starts.
+
+**Only the counts are ever shown — never who voted which way.** Your own votes
+are visible to you alone; a host sees how many people were interested in their
+proposal, not their names, and neither does anyone else, organizers included.
+
 ## The schedule
 
-Once **scheduling** opens:
+Once **scheduling** opens, proposals turn into real sessions on the grid.
+Proposing and voting close.
 
-- A proposal's host can click "Schedule" to place it on the grid.
-- Some locations allow booking an empty slot directly, without a proposal.
-- Click a session to see details and **RSVP**. If the event caps capacity,
-  RSVPs may be rejected once a session is full. A session marked **closed**
-  warns that latecomers shouldn't join, but doesn't block your RSVP.
+![Simple scheduling grid with rooms as columns and time slots as rows](../screenshots/schedule-grid.webp)
+
+### Put a proposal on the schedule
+
+Two ways, whichever you find first:
+
+- **From the proposal.** Click **"Proposals"** at the top of the schedule,
+  then **"Schedule"** — either in the proposals table or on the proposal's own
+  page. Pick a room and a time slot, and save.
+- **From the grid.** Click an empty slot in a bookable room, then use the
+  **"Pre-fill from proposal"** dropdown to fill the form from one of your
+  proposals. You can also ignore it and just book the slot with a brand-new
+  session that was never proposed.
+
+![Form for adding a session to the schedule, with a Pre-fill from proposal dropdown](../screenshots/add-session.webp)
+
+Two things worth knowing:
+
+- **Proposals with no host are up for grabs.** Anyone can schedule one — no
+  permission needed. They show up in your "Pre-fill from proposal" dropdown
+  alongside your own.
+- **The same proposal can be scheduled more than once**, for instance in two
+  slots if interest is high and you're happy to give it twice.
+
+### How many people to expect
+
+Vote counts become visible when scheduling opens. They tell you roughly how
+much interest there is — not how many people will walk in, since voters didn't
+know what would end up running against your session.
+
+A rough, **unvalidated** rule of thumb: divide the ❤️ count by 2 and the ⭐
+count by 5, and add them up. Treat it as a hint for choosing a room size, not
+a forecast.
+
+![Proposals list in the scheduling phase, with a Your vote column and heart and star vote counts per proposal](../screenshots/proposals-results.webp)
+
+### RSVP
+
+Click a session to see its details and **RSVP**.
 
 ![Session detail popup with host, location, time, attendee list, and full description](../screenshots/session-details.webp)
 
-Proposing and voting close once scheduling starts.
+Unlike votes, **an RSVP is a commitment** — hosts plan around it. If you
+change your mind, take it back with "Un-RSVP": someone else may want the
+place. You'll be warned if you RSVP to two sessions that overlap.
+
+Depending on how the organizers set the event up, a session's capacity is
+either advisory or a hard limit; with a hard limit the button reads "Session
+full" and no further RSVPs are accepted. A session marked **closed** warns
+that you can be at most five minutes late, but doesn't block your RSVP.
 
 ## Attendee directory & profiles
 

@@ -121,6 +121,17 @@ fs.writeFileSync(process.env.OUT, JSON.stringify(config, null, 2));
 rm -rf site
 bun x docmd build -c "$BUILD_CONFIG"
 
+# Every page is dated from the commit that last touched it (see
+# scripts/docmd-git-history.js). A page that can't be dated is not an error to
+# the plugin — it renders without the footer line — and the site published
+# undated for a while before anyone noticed, so check here instead.
+undated="$(grep -rLF 'class="git-last-updated"' --include='index.html' site || true)"
+if [ -n "$undated" ]; then
+  echo "Pages built without a last-updated date:" >&2
+  echo "$undated" >&2
+  exit 1
+fi
+
 # --- Screenshots ----------------------------------------------------------
 #
 # docmd discovers markdown and nothing else — a PNG in docs/public/ is simply
