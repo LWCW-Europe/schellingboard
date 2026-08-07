@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- The seed data gives Conference Gamma four more proposals: two hosted by Hana Kobayashi, whose profile is the most complete of the seeded guests, and two with no host yet. Both cases were previously only reachable through the random host assignment, which made them awkward to point a screenshot at
 - `scripts/docmd-git-history.js` dates the docs pages from git. docmd's own git plugin was configured for it and worked in `make docs`, but it asks the build engine for the log and the engine runs `git log` in the working directory — so the worktrees `build-docs.sh` builds each published version from were all rejected as outside the repository, the error was swallowed, and every page of the live site shipped undated. `build-docs.sh` now fails the build if any page comes out without a date, since nothing else notices. Avatars are left off so readers aren't sent to Gravatar. See [docs/dev/documentation.md § Dating each page](docs/dev/documentation.md#dating-each-page)
 
 ## [3.3.0] - 2026-08-01

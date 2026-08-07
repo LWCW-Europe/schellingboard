@@ -1453,6 +1453,55 @@ async function seedTestData() {
     });
   });
 
+  // Screenshot fodder: proposals with a known host (Hana Kobayashi, whose
+  // profile is the most fleshed out) and proposals nobody has offered to host
+  // yet, both in the event that has locations, days and a real schedule.
+  const gammaExtraProposals = [
+    {
+      title: "Writing Documentation People Actually Read",
+      description:
+        "Most documentation is written once, in a hurry, by whoever shipped the feature. This session is about the opposite: treating docs as a product with readers, a first minute that has to land, and a maintenance cost you plan for.\n\nWe'll look at real examples — a few good, several painfully bad — and pull out what separates them: task-shaped titles, examples before explanations, and the courage to delete a page.\n\nBring a page you're unhappy with and we'll rework it together.",
+      durationMinutes: 60,
+      hostNames: ["Hana Kobayashi"],
+    },
+    {
+      title: "Your First Conference Talk: From Idea to Stage",
+      description:
+        "You have something worth saying and no idea how to turn it into 30 minutes on a stage. Let's fix that.\n\nWe'll cover finding a topic that's genuinely yours, writing an abstract that survives a review committee, building slides that support you instead of competing with you, and what to do when your demo dies in front of 200 people (it will, eventually).\n\nAimed at people who have *never* spoken before. No slides of my own — we work on yours.",
+      durationMinutes: 90,
+      hostNames: ["Hana Kobayashi"],
+    },
+    {
+      title: "Ask Me Anything: Migrating a Legacy Monolith",
+      description:
+        "**Looking for someone to host this!**\n\nSeveral of us are staring down the same problem: a monolith that works, pays the bills, and is slowly becoming impossible to change. We'd love to hear from somebody who has actually come out the other side of a migration — what you'd do again, and what you'd never repeat.\n\nIf you've lived through one, please add yourself as host. An honest hour of war stories beats a polished talk.",
+      durationMinutes: 60,
+      hostNames: [],
+    },
+    {
+      title: "Board Games for People Who Are Tired of Talking",
+      description:
+        "By day three, everyone's social battery is empty. This is a quiet room with a table, a stack of games, and no agenda.\n\nNobody has volunteered to bring the games yet — if you're travelling with something short and easy to teach, add yourself as host and we'll make it happen.",
+      durationMinutes: 120,
+      hostNames: [],
+    },
+  ];
+
+  for (const p of gammaExtraProposals) {
+    const proposalId = nanoid();
+    proposalRows.push({
+      id: proposalId,
+      eventId: eventRows[2].id,
+      title: p.title,
+      description: p.description,
+      durationMinutes: p.durationMinutes,
+      createdTime: new Date().toISOString(),
+    });
+    for (const name of p.hostNames) {
+      proposalHostRows.push({ proposalId, guestId: guestIdByName(name) });
+    }
+  }
+
   // Conference Gamma is mid-scheduling: most of its proposals get scheduled
   // as sessions below (gammaSessionConfigs). Align each scheduled proposal's
   // hosts and duration with its session so the data stays consistent — and so
