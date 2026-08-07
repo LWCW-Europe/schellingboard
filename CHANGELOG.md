@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **The attendee guide now explains the parts attendees kept asking about**: what the three phases are and what each one lets you do; why the vote buttons are greyed out before voting opens (the most common source of confusion); that vote counts stay hidden until voting closes, so nobody's vote sways anyone else's; that Quick Voting is the fast way through and your votes can be changed at any time; both routes for putting a proposal on the schedule, including that hostless proposals are up for grabs and the same proposal can be scheduled twice; that only vote counts are ever shown and never who voted which way; a rough rule of thumb for reading vote counts as expected attendance; and that proposing and voting commit you to nothing while an RSVP does. See the [attendee guide](https://docs.schellingboard.org/attendee-guide/)
+
 - **A guide to backing up your instance**: self-hosters now have a documented way to take a copy of their data — the database and everything uploaded through the admin UI — while the site keeps running, along with how to restore it and what else to keep safe. See [Backup and restore](https://docs.schellingboard.org/self-hosting/backup/)
 
 ## [3.3.0] - 2026-08-01
