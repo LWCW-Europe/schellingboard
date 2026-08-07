@@ -99,6 +99,7 @@
       "commitHistory": true,
       "maxCommits": 5
     },
+    "./scripts/docmd-git-history.js": {},
     "seo": {
       "defaultDescription": "Documentation for attendees and organizers of events run on SchellingBoard."
     }
