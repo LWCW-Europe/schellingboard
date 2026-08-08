@@ -76,3 +76,25 @@ tags `:$VERSION`: that target runs on any working tree, and `:latest` has to
 keep meaning the newest published release.
 
 `make docker-build` derives `$VERSION` with `scripts/app-version.js` (the nearest tag, via `jj` or `git`), so the release commit must already be tagged with the exact version (e.g. `v3.0.0`) before running it.
+
+## Patch Releases
+
+A patch release is cut from the release branch of its minor version,
+`release/<major.minor>` — `release/3.2` for `v3.2.1`. These branches don't have
+to exist: create one from the release tag the first time that version needs a
+fix, and a minor release that never needs one never gets a branch.
+
+```bash
+jj new v3.2.0
+jj bookmark create release/3.2   # git: git switch -c release/3.2 v3.2.0
+```
+
+Commit the fix there (cherry-picking it from `main` if it landed there first),
+then run the steps above against the branch instead of `main`, and merge the
+branch back into `main` so the fix is not lost. Omit the `:latest` Docker tag
+when the patch is not the newest release.
+
+Pushing the branch republishes that version's documentation on its own, without
+a tag — the docs build prefers `release/<major.minor>` over the tag for that
+version, which is also how published docs are corrected between releases. See
+[Correcting published documentation](documentation.md#correcting-published-documentation).

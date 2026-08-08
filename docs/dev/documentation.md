@@ -27,7 +27,7 @@ tagged.
 | `make docs-build`    | Build the published site into `site/`        |
 | `make docs-validate` | Check for broken internal links (runs in CI) |
 
-`.github/workflows/docs.yml` deploys on tag pushes and on pushes to `docs-*`
+`.github/workflows/docs.yml` deploys on tag pushes and on pushes to `release/*`
 branches. Pushing to `main` deliberately publishes nothing — until a release is
 tagged, `make docs` is the only place the new documentation exists.
 
@@ -73,18 +73,27 @@ Until both are in place and `v3.2.0` is tagged, the
 
 ### Correcting published documentation
 
-To fix published docs without cutting a release, commit to a `docs-<version>`
-branch — `docs-3.2` for the 3.2 docs. The build prefers that branch over the
-tag, so pushing it republishes that version, and the deploy log names the ref
-each version came from (`Version 3.2 ← docs-3.2`).
+To fix published docs without cutting a release, commit to the release branch
+of that version — `release/3.2` for the 3.2 docs. The build prefers that branch
+over the tag, so pushing it republishes that version, and the deploy log names
+the ref each version came from (`Version 3.2 ← release/3.2`).
 
-Create the branch from the release tag, and merge it back into `main` so the
-fix reaches the next release too:
+Release branches don't exist until something needs one. Create it from the
+release tag the first time that minor release has to be corrected — a release
+that never needs a fix never gets a branch — and merge it back into `main` so
+the fix reaches the next release too. The same branch carries the commits of a
+patch release, so this is where a fix to an older version lives in general, not
+only a documentation one; see [Releasing a new version](releasing.md).
 
 ```bash
-git switch -c docs-3.2 v3.2.0
+jj new v3.2.0
+jj bookmark create release/3.2   # git: git switch -c release/3.2 v3.2.0
 # fix, commit, push — the docs site redeploys
 ```
+
+Because the branch tip wins over the tag, anything committed to it is published
+as that version's documentation the moment it is pushed, released or not. Land
+work that isn't ready to be read on a separate branch.
 
 ## The landing page
 

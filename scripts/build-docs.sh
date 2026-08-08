@@ -12,9 +12,9 @@
 #     is no snapshot step and no copy to keep in sync.
 #   - docs/public/ is the working copy of the next release's documentation. It
 #     is never published; preview it with `make docs`.
-#   - To correct published docs without cutting a release, commit to a
-#     docs-<id> branch (e.g. docs-3.2). It takes precedence over the tag for
-#     that version. Merge it back into main so the fix is not lost.
+#   - To correct published docs without cutting a release, commit to the
+#     release/<id> branch (e.g. release/3.2). It takes precedence over the tag
+#     for that version. Merge it back into main so the fix is not lost.
 #
 # A worktree is used rather than `git archive` on purpose: it is a real
 # checkout, so the git plugin's per-page commit history keeps working.
@@ -67,11 +67,11 @@ while read -r tag; do
   id="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
   [[ "$seen_ids" == *" $id "* ]] && continue
 
-  # An optional docs-<id> branch overrides the tag, so published docs can be
+  # An optional release/<id> branch overrides the tag, so published docs can be
   # corrected without a new release. Prefer a local branch, fall back to the
   # remote-tracking one (CI checkouts have no local branches).
   ref="$tag"
-  for candidate in "docs-$id" "origin/docs-$id"; do
+  for candidate in "release/$id" "origin/release/$id"; do
     if git rev-parse --verify --quiet "$candidate^{commit}" >/dev/null; then
       ref="$candidate"
       break
