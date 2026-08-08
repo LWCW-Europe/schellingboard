@@ -1,7 +1,7 @@
 "use client";
 import { useContext, useState } from "react";
-import Link from "next/link";
 
+import { BackLink } from "@/app/components/back-link";
 import { Proposal } from "@/app/(site)/[eventSlug]/proposal";
 import { Vote, VoteChoice } from "@/app/(site)/votes";
 import type { SessionProposal } from "@/db/repositories/interfaces";
@@ -127,15 +127,7 @@ export function QuickVoting(props: {
 
   return (
     <div className="max-w-2xl mx-auto px-4 pb-32 relative">
-      <Link
-        // py/-my: a 14px line is a 20px tap target, under the 24px minimum a
-        // thumb needs; the negative margin keeps the extra height from pushing
-        // the proposal down.
-        className="inline-block py-1 -my-1 text-sm text-gray-500 hover:text-gray-700"
-        href={`/${eventSlug}/proposals`}
-      >
-        ← Proposals
-      </Link>
+      <BackLink href={`/${eventSlug}/proposals`}>Proposals</BackLink>
       <p className="text-lg mt-4 mb-4">{eventName} Quick Voting</p>
       <div className="text-gray-600 mb-6">
         You have voted on {votes.length} / {totalProposals} proposals

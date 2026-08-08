@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
-import Link from "next/link";
 
+import { BackLink } from "@/app/components/back-link";
 import { QuickVoting } from "./quick-voting";
 import { getRepositories } from "@/db/container";
 
@@ -13,12 +13,7 @@ export default async function ProposalQuickVoting(props: {
   if (!currentUser) {
     return (
       <div className="max-w-2xl mx-auto px-4">
-        <Link
-          className="inline-block py-1 -my-1 text-sm text-gray-500 hover:text-gray-700"
-          href={`/${eventSlug}/proposals`}
-        >
-          ← Proposals
-        </Link>
+        <BackLink href={`/${eventSlug}/proposals`}>Proposals</BackLink>
         <div className="mt-6">Please choose who you are first.</div>
       </div>
     );
