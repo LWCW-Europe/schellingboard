@@ -79,6 +79,11 @@
           "title": "Configuration",
           "path": "/self-hosting/configuration/",
           "icon": "settings"
+        },
+        {
+          "title": "Backup and restore",
+          "path": "/self-hosting/backup/",
+          "icon": "database-backup"
         }
       ]
     },
@@ -94,6 +99,7 @@
       "commitHistory": true,
       "maxCommits": 5
     },
+    "./scripts/docmd-git-history.js": {},
     "seo": {
       "defaultDescription": "Documentation for attendees and organizers of events run on SchellingBoard."
     }
