@@ -12,12 +12,12 @@ export default async function ProposalQuickVoting(props: {
   const currentUser = await verifiedCurrentUser(await cookies());
   if (!currentUser) {
     return (
-      <div>
+      <div className="max-w-2xl mx-auto px-4">
         <Link
-          className="bg-rose-400 text-white font-semibold py-2 px-4 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
+          className="inline-block py-1 -my-1 text-sm text-gray-500 hover:text-gray-700"
           href={`/${eventSlug}/proposals`}
         >
-          Back to Proposals
+          ← Proposals
         </Link>
         <div className="mt-6">Please choose who you are first.</div>
       </div>
@@ -30,9 +30,8 @@ export default async function ProposalQuickVoting(props: {
     return <div>Event not found</div>;
   }
 
-  const [allProposals, guests, votes] = await Promise.all([
+  const [allProposals, votes] = await Promise.all([
     repos.sessionProposals.listByEvent(event.id),
-    repos.guests.list(),
     repos.votes.listByGuestAndEvent(currentUser, event.id),
   ]);
   const proposals = allProposals.filter(
@@ -42,7 +41,6 @@ export default async function ProposalQuickVoting(props: {
   return (
     <QuickVoting
       proposals={proposals}
-      guests={guests}
       currentUser={currentUser}
       initialVotes={votes}
       eventName={event.name}

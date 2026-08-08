@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Quick Voting reads better on a phone**: the text no longer runs into the edges of the screen. The big "Back to Proposals" button at the top has become a small "← Proposals" link, so the proposal you are voting on is the first thing you see, and the "You are: …" line is gone — your name is already in the header
+
 ## [3.3.0] - 2026-08-01
 
 ### Added
