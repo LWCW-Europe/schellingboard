@@ -30,7 +30,7 @@ More screenshots at [schellingboard.org](https://schellingboard.org).
 
 ## Hosting
 
-See [docs.schellingboard.org](https://docs.schellingboard.org/self-hosting/deployment/) for deployment and administration instructions.
+See [docs.schellingboard.org](https://docs.schellingboard.org/self-hosting/deployment/) for deployment and administration instructions. Docker images are published on [Docker Hub](https://hub.docker.com/r/schellingboard/schellingboard).
 
 ## Attendees
 
