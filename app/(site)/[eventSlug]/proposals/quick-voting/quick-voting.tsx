@@ -1,28 +1,25 @@
 "use client";
 import { useContext, useState } from "react";
-import Link from "next/link";
 
+import { BackLink } from "@/app/components/back-link";
 import { Proposal } from "@/app/(site)/[eventSlug]/proposal";
 import { Vote, VoteChoice } from "@/app/(site)/votes";
-import type { SessionProposal, Guest } from "@/db/repositories/interfaces";
+import type { SessionProposal } from "@/db/repositories/interfaces";
 import { VotingButtons } from "@/app/(site)/[eventSlug]/proposals/voting-buttons";
 import { VotesContext } from "@/app/(site)/context";
 
 export function QuickVoting(props: {
   proposals: SessionProposal[];
-  guests: Guest[];
   currentUser: string;
   initialVotes: Vote[];
   eventName: string;
   eventSlug: string;
 }) {
-  const { proposals, guests, currentUser, initialVotes, eventSlug, eventName } =
-    props;
+  const { proposals, currentUser, initialVotes, eventSlug, eventName } = props;
   const [votes, setVotes] = useState(initialVotes);
   const { addVote, removeVote, updateVote, getVote } = useContext(VotesContext);
 
   const totalProposals = proposals.length;
-  const currentUserName = guests.find((g) => g.id === currentUser)?.name;
   const eligibleProposals = proposals
     .filter((pr) => !votes.some((vote) => vote.proposalId === pr.id))
     .sort((a, b) => a.votesCount - b.votesCount);
@@ -129,19 +126,11 @@ export function QuickVoting(props: {
   }
 
   return (
-    <div className="max-w-2xl mx-auto pb-32 relative">
-      <Link
-        className="bg-rose-400 text-white font-semibold py-2 px-4 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
-        href={`/${eventSlug}/proposals`}
-      >
-        Back to Proposals
-      </Link>
+    <div className="max-w-2xl mx-auto px-4 pb-32 relative">
+      <BackLink href={`/${eventSlug}/proposals`}>Proposals</BackLink>
       <p className="text-lg mt-4 mb-4">{eventName} Quick Voting</p>
-      <div className="flex justify-between mb-6">
-        <div className="text-gray-600">
-          You have voted on {votes.length} / {totalProposals} proposals
-        </div>
-        <div className="text-gray-600">You are: {currentUserName}</div>
+      <div className="text-gray-600 mb-6">
+        You have voted on {votes.length} / {totalProposals} proposals
       </div>
 
       {showNextProposal()}

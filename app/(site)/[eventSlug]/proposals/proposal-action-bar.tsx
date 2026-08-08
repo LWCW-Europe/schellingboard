@@ -48,39 +48,43 @@ export function ProposalActionBar({
       <HoverTooltip
         text="Proposal and voting phases are over"
         visible={inSchedPhase(event, now)}
+        unavailable
       >
         <Link
           href={`/${eventSlug}/proposals/new`}
           className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 ${
             inSchedPhase(event, now) ? "opacity-50 cursor-not-allowed" : ""
           }`}
-          {...(inSchedPhase(event, now) && {
-            onClick: (e) => e.preventDefault(),
-          })}
         >
           <PlusIcon className="h-5 w-5" />
           <span>Add Proposal</span>
         </Link>
       </HoverTooltip>
-      <HoverTooltip text={votingDisabledText} visible={!votingEnabled}>
+      <HoverTooltip
+        text={votingDisabledText}
+        visible={!votingEnabled}
+        unavailable
+      >
         <Link
           href={votingEnabled ? `/${eventSlug}/proposals/quick-voting` : "#"}
           className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 ${
             votingEnabled ? "" : "opacity-50 cursor-not-allowed"
           }`}
-          {...(!votingEnabled && { onClick: (e) => e.preventDefault() })}
         >
           <ChartBarIcon className="h-5 w-5" />
           <span>Go to Quick Voting!</span>
         </Link>
       </HoverTooltip>
-      <HoverTooltip text={schedDisabledText} visible={!schedEnabled}>
+      <HoverTooltip
+        text={schedDisabledText}
+        visible={!schedEnabled}
+        unavailable
+      >
         <Link
           href={schedEnabled ? `/${eventSlug}` : "#"}
           className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 ${
             schedEnabled ? "" : "opacity-50 cursor-not-allowed"
           }`}
-          {...(!schedEnabled && { onClick: (e) => e.preventDefault() })}
         >
           <CalendarDaysIcon className="h-5 w-5" />
           <span>View Schedule</span>

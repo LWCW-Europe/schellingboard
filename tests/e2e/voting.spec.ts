@@ -93,7 +93,7 @@ test("should navigate to quick voting and allow voting on proposals", async ({
   }
 
   // Navigate back to proposals overview
-  await page.getByRole("link", { name: /Back to Proposals/i }).click();
+  await page.getByRole("link", { name: /← Proposals/i }).click();
   await expect(page).toHaveURL(/\/Conference-Beta\/proposals$/);
 });
 

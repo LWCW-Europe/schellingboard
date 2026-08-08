@@ -268,9 +268,13 @@ export function ProposalTable({
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <div className="relative inline-block group">
+              <HoverTooltip
+                text="Select a user first"
+                visible={!currentUserId}
+                unavailable
+              >
                 <button
-                  className={`disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
+                  className={`aria-disabled:opacity-50 aria-disabled:cursor-not-allowed text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
                     effectiveFilter === "mine"
                       ? "bg-blue-600 hover:bg-blue-700"
                       : currentUserId
@@ -278,7 +282,6 @@ export function ProposalTable({
                         : "bg-gray-400"
                   }`}
                   onClick={() => updateResultFilter("mine")}
-                  disabled={!currentUserId}
                   aria-pressed={effectiveFilter === "mine"}
                   aria-label={`Filter to show only your proposals${effectiveFilter === "mine" ? " (active)" : ""}`}
                 >
@@ -290,22 +293,20 @@ export function ProposalTable({
                     </span>
                   )}
                 </button>
-                {!currentUserId && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-sm text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                    Select a user first
-                  </div>
-                )}
-              </div>
-              <HoverTooltip text={votingDisabledText} visible={!votingEnabled}>
+              </HoverTooltip>
+              <HoverTooltip
+                text={votingDisabledText}
+                visible={!votingEnabled}
+                unavailable
+              >
                 <button
-                  className={`disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
+                  className={`aria-disabled:opacity-50 aria-disabled:cursor-not-allowed text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
                     effectiveFilter === "unvoted"
                       ? "bg-blue-600 hover:bg-blue-700"
                       : currentUserId
                         ? "bg-gray-400 hover:bg-gray-500"
                         : "bg-gray-400"
                   }`}
-                  disabled={!votingEnabled}
                   aria-label="Filter to show only unvoted proposals"
                   onClick={() => updateResultFilter("unvoted")}
                 >
@@ -318,16 +319,19 @@ export function ProposalTable({
                   )}
                 </button>
               </HoverTooltip>
-              <HoverTooltip text={votingDisabledText} visible={!votingEnabled}>
+              <HoverTooltip
+                text={votingDisabledText}
+                visible={!votingEnabled}
+                unavailable
+              >
                 <button
-                  className={`disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
+                  className={`aria-disabled:opacity-50 aria-disabled:cursor-not-allowed text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
                     effectiveFilter === "voted"
                       ? "bg-blue-600 hover:bg-blue-700"
                       : currentUserId
                         ? "bg-gray-400 hover:bg-gray-500"
                         : "bg-gray-400"
                   }`}
-                  disabled={!votingEnabled}
                   aria-label="Filter to show only voted proposals"
                   onClick={() => updateResultFilter("voted")}
                 >
@@ -624,6 +628,7 @@ export function ProposalTable({
                         <HoverTooltip
                           text={schedDisabledText}
                           visible={!schedEnabled}
+                          unavailable
                         >
                           <button
                             onClick={() =>
@@ -636,7 +641,6 @@ export function ProposalTable({
                                 ? ""
                                 : "opacity-50 cursor-not-allowed"
                             }`}
-                            disabled={!schedEnabled}
                           >
                             <CalendarIcon className="h-3 w-3 mr-1" />
                             Schedule
@@ -795,6 +799,7 @@ export function ProposalTable({
                       <HoverTooltip
                         text={schedDisabledText}
                         visible={!schedEnabled}
+                        unavailable
                       >
                         <button
                           onClick={(e) => {
@@ -806,7 +811,6 @@ export function ProposalTable({
                           className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-rose-400 text-rose-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 hover:bg-rose-50 transition-colors ${
                             schedEnabled ? "" : "opacity-50 cursor-not-allowed"
                           }`}
-                          disabled={!schedEnabled}
                         >
                           <CalendarIcon className="h-4 w-4 mr-1" />
                           Schedule

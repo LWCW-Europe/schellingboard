@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## Unreleased
 
 ### Added
 
@@ -16,6 +16,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - The seed data gives Conference Gamma four more proposals: two hosted by Hana Kobayashi, whose profile is the most complete of the seeded guests, and two with no host yet. Both cases were previously only reachable through the random host assignment, which made them awkward to point a screenshot at
 - `scripts/docmd-git-history.js` dates the docs pages from git. docmd's own git plugin was configured for it and worked in `make docs`, but it asks the build engine for the log and the engine runs `git log` in the working directory — so the worktrees `build-docs.sh` builds each published version from were all rejected as outside the repository, the error was swallowed, and every page of the live site shipped undated. `build-docs.sh` now fails the build if any page comes out without a date, since nothing else notices. Avatars are left off so readers aren't sent to Gravatar. See [docs/dev/documentation.md § Dating each page](docs/dev/documentation.md#dating-each-page)
+
+## [3.3.1] - 2026-08-08
+
+### Fixed
+
+- **A greyed-out button now says why it is greyed out**: for a greyed-out vote button, "Go to Quick Voting!", "View Schedule", "Add Proposal", "Schedule" or one of the proposal filters, the reason — "Voting will be enabled at …", "Select a user first" — used to appear only when hovering with a mouse, which a phone cannot do, so there the button just looked broken. Tapping or clicking one now shows the reason at the bottom of the screen for a few seconds. Those buttons also keep their place in the Tab order, and a screen reader now announces that they are unavailable together with the reason, instead of skipping past them in silence
+- **Quick Voting reads better on a phone**: the text no longer runs into the edges of the screen. The big "Back to Proposals" button at the top has become a small "← Proposals" link, so the proposal you are voting on is the first thing you see, and the "You are: …" line is gone — your name is already in the header
+- **The "← Events" link in the admin area is easier to hit**: it was too small to tap reliably with a thumb
 
 ## [3.3.0] - 2026-08-01
 
@@ -256,7 +264,7 @@ This version corresponds to commit [9aa2a273](https://github.com/LWCW-Europe/sch
 
 The version number 1.0.0 is a retroactive label assigned here purely as a reference point to mark the upstream baseline — it was never designated as such. This is the upstream codebase at the point the fork was created, taken from commit [babcd627](https://github.com/rachelweinberg12/scheduling-app/commit/babcd6275a853f1911cd48bbdaf4f2b1725c3d47) of [rachelweinberg12/scheduling-app](https://github.com/rachelweinberg12/scheduling-app) ([full log](https://github.com/rachelweinberg12/scheduling-app/commits/babcd6275a853f1911cd48bbdaf4f2b1725c3d47/)). It was never properly released since it was deployed directly from the Git repository.
 
-[Unreleased]: https://github.com/LWCW-Europe/schellingboard/compare/v3.3.0...HEAD
+[3.3.1]: https://github.com/LWCW-Europe/schellingboard/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/LWCW-Europe/schellingboard/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/LWCW-Europe/schellingboard/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/LWCW-Europe/schellingboard/compare/v3.0.0...v3.1.0
