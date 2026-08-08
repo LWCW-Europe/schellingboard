@@ -1,15 +1,15 @@
 name: Docs
 
 # The site is built from released versions only, so it changes when a release
-# is tagged or when published docs are corrected on a docs-<id> branch. Pushes
-# to main deliberately do not publish: docs/public is the next release's
+# is tagged or when published docs are corrected on a release/<id> branch.
+# Pushes to main deliberately do not publish: docs/public is the next release's
 # documentation, previewed locally with `make docs`.
 on:
   push:
     tags:
       - "v*"
     branches:
-      - "docs-*"
+      - "release/*"
   workflow_dispatch:
 
 # Only one deploy at a time; don't cancel a running one mid-upload.
@@ -34,7 +34,7 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v7.0.1
         with:
-          # Every published version is checked out from a tag or a docs-<id>
+          # Every published version is checked out from a tag or a release/<id>
           # branch during the build, and the git plugin renders per-page commit
           # history — none of which works from a shallow, single-ref clone.
           fetch-depth: 0
