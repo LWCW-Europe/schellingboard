@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- **On a phone, a greyed-out button now says why it is greyed out**: tapping a greyed-out vote button, "Go to Quick Voting!", "View Schedule", "Add Proposal", "Schedule" or one of the proposal filters shows the reason — "Voting will be enabled at …", "Select a user first" — at the bottom of the screen for a few seconds. Until now that explanation only appeared when hovering with a mouse, which a phone cannot do, so the button just looked broken. Clicking one with a mouse shows the same message
+- **A greyed-out button now says why it is greyed out**: for a greyed-out vote button, "Go to Quick Voting!", "View Schedule", "Add Proposal", "Schedule" or one of the proposal filters, the reason — "Voting will be enabled at …", "Select a user first" — used to appear only when hovering with a mouse, which a phone cannot do, so there the button just looked broken. Tapping or clicking one now shows the reason at the bottom of the screen for a few seconds. Those buttons also keep their place in the Tab order, and a screen reader now announces that they are unavailable together with the reason, instead of skipping past them in silence
 - **Quick Voting reads better on a phone**: the text no longer runs into the edges of the screen. The big "Back to Proposals" button at the top has become a small "← Proposals" link, so the proposal you are voting on is the first thing you see, and the "You are: …" line is gone — your name is already in the header
 - **The "← Events" link in the admin area is easier to hit**: it was too small to tap reliably with a thumb
 

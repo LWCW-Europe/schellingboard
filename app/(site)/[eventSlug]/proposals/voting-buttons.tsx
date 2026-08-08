@@ -129,7 +129,7 @@ export function VotingButtons({
       <HoverTooltip
         text={votingEnabled ? "Interested" : votingDisabledText}
         visible={true}
-        toastOnTap={!votingEnabled}
+        unavailable={!votingEnabled}
       >
         <button
           type="button"
@@ -137,7 +137,6 @@ export function VotingButtons({
             ${large ? "w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center" : "px-1 py-1"}
             ${votingEnabled ? "" : "opacity-50 cursor-not-allowed grayscale"}
             ${votes.some((vote) => vote.proposalId === proposalId && vote.choice === VoteChoice.interested && vote.guestId === currentUserId) ? "bg-blue-200" : "bg-white"}`}
-          disabled={!votingEnabled}
           onClick={(e) => handleVote(VoteChoice.interested, e)}
         >
           <div className={large ? "text-sm sm:text-lg mb-1" : ""}>❤️</div>
@@ -147,7 +146,7 @@ export function VotingButtons({
       <HoverTooltip
         text={votingEnabled ? "Maybe" : votingDisabledText}
         visible={true}
-        toastOnTap={!votingEnabled}
+        unavailable={!votingEnabled}
       >
         <button
           type="button"
@@ -155,7 +154,6 @@ export function VotingButtons({
             ${large ? "w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center" : "px-1 py-1"}
             ${votingEnabled ? "" : "opacity-50 cursor-not-allowed grayscale"}
             ${votes.some((vote) => vote.proposalId === proposalId && vote.choice === VoteChoice.maybe && vote.guestId === currentUserId) ? "bg-blue-200" : "bg-white"}`}
-          disabled={!votingEnabled}
           onClick={(e) => handleVote(VoteChoice.maybe, e)}
         >
           <div className={large ? "text-sm sm:text-lg mb-1" : ""}>⭐</div>
@@ -165,7 +163,7 @@ export function VotingButtons({
       <HoverTooltip
         text={votingEnabled ? "Skip" : votingDisabledText}
         visible={true}
-        toastOnTap={!votingEnabled}
+        unavailable={!votingEnabled}
       >
         <button
           type="button"
@@ -173,7 +171,6 @@ export function VotingButtons({
             ${large ? "w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center" : "px-1 py-1"}
             ${votingEnabled ? "" : "opacity-50 cursor-not-allowed grayscale"}
             ${votes.some((vote) => vote.proposalId === proposalId && vote.choice === VoteChoice.skip && vote.guestId === currentUserId) ? "bg-blue-200" : "bg-white"}`}
-          disabled={!votingEnabled}
           onClick={(e) => handleVote(VoteChoice.skip, e)}
         >
           <div className={large ? "text-sm sm:text-lg mb-1" : ""}>👋🏽</div>
