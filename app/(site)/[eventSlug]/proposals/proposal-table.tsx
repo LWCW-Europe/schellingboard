@@ -268,7 +268,11 @@ export function ProposalTable({
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <div className="relative inline-block group">
+              <HoverTooltip
+                text="Select a user first"
+                visible={!currentUserId}
+                toastOnTap
+              >
                 <button
                   className={`disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
                     effectiveFilter === "mine"
@@ -290,13 +294,12 @@ export function ProposalTable({
                     </span>
                   )}
                 </button>
-                {!currentUserId && (
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-sm text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                    Select a user first
-                  </div>
-                )}
-              </div>
-              <HoverTooltip text={votingDisabledText} visible={!votingEnabled}>
+              </HoverTooltip>
+              <HoverTooltip
+                text={votingDisabledText}
+                visible={!votingEnabled}
+                toastOnTap
+              >
                 <button
                   className={`disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
                     effectiveFilter === "unvoted"
@@ -318,7 +321,11 @@ export function ProposalTable({
                   )}
                 </button>
               </HoverTooltip>
-              <HoverTooltip text={votingDisabledText} visible={!votingEnabled}>
+              <HoverTooltip
+                text={votingDisabledText}
+                visible={!votingEnabled}
+                toastOnTap
+              >
                 <button
                   className={`disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
                     effectiveFilter === "voted"
@@ -624,6 +631,7 @@ export function ProposalTable({
                         <HoverTooltip
                           text={schedDisabledText}
                           visible={!schedEnabled}
+                          toastOnTap
                         >
                           <button
                             onClick={() =>
@@ -795,6 +803,7 @@ export function ProposalTable({
                       <HoverTooltip
                         text={schedDisabledText}
                         visible={!schedEnabled}
+                        toastOnTap
                       >
                         <button
                           onClick={(e) => {

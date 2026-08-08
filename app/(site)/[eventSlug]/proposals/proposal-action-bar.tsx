@@ -48,6 +48,7 @@ export function ProposalActionBar({
       <HoverTooltip
         text="Proposal and voting phases are over"
         visible={inSchedPhase(event, now)}
+        toastOnTap
       >
         <Link
           href={`/${eventSlug}/proposals/new`}
@@ -62,7 +63,11 @@ export function ProposalActionBar({
           <span>Add Proposal</span>
         </Link>
       </HoverTooltip>
-      <HoverTooltip text={votingDisabledText} visible={!votingEnabled}>
+      <HoverTooltip
+        text={votingDisabledText}
+        visible={!votingEnabled}
+        toastOnTap
+      >
         <Link
           href={votingEnabled ? `/${eventSlug}/proposals/quick-voting` : "#"}
           className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 ${
@@ -74,7 +79,7 @@ export function ProposalActionBar({
           <span>Go to Quick Voting!</span>
         </Link>
       </HoverTooltip>
-      <HoverTooltip text={schedDisabledText} visible={!schedEnabled}>
+      <HoverTooltip text={schedDisabledText} visible={!schedEnabled} toastOnTap>
         <Link
           href={schedEnabled ? `/${eventSlug}` : "#"}
           className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 ${

@@ -129,6 +129,7 @@ export function VotingButtons({
       <HoverTooltip
         text={votingEnabled ? "Interested" : votingDisabledText}
         visible={true}
+        toastOnTap={!votingEnabled}
       >
         <button
           type="button"
@@ -146,6 +147,7 @@ export function VotingButtons({
       <HoverTooltip
         text={votingEnabled ? "Maybe" : votingDisabledText}
         visible={true}
+        toastOnTap={!votingEnabled}
       >
         <button
           type="button"
@@ -163,6 +165,7 @@ export function VotingButtons({
       <HoverTooltip
         text={votingEnabled ? "Skip" : votingDisabledText}
         visible={true}
+        toastOnTap={!votingEnabled}
       >
         <button
           type="button"

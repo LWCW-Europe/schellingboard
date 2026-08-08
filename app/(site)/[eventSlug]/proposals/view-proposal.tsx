@@ -105,7 +105,11 @@ export function ViewProposal(props: {
               Edit
             </Link>
           </div>
-          <HoverTooltip text={schedDisabledText} visible={!schedEnabled}>
+          <HoverTooltip
+            text={schedDisabledText}
+            visible={!schedEnabled}
+            toastOnTap
+          >
             <button
               onClick={handleScheduleClick}
               className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors ${
