@@ -1,15 +1,17 @@
 # Releasing a New Version
 
 1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header), and replace the `[Unreleased]` compare link at the bottom of the file with the new version's, pointing from the previous release's endpoint to the new tag (`vX.Y.Z`). Do _not_ add a fresh `## [Unreleased]` section here — the released tag should carry no empty section, since that is what the documentation site publishes. Step 6 reopens it afterwards. Commit and merge this like any other change.
-2. **Tag the resulting commit on `main`, locally for now**. jj cannot push tags to a Git remote, so use `git` for this step:
+2. **Tag the resulting commit on `main`, locally for now**:
 
    ```bash
    VERSION=v3.0.0
    MINOR=${VERSION%.*}   # v3.0
    MAJOR=${MINOR%.*}     # v3
 
-   git fetch origin main
-   git tag $VERSION origin/main
+   jj git fetch
+   jj tag set $VERSION -r main@origin
+   # git: git fetch origin main
+   #      git tag $VERSION origin/main
    ```
 
 3. **Sanity-check the image that will be published** — build it from the tag and
@@ -21,18 +23,21 @@
    [Testing the Docker image](testing.md#testing-the-docker-image).
 
    ```bash
-   git checkout $VERSION
+   jj new $VERSION
+   # git: git checkout $VERSION
    make test-e2e-docker
    ```
 
    The tag is still local at this point, so a failure costs nothing: fix it on
-   `main`, delete the tag (`git tag -d $VERSION`), and start again from step 1.
+   `main`, delete the tag (`jj tag delete $VERSION`, or `git tag -d $VERSION`),
+   and start again from step 1.
 
 4. **Push the tag**, which is the point of no return — it publishes the
    documentation:
 
    ```bash
-   git push origin $VERSION
+   jj git push --tag $VERSION
+   # git: git push origin $VERSION
    ```
 
 5. **Publish the Docker images** — see below.
@@ -51,7 +56,7 @@ For a release, push four tags: the full version, `major.minor`, `major`, and `la
 
 ```bash
 docker login
-git checkout $VERSION
+jj new $VERSION      # git: git checkout $VERSION
 make clean
 make docker-build   # builds and locally tags :$VERSION
 docker tag schellingboard/schellingboard:$VERSION schellingboard/schellingboard:$MINOR
