@@ -2,7 +2,31 @@
 
 This repo uses two conventions beyond GitHub's built-in issue fields: an **Issue Type**
 (`Task` / `Bug` / `Feature`) and a custom single-select **Priority** field (`Urgent` / `High` /
-`Medium` / `Low`). No labels are used — type and Priority carry that information instead.
+`Medium` / `Low`). Type and Priority carry that information instead of labels — the only labels
+in regular use are the `component: *` ones below.
+
+## Component labels
+
+Each issue should get one `component: *` label indicating the area it touches:
+
+| Label                      | Scope                                          |
+| -------------------------- | ---------------------------------------------- |
+| `component: proposals`     | Proposal creation/listing/editing              |
+| `component: voting`        | Voting (table + Quick Voting)                  |
+| `component: scheduling`    | Sessions, session grid, scheduling phase       |
+| `component: admin`         | `/admin` backend                               |
+| `component: attendees`     | Attendee list, profiles, RSVPs on profiles     |
+| `component: auth`          | Login, passwords, protected accounts           |
+| `component: infra & dev`   | CI, testing, tooling, perf, security, upgrades |
+| `component: notifications` | Email and in-app notifications                 |
+| `component: ui/ux`         | Cross-cutting styling/layout/accessibility     |
+| `component: other`         | Reviewed, no suitable component                |
+
+`gh issue create`/`edit` can set labels directly (no GraphQL needed):
+
+```bash
+gh issue edit 123 --add-label "component: scheduling"
+```
 
 Neither field is exposed by `gh issue create`/`gh issue edit`/`gh issue view` — both require the
 GraphQL API (`gh api graphql`).
