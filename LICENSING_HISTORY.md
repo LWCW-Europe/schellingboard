@@ -12,5 +12,6 @@ The following contributors have explicitly confirmed their contributions may be 
 - Leonardo Taglialegne
 - Nikita Brancatisano (thevinter)
 - Habryka
+- Niklas Fasching
 
-The remaining contributors (Austin Chen, Simon Crane, Raemon, Marc N., Niklas Fasching) made small contributions and have not responded. We believe the MIT license applies to the project as a whole, but want to be transparent about this.
+The remaining contributors (Austin Chen, Simon Crane, Raemon, Marc N.) made small contributions and have not responded. We believe the MIT license applies to the project as a whole, but want to be transparent about this.
