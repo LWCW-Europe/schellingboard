@@ -19,6 +19,13 @@ updates:
       # typescript-eslint not yet compatible with typescript 7 (issue #621)
       - dependency-name: "typescript"
         versions: [">= 7"]
+      # Next 16.3.0 miscompiles proxy.ts: the auth branches of requireAuth /
+      # requireAdminAuth / requireAdminAuthApi are dropped from the bundle, so
+      # the site serves every page — and the admin API — unauthenticated.
+      - dependency-name: "next"
+        versions: [">= 16.3"]
+      - dependency-name: "eslint-config-next"
+        versions: [">= 16.3"]
     cooldown:
       default-days: 7
     groups:
