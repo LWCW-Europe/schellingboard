@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { getImageRepositories } from "@/utils/images";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import { serverNow } from "@/utils/dev-clock-server";
 import { profileSchema } from "@/model/guest";
 import { z } from "zod";
 
@@ -72,7 +73,11 @@ export async function updateProfileAction(
     );
   }
 
-  await guests.updateProfile(currentUser, { ...profile, avatarUrl });
+  await guests.updateProfile(
+    currentUser,
+    { ...profile, avatarUrl },
+    await serverNow()
+  );
 
   revalidatePath(`/guests/${currentUser}`);
   revalidatePath("/guests");

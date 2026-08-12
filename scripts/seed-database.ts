@@ -1157,7 +1157,7 @@ async function seedTestData() {
   console.log("  📝 Creating test guests...");
   fs.mkdirSync(uploadedAvatarsDir(), { recursive: true });
   const guestRows = await Promise.all(
-    guestConfigs.map(async (config) => {
+    guestConfigs.map(async (config, index) => {
       const id = nanoid();
       let avatarUrl: string | null = null;
       if (config.avatar !== undefined) {
@@ -1174,6 +1174,20 @@ async function seedTestData() {
       const passwordHash = config.password
         ? await hashUserPassword(config.password)
         : null;
+      // The app stamps this when a guest saves their profile; the seed writes
+      // rows directly, so it has to stamp them itself or "Recently updated"
+      // has nothing to sort. Spread over the past month, oldest last, so the
+      // list shows a range of ages. Guests with nothing filled in keep a null
+      // stamp — they have never edited a profile.
+      const hasProfile = [
+        config.aboutMe,
+        config.pronouns,
+        config.avatar,
+        config.basedIn,
+        config.languages,
+        config.prompts,
+        config.contacts,
+      ].some((field) => field !== undefined);
       return {
         id,
         name: config.name,
@@ -1185,6 +1199,11 @@ async function seedTestData() {
         languages: config.languages ?? null,
         prompts: config.prompts ?? null,
         contacts: config.contacts ?? null,
+        profileUpdatedAt: hasProfile
+          ? new Date(
+              Date.now() - (index * 19 + 3) * 60 * 60 * 1000
+            ).toISOString()
+          : null,
         authProtected: passwordHash !== null,
         passwordHash,
       };

@@ -55,6 +55,12 @@ export const guests = sqliteTable(
       .notNull()
       .default(false),
     avatarUrl: text("avatar_url"),
+    // When the guest last changed a public profile field — their name counts,
+    // email settings and credentials don't. NULL for profiles nobody ever
+    // filled in, which sort last under "recently updated"; profiles that
+    // already had content when the column was added all share the migration's
+    // instant, there being no history to date them from.
+    profileUpdatedAt: text("profile_updated_at"),
     // Account security (issue #370): when set, acting as this guest requires
     // a verified session (password or emailed code) instead of the open
     // name-switcher.

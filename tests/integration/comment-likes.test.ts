@@ -83,16 +83,20 @@ describe("comment likes", () => {
 
   it("carries each liker's avatar, so it can be shown next to their name", async () => {
     const { event, guest, proposal, comment } = await setup();
-    await getRepositories().guests.updateProfile(guest.id, {
-      name: guest.name,
-      aboutMe: null,
-      avatarUrl: "/uploads/avatar.webp",
-      pronouns: null,
-      basedIn: null,
-      prompts: null,
-      languages: null,
-      contacts: null,
-    });
+    await getRepositories().guests.updateProfile(
+      guest.id,
+      {
+        name: guest.name,
+        aboutMe: null,
+        avatarUrl: "/uploads/avatar.webp",
+        pronouns: null,
+        basedIn: null,
+        prompts: null,
+        languages: null,
+        contacts: null,
+      },
+      new Date()
+    );
 
     await toggleCommentLike({ commentId: comment.id, eventSlug: event.slug });
 
