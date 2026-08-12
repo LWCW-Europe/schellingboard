@@ -17,7 +17,9 @@ test("a newly added session appears on the overview and can be opened", async ({
     page.getByRole("heading", { name: /Add a session/i })
   ).toBeVisible();
 
-  const sessionTitle = "Yak shaving";
+  // Unique per attempt: the DB is seeded once for the whole run, so a retry
+  // would otherwise find the session its failed predecessor already created.
+  const sessionTitle = `Yak shaving ${Date.now()}`;
   await page.getByRole("textbox").first().fill(sessionTitle);
 
   // Add a host via the combobox (a host is required to enable Submit).
