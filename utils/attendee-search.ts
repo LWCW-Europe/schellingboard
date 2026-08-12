@@ -1,4 +1,5 @@
 import type { Attendee } from "@/db/repositories/interfaces";
+import { CONTACT_TYPE_LABELS } from "@/model/guest";
 import { containsIgnoringAccents, equalsIgnoringAccents } from "./utils";
 
 // Rank tiers, higher wins. Exact declared-language matches must beat
@@ -14,14 +15,21 @@ function rank(attendee: Attendee, query: string): number {
   const languages = attendee.languages ?? [];
   if (languages.some((l) => equalsIgnoringAccents(l, query))) return STRUCTURED;
 
-  // Contacts are deliberately not searched: matching them serves scrapers,
-  // not people scanning the directory.
+  // Every public profile field, including contacts — someone who knows a
+  // handle should find its owner. The private system email is not part of
+  // Attendee and so can never be matched here.
   const freeText = [
     attendee.basedIn,
     attendee.pronouns,
     attendee.aboutMe,
     ...languages,
-    ...(attendee.prompts ?? []).map((p) => p.answer),
+    ...(attendee.prompts ?? []).flatMap((p) => [p.prompt, p.answer]),
+    ...(attendee.contacts ?? []).flatMap((c) => [
+      // The label the profile prints: stored only for "other" contacts, the
+      // type's name for the rest.
+      (c.type === "other" && c.label) || CONTACT_TYPE_LABELS[c.type],
+      c.value,
+    ]),
   ];
   if (freeText.some((t) => t && containsIgnoringAccents(t, query)))
     return FREE_TEXT;

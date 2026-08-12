@@ -175,7 +175,12 @@ that you can be at most five minutes late, but doesn't block your RSVP.
 Every attendee gets a profile page with their bio, proposals, and the sessions
 they're hosting — click any name wherever it appears to see it. Click their
 profile photo to see it enlarged. The attendee directory lets you search
-everyone at the event and see who's hosting a session at a glance.
+everyone at the event and see who's hosting a session at a glance. Search
+covers everything on a profile — names, pronouns, bios, languages, where
+someone is based, prompts and their answers, and any contact details they
+published — so a remembered handle, a service name like "Signal", or a shared
+interest is enough to find someone. Your private email address is never part
+of a profile and is never searched.
 
 ![Searchable attendee directory with avatars, bios, and Session host badges](../screenshots/attendees.webp)
 
