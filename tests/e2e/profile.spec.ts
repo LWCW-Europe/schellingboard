@@ -219,7 +219,9 @@ test.describe("Edit profile", () => {
       await leftoverRows.first().click();
     }
 
-    await page.getByLabel("Ask me about").fill("Urban beekeeping");
+    await page
+      .getByLabel("Ask me about")
+      .fill("Urban beekeeping, see https://bees.example.com");
 
     // Suggested prompts can be swapped in place for a different one. The
     // suggestion is random, so find which pool prompt is on screen. One
@@ -252,6 +254,13 @@ test.describe("Edit profile", () => {
     await page.getByLabel("Contact type").selectOption("Signal");
     await page.getByLabel("Contact value").fill("@alice.01");
 
+    await page.getByRole("button", { name: "Add contact" }).click();
+    await page.getByLabel("Contact type").nth(1).selectOption("Website");
+    await page
+      .getByLabel("Contact value")
+      .nth(1)
+      .fill("[my homepage](https://alice.example.com)");
+
     await page.getByRole("button", { name: /^Save$/ }).click();
 
     // Profile page shows every filled-in section.
@@ -267,6 +276,14 @@ test.describe("Edit profile", () => {
     await expect(page.getByText("Italian")).toBeVisible();
     await expect(page.getByText("Signal:")).toBeVisible();
     await expect(page.getByText("@alice.01")).toBeVisible();
+
+    // Markdown in prompt answers and contacts: pasted links are clickable.
+    await expect(
+      page.getByRole("link", { name: "https://bees.example.com" })
+    ).toHaveAttribute("href", "https://bees.example.com");
+    await expect(
+      page.getByRole("link", { name: "my homepage" })
+    ).toHaveAttribute("href", "https://alice.example.com");
 
     // The directory row shows Based in, and search finds the language.
     await page.getByRole("link", { name: "Back to attendees" }).click();

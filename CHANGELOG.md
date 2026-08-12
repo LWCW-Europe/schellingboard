@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Added
+
+- **Formatting and clickable links in the rest of your profile**: the answers to the conversation starters and your contact details now accept Markdown, like "About me" already did — so a link can be given a name (`[my blog](https://example.com)`), and a web address or email address pasted in plainly becomes clickable on its own
+
 ### Changed
 
 - **Attendee search now looks at the whole profile**: searching the attendee directory also matches the contact details attendees chose to publish (handles, usernames, websites, and the service they belong to) and the prompt questions themselves, not only their answers — so knowing someone's handle is enough to find them. Private email addresses are never searched; they are not part of a profile

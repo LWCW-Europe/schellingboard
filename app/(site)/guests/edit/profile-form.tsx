@@ -427,6 +427,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           >
             Suggest a prompt
           </button>
+          <MarkdownHint />
         </DisclosureSection>
 
         <DisclosureSection
@@ -553,6 +554,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           >
             Add contact
           </button>
+          <MarkdownHint />
           <span className="text-rose-400 text-sm">
             {form.formState.errors.contacts?.root?.message ??
               form.formState.errors.contacts?.message}
