@@ -98,17 +98,61 @@ describe("searchAttendees", () => {
     expect(result.map((r) => r.name).sort()).toEqual(["Alice", "Bob"]);
   });
 
-  it("does not match contact values", () => {
-    // Contacts are shown on the profile, but searching them invites scraping
-    // and matches nothing a directory scanner is looking for.
+  it("matches public contact values and their labels", () => {
     const rows = [
       attendee({
         name: "Alice",
-        contacts: [{ type: "email", value: "secret-handle@example.com" }],
+        contacts: [{ type: "telegram", value: "@alice_in_wonderland" }],
       }),
+      attendee({
+        name: "Bob",
+        contacts: [
+          { type: "other", label: "Mastodon", value: "@bob@example.social" },
+        ],
+      }),
+      attendee({ name: "Carol" }),
     ];
 
-    expect(searchAttendees(rows, "secret-handle")).toEqual([]);
+    expect(searchAttendees(rows, "wonderland").map((r) => r.name)).toEqual([
+      "Alice",
+    ]);
+    expect(searchAttendees(rows, "mastodon").map((r) => r.name)).toEqual([
+      "Bob",
+    ]);
+    // Built-in types carry no stored label; the profile prints the type's
+    // name, so that is what has to match.
+    expect(searchAttendees(rows, "telegram").map((r) => r.name)).toEqual([
+      "Alice",
+    ]);
+  });
+
+  it("matches the prompt question, not just its answer", () => {
+    const rows = [
+      attendee({
+        name: "Alice",
+        prompts: [{ prompt: "Looking for", answer: "a climbing partner" }],
+      }),
+      attendee({ name: "Bob" }),
+    ];
+
+    expect(searchAttendees(rows, "looking for").map((r) => r.name)).toEqual([
+      "Alice",
+    ]);
+  });
+
+  it("ranks a name match above a contact match", () => {
+    const rows = [
+      attendee({
+        name: "Zoe",
+        contacts: [{ type: "discord", value: "kim#1234" }],
+      }),
+      attendee({ name: "Kim" }),
+    ];
+
+    expect(searchAttendees(rows, "kim").map((r) => r.name)).toEqual([
+      "Kim",
+      "Zoe",
+    ]);
   });
 
   it("orders ties within a rank tier by name", () => {

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Changed
+
+- **Attendee search now looks at the whole profile**: searching the attendee directory also matches the contact details attendees chose to publish (handles, usernames, websites, and the service they belong to) and the prompt questions themselves, not only their answers — so knowing someone's handle is enough to find them. Private email addresses are never searched; they are not part of a profile
+
 ### Internal
 
 - The seed data gives Conference Gamma four more proposals: two hosted by Hana Kobayashi, whose profile is the most complete of the seeded guests, and two with no host yet. Both cases were previously only reachable through the random host assignment, which made them awkward to point a screenshot at
