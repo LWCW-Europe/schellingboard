@@ -17,7 +17,7 @@ const heading = (weight: string, size: string) =>
     );
   };
 
-const components: Components = {
+const blockComponents: Components = {
   h1: heading("font-bold", "text-[1.1em]"),
   h2: heading("font-bold", "text-[1.05em]"),
   h3: heading("font-semibold", "text-[1em]"),
@@ -28,7 +28,9 @@ const components: Components = {
   a: ({ href, children }) => (
     <a
       href={href}
-      target="_blank"
+      // mailto:/tel: hand off to another app; a new tab would just be left
+      // behind blank.
+      target={/^https?:/i.test(href ?? "") ? "_blank" : undefined}
       rel="noopener noreferrer nofollow"
       className="text-rose-500 underline hover:text-rose-600"
     >
@@ -62,8 +64,56 @@ const components: Components = {
   hr: () => <hr className="my-3 border-gray-200" />,
 };
 
+// Fields written in a single-line input and shown inside a line of text (a
+// contact row, a prompt answer): nothing block-level may come out of them, so
+// every block element is unwrapped to its text and paragraphs disappear.
+const INLINE_DISALLOWED_ELEMENTS = [
+  ...MARKDOWN_DISALLOWED_ELEMENTS,
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "ul",
+  "ol",
+  "li",
+  "blockquote",
+  "pre",
+  "hr",
+];
+
+// Spread rather than picking the inline overrides by hand, so a styling change
+// to a link or to inline code can't reach one renderer and not the other. The
+// block entries are dead weight: their elements never survive.
+const inlineComponents: Components = {
+  ...blockComponents,
+  p: ({ children }) => <>{children}</>,
+};
+
 export function MarkdownHint() {
   return <p className="text-xs text-gray-500">Markdown supported</p>;
+}
+
+function MarkdownRoot({
+  children,
+  components,
+  disallowedElements,
+}: {
+  children: string | null | undefined;
+  components: Components;
+  disallowedElements: string[];
+}) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkBreaks]}
+      disallowedElements={disallowedElements}
+      unwrapDisallowed
+      components={components}
+    >
+      {children ?? ""}
+    </ReactMarkdown>
+  );
 }
 
 export function Markdown({
@@ -72,13 +122,26 @@ export function Markdown({
   children: string | null | undefined;
 }) {
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkBreaks]}
+    <MarkdownRoot
+      components={blockComponents}
       disallowedElements={MARKDOWN_DISALLOWED_ELEMENTS}
-      unwrapDisallowed
-      components={components}
     >
-      {children ?? ""}
-    </ReactMarkdown>
+      {children}
+    </MarkdownRoot>
+  );
+}
+
+export function InlineMarkdown({
+  children,
+}: {
+  children: string | null | undefined;
+}) {
+  return (
+    <MarkdownRoot
+      components={inlineComponents}
+      disallowedElements={INLINE_DISALLOWED_ELEMENTS}
+    >
+      {children}
+    </MarkdownRoot>
   );
 }

@@ -1,10 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Markdown } from "@/app/(site)/markdown";
+import { InlineMarkdown, Markdown } from "@/app/(site)/markdown";
 import { stripMarkdown } from "@/utils/markdown";
 
 function render(markdown: string): string {
   return renderToStaticMarkup(<Markdown>{markdown}</Markdown>);
+}
+
+function renderInline(markdown: string): string {
+  return renderToStaticMarkup(<InlineMarkdown>{markdown}</InlineMarkdown>);
 }
 
 describe("Markdown component", () => {
@@ -56,6 +60,15 @@ describe("Markdown component", () => {
     expect(html).toContain('href="https://example.com/page"');
   });
 
+  // A new tab is right for a web page, but a mail or phone link hands off to
+  // another app and would leave a blank tab behind.
+  it("does not open mail and phone links in a new tab", () => {
+    expect(render("alice@example.com")).not.toContain('target="_blank"');
+    expect(render("[call](tel:+491701234567)")).not.toContain(
+      'target="_blank"'
+    );
+  });
+
   it("does not render markdown images", () => {
     const html = render("![tracking pixel](https://evil.example/p.gif)");
     expect(html).not.toContain("<img");
@@ -71,6 +84,57 @@ describe("Markdown component", () => {
   it("does not render tables but keeps their text", () => {
     const html = render("| a | b |\n| - | - |\n| c | d |");
     expect(html).not.toContain("<table");
+  });
+});
+
+describe("InlineMarkdown component", () => {
+  it("renders emphasis and links without wrapping them in a paragraph", () => {
+    const html = renderInline("**bold** and [my site](https://example.com)");
+    expect(html).not.toContain("<p");
+    expect(html).toContain("<strong>bold</strong>");
+    expect(html).toContain('href="https://example.com"');
+  });
+
+  it("autolinks bare URLs", () => {
+    const html = renderInline("https://example.com/page");
+    expect(html).toContain('href="https://example.com/page"');
+  });
+
+  it("autolinks bare email addresses", () => {
+    const html = renderInline("alice@example.com");
+    expect(html).toContain('href="mailto:alice@example.com"');
+  });
+
+  it("keeps block markdown as plain inline text", () => {
+    const html = renderInline("# Title");
+    expect(html).not.toMatch(/<h[1-6]/);
+    expect(html).not.toContain("<p");
+    expect(html).toContain("Title");
+  });
+
+  it("does not render lists", () => {
+    const html = renderInline("- one\n- two");
+    expect(html).not.toContain("<ul");
+    expect(html).not.toContain("<li");
+    expect(html).toContain("one");
+    expect(html).toContain("two");
+  });
+
+  it("escapes raw HTML instead of rendering it", () => {
+    const html = renderInline('<img src="x" onerror="alert(1)">');
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;img");
+  });
+
+  it("drops javascript: URLs", () => {
+    const html = renderInline("[click](javascript:alert(1))");
+    expect(html).not.toContain("javascript:");
+  });
+
+  it("leaves handles with underscores untouched", () => {
+    const html = renderInline("@alice_the_bee");
+    expect(html).not.toContain("<em>");
+    expect(html).toContain("@alice_the_bee");
   });
 });
 

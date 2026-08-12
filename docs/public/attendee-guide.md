@@ -190,6 +190,10 @@ After picking your name, open "Edit profile" to set your About me,
 pronouns, and avatar. These are visible to other attendees wherever your
 name appears (proposals, hosting, RSVPs).
 
+About me, the answers to the conversation starters, and your contact details
+all accept Markdown, so you can add bold text or a named link — and a web
+address or email address you paste in becomes clickable on its own.
+
 ![Edit profile form with name, pronouns, avatar, and a Markdown-supported about-me field](../screenshots/edit-profile.webp)
 
 ## Protect your name

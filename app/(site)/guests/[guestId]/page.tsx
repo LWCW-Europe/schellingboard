@@ -1,11 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import type {
-  ContactType,
-  ProfileContact,
-  ProfilePrompt,
-} from "@/db/repositories/interfaces";
+import type { ContactType, ProfilePrompt } from "@/db/repositories/interfaces";
 import { CONTACT_TYPE_LABELS } from "@/model/guest";
 import {
   EnvelopeIcon,
@@ -24,7 +20,7 @@ import { eventNameToSlug } from "@/utils/utils";
 import { sanitizeGuest } from "@/utils/guests";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { ZoomableAvatar } from "../zoomable-avatar";
-import { Markdown } from "@/app/(site)/markdown";
+import { InlineMarkdown, Markdown } from "@/app/(site)/markdown";
 import { ComponentType, JSX, PropsWithChildren, SVGProps } from "react";
 import {
   ProfileItem,
@@ -120,7 +116,9 @@ export default async function GuestProfilePage(props: {
       {orderPrompts(guest.prompts ?? []).map(({ prompt, answer }) => (
         <section key={prompt}>
           <h2 className="text-lg font-semibold mb-2">{prompt}</h2>
-          <p className="text-gray-800">{answer}</p>
+          <p className="text-gray-800">
+            <InlineMarkdown>{answer}</InlineMarkdown>
+          </p>
         </section>
       ))}
 
@@ -155,7 +153,7 @@ export default async function GuestProfilePage(props: {
                         CONTACT_TYPE_LABELS[contact.type]}
                       :
                     </span>{" "}
-                    <ContactValue contact={contact} />
+                    <InlineMarkdown>{contact.value}</InlineMarkdown>
                   </span>
                 </li>
               );
@@ -207,37 +205,6 @@ function orderPrompts(prompts: ProfilePrompt[]): ProfilePrompt[] {
     ...CORE_PROMPTS.flatMap((core) => prompts.filter((p) => p.prompt === core)),
     ...prompts.filter((p) => !CORE_PROMPTS.includes(p.prompt)),
   ];
-}
-
-/**
- * Values are attendee-supplied: only turn them into links when they are
- * unambiguously safe (mailto for email, http(s) URLs for websites).
- */
-function ContactValue({ contact }: { contact: ProfileContact }) {
-  const linkClass = "text-rose-500 hover:text-rose-600 underline";
-  if (contact.type === "email") {
-    return (
-      <a className={linkClass} href={`mailto:${contact.value}`}>
-        {contact.value}
-      </a>
-    );
-  }
-  if (
-    contact.type === "website" &&
-    /^https?:\/\//i.test(contact.value.trim())
-  ) {
-    return (
-      <a
-        className={linkClass}
-        href={contact.value.trim()}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {contact.value}
-      </a>
-    );
-  }
-  return <>{contact.value}</>;
 }
 
 function ProfileList({
