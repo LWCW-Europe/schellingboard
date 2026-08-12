@@ -37,21 +37,45 @@ function rank(attendee: Attendee, query: string): number {
   return 0;
 }
 
+export const ATTENDEE_SORTS = [
+  { value: "name", label: "Name (A–Z)" },
+  { value: "updated", label: "Recently updated" },
+] as const;
+
+export type AttendeeSort = (typeof ATTENDEE_SORTS)[number]["value"];
+
+export const DEFAULT_ATTENDEE_SORT: AttendeeSort = "name";
+
 /**
  * In-memory search over the full attendee list. Case-insensitive substring
  * matching, ranked by tier (name > declared language > free text), ties by
- * name. An empty query returns everyone in name order. Pagination is the
+ * name. An empty query returns everyone in `sort` order. Pagination is the
  * caller's job (slice the result).
+ *
+ * A query overrides `sort`: relevance ranking is the more useful answer to a
+ * search, and an explicit sort would discard it.
  */
 export function searchAttendees<A extends Attendee>(
   attendees: A[],
-  query: string
+  query: string,
+  sort: AttendeeSort = DEFAULT_ATTENDEE_SORT
 ): A[] {
   const byName = (a: A, b: A) =>
     a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
 
+  // Profiles never updated have no place on a recency axis, so they keep the
+  // default ordering at the end of the list rather than at an arbitrary date.
+  const byRecency = (a: A, b: A) => {
+    const at = a.profileUpdatedAt?.getTime() ?? null;
+    const bt = b.profileUpdatedAt?.getTime() ?? null;
+    if (at === bt) return byName(a, b);
+    if (at === null) return 1;
+    if (bt === null) return -1;
+    return bt - at;
+  };
+
   const q = query.trim();
-  if (!q) return [...attendees].sort(byName);
+  if (!q) return [...attendees].sort(sort === "updated" ? byRecency : byName);
 
   return attendees
     .map((attendee) => ({ attendee, rank: rank(attendee, q) }))

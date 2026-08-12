@@ -90,6 +90,21 @@ describe("updateProfileAction", () => {
     });
   });
 
+  it("records when the profile was updated", async () => {
+    const guest = await createGuest({ name: "Guest" });
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
+    const before = new Date();
+
+    expect(await updateProfileAction({ name: "Guest", aboutMe: "Hi" })).toEqual(
+      { ok: true }
+    );
+
+    const updated = await getRepositories().guests.findById(guest.id);
+    expect(updated?.profileUpdatedAt?.getTime()).toBeGreaterThanOrEqual(
+      before.getTime()
+    );
+  });
+
   it("updates name, aboutMe, pronouns and avatar for the current user", async () => {
     const guest = await createGuest({ name: "Old" });
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));

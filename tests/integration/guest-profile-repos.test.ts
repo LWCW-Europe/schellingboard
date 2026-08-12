@@ -66,16 +66,20 @@ describe("guest profile repositories", () => {
       const { guests } = getRepositories();
       const guest = await createGuest({ name: "Old", email: "g@test.example" });
 
-      const updated = await guests.updateProfile(guest.id, {
-        name: "New Name",
-        aboutMe: "I love unconferences.",
-        avatarUrl: "/media/uploads/avatar.png",
-        pronouns: "they/them",
-        basedIn: null,
-        prompts: null,
-        languages: null,
-        contacts: null,
-      });
+      const updated = await guests.updateProfile(
+        guest.id,
+        {
+          name: "New Name",
+          aboutMe: "I love unconferences.",
+          avatarUrl: "/media/uploads/avatar.png",
+          pronouns: "they/them",
+          basedIn: null,
+          prompts: null,
+          languages: null,
+          contacts: null,
+        },
+        new Date()
+      );
 
       expect(updated).toMatchObject({
         id: guest.id,
@@ -93,24 +97,108 @@ describe("guest profile repositories", () => {
     });
   });
 
+  describe("guests.updateProfile profileUpdatedAt", () => {
+    const profile = {
+      name: "Someone",
+      aboutMe: null,
+      avatarUrl: null,
+      pronouns: null,
+      basedIn: null,
+      prompts: null,
+      languages: null,
+      contacts: null,
+    };
+    const FIRST = new Date("2026-05-01T10:00:00Z");
+    const LATER = new Date("2026-06-02T09:30:00Z");
+
+    it("is null until the guest fills something in", async () => {
+      const { guests } = getRepositories();
+      const guest = await createGuest({ name: "Someone" });
+
+      expect((await guests.findById(guest.id))?.profileUpdatedAt).toBeNull();
+
+      await guests.updateProfile(
+        guest.id,
+        { ...profile, basedIn: "Vienna" },
+        FIRST
+      );
+
+      expect((await guests.findById(guest.id))?.profileUpdatedAt).toEqual(
+        FIRST
+      );
+    });
+
+    it("is not touched when the profile is saved unchanged", async () => {
+      const { guests } = getRepositories();
+      const guest = await createGuest({ name: "Someone" });
+      const filled = { ...profile, languages: ["Dutch"] };
+      await guests.updateProfile(guest.id, filled, FIRST);
+
+      await guests.updateProfile(guest.id, filled, LATER);
+
+      expect((await guests.findById(guest.id))?.profileUpdatedAt).toEqual(
+        FIRST
+      );
+    });
+
+    it("is bumped when the guest renames themselves", async () => {
+      const { guests } = getRepositories();
+      const guest = await createGuest({ name: "Someone" });
+
+      await guests.updateProfile(
+        guest.id,
+        { ...profile, name: "Someone Else" },
+        LATER
+      );
+
+      expect((await guests.findById(guest.id))?.profileUpdatedAt).toEqual(
+        LATER
+      );
+    });
+
+    it("is bumped when a public profile field changes", async () => {
+      const { guests } = getRepositories();
+      const guest = await createGuest({ name: "Someone" });
+      await guests.updateProfile(
+        guest.id,
+        { ...profile, aboutMe: "First draft" },
+        FIRST
+      );
+
+      await guests.updateProfile(
+        guest.id,
+        { ...profile, aboutMe: "Second draft" },
+        LATER
+      );
+
+      expect((await guests.findById(guest.id))?.profileUpdatedAt).toEqual(
+        LATER
+      );
+    });
+  });
+
   describe("guests.updateProfile extended fields", () => {
     it("stores and returns basedIn, prompts, languages, and contacts", async () => {
       const { guests } = getRepositories();
       const guest = await createGuest();
 
-      const updated = await guests.updateProfile(guest.id, {
-        name: guest.name,
-        aboutMe: null,
-        avatarUrl: null,
-        pronouns: null,
-        basedIn: "Berlin",
-        prompts: [{ prompt: "Ask me about", answer: "Urban beekeeping" }],
-        languages: ["German", "Swiss German"],
-        contacts: [
-          { type: "signal", value: "@someone.01" },
-          { type: "other", label: "Matrix", value: "@someone:matrix.org" },
-        ],
-      });
+      const updated = await guests.updateProfile(
+        guest.id,
+        {
+          name: guest.name,
+          aboutMe: null,
+          avatarUrl: null,
+          pronouns: null,
+          basedIn: "Berlin",
+          prompts: [{ prompt: "Ask me about", answer: "Urban beekeeping" }],
+          languages: ["German", "Swiss German"],
+          contacts: [
+            { type: "signal", value: "@someone.01" },
+            { type: "other", label: "Matrix", value: "@someone:matrix.org" },
+          ],
+        },
+        new Date()
+      );
 
       expect(updated).toMatchObject({ id: guest.id, basedIn: "Berlin" });
       const fetched = await guests.findById(guest.id);

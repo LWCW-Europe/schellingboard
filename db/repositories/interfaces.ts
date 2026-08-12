@@ -167,6 +167,9 @@ export type Guest<PI extends GuestPrivateInfo | void = void> = {
   prompts?: ProfilePrompt[] | null;
   languages?: string[] | null;
   contacts?: ProfileContact[] | null;
+  // When a public field above was last changed; null for a profile that was
+  // never edited (see the schema comment). Drives the "recently updated" sort.
+  profileUpdatedAt?: Date | null;
   // Public (the name switcher must know to ask for credentials); the
   // password hash itself is server-only, see GuestAuthCredentials.
   authProtected?: boolean;
@@ -284,7 +287,7 @@ export interface GuestsRepository {
   /**
    * All guests as attendees (public profile fields plus whether they host any
    * session), ordered by name with id tiebreaker. `host: true` narrows to
-   * session hosts. Search and pagination happen in memory on top of this
+   * session hosts. Search, sorting and pagination happen in memory on top of this
    * (see utils/attendee-search.ts): attendee counts don't warrant a SQL or
    * persisted search index.
    */
@@ -336,6 +339,9 @@ export interface GuestsRepository {
     data: { name: string; info: { email: string } }
   ): Promise<CompleteGuest | undefined>;
   // Usage: a user updates their own public profile (name and profile fields).
+  // `profileUpdatedAt` is set to `now` only if a public profile field actually
+  // changed — saving the form unchanged must not push you to the top of the
+  // "recently updated" list.
   updateProfile(
     id: string,
     data: {
@@ -347,7 +353,8 @@ export interface GuestsRepository {
       prompts: ProfilePrompt[] | null;
       languages: string[] | null;
       contacts: ProfileContact[] | null;
-    }
+    },
+    now: Date
   ): Promise<CompleteGuest | undefined>;
   // Usage: a user updates their own email notification settings. Kept apart
   // from updateProfile: settings are private and independent of the public

@@ -165,3 +165,51 @@ describe("searchAttendees", () => {
     expect(result.map((r) => r.name)).toEqual(["Anna", "Zoe"]);
   });
 });
+
+describe("searchAttendees sorted by recently updated", () => {
+  const updated = (name: string, iso: string | null) =>
+    attendee({
+      name,
+      profileUpdatedAt: iso === null ? null : new Date(iso),
+    });
+
+  it("puts the most recently updated profile first", () => {
+    const rows = [
+      updated("Older", "2026-01-01T00:00:00Z"),
+      updated("Newest", "2026-03-01T00:00:00Z"),
+      updated("Middle", "2026-02-01T00:00:00Z"),
+    ];
+
+    const result = searchAttendees(rows, "", "updated");
+    expect(result.map((r) => r.name)).toEqual(["Newest", "Middle", "Older"]);
+  });
+
+  it("sorts profiles never updated last, among themselves by name", () => {
+    const rows = [
+      updated("Zoe", null),
+      updated("Anna", null),
+      updated("Updated", "2026-01-01T00:00:00Z"),
+    ];
+
+    const result = searchAttendees(rows, "", "updated");
+    expect(result.map((r) => r.name)).toEqual(["Updated", "Anna", "Zoe"]);
+  });
+
+  it("keeps relevance ranking while a query is active", () => {
+    const rows = [
+      attendee({
+        name: "Foodie",
+        aboutMe: "I adore Italian food",
+        profileUpdatedAt: new Date("2026-03-01T00:00:00Z"),
+      }),
+      attendee({
+        name: "Speaker",
+        languages: ["Italian"],
+        profileUpdatedAt: new Date("2026-01-01T00:00:00Z"),
+      }),
+    ];
+
+    const result = searchAttendees(rows, "Italian", "updated");
+    expect(result.map((r) => r.name)).toEqual(["Speaker", "Foodie"]);
+  });
+});

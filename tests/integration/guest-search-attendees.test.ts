@@ -53,16 +53,20 @@ describe("guests.listAttendees", () => {
   it("includes the public profile fields used by search", async () => {
     const guest = await createGuest({ name: "Polyglot" });
     const repos = getRepositories();
-    await repos.guests.updateProfile(guest.id, {
-      name: guest.name,
-      aboutMe: "Hello",
-      avatarUrl: null,
-      pronouns: "they/them",
-      basedIn: "Lisbon",
-      prompts: [{ prompt: "Offering", answer: "Sourdough starters" }],
-      languages: ["Portuguese"],
-      contacts: null,
-    });
+    await repos.guests.updateProfile(
+      guest.id,
+      {
+        name: guest.name,
+        aboutMe: "Hello",
+        avatarUrl: null,
+        pronouns: "they/them",
+        basedIn: "Lisbon",
+        prompts: [{ prompt: "Offering", answer: "Sourdough starters" }],
+        languages: ["Portuguese"],
+        contacts: null,
+      },
+      new Date()
+    );
 
     const rows = await repos.guests.listAttendees({});
 
@@ -73,5 +77,34 @@ describe("guests.listAttendees", () => {
       languages: ["Portuguese"],
       prompts: [{ prompt: "Offering", answer: "Sourdough starters" }],
     });
+  });
+
+  it("exposes when each profile was last updated, so the list can sort by it", async () => {
+    const updatedAt = new Date("2026-04-10T08:00:00Z");
+    const active = await createGuest({ name: "Active" });
+    await createGuest({ name: "Never Edited" });
+    const repos = getRepositories();
+    await repos.guests.updateProfile(
+      active.id,
+      {
+        name: active.name,
+        aboutMe: "Hello",
+        avatarUrl: null,
+        pronouns: null,
+        basedIn: null,
+        prompts: null,
+        languages: null,
+        contacts: null,
+      },
+      updatedAt
+    );
+
+    const rows = await repos.guests.listAttendees({});
+
+    const byName = Object.fromEntries(
+      rows.map((r) => [r.name, r.profileUpdatedAt])
+    );
+    expect(byName["Active"]).toEqual(updatedAt);
+    expect(byName["Never Edited"]).toBeNull();
   });
 });

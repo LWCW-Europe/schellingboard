@@ -8,15 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **Sort the attendee directory by who edited their profile last**: a "Sort by" choice next to the filters switches the list between "Name (A–Z)" and "Recently updated", so it's easy to catch up on profiles that are new or have changed since you last looked. Each row shows when that profile was last edited ("updated 3 days ago"). Nothing recorded edit times before this version, so every profile that already has something in it is dated from the upgrade and they all rank together, ahead of the ones nobody has filled in — those show no date and come last. Real edit times build up from the upgrade onwards. While a search is active the list stays ordered by how well each profile matches, and the choice is unavailable
 - **Formatting and clickable links in the rest of your profile**: the answers to the conversation starters and your contact details now accept Markdown, like "About me" already did — so a link can be given a name (`[my blog](https://example.com)`), and a web address or email address pasted in plainly becomes clickable on its own
 
 ### Changed
 
+- **The attendee directory is wider on a large screen**: the list used the same narrow column as a form, which left the update times crowded against the names. On a phone the update time now sits under the name instead of beside it, and a "Session host" badge no longer squeezes the name into two lines
 - **Attendee search now looks at the whole profile**: searching the attendee directory also matches the contact details attendees chose to publish (handles, usernames, websites, and the service they belong to) and the prompt questions themselves, not only their answers — so knowing someone's handle is enough to find them. Private email addresses are never searched; they are not part of a profile
 
 ### Internal
 
 - Dependabot now keeps the mailpit image up to date. Its pin was repeated in `docker-compose.dev.yml` and in both CI workflows, and Dependabot cannot see a workflow's `services:` image ([dependabot-core#5819](https://github.com/dependabot/dependabot-core/issues/5819)), so CI now starts mailpit from the compose file and the pin has a single home. The image carries a tag as well as a digest, since a digest alone gives Dependabot no version to compare
+- Seeded guests with a profile now carry a last-edited date, spread over the past month, instead of all being undated — the seed writes guest rows directly, so nothing stamped them. "Recently updated" had nothing to sort in dev and demos
 - The seed data gives Conference Gamma four more proposals: two hosted by Hana Kobayashi, whose profile is the most complete of the seeded guests, and two with no host yet. Both cases were previously only reachable through the random host assignment, which made them awkward to point a screenshot at
 
 ## [3.3.1] - 2026-08-08

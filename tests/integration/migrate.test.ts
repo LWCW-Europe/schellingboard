@@ -233,6 +233,74 @@ describe("runMigrations", () => {
     ]);
   });
 
+  // The profile columns of `guests` as they stand just before the
+  // profile_updated_at migration.
+  const preProfileUpdatedGuestsTable = `CREATE TABLE \`guests\` (
+      \`id\` text PRIMARY KEY NOT NULL,
+      \`name\` text NOT NULL,
+      \`email\` text NOT NULL,
+      \`about_me\` text,
+      \`pronouns\` text,
+      \`based_in\` text,
+      \`prompts\` text,
+      \`languages\` text,
+      \`contacts\` text,
+      \`avatar_url\` text
+    );`;
+
+  function readProfileUpdatedMigration(): string[] {
+    const drizzleDir = path.join(process.cwd(), "drizzle");
+    const file = fs
+      .readdirSync(drizzleDir)
+      .filter((f) => /^\d+_.*\.sql$/.test(f))
+      .find((f) =>
+        fs
+          .readFileSync(path.join(drizzleDir, f), "utf8")
+          .includes("`profile_updated_at`")
+      );
+    expect(file, "profile_updated_at migration not found").toBeDefined();
+    return fs
+      .readFileSync(path.join(drizzleDir, file!), "utf8")
+      .split("--> statement-breakpoint\n");
+  }
+
+  it("the profile_updated_at migration dates the profiles that have content", () => {
+    writeMigrations(tmpDir, [
+      [
+        preProfileUpdatedGuestsTable,
+        `INSERT INTO guests (id, name, email, about_me, pronouns, based_in, prompts, languages, contacts, avatar_url) VALUES
+           ('g1', 'Imported only', 'i@test.example', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+           ('g2', 'Wrote a bio', 'b@test.example', 'Hello', NULL, NULL, NULL, NULL, NULL, NULL),
+           ('g3', 'Listed a language', 'l@test.example', NULL, NULL, NULL, NULL, '["Dutch"]', NULL, NULL),
+           ('g4', 'Uploaded a photo', 'p@test.example', NULL, NULL, NULL, NULL, NULL, NULL, '/media/a.webp'),
+           ('g5', 'Saved an empty form', 'e@test.example', '', '', '', '[]', '[]', '[]', NULL);`,
+      ],
+      readProfileUpdatedMigration(),
+    ]);
+
+    runMigrations(sqlite, tmpDir);
+
+    const rows = sqlite
+      .prepare("SELECT id, profile_updated_at FROM guests ORDER BY id")
+      .all() as { id: string; profile_updated_at: string | null }[];
+    const dated = Object.fromEntries(
+      rows.map((r) => [r.id, r.profile_updated_at])
+    );
+
+    // Nothing self-entered: no date, so they sort last under "recently
+    // updated" instead of claiming an edit that never happened.
+    expect(dated.g1).toBeNull();
+    expect(dated.g5).toBeNull();
+    // There is no history to date these from, so they share the migration's
+    // own instant: enough to rank filled-in profiles ahead of empty ones.
+    expect(dated.g2).toEqual(expect.any(String));
+    expect(dated.g3).toEqual(dated.g2);
+    expect(dated.g4).toEqual(dated.g2);
+    // Stored the way the app writes the column, or reading it back breaks.
+    expect(dated.g2).toMatch(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/);
+    expect(Number.isNaN(new Date(dated.g2!).getTime())).toBe(false);
+  });
+
   it("leaves foreign key enforcement enabled afterwards", () => {
     writeMigration(tmpDir, ["CREATE TABLE t (id text PRIMARY KEY);"]);
 

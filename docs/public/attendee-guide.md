@@ -182,6 +182,13 @@ published — so a remembered handle, a service name like "Signal", or a shared
 interest is enough to find someone. Your private email address is never part
 of a profile and is never searched.
 
+The list is alphabetical by default; **Sort by → Recently updated** puts the
+profiles that changed most recently first, which is the quick way to see who
+has filled theirs in since you last looked. Each row shows when that profile
+was last edited; profiles that are still empty show no date and come last.
+While you are searching, results stay ordered by how well they match, so the
+sort choice is unavailable.
+
 ![Searchable attendee directory with avatars, bios, and Session host badges](../screenshots/attendees.webp)
 
 ## Your profile

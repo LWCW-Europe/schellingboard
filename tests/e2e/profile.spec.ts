@@ -479,3 +479,41 @@ test("Back to attendees preserves the search query", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Bob Test" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Charlie Test" })).toBeVisible();
 });
+
+test("sorts the attendee directory by recently updated", async ({ page }) => {
+  await login(page);
+  await page.goto("/Conference-Alpha/proposals");
+
+  await selectCurrentUser(page);
+  await page.getByRole("link", { name: "Attendees", exact: true }).click();
+  await page.getByRole("link", { name: /Edit profile/i }).click();
+  await page.getByLabel("About me").fill(`Freshly edited ${Date.now()}`);
+  await page.getByRole("button", { name: /^Save$/ }).click();
+  await expect(page).toHaveURL(/\/guests\/[^/]+$/);
+  // The save redirects here itself; a click that lands while that navigation
+  // is still in flight is dropped, so retry until it takes.
+  await expect(async () => {
+    await page.getByRole("link", { name: "Back to attendees" }).click();
+    await expect(page).toHaveURL(/\/guests$/, { timeout: 2000 });
+  }).toPass();
+
+  const attendees = page
+    .getByRole("list")
+    .filter({ has: page.getByRole("link", { name: "Alice Test" }) })
+    .getByRole("listitem");
+
+  // The seeded update times are all hours or days old, so the edit above makes
+  // Alice the most recent — and alphabetically she is not first.
+  await expect(attendees.first()).toContainText("Ahmad Karimi");
+
+  await page.getByLabel("Sort by").selectOption("Recently updated");
+  await expect(attendees.first()).toContainText("Alice Test");
+  await expect(attendees.first()).toContainText("updated just now");
+
+  // A search is ranked by relevance, so sorting is off the table while one is
+  // active.
+  await page.getByLabel("Search").fill("Alice");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page).toHaveURL(/[?&]q=Alice/);
+  await expect(page.getByLabel("Sort by")).toBeDisabled();
+});

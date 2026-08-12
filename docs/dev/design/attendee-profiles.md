@@ -7,7 +7,12 @@ Requirements for reworking the attendee list and profile view, covering
 non-empty profiles),
 [#712](https://github.com/LWCW-Europe/schellingboard/issues/712) (sort order)
 and [#764](https://github.com/LWCW-Europe/schellingboard/issues/764) (read
-profiles without clicking through each one). Nothing here is implemented yet.
+profiles without clicking through each one).
+
+Only [§ Sorting (#712)](#sorting-712) is implemented, on today's list rather
+than the reworked one: the `profileUpdatedAt` column exists, the toolbar has
+the "Sort by" dropdown, and each row carries its relative update time. The
+rest is still a plan.
 
 Assumed scale: 150–400 attendees per event, 30–60% with a filled-in profile,
 `aboutMe` typically one to three paragraphs.
@@ -127,14 +132,17 @@ Two options: **Name (A–Z)** (default) and **Recently updated**.
 
 This needs a new nullable `profileUpdatedAt` column; `guests` currently has no
 timestamps at all, and the only `created_at` in the schema is on `auth_codes`,
-so there is nothing to backfill from. Existing rows stay NULL and sort last.
-The sort therefore honestly means "recently updated since we started tracking",
-and self-heals within an event cycle. Backfilling everyone to the migration
-date would manufacture a fake ordering.
+so there is no history to date existing rows from. The migration backfills
+every profile that has any self-entered field to its own instant, so they all
+tie and rank ahead of the untouched ones, which stay NULL and sort last. That
+is the one distinction the data supports; dating them apart would be fiction.
+The sort therefore means "recently updated since we started tracking", and
+self-heals within an event cycle.
 
-The column is touched only when a **public profile field** changes (`aboutMe`,
-`pronouns`, `basedIn`, `prompts`, `languages`, `contacts`, `avatarUrl`) — not
-email preferences, not password changes.
+The column is touched only when a **public profile field** changes (`name`,
+`aboutMe`, `pronouns`, `basedIn`, `prompts`, `languages`, `contacts`,
+`avatarUrl`) — not email preferences, not password changes. `name` counts:
+people do rename themselves, and that is a profile edit like any other.
 
 ### Back links
 

@@ -176,6 +176,13 @@
       "when": 1785596621720,
       "tag": "0024_comment_email_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1786525223340,
+      "tag": "0025_guest_profile_updated_at",
+      "breakpoints": true
     }
   ]
 }

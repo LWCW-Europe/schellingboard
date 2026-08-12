@@ -35,6 +35,38 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
 }
 
+// The fields whose change makes a profile "recently updated" — everything the
+// guest edits about themselves in public. Email settings and credentials are
+// updated elsewhere and never count.
+const PUBLIC_PROFILE_FIELDS = [
+  "name",
+  "aboutMe",
+  "avatarUrl",
+  "pronouns",
+  "basedIn",
+  "prompts",
+  "languages",
+  "contacts",
+] as const;
+
+type PublicProfile = Pick<
+  typeof schema.guests.$inferSelect,
+  (typeof PUBLIC_PROFILE_FIELDS)[number]
+>;
+
+function publicProfileChanged(
+  before: PublicProfile,
+  after: PublicProfile
+): boolean {
+  // JSON comparison covers prompts/languages/contacts, where reordering is a
+  // change the guest made on purpose.
+  return PUBLIC_PROFILE_FIELDS.some(
+    (field) =>
+      JSON.stringify(before[field] ?? null) !==
+      JSON.stringify(after[field] ?? null)
+  );
+}
+
 function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
   return {
     id: row.id,
@@ -46,6 +78,9 @@ function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
     prompts: row.prompts,
     languages: row.languages,
     contacts: row.contacts,
+    profileUpdatedAt: row.profileUpdatedAt
+      ? new Date(row.profileUpdatedAt)
+      : null,
     authProtected: row.authProtected,
     info: {
       email: row.email,
@@ -162,6 +197,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
           prompts: schema.guests.prompts,
           languages: schema.guests.languages,
           contacts: schema.guests.contacts,
+          profileUpdatedAt: schema.guests.profileUpdatedAt,
           // SQLite has no boolean type; this yields 0/1 at runtime despite the
           // sql<boolean> annotation, so coerce explicitly below.
           isHost: opts.host ? sql<boolean>`true` : isHostExpr,
@@ -171,7 +207,16 @@ export class SqliteGuestsRepository implements GuestsRepository {
         // id as tiebreaker so equal names keep a deterministic order.
         .orderBy(sql`${schema.guests.name} collate nocase`, schema.guests.id)
         .all()
-        .map((row) => ({ ...row, isHost: Boolean(row.isHost) }) as Attendee)
+        .map(
+          (row) =>
+            ({
+              ...row,
+              isHost: Boolean(row.isHost),
+              profileUpdatedAt: row.profileUpdatedAt
+                ? new Date(row.profileUpdatedAt)
+                : null,
+            }) as Attendee
+        )
     );
   }
 
@@ -396,23 +441,38 @@ export class SqliteGuestsRepository implements GuestsRepository {
       prompts: ProfilePrompt[] | null;
       languages: string[] | null;
       contacts: ProfileContact[] | null;
-    }
+    },
+    now: Date
   ): Promise<CompleteGuest | undefined> {
-    const result = this.db
-      .update(schema.guests)
-      .set({
-        name: data.name,
-        aboutMe: data.aboutMe,
-        avatarUrl: data.avatarUrl,
-        pronouns: data.pronouns,
-        basedIn: data.basedIn,
-        prompts: data.prompts,
-        languages: data.languages,
-        contacts: data.contacts,
-      })
-      .where(eq(schema.guests.id, id))
-      .run();
-    if (result.changes === 0) return undefined;
+    // Read and write in one transaction: profileUpdatedAt is derived from the
+    // row being overwritten, so a concurrent save must not slip in between.
+    const found = this.db.transaction((tx) => {
+      const before = tx
+        .select()
+        .from(schema.guests)
+        .where(eq(schema.guests.id, id))
+        .get();
+      if (!before) return false;
+
+      tx.update(schema.guests)
+        .set({
+          name: data.name,
+          aboutMe: data.aboutMe,
+          avatarUrl: data.avatarUrl,
+          pronouns: data.pronouns,
+          basedIn: data.basedIn,
+          prompts: data.prompts,
+          languages: data.languages,
+          contacts: data.contacts,
+          profileUpdatedAt: publicProfileChanged(before, data)
+            ? now.toISOString()
+            : before.profileUpdatedAt,
+        })
+        .where(eq(schema.guests.id, id))
+        .run();
+      return true;
+    });
+    if (!found) return undefined;
     return this.findById(id);
   }
 
