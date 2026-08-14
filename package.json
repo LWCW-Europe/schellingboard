@@ -56,10 +56,10 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "^16",
-    "postcss": "^8.5.25",
+    "postcss": "^8.5.26",
     "prettier": "3.9.6",
     "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.8",
+    "tsx": "^4.23.9",
     "typescript": "^6",
     "typescript-eslint": "^8.66.0",
     "vitest": "^4"
