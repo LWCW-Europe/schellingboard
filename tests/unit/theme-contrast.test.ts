@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
+import path from "path";
 import {
   GLOBALS_CSS_PATH,
   contrastRatio,
@@ -35,6 +36,7 @@ const TEXT_PAIRS: [fg: string, bg: string, min: number][] = [
   ["--fg-subtle", "--surface-raised", 4.5],
   ["--fg-subtle", "--surface-sunken", 4.5],
   ["--fg-inverse", "--surface-inverse", 4.5],
+  ["--fg-inverse-muted", "--surface-inverse", 4.5],
   // A filled brand button keeps white lettering in both themes, so the text on
   // it is its own token rather than `--fg-inverse`, which flips with the theme.
   ["--on-brand", "--brand", 4.5],
@@ -45,12 +47,17 @@ const TEXT_PAIRS: [fg: string, bg: string, min: number][] = [
   ["--fg-inverse", "--surface-inverse-hover", 4.5],
   ["--brand-fg", "--surface", 4.5],
   ["--brand-fg", "--surface-raised", 4.5],
+  ["--brand-fg", "--surface-muted", 4.5],
   ["--brand-fg", "--brand-tint", 4.5],
   ["--brand-fg", "--brand-tint-hover", 4.5],
+  ["--brand-fg-hover", "--surface", 4.5],
+  ["--brand-fg-hover", "--surface-raised", 4.5],
+  ["--brand-fg-hover", "--surface-muted", 4.5],
   ["--danger-fg", "--surface", 4.5],
   ["--danger-fg", "--surface-raised", 4.5],
   ["--danger-fg", "--surface-sunken", 4.5],
   ["--danger-fg", "--danger-tint", 4.5],
+  ["--danger-fg-hover", "--danger-tint", 4.5],
   ["--success-fg", "--surface", 4.5],
   ["--success-fg", "--surface-raised", 4.5],
   ["--warning-fg", "--surface", 4.5],
@@ -100,6 +107,61 @@ describe.each(["light", "dark"] as const)("theme tokens — %s", (theme) => {
       ).toBeGreaterThanOrEqual(min);
     }
   );
+});
+
+// A colour a component picks for itself escapes the rule above entirely: it
+// keeps its light-mode value in dark mode, and no pair here can catch it. Both
+// spellings count — an arbitrary `bg-[#f2f2f2]` and a palette shade like
+// `bg-gray-100`, which is the one that gets typed by accident.
+const HUES = [
+  "slate",
+  "gray",
+  "zinc",
+  "neutral",
+  "stone",
+  "red",
+  "orange",
+  "amber",
+  "yellow",
+  "lime",
+  "green",
+  "emerald",
+  "teal",
+  "cyan",
+  "sky",
+  "blue",
+  "indigo",
+  "violet",
+  "purple",
+  "fuchsia",
+  "pink",
+  "rose",
+];
+// `\b` only guards the bare names; after the `]` of an arbitrary value there is
+// no word boundary to find.
+const LITERAL_COLOR = new RegExp(
+  `[\\w-]+-(?:\\[#[0-9a-fA-F]{3,8}\\]|(?:(?:${HUES.join("|")})-\\d{2,3}|white|black)\\b)`,
+  "g"
+);
+
+describe("components", () => {
+  const sources = function* (dir: string): Generator<string> {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) yield* sources(full);
+      else if (/\.tsx?$/.test(entry.name)) yield full;
+    }
+  };
+
+  it("name a token rather than a literal colour", () => {
+    const root = path.join(__dirname, "../../app");
+    const offenders = [...sources(root)].flatMap((file) =>
+      [...readFileSync(file, "utf8").matchAll(LITERAL_COLOR)].map(
+        ([match]) => `${path.relative(root, file)}: ${match}`
+      )
+    );
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe("dark theme", () => {

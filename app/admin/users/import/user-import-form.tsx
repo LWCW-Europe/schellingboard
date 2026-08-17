@@ -38,7 +38,7 @@ export function UserImportForm({ events }: { events: EventOption[] }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex flex-col gap-1">
-        <label htmlFor="import-csv-file" className="text-sm text-gray-600">
+        <label htmlFor="import-csv-file" className="text-sm text-fg-muted">
           CSV file
         </label>
         <input
@@ -50,12 +50,12 @@ export function UserImportForm({ events }: { events: EventOption[] }) {
             setFile(e.target.files?.[0] ?? null);
             setResult(null);
           }}
-          className="text-sm text-gray-700 file:mr-3 file:px-3 file:py-2 file:text-sm file:font-medium file:rounded-md file:border-0 file:text-gray-700 file:bg-gray-100 hover:file:bg-gray-200 file:cursor-pointer"
+          className="text-sm text-fg-muted file:mr-3 file:px-3 file:py-2 file:text-sm file:font-medium file:rounded-md file:border-0 file:text-fg-muted file:bg-surface-muted hover:file:bg-surface-hover file:cursor-pointer"
         />
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="import-events" className="text-sm text-gray-600">
+        <label htmlFor="import-events" className="text-sm text-fg-muted">
           Assign to events
         </label>
         <SelectHosts
@@ -68,7 +68,7 @@ export function UserImportForm({ events }: { events: EventOption[] }) {
       </div>
 
       {result && !result.ok && (
-        <div role="alert" className="text-sm text-red-600 space-y-1">
+        <div role="alert" className="text-sm text-danger-fg space-y-1">
           <p>{result.error}</p>
           {result.lineErrors && (
             <ul className="list-disc pl-5">
@@ -80,7 +80,7 @@ export function UserImportForm({ events }: { events: EventOption[] }) {
         </div>
       )}
       {result?.ok && (
-        <p role="status" className="text-sm text-green-700">
+        <p role="status" className="text-sm text-success-fg">
           {plural(result.created, "user")} created,{" "}
           {plural(result.existing, "user")} already existed (skipped, but still
           assigned to the selected events).

@@ -24,7 +24,7 @@ export function IconPicker({
         selected={value === ""}
         onSelect={() => onChange("")}
       >
-        <NoSymbolIcon className="h-5 w-5 text-gray-300" />
+        <NoSymbolIcon className="h-5 w-5 text-fg-faint" />
       </IconOption>
       {Object.entries(EVENT_ICONS).map(([name, Icon]) => (
         <IconOption
@@ -61,8 +61,8 @@ function IconOption({
       onClick={onSelect}
       className={clsx(
         selected
-          ? "border-rose-400 bg-rose-50 text-rose-500"
-          : "border-gray-300 text-gray-500 hover:bg-gray-100",
+          ? "border-brand-accent bg-brand-tint text-brand-fg"
+          : "border-line text-fg-subtle hover:bg-surface-muted",
         "flex h-10 w-10 items-center justify-center rounded-md border"
       )}
     >

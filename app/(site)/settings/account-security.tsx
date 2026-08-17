@@ -11,7 +11,7 @@ import { PasswordManagerHint } from "@/app/password-manager-hint";
 type Mode = "password" | "disable";
 
 const inputClass =
-  "rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none";
+  "rounded-md border border-line px-3 py-2 text-sm focus:ring-2 focus:ring-brand-accent focus:border-transparent outline-none";
 
 /**
  * Enable/disable account protection and change the password.
@@ -102,20 +102,20 @@ export function AccountSecurity({
     <section className="flex flex-col gap-2">
       <h2 className="text-lg font-semibold">Account security</h2>
       {authProtected ? (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-fg-subtle">
           Your name is protected: switching to it requires your password or a
           single-use code emailed to you. Forgot your password? Reset it with an
           emailed link.
         </p>
       ) : (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-fg-subtle">
           Anyone can currently act under your name. Enable protection so
           switching to your name requires your password. We&apos;ll email you a
           link to set it.
         </p>
       )}
       {success && (
-        <p role="status" className="text-sm text-green-700">
+        <p role="status" className="text-sm text-success-fg">
           {success}
         </p>
       )}
@@ -128,7 +128,7 @@ export function AccountSecurity({
                 <button
                   type="button"
                   onClick={() => startMode("password")}
-                  className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm hover:bg-rose-500 active:bg-rose-500"
+                  className="bg-brand text-on-brand font-semibold px-4 py-2 rounded shadow text-sm hover:bg-brand-hover active:bg-brand-hover"
                 >
                   Change password
                 </button>
@@ -136,14 +136,14 @@ export function AccountSecurity({
                   type="button"
                   onClick={() => void sendPasswordLink()}
                   disabled={busy}
-                  className="border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded text-sm hover:bg-gray-50 disabled:text-gray-400"
+                  className="border border-line text-fg-muted font-semibold px-4 py-2 rounded text-sm hover:bg-surface-sunken disabled:text-fg-subtle"
                 >
                   Forgot your password?
                 </button>
                 <button
                   type="button"
                   onClick={() => startMode("disable")}
-                  className="border border-gray-300 text-gray-700 font-semibold px-4 py-2 rounded text-sm hover:bg-gray-50"
+                  className="border border-line text-fg-muted font-semibold px-4 py-2 rounded text-sm hover:bg-surface-sunken"
                 >
                   Turn off protection
                 </button>
@@ -153,14 +153,14 @@ export function AccountSecurity({
                 type="button"
                 onClick={() => void sendPasswordLink()}
                 disabled={busy}
-                className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm hover:bg-rose-500 active:bg-rose-500 disabled:bg-gray-200 disabled:text-gray-400"
+                className="bg-brand text-on-brand font-semibold px-4 py-2 rounded shadow text-sm hover:bg-brand-hover active:bg-brand-hover disabled:bg-surface-hover disabled:text-fg-subtle"
               >
                 Enable protection
               </button>
             )}
           </div>
           {info && (
-            <p role="status" className="text-sm text-green-700">
+            <p role="status" className="text-sm text-success-fg">
               {info}
             </p>
           )}
@@ -173,7 +173,7 @@ export function AccountSecurity({
             void submit();
           }}
         >
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-fg-muted">
             {mode === "password"
               ? "Enter your current password and choose a new one."
               : "Enter your current password to turn off protection. This also removes your password."}
@@ -181,7 +181,7 @@ export function AccountSecurity({
           <PasswordManagerHint username={guestName} />
           <label
             htmlFor="security-current-password"
-            className="text-sm font-medium text-gray-700"
+            className="text-sm font-medium text-fg-muted"
           >
             Current password
           </label>
@@ -197,7 +197,7 @@ export function AccountSecurity({
             <>
               <label
                 htmlFor="security-new-password"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-fg-muted"
               >
                 New password (at least 8 characters)
               </label>
@@ -212,7 +212,7 @@ export function AccountSecurity({
             </>
           )}
           {error && (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="text-sm text-danger-fg">
               {error}
             </p>
           )}
@@ -224,7 +224,7 @@ export function AccountSecurity({
                 currentPassword.length === 0 ||
                 (mode === "password" && newPassword.length === 0)
               }
-              className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500"
+              className="bg-brand text-on-brand font-semibold px-4 py-2 rounded shadow text-sm disabled:bg-surface-hover disabled:text-fg-subtle disabled:shadow-none hover:bg-brand-hover active:bg-brand-hover"
             >
               {mode === "password" ? "Change password" : "Turn off protection"}
             </button>
@@ -232,7 +232,7 @@ export function AccountSecurity({
               type="button"
               onClick={() => setMode(null)}
               disabled={busy}
-              className="text-sm text-gray-500 hover:text-gray-700 underline disabled:text-gray-400"
+              className="text-sm text-fg-subtle hover:text-fg-muted underline disabled:text-fg-subtle"
             >
               Cancel
             </button>

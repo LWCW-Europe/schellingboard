@@ -102,12 +102,12 @@ function AddDayForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 border border-gray-200 rounded-md p-4"
+      className="space-y-3 border border-line-subtle rounded-md p-4"
     >
-      <h3 className="font-medium text-gray-900">New day</h3>
+      <h3 className="font-medium text-fg">New day</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor="day-start" className="text-sm text-gray-600">
+          <label htmlFor="day-start" className="text-sm text-fg-muted">
             Start *
           </label>
           <Input
@@ -120,7 +120,7 @@ function AddDayForm({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="day-end" className="text-sm text-gray-600">
+          <label htmlFor="day-end" className="text-sm text-fg-muted">
             End *
           </label>
           <Input
@@ -133,7 +133,7 @@ function AddDayForm({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="day-sb" className="text-sm text-gray-600">
+          <label htmlFor="day-sb" className="text-sm text-fg-muted">
             Bookings open *
           </label>
           <Input
@@ -146,7 +146,7 @@ function AddDayForm({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="day-eb" className="text-sm text-gray-600">
+          <label htmlFor="day-eb" className="text-sm text-fg-muted">
             Bookings close *
           </label>
           <Input
@@ -252,8 +252,8 @@ function DayRow({
     const affected = day.affectedSessionTitles;
     return (
       <li className="py-3 space-y-2">
-        <p className="text-sm text-gray-700">{label}</p>
-        <p className="text-sm text-red-700">
+        <p className="text-sm text-fg-muted">{label}</p>
+        <p className="text-sm text-danger-fg">
           {affected.length === 0
             ? "Delete this day? No scheduled sessions fall within its time window."
             : `Delete this day? The following ${
@@ -263,7 +263,7 @@ function DayRow({
               } scheduled within its time window will also be deleted:`}
         </p>
         {affected.length > 0 && (
-          <ul className="list-disc list-inside text-sm text-red-700">
+          <ul className="list-disc list-inside text-sm text-danger-fg">
             {affected.map((title, i) => (
               <li key={`${title}-${i}`}>{title}</li>
             ))}
@@ -297,7 +297,7 @@ function DayRow({
             <div className="flex flex-col gap-1">
               <label
                 htmlFor={`day-start-${day.id}`}
-                className="text-sm text-gray-600"
+                className="text-sm text-fg-muted"
               >
                 Start *
               </label>
@@ -313,7 +313,7 @@ function DayRow({
             <div className="flex flex-col gap-1">
               <label
                 htmlFor={`day-end-${day.id}`}
-                className="text-sm text-gray-600"
+                className="text-sm text-fg-muted"
               >
                 End *
               </label>
@@ -329,7 +329,7 @@ function DayRow({
             <div className="flex flex-col gap-1">
               <label
                 htmlFor={`day-sb-${day.id}`}
-                className="text-sm text-gray-600"
+                className="text-sm text-fg-muted"
               >
                 Bookings open *
               </label>
@@ -345,7 +345,7 @@ function DayRow({
             <div className="flex flex-col gap-1">
               <label
                 htmlFor={`day-eb-${day.id}`}
-                className="text-sm text-gray-600"
+                className="text-sm text-fg-muted"
               >
                 Bookings close *
               </label>
@@ -383,7 +383,7 @@ function DayRow({
 
   return (
     <li className="py-3 flex items-center justify-between gap-3">
-      <p className="text-sm text-gray-700">{label}</p>
+      <p className="text-sm text-fg-muted">{label}</p>
       <div className="flex gap-2 shrink-0">
         <button
           onClick={() => setEditMode(true)}
@@ -417,14 +417,14 @@ export function EventDaysManager({
 
   return (
     <section aria-label="Days" className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Days</h2>
-      <p className="text-sm text-gray-500">
+      <h2 className="text-lg font-semibold text-fg">Days</h2>
+      <p className="text-sm text-fg-subtle">
         All times are in the event timezone ({timezone}).
       </p>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger-fg">{error}</p>}
 
       {days.length > 0 && (
-        <ul className="divide-y divide-gray-200 border-t border-b border-gray-200">
+        <ul className="divide-y divide-line-subtle border-t border-b border-line-subtle">
           {days.map((day) => (
             <DayRow
               key={day.id}

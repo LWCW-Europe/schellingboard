@@ -54,6 +54,7 @@
   /* Decorative only — separators, disabled glyphs. Never carries meaning. */
   --fg-faint: #9ca3af;
   --fg-inverse: #ffffff;
+  --fg-inverse-muted: #d1d5db;
 
   /* Draws text inputs and selects, hence the 3:1 floor of WCAG 1.4.11. */
   --line: #868e9c;
@@ -63,6 +64,7 @@
   --brand: #e11d48;
   --brand-hover: #be123c;
   --brand-fg: #be123c;
+  --brand-fg-hover: #9f1239;
   /* Rings and borders, which only need 3:1 — a lighter rose than text may use. */
   --brand-accent: #f43f5e;
   --brand-tint: #fff1f2;
@@ -72,6 +74,7 @@
   --danger: #dc2626;
   --danger-hover: #b91c1c;
   --danger-fg: #b91c1c;
+  --danger-fg-hover: #7f1d1d;
   --danger-tint: #fef2f2;
   --danger-border: #fca5a5;
   --on-danger: #ffffff;
@@ -123,6 +126,7 @@
     --fg-subtle: #8c94a3;
     --fg-faint: #6b7280;
     --fg-inverse: #16181d;
+    --fg-inverse-muted: #4b5563;
 
     --line: #6a7382;
     --line-subtle: #2c313b;
@@ -132,11 +136,13 @@
     --brand: #be123c;
     --brand-hover: #e11d48;
     --brand-fg: #fb7185;
+    --brand-fg-hover: #fda4af;
     --brand-accent: #fb7185;
     --brand-tint: #3b1220;
     --brand-tint-hover: #4d1727;
 
     --danger-fg: #fca5a5;
+    --danger-fg-hover: #fecaca;
     --danger-tint: #3f1515;
     --danger-border: #7f1d1d;
 
@@ -181,6 +187,7 @@
   --color-fg-subtle: var(--fg-subtle);
   --color-fg-faint: var(--fg-faint);
   --color-fg-inverse: var(--fg-inverse);
+  --color-fg-inverse-muted: var(--fg-inverse-muted);
 
   --color-line: var(--line);
   --color-line-subtle: var(--line-subtle);
@@ -189,6 +196,7 @@
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
   --color-brand-fg: var(--brand-fg);
+  --color-brand-fg-hover: var(--brand-fg-hover);
   --color-brand-accent: var(--brand-accent);
   --color-brand-tint: var(--brand-tint);
   --color-brand-tint-hover: var(--brand-tint-hover);
@@ -197,6 +205,7 @@
   --color-danger: var(--danger);
   --color-danger-hover: var(--danger-hover);
   --color-danger-fg: var(--danger-fg);
+  --color-danger-fg-hover: var(--danger-fg-hover);
   --color-danger-tint: var(--danger-tint);
   --color-danger-border: var(--danger-border);
   --color-on-danger: var(--on-danger);
@@ -360,6 +369,35 @@ html {
 /* Admin's colour preview — the hue itself, with no text on it. */
 @utility loc-swatch {
   background-color: var(--loc);
+}
+
+/*
+ * `@tailwindcss/forms` paints every field, select, checkbox and radio a literal
+ * `#fff`, which stays white in dark mode. Its rules land at the end of `base`,
+ * so out-ranking them by source order or specificity is not an option; the
+ * `components` layer beats `base` wholesale while still yielding to a `bg-*`
+ * utility on an individual field.
+ *
+ * That same bluntness is why the exclusions are listed by hand: the plugin
+ * skips the button-like and native-widget types, and a ticked box takes its
+ * fill from `currentColor` in a `base` rule this would otherwise cover.
+ */
+@layer components {
+  input:where(
+      :not(
+        [type="file"],
+        [type="range"],
+        [type="color"],
+        [type="submit"],
+        [type="reset"],
+        [type="button"],
+        [type="image"]
+      )
+    ):not(:checked, :indeterminate),
+  textarea,
+  select {
+    background-color: var(--surface-raised);
+  }
 }
 
 html {

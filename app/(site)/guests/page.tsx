@@ -109,7 +109,7 @@ export default async function GuestsPage({
         {currentUser && (
           <Link
             href="/guests/edit"
-            className="text-sm font-semibold text-rose-500 hover:text-rose-600"
+            className="text-sm font-semibold text-brand-fg hover:text-brand-fg-hover"
           >
             Edit profile
           </Link>

@@ -163,7 +163,7 @@ export function EventGuestsManager({
 
   const columns: Column<GuestRow>[] = [
     { header: "Name", cell: (g) => g.name },
-    { header: "Email", cell: (g) => g.email, cellClassName: "text-gray-500" },
+    { header: "Email", cell: (g) => g.email, cellClassName: "text-fg-subtle" },
     { header: "Assigned", cell: assignedCheckbox },
   ];
 
@@ -181,8 +181,8 @@ export function EventGuestsManager({
           }
           className={`px-3 py-1 text-sm rounded-md border ${
             filter === f.value
-              ? "bg-gray-900 text-white border-gray-900"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              ? "bg-surface-inverse text-fg-inverse border-line-strong"
+              : "bg-surface-raised text-fg-muted border-line hover:bg-surface-sunken"
           }`}
         >
           {f.label}
@@ -193,8 +193,8 @@ export function EventGuestsManager({
 
   return (
     <section aria-label="Guests" className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Guests</h2>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <h2 className="text-lg font-semibold text-fg">Guests</h2>
+      {error && <p className="text-sm text-danger-fg">{error}</p>}
 
       <DataTable
         rows={guests}
@@ -212,8 +212,8 @@ export function EventGuestsManager({
         mobileCard={(g) => (
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-medium text-gray-900">{g.name}</p>
-              <p className="truncate text-gray-500">{g.email}</p>
+              <p className="font-medium text-fg">{g.name}</p>
+              <p className="truncate text-fg-subtle">{g.email}</p>
             </div>
             {assignedCheckbox(g)}
           </div>

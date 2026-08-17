@@ -129,7 +129,7 @@ export function QuickVoting(props: {
     <div className="max-w-2xl mx-auto px-4 pb-32 relative">
       <BackLink href={`/${eventSlug}/proposals`}>Proposals</BackLink>
       <p className="text-lg mt-4 mb-4">{eventName} Quick Voting</p>
-      <div className="text-gray-600 mb-6">
+      <div className="text-fg-muted mb-6">
         You have voted on {votes.length} / {totalProposals} proposals
       </div>
 
@@ -137,7 +137,7 @@ export function QuickVoting(props: {
 
       {/* Fixed voting buttons - only show when there's a proposal to vote on */}
       {proposal && (
-        <div className="fixed bottom-4 sm:bottom-16 left-1/2 transform -translate-x-1/2 z-30 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg p-3 sm:p-4">
+        <div className="fixed bottom-4 sm:bottom-16 left-1/2 transform -translate-x-1/2 z-30 bg-surface-raised/95 backdrop-blur-sm border border-line-subtle rounded-lg shadow-lg p-3 sm:p-4">
           <VotingButtons
             proposalId={proposal.id}
             votingEnabled={true}

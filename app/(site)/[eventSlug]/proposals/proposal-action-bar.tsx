@@ -52,7 +52,7 @@ export function ProposalActionBar({
       >
         <Link
           href={`/${eventSlug}/proposals/new`}
-          className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 ${
+          className={`bg-brand hover:bg-brand-hover transition-colors text-on-brand px-4 py-2 rounded-md flex items-center gap-2 ${
             inSchedPhase(event, now) ? "opacity-50 cursor-not-allowed" : ""
           }`}
         >
@@ -67,7 +67,7 @@ export function ProposalActionBar({
       >
         <Link
           href={votingEnabled ? `/${eventSlug}/proposals/quick-voting` : "#"}
-          className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 ${
+          className={`bg-brand hover:bg-brand-hover transition-colors text-on-brand px-4 py-2 rounded-md flex items-center gap-2 ${
             votingEnabled ? "" : "opacity-50 cursor-not-allowed"
           }`}
         >
@@ -82,7 +82,7 @@ export function ProposalActionBar({
       >
         <Link
           href={schedEnabled ? `/${eventSlug}` : "#"}
-          className={`bg-rose-400 hover:bg-rose-500 transition-colors text-white px-4 py-2 rounded-md flex items-center gap-2 ${
+          className={`bg-brand hover:bg-brand-hover transition-colors text-on-brand px-4 py-2 rounded-md flex items-center gap-2 ${
             schedEnabled ? "" : "opacity-50 cursor-not-allowed"
           }`}
         >

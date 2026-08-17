@@ -85,37 +85,37 @@ export function DevToolbar() {
   const simulated = new Date(nowMs + offset);
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 bg-amber-100 border-t border-amber-400 text-amber-900 text-sm px-3 py-2 flex flex-wrap items-center gap-2 shadow">
+    <div className="fixed bottom-0 inset-x-0 z-50 bg-warning-tint border-t border-warning text-warning-fg text-sm px-3 py-2 flex flex-wrap items-center gap-2 shadow">
       <span className="font-semibold">🕒 Dev clock</span>
       <span className="tabular-nums">
         {simulated.toISOString().replace("T", " ").slice(0, 16)} UTC
         {offset !== 0 && (
-          <span className="ml-1 text-amber-700">
+          <span className="ml-1 text-warning-fg">
             ({offset > 0 ? "+" : ""}
             {Math.round(offset / HOUR_MS)}h)
           </span>
         )}
       </span>
       <button
-        className="px-2 py-0.5 rounded border border-amber-500 hover:bg-amber-200"
+        className="px-2 py-0.5 rounded border border-warning hover:bg-warning/20"
         onClick={() => apply(0)}
       >
         Real time
       </button>
       <button
-        className="px-2 py-0.5 rounded border border-amber-500 hover:bg-amber-200"
+        className="px-2 py-0.5 rounded border border-warning hover:bg-warning/20"
         onClick={() => apply(offset + HOUR_MS)}
       >
         +1h
       </button>
       <button
-        className="px-2 py-0.5 rounded border border-amber-500 hover:bg-amber-200"
+        className="px-2 py-0.5 rounded border border-warning hover:bg-warning/20"
         onClick={() => apply(offset + DAY_MS)}
       >
         +1d
       </button>
       <button
-        className="px-2 py-0.5 rounded border border-amber-500 hover:bg-amber-200"
+        className="px-2 py-0.5 rounded border border-warning hover:bg-warning/20"
         onClick={() => apply(offset + 7 * DAY_MS)}
       >
         +7d
@@ -124,7 +124,7 @@ export function DevToolbar() {
         <span className="sr-only">Pick date and time</span>
         <input
           type="datetime-local"
-          className="rounded border border-amber-500 bg-white px-1 py-0.5"
+          className="rounded border border-warning bg-surface-raised px-1 py-0.5"
           value={toLocalInputValue(simulated)}
           onChange={(e) => {
             const target = new Date(e.target.value);
@@ -135,7 +135,7 @@ export function DevToolbar() {
         />
       </label>
       <button
-        className="ml-auto px-2 py-0.5 rounded border border-amber-500 hover:bg-amber-200"
+        className="ml-auto px-2 py-0.5 rounded border border-warning hover:bg-warning/20"
         onClick={() => setDismissed(true)}
         aria-label="Dismiss dev clock toolbar"
       >

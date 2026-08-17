@@ -47,7 +47,7 @@ export default async function GuestProfilePage(props: {
   ]);
 
   if (!completeGuest) {
-    return <p className="text-gray-600">Profile not found.</p>;
+    return <p className="text-fg-muted">Profile not found.</p>;
   }
 
   // This is a public profile; never expose private info (email) here.
@@ -65,14 +65,14 @@ export default async function GuestProfilePage(props: {
       <div className="flex items-center justify-between gap-4">
         <Link
           href={backHref}
-          className="bg-rose-400 text-white font-semibold py-2 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
+          className="bg-brand text-on-brand font-semibold py-2 rounded shadow hover:bg-brand-hover active:bg-brand-hover w-fit px-12"
         >
           Back to attendees
         </Link>
         {isOwnProfile && (
           <Link
             href="/guests/edit"
-            className="text-sm font-semibold text-rose-500 hover:text-rose-600"
+            className="text-sm font-semibold text-brand-fg hover:text-brand-fg-hover"
           >
             Edit profile
           </Link>
@@ -89,17 +89,17 @@ export default async function GuestProfilePage(props: {
           {(guest.pronouns || isSessionHost) && (
             <div className="flex flex-row gap-2">
               {guest.pronouns && (
-                <p className="text-gray-700">{guest.pronouns}</p>
+                <p className="text-fg-muted">{guest.pronouns}</p>
               )}
               {isSessionHost && (
-                <span className="w-fit rounded-full bg-rose-100 text-rose-700 text-xs font-semibold px-3 py-1">
+                <span className="w-fit rounded-full bg-brand-tint-hover text-brand-fg text-xs font-semibold px-3 py-1">
                   Session host
                 </span>
               )}
             </div>
           )}
           {guest.basedIn && (
-            <p className="text-gray-700">Based in {guest.basedIn}</p>
+            <p className="text-fg-muted">Based in {guest.basedIn}</p>
           )}
         </div>
       </header>
@@ -107,7 +107,7 @@ export default async function GuestProfilePage(props: {
       {guest.aboutMe && (
         <section>
           <h2 className="text-lg font-semibold mb-2">About me</h2>
-          <div className="text-gray-800">
+          <div className="text-fg">
             <Markdown>{guest.aboutMe}</Markdown>
           </div>
         </section>
@@ -116,7 +116,7 @@ export default async function GuestProfilePage(props: {
       {orderPrompts(guest.prompts ?? []).map(({ prompt, answer }) => (
         <section key={prompt}>
           <h2 className="text-lg font-semibold mb-2">{prompt}</h2>
-          <p className="text-gray-800">
+          <p className="text-fg">
             <InlineMarkdown>{answer}</InlineMarkdown>
           </p>
         </section>
@@ -129,7 +129,7 @@ export default async function GuestProfilePage(props: {
             {guest.languages!.map((language, i) => (
               <li
                 key={i}
-                className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-800"
+                className="rounded-full bg-surface-muted px-3 py-1 text-sm text-fg"
               >
                 {language}
               </li>
@@ -145,8 +145,8 @@ export default async function GuestProfilePage(props: {
             {guest.contacts!.map((contact, i) => {
               const Icon = CONTACT_ICONS[contact.type];
               return (
-                <li key={i} className="flex items-start gap-2 text-gray-800">
-                  <Icon className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
+                <li key={i} className="flex items-start gap-2 text-fg">
+                  <Icon className="mt-0.5 h-5 w-5 shrink-0 text-fg-subtle" />
                   <span className="min-w-0 break-words">
                     <span className="font-medium">
                       {(contact.type === "other" && contact.label) ||
@@ -227,7 +227,7 @@ function ProfileList({
               {item.item ? (
                 <LinkType {...item.item}>{item.label}</LinkType>
               ) : (
-                <span className="text-gray-800">{item.label}</span>
+                <span className="text-fg">{item.label}</span>
               )}
             </li>
           ))}

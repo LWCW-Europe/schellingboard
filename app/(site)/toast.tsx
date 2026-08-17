@@ -73,14 +73,14 @@ function ToastItem({
   return (
     <div
       role="status"
-      className="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-lg bg-gray-900 px-4 py-3 text-white shadow-lg"
+      className="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-lg bg-bar px-4 py-3 text-bar-fg shadow-lg"
     >
       <p className="flex-1 text-sm">{message}</p>
       <button
         type="button"
         aria-label="Dismiss"
         onClick={() => onDismiss(id)}
-        className="shrink-0 rounded p-1 hover:bg-white/20 active:bg-white/30"
+        className="shrink-0 rounded p-1 hover:bg-bar-fg/20 active:bg-bar-fg/30"
       >
         <XMarkIcon className="h-5 w-5" />
       </button>

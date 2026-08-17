@@ -16,16 +16,16 @@ export const Input = forwardRef(
         <input
           ref={ref}
           className={clsx(
-            "h-12 rounded-md border bg-white px-4 shadow-sm transition-colors invalid:border-red-500 invalid:text-red-900 invalid:placeholder-red-300 focus:outline-none disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500",
+            "h-12 rounded-md border bg-surface-raised px-4 shadow-sm transition-colors invalid:border-danger invalid:text-danger-fg invalid:placeholder-danger-border focus:outline-none disabled:cursor-not-allowed disabled:border-line-subtle disabled:bg-surface-sunken disabled:text-fg-subtle",
             error
-              ? "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500" // matches invalid: styles
-              : "border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-transparent",
+              ? "border-danger-border text-danger-fg placeholder-danger-border focus:border-danger focus:ring-danger" // matches invalid: styles
+              : "border-line placeholder-fg-subtle focus:ring-2 focus:ring-brand-accent focus:outline-0 focus:border-transparent",
             className
           )}
           {...rest}
         />
         {error && errorMessage && (
-          <span className="text-xs text-red-500">{errorMessage}</span>
+          <span className="text-xs text-danger-fg">{errorMessage}</span>
         )}
       </>
     );

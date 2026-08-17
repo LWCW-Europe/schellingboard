@@ -16,8 +16,8 @@ function AdminLoginForm() {
   return (
     <div className="max-w-md w-full space-y-8">
       <div className="text-center">
-        <h2 className="mt-6 text-3xl font-bold text-gray-900">Admin Access</h2>
-        <p className="mt-2 text-sm text-gray-600">
+        <h2 className="mt-6 text-3xl font-bold text-fg">Admin Access</h2>
+        <p className="mt-2 text-sm text-fg-muted">
           Please enter the admin password
         </p>
       </div>
@@ -48,8 +48,8 @@ function AdminLoginForm() {
           <button
             type="submit"
             className={clsx(
-              "group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500",
-              "bg-rose-600 hover:bg-rose-700"
+              "group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-on-brand transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent",
+              "bg-brand hover:bg-brand-hover"
             )}
           >
             Access Admin

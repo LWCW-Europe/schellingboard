@@ -188,17 +188,15 @@ function VoteButton({
       type="button"
       aria-pressed={selected}
       className={clsx(
-        "relative rounded-md border shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400",
+        "relative rounded-md border shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent",
         large
           ? "w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center"
           : "px-1 py-1",
         !votingEnabled && "opacity-50 cursor-not-allowed grayscale",
         selected
-          ? "bg-gray-800 border-gray-900 text-white ring-2 ring-gray-900"
-          : // gray-500 is the lightest border that still clears the 3:1 contrast
-            // the button's outline needs against white, being its only edge.
-            "bg-white border-gray-500 text-gray-700",
-        !selected && votingEnabled && "hover:bg-gray-100"
+          ? "bg-surface-inverse border-line-strong text-fg-inverse ring-2 ring-line-strong"
+          : "bg-surface-raised border-line-strong text-fg-muted",
+        !selected && votingEnabled && "hover:bg-surface-muted"
       )}
     >
       <div className={large ? "text-sm sm:text-lg mb-1" : ""}>{emoji}</div>
@@ -206,7 +204,7 @@ function VoteButton({
       {selected && (
         <span
           aria-hidden="true"
-          className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-gray-900 text-[9px] leading-none text-white"
+          className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-surface-raised bg-surface-inverse text-[9px] leading-none text-fg-inverse"
         >
           ✓
         </span>

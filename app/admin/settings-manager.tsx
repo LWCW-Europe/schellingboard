@@ -36,14 +36,14 @@ export function SettingsManager({ settings }: { settings: SiteSettings }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger-fg">
           {error}
         </p>
       )}
-      {saved && <p className="text-sm text-green-700">Settings saved.</p>}
+      {saved && <p className="text-sm text-success-fg">Settings saved.</p>}
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="settings-title" className="text-sm text-gray-600">
+        <label htmlFor="settings-title" className="text-sm text-fg-muted">
           Title
         </label>
         <Input
@@ -56,7 +56,7 @@ export function SettingsManager({ settings }: { settings: SiteSettings }) {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="settings-description" className="text-sm text-gray-600">
+        <label htmlFor="settings-description" className="text-sm text-fg-muted">
           Description
         </label>
         <textarea
@@ -64,13 +64,13 @@ export function SettingsManager({ settings }: { settings: SiteSettings }) {
           name="description"
           defaultValue={settings.description}
           rows={3}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
+          className="rounded-md border border-line bg-surface-raised px-4 py-2 shadow-sm focus:ring-2 focus:ring-brand-accent focus:outline-0 focus:border-none"
         />
         <MarkdownHint />
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="settings-map" className="text-sm text-gray-600">
+        <label htmlFor="settings-map" className="text-sm text-fg-muted">
           Map
         </label>
         {settings.mapImageUrl && !removeMap && (
@@ -79,7 +79,7 @@ export function SettingsManager({ settings }: { settings: SiteSettings }) {
             alt="Current map"
             width={240}
             height={180}
-            className="rounded border border-gray-200"
+            className="rounded border border-line-subtle"
           />
         )}
         <input
@@ -89,17 +89,17 @@ export function SettingsManager({ settings }: { settings: SiteSettings }) {
           type="file"
           accept="image/jpeg,image/png,image/webp"
           disabled={removeMap}
-          className="text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200 disabled:opacity-50"
+          className="text-sm text-fg-muted file:mr-3 file:rounded-md file:border-0 file:bg-surface-muted file:px-3 file:py-2 file:text-sm file:font-medium file:text-fg-muted hover:file:bg-surface-hover disabled:opacity-50"
         />
-        <p className="text-xs text-gray-500">{MAP_REQUIREMENTS_HINT}</p>
+        <p className="text-xs text-fg-subtle">{MAP_REQUIREMENTS_HINT}</p>
         {settings.mapImageUrl && (
-          <label className="flex items-center gap-2 text-sm text-gray-600">
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input
               type="checkbox"
               name="removeMap"
               checked={removeMap}
               onChange={(e) => setRemoveMap(e.target.checked)}
-              className="rounded border-gray-300 text-rose-600 focus:ring-rose-400"
+              className="rounded border-line text-brand-fg focus:ring-brand-accent"
             />
             Remove current map
           </label>

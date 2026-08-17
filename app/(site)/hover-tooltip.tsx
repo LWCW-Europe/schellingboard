@@ -102,7 +102,7 @@ export default function HoverTooltip(props: {
           ref={tooltipRef}
           id={hintId}
           style={{ left: pos?.left ?? 0, top: pos?.top ?? 0 }}
-          className={`fixed px-2 py-1 text-sm text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 ${
+          className={`fixed px-2 py-1 text-sm text-fg-inverse bg-surface-inverse rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 ${
             pos ? "" : "invisible"
           }`}
         >

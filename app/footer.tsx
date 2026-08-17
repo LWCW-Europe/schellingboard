@@ -12,7 +12,7 @@ export default function Footer({ inline }: { inline?: boolean }) {
   const content = (
     // Wrapping matters on narrow phones: the version can be a long dev string
     // (`a1b2c3d4-dirty`), and three links plus it no longer fit on one line.
-    <div className="px-3 flex flex-wrap gap-x-2 justify-between items-center text-xs text-gray-500">
+    <div className="px-3 flex flex-wrap gap-x-2 justify-between items-center text-xs text-fg-subtle">
       <span className="flex gap-1">
         <span className="hidden sm:block">Version: </span>
         {appVersion}
@@ -23,7 +23,7 @@ export default function Footer({ inline }: { inline?: boolean }) {
           href="https://schellingboard.org"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className="text-link hover:underline"
         >
           SchellingBoard
         </a>
@@ -32,7 +32,7 @@ export default function Footer({ inline }: { inline?: boolean }) {
           href="https://docs.schellingboard.org"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className="text-link hover:underline"
         >
           Help
         </a>
@@ -41,7 +41,7 @@ export default function Footer({ inline }: { inline?: boolean }) {
           href="https://github.com/LWCW-Europe/schellingboard/issues"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className="text-link hover:underline"
         >
           Report a Bug
         </a>
@@ -50,11 +50,11 @@ export default function Footer({ inline }: { inline?: boolean }) {
   );
 
   return inline ? (
-    <footer className="bg-gray-50 border-t border-gray-200 py-2">
+    <footer className="bg-surface-sunken border-t border-line-subtle py-2">
       <div className="sticky left-0 max-w-[100dvw]">{content}</div>
     </footer>
   ) : (
-    <footer className="lg:fixed bottom-0 left-0 right-0 bg-gray-50 border-t border-gray-200 py-2 z-20 mt-auto">
+    <footer className="lg:fixed bottom-0 left-0 right-0 bg-surface-sunken border-t border-line-subtle py-2 z-20 mt-auto">
       {content}
     </footer>
   );

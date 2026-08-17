@@ -128,8 +128,8 @@ function ProposalItem({
         : "";
     return (
       <div className="space-y-2">
-        <p className="font-medium text-gray-900">{proposal.title}</p>
-        <p className="text-sm text-red-700">
+        <p className="font-medium text-fg">{proposal.title}</p>
+        <p className="text-sm text-danger-fg">
           This will permanently delete the proposal, its {proposal.votesCount}{" "}
           {proposal.votesCount === 1 ? "vote" : "votes"} and{" "}
           {proposal.hosts.length}{" "}
@@ -139,7 +139,7 @@ function ProposalItem({
         <div className="flex flex-col gap-1">
           <label
             htmlFor={`prop-delete-${proposal.id}`}
-            className="text-sm text-gray-700"
+            className="text-sm text-fg-muted"
           >
             Type the proposal title to confirm
           </label>
@@ -179,8 +179,8 @@ function ProposalItem({
     return (
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="font-medium text-gray-900">{proposal.title}</p>
-          <p className="text-sm text-gray-500">
+          <p className="font-medium text-fg">{proposal.title}</p>
+          <p className="text-sm text-fg-subtle">
             Hosts: {hostLabel(proposal.hosts)} · {proposal.votesCount}{" "}
             {proposal.votesCount === 1 ? "vote" : "votes"}
           </p>
@@ -213,7 +213,7 @@ function ProposalItem({
       <div className="flex flex-col gap-1">
         <label
           htmlFor={`prop-title-${proposal.id}`}
-          className="text-sm text-gray-600"
+          className="text-sm text-fg-muted"
         >
           Title *
         </label>
@@ -228,7 +228,7 @@ function ProposalItem({
       <div className="flex flex-col gap-1">
         <label
           htmlFor={`prop-desc-${proposal.id}`}
-          className="text-sm text-gray-600"
+          className="text-sm text-fg-muted"
         >
           Description
         </label>
@@ -236,14 +236,14 @@ function ProposalItem({
           id={`prop-desc-${proposal.id}`}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
+          className="w-full rounded-md border border-line px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-line"
         />
         <MarkdownHint />
       </div>
       <div className="flex flex-col gap-1">
         <label
           htmlFor={`prop-duration-${proposal.id}`}
-          className="text-sm text-gray-600"
+          className="text-sm text-fg-muted"
         >
           Duration (minutes) — leave empty for undecided
         </label>
@@ -260,12 +260,12 @@ function ProposalItem({
       <div className="flex flex-col gap-1">
         <label
           htmlFor={`prop-hosts-${proposal.id}`}
-          className="text-sm text-gray-600"
+          className="text-sm text-fg-muted"
         >
           Hosts
         </label>
         {hostCandidates.length === 0 ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-fg-subtle">
             No guests assigned to this event yet.
           </p>
         ) : (
@@ -318,8 +318,8 @@ export function EventProposalsManager({
 
   return (
     <section aria-label="Proposals" className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Proposals</h2>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <h2 className="text-lg font-semibold text-fg">Proposals</h2>
+      {error && <p className="text-sm text-danger-fg">{error}</p>}
 
       <DataTable
         rows={proposals}

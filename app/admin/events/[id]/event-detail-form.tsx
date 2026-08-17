@@ -80,10 +80,10 @@ export function EventDetailForm({ event }: { event: Event }) {
   return (
     <div className="space-y-8">
       <form onSubmit={handleSave} className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Basic info</h2>
-        {saveError && <p className="text-sm text-red-600">{saveError}</p>}
+        <h2 className="text-lg font-semibold text-fg">Basic info</h2>
+        {saveError && <p className="text-sm text-danger-fg">{saveError}</p>}
         <div className="flex flex-col gap-1">
-          <label htmlFor="ev-name" className="text-sm text-gray-600">
+          <label htmlFor="ev-name" className="text-sm text-fg-muted">
             Name *
           </label>
           <Input
@@ -95,7 +95,7 @@ export function EventDetailForm({ event }: { event: Event }) {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="ev-description" className="text-sm text-gray-600">
+          <label htmlFor="ev-description" className="text-sm text-fg-muted">
             Description
           </label>
           <MarkdownTextarea
@@ -107,7 +107,7 @@ export function EventDetailForm({ event }: { event: Event }) {
           <MarkdownHint />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="ev-website" className="text-sm text-gray-600">
+          <label htmlFor="ev-website" className="text-sm text-fg-muted">
             Website
           </label>
           <Input
@@ -119,7 +119,7 @@ export function EventDetailForm({ event }: { event: Event }) {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="ev-start" className="text-sm text-gray-600">
+            <label htmlFor="ev-start" className="text-sm text-fg-muted">
               Start *
             </label>
             <Input
@@ -132,7 +132,7 @@ export function EventDetailForm({ event }: { event: Event }) {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="ev-end" className="text-sm text-gray-600">
+            <label htmlFor="ev-end" className="text-sm text-fg-muted">
               End *
             </label>
             <Input
@@ -147,7 +147,7 @@ export function EventDetailForm({ event }: { event: Event }) {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="ev-timezone" className="text-sm text-gray-600">
+            <label htmlFor="ev-timezone" className="text-sm text-fg-muted">
               Timezone *
             </label>
             <TimezoneSelect
@@ -157,7 +157,7 @@ export function EventDetailForm({ event }: { event: Event }) {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="ev-duration" className="text-sm text-gray-600">
+            <label htmlFor="ev-duration" className="text-sm text-fg-muted">
               Max session duration (min)
             </label>
             <Input
@@ -171,7 +171,7 @@ export function EventDetailForm({ event }: { event: Event }) {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="ev-break" className="text-sm text-gray-600">
+            <label htmlFor="ev-break" className="text-sm text-fg-muted">
               Break before each session (min)
             </label>
             <Input
@@ -185,14 +185,14 @@ export function EventDetailForm({ event }: { event: Event }) {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="ev-increment" className="text-sm text-gray-600">
+            <label htmlFor="ev-increment" className="text-sm text-fg-muted">
               Schedule increment (min)
             </label>
             <select
               id="ev-increment"
               value={form.slotIncrementMinutes}
               onChange={(e) => set("slotIncrementMinutes", e.target.value)}
-              className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+              className="w-full h-10 rounded-md border border-line bg-surface-raised px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-accent"
             >
               {SLOT_INCREMENT_OPTIONS.map((opt) => (
                 <option key={opt} value={String(opt)}>
@@ -208,15 +208,15 @@ export function EventDetailForm({ event }: { event: Event }) {
             type="checkbox"
             checked={form.rsvpCapacityHardLimit ?? false}
             onChange={(e) => set("rsvpCapacityHardLimit", e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-rose-500 focus:ring-rose-400"
+            className="mt-0.5 h-4 w-4 rounded border-line text-brand-fg focus:ring-brand-accent"
           />
-          <label htmlFor="ev-rsvp-hard-limit" className="text-sm text-gray-600">
+          <label htmlFor="ev-rsvp-hard-limit" className="text-sm text-fg-muted">
             Enforce session capacity as a hard limit — reject RSVPs once a
             session is full (capacity 0 means unlimited)
           </label>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-sm text-gray-600">Icon</span>
+          <span className="text-sm text-fg-muted">Icon</span>
           <IconPicker
             label="Icon"
             value={form.icon ?? ""}
@@ -228,28 +228,28 @@ export function EventDetailForm({ event }: { event: Event }) {
             {isSaving ? "Saving..." : "Save changes"}
           </button>
           {saveSuccess && (
-            <span className="text-sm text-green-600">Saved!</span>
+            <span className="text-sm text-success-fg">Saved!</span>
           )}
         </div>
       </form>
 
       <section
         aria-label="Danger zone"
-        className="border-t border-red-200 pt-6 space-y-3"
+        className="border-t border-danger-border pt-6 space-y-3"
       >
-        <h2 className="text-lg font-semibold text-red-700">Danger zone</h2>
+        <h2 className="text-lg font-semibold text-danger-fg">Danger zone</h2>
         {!deleteMode ? (
           <button onClick={() => setDeleteMode(true)} className={DANGER_BUTTON}>
             Delete event
           </button>
         ) : (
-          <div className="space-y-3 rounded-md border border-red-200 p-4">
-            <p className="text-sm text-red-700">
+          <div className="space-y-3 rounded-md border border-danger-border p-4">
+            <p className="text-sm text-danger-fg">
               This will permanently delete the event and all associated days,
               proposals, sessions, RSVPs, and assignments.
             </p>
             <div className="flex flex-col gap-1">
-              <label htmlFor="delete-confirm" className="text-sm text-gray-700">
+              <label htmlFor="delete-confirm" className="text-sm text-fg-muted">
                 Type the event name to confirm
               </label>
               <Input

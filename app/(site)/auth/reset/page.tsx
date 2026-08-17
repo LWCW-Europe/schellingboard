@@ -18,7 +18,7 @@ export default async function AuthResetPage({
   if (!guest || !token) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-0">
-        <p className="text-gray-700">
+        <p className="text-fg-muted">
           This password link is invalid. Request a new one from the name
           selector or your settings page.
         </p>
