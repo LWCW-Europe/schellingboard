@@ -33,6 +33,30 @@ updates:
         patterns:
           - "*"
 
+  # Enable version updates for the mailpit image in docker-compose.dev.yml.
+  # Workflow `services:` images are out of Dependabot's reach
+  # (dependabot-core#5819), which is why CI starts mailpit from the compose file.
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    assignees:
+      - "omarkohl"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    ignore:
+      # Our own image in docker-compose.yml. Self-hosters choose the tag via
+      # SCHELLINGBOARD_VERSION; it is not a dependency to bump here.
+      - dependency-name: "schellingboard/schellingboard"
+    cooldown:
+      default-days: 7
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"

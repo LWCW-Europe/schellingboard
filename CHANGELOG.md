@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- Dependabot now keeps the mailpit image up to date. Its pin was repeated in `docker-compose.dev.yml` and in both CI workflows, and Dependabot cannot see a workflow's `services:` image ([dependabot-core#5819](https://github.com/dependabot/dependabot-core/issues/5819)), so CI now starts mailpit from the compose file and the pin has a single home. The image carries a tag as well as a digest, since a digest alone gives Dependabot no version to compare
 - The seed data gives Conference Gamma four more proposals: two hosted by Hana Kobayashi, whose profile is the most complete of the seeded guests, and two with no host yet. Both cases were previously only reachable through the random host assignment, which made them awkward to point a screenshot at
 
 ## [3.3.1] - 2026-08-08
