@@ -160,6 +160,46 @@ hand-edit them, regenerate as described in
 - Tailwind CSS for all styling
 - All UI must be mobile-responsive
 
+### Colours
+
+**Never write a palette shade** (`bg-white`, `text-gray-500`, `border-gray-300`).
+Name the role instead, and both themes follow for free:
+
+| Role        | Tokens                                                                                                                                                                           |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backgrounds | `surface`, `surface-raised` (cards, menus, modals), `surface-sunken`, `surface-muted`, `surface-hover`, `surface-inverse`                                                        |
+| Text        | `fg`, `fg-muted`, `fg-subtle`, `fg-faint` (decorative only), `fg-inverse`                                                                                                        |
+| Borders     | `line` (controls), `line-subtle` (dividers), `line-strong`                                                                                                                       |
+| Brand       | `brand` (fills), `brand-hover`, `brand-fg` (accent text), `brand-accent` (rings/borders), `brand-tint`, `brand-tint-hover`, `on-brand`                                           |
+| Semantic    | `danger`, `danger-fg`, `danger-tint`, `danger-border`, `on-danger`, `warning`, `warning-fg`, `warning-tint`, `success-fg`, `link`, `link-hover`, `info`, `info-hover`, `on-info` |
+| Chrome      | `bar`, `bar-fg`, `bar-fg-subtle` (admin header, toasts — dark in _both_ themes, so not `surface-inverse`), `overlay`                                                             |
+
+Text that sits on a coloured fill uses the fill's own `on-*` token
+(`bg-brand text-on-brand`), not `text-fg-inverse` — the latter flips with the
+theme, while lettering on a brand button stays white in both.
+
+Three rules that are easy to get wrong:
+
+- **Elevation, not shadow.** A raised surface must use `bg-surface-raised`; a
+  shadow alone is invisible in dark mode.
+- **Never encode state in colour alone.** A selected or active state also needs
+  a shape, an icon or an aria attribute — see
+  [#802](https://github.com/LWCW-Europe/schellingboard/issues/802) for what
+  happens otherwise.
+- **`fg-subtle` and `line` only go on the page grounds** (`surface`,
+  `surface-raised`, `surface-sunken`). On a filled panel — `surface-muted` or
+  `surface-hover` — they drop under the required ratio, so use `fg-muted` and
+  `line-strong` there.
+
+The location colours on the schedule are the one exception to the rule above:
+they stay palette names, because a location's colour is data (see the
+`@source inline(...)` safelist in `app/globals.css`).
+
+Token values live in `app/globals.css` and are the only place a colour is
+chosen. `tests/unit/theme-contrast.test.ts` asserts the WCAG ratio of every pair
+in both themes, so changing one tells you what it broke. See
+[ADR 0005](docs/dev/adr/0005-dark-mode.md).
+
 Comments: comment the WHY, not the WHAT, and default to writing none. The full
 rules — when a comment earns its place, what never to write, and why they
 outrank consistency with the surrounding file — are in

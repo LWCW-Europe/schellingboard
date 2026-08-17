@@ -2,6 +2,206 @@
 @config "../tailwind.config.ts";
 
 /*
+ * `dark` has to answer three states rather than two: an explicit choice is a
+ * class on <html>, and its absence ("system") leaves the OS to decide.
+ * Resolving that here instead of with a blocking inline script keeps the first
+ * paint correct with no script at all, and it still works with JavaScript off.
+ *
+ * This is the only definition of "am I dark": the token rule below applies it
+ * to itself with `@variant dark`, so nothing has to restate the condition.
+ */
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(html:not(.light), html:not(.light) *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * Semantic colour tokens. Components name the *role* a colour plays
+ * (`bg-surface`, `text-fg-muted`) instead of a palette shade, so this rule is
+ * the only place a colour is chosen. Adding `dark:` to every utility instead
+ * would leave every future component free to forget one.
+ *
+ * The `@variant dark` block at the end holds only what changes, and it is not
+ * an inversion: elevation can no longer come from a shadow, so a raised
+ * surface is *lighter* than the page, and the pale tints become deep grounds
+ * instead of darkened pastels. `color-scheme` rides along so native controls,
+ * scrollbars and autofill follow the theme too.
+ *
+ * tests/unit/theme-contrast.test.ts asserts the WCAG ratio of each pair that
+ * occurs in the UI, in both themes — change a value here and it will tell you
+ * what it broke.
+ */
+:root {
+  color-scheme: light;
+
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f9fafb;
+  --surface-muted: #f3f4f6;
+  --surface-hover: #e5e7eb;
+  --surface-inverse: #1f2937;
+
+  --fg: #111827;
+  --fg-muted: #4b5563;
+  --fg-subtle: #6b7280;
+  /* Decorative only — separators, disabled glyphs. Never carries meaning. */
+  --fg-faint: #9ca3af;
+  --fg-inverse: #ffffff;
+
+  /* Draws text inputs and selects, hence the 3:1 floor of WCAG 1.4.11. */
+  --line: #868e9c;
+  --line-subtle: #e5e7eb;
+  --line-strong: #4b5563;
+
+  --brand: #e11d48;
+  --brand-hover: #be123c;
+  --brand-fg: #be123c;
+  /* Rings and borders, which only need 3:1 — a lighter rose than text may use. */
+  --brand-accent: #f43f5e;
+  --brand-tint: #fff1f2;
+  --brand-tint-hover: #ffe4e6;
+  --on-brand: #ffffff;
+
+  --danger: #dc2626;
+  --danger-fg: #b91c1c;
+  --danger-tint: #fef2f2;
+  --danger-border: #fca5a5;
+  --on-danger: #ffffff;
+
+  --warning: #f59e0b;
+  --warning-fg: #b45309;
+  --warning-tint: #fffbeb;
+
+  --success-fg: #15803d;
+
+  --link: #2563eb;
+  --link-hover: #1e40af;
+  --info: #1d4ed8;
+  --info-hover: #1e3a8a;
+  --on-info: #ffffff;
+
+  --overlay: #00000080;
+
+  /*
+   * Chrome that is dark in both themes — the admin header, toasts. Not
+   * `surface-inverse`, which flips to light and would turn the admin bar white
+   * in dark mode; these only get *darker* so they still separate from the page.
+   */
+  --bar: #111827;
+  --bar-fg: #f3f4f6;
+  --bar-fg-subtle: #b9c0cc;
+
+  /* Only the tokens that differ; the rest are inherited from above. */
+  @variant dark {
+    color-scheme: dark;
+
+    --surface: #16181d;
+    --surface-raised: #1f232b;
+    --surface-sunken: #0f1114;
+    --surface-muted: #262b34;
+    --surface-hover: #333a46;
+    --surface-inverse: #e8eaee;
+
+    --fg: #e8eaee;
+    --fg-muted: #aab1bd;
+    --fg-subtle: #8c94a3;
+    --fg-faint: #6b7280;
+    --fg-inverse: #16181d;
+
+    --line: #6a7382;
+    --line-subtle: #2c313b;
+    --line-strong: #8c94a3;
+
+    /* Lighter on hover here, darker in light mode — both move away from the page. */
+    --brand: #be123c;
+    --brand-hover: #e11d48;
+    --brand-fg: #fb7185;
+    --brand-accent: #fb7185;
+    --brand-tint: #3b1220;
+    --brand-tint-hover: #4d1727;
+
+    --danger-fg: #fca5a5;
+    --danger-tint: #3f1515;
+    --danger-border: #7f1d1d;
+
+    --warning-fg: #fbbf24;
+    --warning-tint: #3a2a08;
+
+    --success-fg: #4ade80;
+
+    --link: #93c5fd;
+    --link-hover: #bfdbfe;
+    --info: #2563eb;
+    --info-hover: #3b82f6;
+
+    --overlay: #000000b3;
+
+    --bar: #0f1114;
+  }
+}
+
+/*
+ * `inline` is what makes the swap work: a plain `@theme` bakes the value into
+ * the generated utility at build time, so `.dark` could never override it.
+ */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-inverse: var(--surface-inverse);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-faint: var(--fg-faint);
+  --color-fg-inverse: var(--fg-inverse);
+
+  --color-line: var(--line);
+  --color-line-subtle: var(--line-subtle);
+  --color-line-strong: var(--line-strong);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-tint: var(--brand-tint);
+  --color-brand-tint-hover: var(--brand-tint-hover);
+  --color-on-brand: var(--on-brand);
+
+  --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-tint: var(--danger-tint);
+  --color-danger-border: var(--danger-border);
+  --color-on-danger: var(--on-danger);
+
+  --color-warning: var(--warning);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-tint: var(--warning-tint);
+
+  --color-success-fg: var(--success-fg);
+
+  --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+  --color-info: var(--info);
+  --color-info-hover: var(--info-hover);
+  --color-on-info: var(--on-info);
+
+  --color-overlay: var(--overlay);
+
+  --color-bar: var(--bar);
+  --color-bar-fg: var(--bar-fg);
+  --color-bar-fg-subtle: var(--bar-fg-subtle);
+}
+
+/*
  * Location colors are stored as Tailwind palette names and rendered as
  * dynamic classes (bg-${color}-500, …), which Tailwind's static content
  * scanner can't see. Safelist every shade actually used across the app.
