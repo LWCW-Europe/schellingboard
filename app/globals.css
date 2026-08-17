@@ -46,6 +46,7 @@
   --surface-muted: #f3f4f6;
   --surface-hover: #e5e7eb;
   --surface-inverse: #1f2937;
+  --surface-inverse-hover: #111827;
 
   --fg: #111827;
   --fg-muted: #4b5563;
@@ -69,6 +70,7 @@
   --on-brand: #ffffff;
 
   --danger: #dc2626;
+  --danger-hover: #b91c1c;
   --danger-fg: #b91c1c;
   --danger-tint: #fef2f2;
   --danger-border: #fca5a5;
@@ -96,6 +98,13 @@
   --bar: #111827;
   --bar-fg: #f3f4f6;
   --bar-fg-subtle: #b9c0cc;
+  /* How much of a location's hue survives each mix — see `loc-*` below. */
+  --loc-fill-mix: 55%;
+  --loc-dim-mix: 25%;
+  --loc-edge-mix: 65%;
+  --loc-badge-mix: 55%;
+  --loc-tint-mix: 14%;
+  --loc-fg-mix: 45%;
 
   /* Only the tokens that differ; the rest are inherited from above. */
   @variant dark {
@@ -107,6 +116,7 @@
     --surface-muted: #262b34;
     --surface-hover: #333a46;
     --surface-inverse: #e8eaee;
+    --surface-inverse-hover: #ffffff;
 
     --fg: #e8eaee;
     --fg-muted: #aab1bd;
@@ -143,6 +153,13 @@
     --overlay: #000000b3;
 
     --bar: #0f1114;
+
+    /* Less hue is needed against a dark ground to read as the same colour. */
+    --loc-fill-mix: 32%;
+    --loc-dim-mix: 15%;
+    --loc-edge-mix: 90%;
+    --loc-badge-mix: 75%;
+    --loc-tint-mix: 18%;
   }
 }
 
@@ -157,6 +174,7 @@
   --color-surface-muted: var(--surface-muted);
   --color-surface-hover: var(--surface-hover);
   --color-surface-inverse: var(--surface-inverse);
+  --color-surface-inverse-hover: var(--surface-inverse-hover);
 
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
@@ -177,6 +195,7 @@
   --color-on-brand: var(--on-brand);
 
   --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
   --color-danger-fg: var(--danger-fg);
   --color-danger-tint: var(--danger-tint);
   --color-danger-border: var(--danger-border);
@@ -202,17 +221,146 @@
 }
 
 /*
- * Location colors are stored as Tailwind palette names and rendered as
- * dynamic classes (bg-${color}-500, …), which Tailwind's static content
- * scanner can't see. Safelist every shade actually used across the app.
- * Keep the color list here in sync with LOCATION_COLOR_NAMES in
- * utils/location-colors.ts — tests/unit/location-colors-safelist.test.ts
- * enforces it.
+ * A location stores a Tailwind palette *name*; `loc-<name>` puts that hue into
+ * `--loc` and every role below mixes it with the page instead of using the
+ * shade directly. Two reasons: one class then works in both themes, and the
+ * text on a block always sits on a mix of the hue with `--surface`, so it is
+ * readable for all 22 hues — white on `yellow-500` was 1.8:1.
+ *
+ * These are plain rules rather than dynamic `bg-${color}-500` utilities, so
+ * nothing has to be safelisted for the scanner.
+ * tests/unit/location-colors.test.ts keeps the list in sync with
+ * LOCATION_COLOR_NAMES and checks the derived contrast for every hue.
  */
-@source inline("bg-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{100,200,400,500}");
-@source inline("border-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{400,600}");
-@source inline("text-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{400,500}");
-@source inline("focus:ring-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-400");
+/* An unknown palette name still renders, in the default hue. */
+html {
+  --loc: var(--color-slate-500);
+}
+
+.loc-slate {
+  --loc: var(--color-slate-500);
+}
+.loc-gray {
+  --loc: var(--color-gray-500);
+}
+.loc-zinc {
+  --loc: var(--color-zinc-500);
+}
+.loc-neutral {
+  --loc: var(--color-neutral-500);
+}
+.loc-stone {
+  --loc: var(--color-stone-500);
+}
+.loc-red {
+  --loc: var(--color-red-500);
+}
+.loc-orange {
+  --loc: var(--color-orange-500);
+}
+.loc-amber {
+  --loc: var(--color-amber-500);
+}
+.loc-yellow {
+  --loc: var(--color-yellow-500);
+}
+.loc-lime {
+  --loc: var(--color-lime-500);
+}
+.loc-green {
+  --loc: var(--color-green-500);
+}
+.loc-emerald {
+  --loc: var(--color-emerald-500);
+}
+.loc-teal {
+  --loc: var(--color-teal-500);
+}
+.loc-cyan {
+  --loc: var(--color-cyan-500);
+}
+.loc-sky {
+  --loc: var(--color-sky-500);
+}
+.loc-blue {
+  --loc: var(--color-blue-500);
+}
+.loc-indigo {
+  --loc: var(--color-indigo-500);
+}
+.loc-violet {
+  --loc: var(--color-violet-500);
+}
+.loc-purple {
+  --loc: var(--color-purple-500);
+}
+.loc-fuchsia {
+  --loc: var(--color-fuchsia-500);
+}
+.loc-pink {
+  --loc: var(--color-pink-500);
+}
+.loc-rose {
+  --loc: var(--color-rose-500);
+}
+
+/* A scheduled session. */
+@utility loc-block {
+  background-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-fill-mix),
+    var(--surface)
+  );
+  border-color: color-mix(in oklab, var(--loc) var(--loc-edge-mix), var(--fg));
+  color: var(--fg);
+}
+
+/* A session that is over or otherwise pushed into the background. */
+@utility loc-block-dim {
+  background-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-dim-mix),
+    var(--surface)
+  );
+  border-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-fill-mix),
+    var(--surface)
+  );
+  color: var(--fg-muted);
+}
+
+/*
+ * The RSVP count, sitting on top of a `loc-block`. Mixed toward the
+ * foreground rather than the page so it separates from the fill underneath —
+ * which means its own text is the page colour, in both themes.
+ */
+@utility loc-badge {
+  background-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-badge-mix),
+    var(--fg)
+  );
+  color: var(--surface);
+}
+
+/* The location's name as a pill, on the page rather than on a block. */
+@utility loc-tag {
+  background-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-tint-mix),
+    var(--surface)
+  );
+  border-color: color-mix(in oklab, var(--loc) var(--loc-edge-mix), var(--fg));
+  /* Blending toward the foreground is what keeps this legible in both
+     themes: dark in light mode, pastel in dark mode, without a second value. */
+  color: color-mix(in oklab, var(--loc) var(--loc-fg-mix), var(--fg));
+}
+
+/* Admin's colour preview — the hue itself, with no text on it. */
+@utility loc-swatch {
+  background-color: var(--loc);
+}
 
 html {
   scrollbar-gutter: stable;

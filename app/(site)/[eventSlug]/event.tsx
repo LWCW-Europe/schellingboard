@@ -150,7 +150,7 @@ export function EventDisplay() {
     <>
       <div
         data-schedule-frame
-        className="fixed inset-x-0 top-16 bottom-0 flex flex-col bg-white"
+        className="fixed inset-x-0 top-16 bottom-0 flex flex-col bg-surface"
       >
         {scheduleBody}
       </div>
@@ -178,9 +178,9 @@ function DayFoldBar(props: {
     <button
       type="button"
       onClick={onToggle}
-      className="block w-full bg-gray-50 hover:bg-gray-100 transition-colors border-b border-gray-200 text-left"
+      className="block w-full bg-surface-sunken hover:bg-surface-muted transition-colors border-b border-line-subtle text-left"
     >
-      <span className="sticky left-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-xs text-gray-500">
+      <span className="sticky left-0 inline-flex items-center gap-1.5 px-2 py-1.5 text-xs text-fg-subtle">
         <Chevron className="h-3.5 w-3.5 stroke-2" />
         <span className="font-medium">{date.toFormat("EEEE, MMMM d")}</span>
         <span>· day has passed · {folded ? "show" : "hide"}</span>

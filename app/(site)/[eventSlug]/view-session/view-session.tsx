@@ -161,11 +161,11 @@ export function ViewSession(props: {
           <div>
             <h1 className="text-lg font-bold leading-tight flex items-center gap-1">
               {session.closed && (
-                <LockIcon className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                <LockIcon className="h-4 w-4 text-fg-muted flex-shrink-0" />
               )}
               {session.title}
             </h1>
-            <p className="text-xs text-gray-500 mb-2 mt-1">
+            <p className="text-xs text-fg-subtle mb-2 mt-1">
               Hosted by {hostNames}
             </p>
           </div>
@@ -189,7 +189,7 @@ export function ViewSession(props: {
           id="title"
         >
           {session.closed && (
-            <LockIcon className="h-5 w-5 text-gray-600 flex-shrink-0" />
+            <LockIcon className="h-5 w-5 text-fg-muted flex-shrink-0" />
           )}
           {session.title}
         </p>
@@ -213,7 +213,7 @@ export function ViewSession(props: {
         </div>
       </div>
       {session.closed && (
-        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-sm text-yellow-800">
+        <div className="mb-4 p-3 bg-warning-tint border-l-4 border-warning text-sm text-warning-fg">
           <div className="flex items-center gap-2 font-medium mb-1">
             <LockIcon className="h-4 w-4" />
             Closed Session
@@ -231,7 +231,7 @@ export function ViewSession(props: {
             <button
               onClick={handleRsvp}
               disabled={isRsvping || (!rsvpd && sessionFull)}
-              className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors disabled:opacity-50"
+              className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-brand-accent text-brand-fg hover:bg-brand-tint focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition-colors disabled:opacity-50"
             >
               {isRsvping
                 ? "..."
@@ -246,7 +246,7 @@ export function ViewSession(props: {
           {isEditable && (
             <Link
               href={`/${eventSlug}/edit-session?sessionID=${session.id}`}
-              className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors"
+              className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-brand-accent text-brand-fg hover:bg-brand-tint focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition-colors"
               onClick={handleEditClick}
             >
               <PencilIcon className="h-3 w-3 mr-1" />
@@ -255,12 +255,12 @@ export function ViewSession(props: {
           )}
         </div>
         {rsvpError && (
-          <p role="alert" className="mt-2 text-xs text-red-600">
+          <p role="alert" className="mt-2 text-xs text-danger-fg">
             {rsvpError}
           </p>
         )}
       </div>
-      <div className="space-y-2 mb-6 text-sm text-gray-700">
+      <div className="space-y-2 mb-6 text-sm text-fg-muted">
         <div className="flex gap-2">
           <span className="font-medium">Hosts(s):</span>
           <span>
@@ -269,7 +269,7 @@ export function ViewSession(props: {
                 {i > 0 && ", "}
                 <Link
                   href={`/guests/${h.id}`}
-                  className="text-rose-500 hover:text-rose-600 hover:underline"
+                  className="text-brand-fg hover:underline"
                 >
                   {h.name}
                 </Link>
@@ -315,7 +315,7 @@ export function ViewSession(props: {
                       {i > 0 && ", "}
                       <Link
                         href={`/guests/${a.id}`}
-                        className="text-rose-500 hover:text-rose-600 hover:underline"
+                        className="text-brand-fg hover:underline"
                       >
                         {a.name}
                       </Link>
@@ -329,11 +329,11 @@ export function ViewSession(props: {
         <Markdown>{session.description}</Markdown>
       </div>
       {session.proposalId && (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-fg-muted">
           This session was scheduled from a proposal. See it{" "}
           <Link
             {...viewProposalLinkFromElsewhere(eventSlug, session.proposalId)}
-            className="text-rose-500 underline hover:text-rose-600 transition-colors"
+            className="text-brand-fg underline"
           >
             here
           </Link>

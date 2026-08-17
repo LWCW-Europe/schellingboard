@@ -355,7 +355,7 @@ export function SessionForm(props: {
   return (
     <div className="flex flex-col gap-4">
       <Link
-        className="bg-rose-400 text-white font-semibold py-2 px-4 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
+        className="bg-brand text-on-brand font-semibold py-2 px-4 rounded shadow hover:bg-brand-hover active:bg-brand-hover w-fit px-12"
         href={`/${event.slug}`}
       >
         Back to schedule
@@ -364,7 +364,7 @@ export function SessionForm(props: {
         <h2 className="text-2xl font-bold">
           {eventName}: {sessionID ? "Edit" : "Add a"} session
         </h2>
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-sm text-fg-subtle mt-2">
           {sessionID
             ? ""
             : "Fill out this form to add a session to the schedule! "}
@@ -409,11 +409,11 @@ export function SessionForm(props: {
             type="checkbox"
             checked={closed}
             onChange={(e) => setClosed(e.target.checked)}
-            className="h-4 w-4 text-rose-400 focus:ring-rose-400 border-gray-300 rounded"
+            className="h-4 w-4 text-brand focus:ring-brand-accent border-line rounded"
           />
           Closed session
         </label>
-        <p className="text-sm text-gray-500 ml-6">
+        <p className="text-sm text-fg-subtle ml-6">
           Check this if attendees can at most arrive 5 minutes late. If they
           arrive later they may not join and should not knock or otherwise
           disrupt the session.
@@ -425,7 +425,7 @@ export function SessionForm(props: {
           Hosts
           <RequiredStar />
         </label>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-fg-subtle">
           You and any cohosts who have agreed to host this session with you.
           Your cohosts will get an email confirmation when this form is
           submitted.
@@ -497,11 +497,11 @@ export function SessionForm(props: {
         />
       </div>
       {sessionID && session.proposalId && (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-fg-muted">
           This session was scheduled from a proposal. See it{" "}
           <Link
             {...viewProposalLinkFromElsewhere(event.slug, session.proposalId)}
-            className="text-rose-500 underline hover:text-rose-600 transition-colors"
+            className="text-brand-fg underline"
           >
             here
           </Link>
@@ -509,7 +509,7 @@ export function SessionForm(props: {
         </p>
       )}
       {clashErrors.length > 0 && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <div className="bg-danger-tint border border-danger-border text-danger-fg px-4 py-3 rounded-md">
           <p className="text-sm font-medium">Warning: schedule clash</p>
           {clashErrors.map((error) => (
             <p key={error} className="text-sm font-medium">
@@ -519,13 +519,13 @@ export function SessionForm(props: {
         </div>
       )}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <div className="bg-danger-tint border border-danger-border text-danger-fg px-4 py-3 rounded-md">
           <p className="text-sm font-medium">Error: {error}</p>
         </div>
       )}
       <button
         type="submit"
-        className="bg-rose-400 text-white font-semibold py-2 rounded shadow disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500 mx-auto px-12"
+        className="bg-brand text-on-brand font-semibold py-2 rounded shadow disabled:bg-surface-hover disabled:text-fg-muted disabled:shadow-none hover:bg-brand-hover active:bg-brand-hover mx-auto px-12"
         disabled={
           !title ||
           effectiveStartTime === undefined ||
@@ -551,7 +551,7 @@ export function SessionForm(props: {
   );
 }
 
-const RequiredStar = () => <span className="text-rose-500 mx-1">*</span>;
+const RequiredStar = () => <span className="text-brand-fg mx-1">*</span>;
 
 type StartTime = {
   formattedTime: string;
@@ -666,11 +666,11 @@ function SelectDuration(props: {
               type="radio"
               checked={value === duration}
               onChange={() => setDuration(value)}
-              className="h-4 w-4 border-gray-300 text-rose-400 focus:ring-rose-400"
+              className="h-4 w-4 border-line text-brand focus:ring-brand-accent"
             />
             <label
               htmlFor={`duration-${value}`}
-              className="ml-3 block text-sm font-medium leading-6 text-gray-900"
+              className="ml-3 block text-sm font-medium leading-6 text-fg"
             >
               {formatDuration(durationMinusBreak(value, breakMinutes), true)}
             </label>
@@ -699,11 +699,11 @@ function SelectDay(props: {
                 type="radio"
                 checked={d.id === day.id}
                 onChange={() => setDay(d)}
-                className="h-4 w-4 border-gray-300 text-rose-400 focus:ring-rose-400"
+                className="h-4 w-4 border-line text-brand focus:ring-brand-accent"
               />
               <label
                 htmlFor={d.id}
-                className="ml-3 block text-sm font-medium leading-6 text-gray-900"
+                className="ml-3 block text-sm font-medium leading-6 text-fg"
               >
                 {formattedDay}
               </label>

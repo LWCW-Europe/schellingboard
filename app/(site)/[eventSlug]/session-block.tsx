@@ -105,10 +105,10 @@ export function BookableSessionCard(props: {
     <div className={`row-span-${numSlots} my-0.5 min-h-10`}>
       <Link
         aria-label="Add session"
-        className="rounded font-roboto h-full w-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
+        className="rounded font-roboto h-full w-full bg-surface-muted hover:bg-surface-hover flex items-center justify-center"
         href={`/${eventSlug}/add-session?location=${location.name}&time=${timeParam}&day=${dayParam}`}
       >
-        <PlusIcon aria-hidden="true" className="h-4 w-4 text-gray-400" />
+        <PlusIcon aria-hidden="true" className="h-4 w-4 text-fg-subtle" />
       </Link>
     </div>
   );
@@ -123,7 +123,7 @@ function BlockerSessionCard(props: { title: string; numSlots: number }) {
   const { title, numSlots } = props;
   return (
     <div className={`row-span-${numSlots} my-0.5 overflow-hidden`}>
-      <div className="py-1 px-1 rounded font-roboto h-full min-h-10 flex flex-col justify-center bg-gray-300 border-2 border-gray-400 text-black">
+      <div className="py-1 px-1 rounded font-roboto h-full min-h-10 flex flex-col justify-center bg-surface-hover border-2 border-line text-fg">
         <p
           className={clsx(
             "font-medium text-xs leading-[1.15] text-center",
@@ -154,11 +154,11 @@ function SessionInfoDisplay({
     <>
       <h1 className="text-lg font-bold leading-tight flex items-center gap-1">
         {session.closed && (
-          <LockIcon className="h-4 w-4 text-gray-600 flex-shrink-0" />
+          <LockIcon className="h-4 w-4 text-fg-muted flex-shrink-0" />
         )}
         {session.title}
       </h1>
-      <p className="text-xs text-gray-500 mb-2 mt-1">
+      <p className="text-xs text-fg-subtle mb-2 mt-1">
         Hosted by {formattedHostNames}
       </p>
       <p className="text-sm whitespace-pre-line">
@@ -166,7 +166,7 @@ function SessionInfoDisplay({
           ? plainDescription.substring(0, 200) + "..."
           : plainDescription}
       </p>
-      <div className="flex justify-between mt-2 gap-4 text-xs text-gray-500">
+      <div className="flex justify-between mt-2 gap-4 text-xs text-fg-subtle">
         <div className="flex gap-1">
           <UserIcon className="h-4 w-4" />
           <span>
@@ -301,15 +301,9 @@ export function RealSessionCard(props: {
     >
       <div
         className={clsx(
-          "py-1 px-1 rounded font-roboto h-full min-h-10 flex flex-col relative w-full group",
-          lowerOpacity
-            ? `bg-${location.color}-${200} border-2 border-${
-                location.color
-              }-${400}`
-            : `bg-${location.color}-${500} border-2 border-${
-                location.color
-              }-${600}`,
-          !lowerOpacity && "text-white"
+          "py-1 px-1 rounded font-roboto h-full min-h-10 flex flex-col relative w-full group border-2",
+          `loc-${location.color}`,
+          lowerOpacity ? "loc-block-dim" : "loc-block"
         )}
       >
         <Link
@@ -348,14 +342,11 @@ export function RealSessionCard(props: {
               className="py-[2px] flex items-center"
               title="You are hosting this session"
             >
-              <AcademicCapIcon className="h-3 w-3 text-white" />
+              <AcademicCapIcon className="h-3 w-3" />
             </div>
           )}
           <div
-            className={clsx(
-              "py-[1px] px-1 rounded-tl text-[10px] flex gap-0.5 items-center cursor-pointer hover:opacity-80",
-              `bg-${location.color}-400`
-            )}
+            className="loc-badge py-[1px] px-1 rounded-tl text-[10px] flex gap-0.5 items-center cursor-pointer hover:opacity-80"
             onClick={handleRSVP}
           >
             <UserIcon className="h-.5 w-2.5" />

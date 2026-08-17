@@ -44,10 +44,10 @@ export function SessionText(props: {
         <h1 className="font-bold leading-tight flex-1 flex items-center gap-1">
           <Link
             {...linkProps}
-            className="cursor-pointer hover:text-blue-600 transition-colors flex items-center gap-1"
+            className="cursor-pointer hover:text-link transition-colors flex items-center gap-1"
           >
             {session.closed && (
-              <LockIcon className="h-4 w-4 text-gray-600 flex-shrink-0" />
+              <LockIcon className="h-4 w-4 text-fg-muted flex-shrink-0" />
             )}
             {session.title}
           </Link>
@@ -72,7 +72,7 @@ export function SessionText(props: {
         </div>
       </div>
       <div className="flex flex-col sm:flex-row justify-between mt-2 sm:items-center gap-2">
-        <div className="flex gap-2 text-sm text-gray-500">
+        <div className="flex gap-2 text-sm text-fg-subtle">
           <div className="flex gap-1">
             <span>
               {getStartTimePlusBreak(session, breakMinutes)
@@ -98,7 +98,7 @@ export function SessionText(props: {
                   {i > 0 && ", "}
                   <Link
                     href={`/guests/${h.id}`}
-                    className="hover:text-blue-600 transition-colors"
+                    className="hover:text-link transition-colors"
                   >
                     {h.name}
                   </Link>
@@ -124,7 +124,7 @@ export function SessionText(props: {
         {isLongDescription && (
           <button
             onClick={() => setShowFullDescription(!showFullDescription)}
-            className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+            className="text-link hover:text-link-hover font-medium cursor-pointer"
           >
             {showFullDescription ? "Show less" : "Show more"}
           </button>
@@ -139,8 +139,8 @@ export function LocationTag(props: { location: Location }) {
   return (
     <div
       className={clsx(
-        "flex items-center gap-2 rounded-full py-0.5 px-2 text-xs font-semibold w-fit",
-        `text-${location.color}-500 bg-${location.color}-100 border-2 border-${location.color}-400`
+        "flex items-center gap-2 rounded-full py-0.5 px-2 text-xs font-semibold w-fit border-2 loc-tag",
+        `loc-${location.color}`
       )}
     >
       {location.name}

@@ -159,11 +159,23 @@ consequence rather than a side effect (see below).
 
 ### Location colours are derived, not safelisted twice
 
-A location's colour stays a palette name, but the schedule derives its fills and
-borders with `color-mix()` against the current surface and foreground tokens, so
-one class works in both themes. The alternative — a second set of safelisted
-`dark:bg-*-900` classes — would have doubled the `@source inline(...)` list and
-the test that keeps it in sync.
+A location's colour stays a palette name. `loc-<name>` puts that hue into a
+`--loc` custom property and each role — block fill, dimmed fill, border, RSVP
+badge, tag, admin swatch — is a `color-mix()` of it with the current `--surface`
+or `--fg`, so one class works in both themes. The alternative, a second set of
+safelisted `dark:bg-*-900` classes, would have doubled the `@source inline(...)`
+list; as it turns out the 22 `loc-*` rules are plain CSS, so the safelist is
+gone entirely.
+
+Deriving also fixes a light-mode bug we would otherwise have carried over: the
+old block was `bg-${color}-500` with `text-white`, which is 1.8:1 on
+`yellow-500`. Because the fill is now mixed with the page, the title is `--fg`
+on a tint of the hue and stays legible whichever of the 22 colours a location
+has. `tests/unit/location-colors.test.ts` recomputes every hue in both themes —
+mixing in oklab as the browser does — rather than trusting that.
+
+The visible cost is that a scheduled session is a tinted card with a saturated
+border instead of a solid block of colour.
 
 ## Consequences
 
@@ -188,6 +200,9 @@ the test that keeps it in sync.
 
 ### Neutral
 
+- The schedule grid looks different in light mode: session blocks are tinted
+  rather than solid (see above). Locations are still told apart by hue, now
+  carried by the border as much as the fill.
 - Light mode shifts slightly where the contrast contract required it, most
   visibly: the several grays doing "muted text" collapse to three levels, so
   `text-gray-400` text darkens to a readable `--fg-subtle` (it was 2.9:1 on

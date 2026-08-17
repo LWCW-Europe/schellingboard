@@ -192,12 +192,16 @@ Three rules that are easy to get wrong:
   `line-strong` there.
 
 The location colours on the schedule are the one exception to the rule above:
-they stay palette names, because a location's colour is data (see the
-`@source inline(...)` safelist in `app/globals.css`).
+they stay palette names, because a location's colour is data. Put `loc-<name>`
+on the element and add the role class for what you are drawing — `loc-block`,
+`loc-block-dim`, `loc-badge`, `loc-tag`, `loc-swatch`. Each mixes the hue into
+the surface and foreground tokens in `app/globals.css`, so the same class works
+in both themes — never write `bg-${color}-500` again.
 
 Token values live in `app/globals.css` and are the only place a colour is
 chosen. `tests/unit/theme-contrast.test.ts` asserts the WCAG ratio of every pair
-in both themes, so changing one tells you what it broke. See
+in both themes, and `tests/unit/location-colors.test.ts` does the same for all
+22 location hues, so changing one tells you what it broke. See
 [ADR 0005](docs/dev/adr/0005-dark-mode.md).
 
 Comments: comment the WHY, not the WHAT, and default to writing none. The full
