@@ -139,6 +139,27 @@ describe("comments", () => {
     expect(comments.map((c) => c.body)).toEqual(["first", "second"]);
   });
 
+  it("lists comments posted in the same millisecond in the order they were posted", async () => {
+    const { guest, proposal } = await setup();
+    const { comments } = getRepositories();
+    const sameMillisecond = new Date();
+    const bodies = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"];
+
+    for (const body of bodies) {
+      await comments.createForProposal({
+        proposalId: proposal.id,
+        authorId: guest.id,
+        body,
+        createdTime: sameMillisecond,
+      });
+    }
+
+    // Comment ids are random, so a tiebreak on the id would shuffle these.
+    expect(
+      (await comments.listByProposal(proposal.id)).map((c) => c.body)
+    ).toEqual(bodies);
+  });
+
   it("keeps each proposal's comments separate", async () => {
     const { event, guest, proposal } = await setup();
     const other = await createProposal(event.id, []);

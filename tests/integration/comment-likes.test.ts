@@ -132,6 +132,34 @@ describe("comment likes", () => {
     ]);
   });
 
+  it("keeps the pressing order for likes that land in the same millisecond", async () => {
+    const { event, proposal, comment } = await setup();
+    const guests = [
+      await createGuest({ eventId: event.id }),
+      await createGuest({ eventId: event.id }),
+    ];
+    // Press in descending id order, so a tiebreak on the (random) guest id
+    // would hand back the reverse of the order they were pressed in.
+    const likers = guests.sort((a, b) => (a.id < b.id ? 1 : -1));
+    const sameMillisecond = new Date();
+
+    for (const liker of likers) {
+      await getRepositories().comments.toggleLike({
+        commentId: comment.id,
+        guestId: liker.id,
+        createdTime: sameMillisecond,
+      });
+    }
+
+    expect(await likesOn(proposal.id, comment.id)).toEqual(
+      likers.map((liker) => ({
+        id: liker.id,
+        name: liker.name,
+        avatarUrl: null,
+      }))
+    );
+  });
+
   it("refuses to like without a selected name", async () => {
     const { event, proposal, comment } = await setup();
     cookieJar.clear();
