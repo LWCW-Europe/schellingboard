@@ -1,5 +1,6 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
 import type { Comment, CommentLiker, CommentsRepository } from "../interfaces";
@@ -39,7 +40,10 @@ export class SqliteCommentsRepository implements CommentsRepository {
       )
       .leftJoin(schema.guests, eq(schema.comments.authorId, schema.guests.id))
       .where(eq(schema.proposalComments.proposalId, proposalId))
-      .orderBy(asc(schema.comments.createdTime), asc(schema.comments.id))
+      .orderBy(
+        asc(schema.comments.createdTime),
+        asc(insertionOrder(schema.comments))
+      )
       .all();
   }
 
@@ -63,7 +67,7 @@ export class SqliteCommentsRepository implements CommentsRepository {
       .where(inArray(schema.commentLikes.commentId, commentIds))
       .orderBy(
         asc(schema.commentLikes.createdTime),
-        asc(schema.commentLikes.guestId)
+        asc(insertionOrder(schema.commentLikes))
       )
       .all();
     for (const { commentId, id, name, avatarUrl } of rows) {
@@ -244,6 +248,12 @@ export class SqliteCommentsRepository implements CommentsRepository {
       }
     });
   }
+}
+
+// Ids are random nanoids, so they can't break a tie between two rows written in
+// the same millisecond; the implicit rowid is insertion order.
+function insertionOrder(table: SQLiteTable): SQL {
+  return sql`${table}.rowid`;
 }
 
 function toComment(row: CommentRow, likes: CommentLiker[] = []): Comment {
