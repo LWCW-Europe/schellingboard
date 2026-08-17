@@ -88,24 +88,16 @@ jobs:
       SMTP_URL: smtp://localhost:1025
       SMTP_FROM: Test <mailer-test@test.example>
 
-    services:
-      # The mailer integration test sends real email to mailpit (see
-      # docs/dev/testing.md § Running tests). Same pinned image as
-      # docker-compose.dev.yml.
-      mailpit:
-        image: axllent/mailpit@sha256:956d688cbd13dca36c72d8e94c34d6d1cdf4a005aa6aa4ff6edaaac56c34d8df
-        ports:
-          - 1025:1025
-          - 8025:8025
-        options: >-
-          --health-cmd "/mailpit readyz"
-          --health-interval 2s
-          --health-timeout 5s
-          --health-retries 15
-
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v7.0.1
+
+      # The mailer integration test sends real email to mailpit (see
+      # docs/dev/testing.md § Running tests). Started from the compose file
+      # rather than as a service container so the image pin has one home that
+      # Dependabot can update.
+      - name: Start mailpit
+        run: docker compose -f docker-compose.dev.yml up -d --wait mailpit
 
       - name: Install bun
         uses: oven-sh/setup-bun@v2
