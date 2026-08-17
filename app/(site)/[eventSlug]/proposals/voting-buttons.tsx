@@ -1,4 +1,5 @@
 import { useContext } from "react";
+import clsx from "clsx";
 import { VoteChoice, type Vote } from "@/app/(site)/votes";
 import HoverTooltip from "@/app/(site)/hover-tooltip";
 import { UserContext, VotesContext } from "@/app/(site)/context";
@@ -122,61 +123,94 @@ export function VotingButtons({
     e.stopPropagation();
   };
 
+  const chosen = votes.find(
+    (vote) => vote.proposalId === proposalId && vote.guestId === currentUserId
+  )?.choice;
+
   return (
     <div
-      className={`flex gap-1 ${large ? "gap-2 sm:gap-3 justify-center" : "flex-row"}`}
+      className={clsx(
+        "flex",
+        large ? "gap-2 sm:gap-3 justify-center" : "gap-1.5 flex-row"
+      )}
     >
-      <HoverTooltip
-        text={votingEnabled ? "Interested" : votingDisabledText}
-        visible={true}
-        unavailable={!votingEnabled}
-      >
-        <button
-          type="button"
-          className={`rounded-md border border-black shadow-sm font-medium focus:ring-2 focus:ring-offset-2 text-black focus:outline-none
-            ${large ? "w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center" : "px-1 py-1"}
-            ${votingEnabled ? "" : "opacity-50 cursor-not-allowed grayscale"}
-            ${votes.some((vote) => vote.proposalId === proposalId && vote.choice === VoteChoice.interested && vote.guestId === currentUserId) ? "bg-blue-200" : "bg-white"}`}
-          onClick={(e) => handleVote(VoteChoice.interested, e)}
+      {VOTE_OPTIONS.map(({ choice, emoji, label }) => (
+        <HoverTooltip
+          key={label}
+          text={votingEnabled ? label : votingDisabledText}
+          visible={true}
+          unavailable={!votingEnabled}
         >
-          <div className={large ? "text-sm sm:text-lg mb-1" : ""}>❤️</div>
-          {large && <div className="text-[10px] sm:text-xs">Interested</div>}
-        </button>
-      </HoverTooltip>
-      <HoverTooltip
-        text={votingEnabled ? "Maybe" : votingDisabledText}
-        visible={true}
-        unavailable={!votingEnabled}
-      >
-        <button
-          type="button"
-          className={`rounded-md border border-black shadow-sm font-medium focus:ring-2 focus:ring-offset-2 text-black focus:outline-none
-            ${large ? "w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center" : "px-1 py-1"}
-            ${votingEnabled ? "" : "opacity-50 cursor-not-allowed grayscale"}
-            ${votes.some((vote) => vote.proposalId === proposalId && vote.choice === VoteChoice.maybe && vote.guestId === currentUserId) ? "bg-blue-200" : "bg-white"}`}
-          onClick={(e) => handleVote(VoteChoice.maybe, e)}
-        >
-          <div className={large ? "text-sm sm:text-lg mb-1" : ""}>⭐</div>
-          {large && <div className="text-[10px] sm:text-xs">Maybe</div>}
-        </button>
-      </HoverTooltip>
-      <HoverTooltip
-        text={votingEnabled ? "Skip" : votingDisabledText}
-        visible={true}
-        unavailable={!votingEnabled}
-      >
-        <button
-          type="button"
-          className={`rounded-md border border-black shadow-sm font-medium focus:ring-2 focus:ring-offset-2 text-black focus:outline-none
-            ${large ? "w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center" : "px-1 py-1"}
-            ${votingEnabled ? "" : "opacity-50 cursor-not-allowed grayscale"}
-            ${votes.some((vote) => vote.proposalId === proposalId && vote.choice === VoteChoice.skip && vote.guestId === currentUserId) ? "bg-blue-200" : "bg-white"}`}
-          onClick={(e) => handleVote(VoteChoice.skip, e)}
-        >
-          <div className={large ? "text-sm sm:text-lg mb-1" : ""}>👋🏽</div>
-          {large && <div className="text-[10px] sm:text-xs">Skip</div>}
-        </button>
-      </HoverTooltip>
+          <VoteButton
+            emoji={emoji}
+            label={label}
+            large={large}
+            selected={chosen === choice}
+            votingEnabled={votingEnabled}
+            onClick={(e) => handleVote(choice, e)}
+          />
+        </HoverTooltip>
+      ))}
     </div>
+  );
+}
+
+const VOTE_OPTIONS = [
+  { choice: VoteChoice.interested, emoji: "❤️", label: "Interested" },
+  { choice: VoteChoice.maybe, emoji: "⭐", label: "Maybe" },
+  { choice: VoteChoice.skip, emoji: "👋🏽", label: "Skip" },
+] as const;
+
+// The chosen vote must stay recognisable without perceiving hue: a light tint
+// against white collapsed into "no visible difference" under the Dark Reader
+// extension and for colourblind attendees (issue #802). Hence three redundant
+// cues — aria-pressed, a dark fill that keeps its luminance gap under any
+// recolouring, and a check mark — rather than a background colour alone.
+function VoteButton({
+  emoji,
+  label,
+  large,
+  selected,
+  votingEnabled,
+  // HoverTooltip clones this element to attach its aria wiring, so anything it
+  // passes has to reach the underlying <button>.
+  ...rest
+}: {
+  emoji: string;
+  label: string;
+  large: boolean;
+  selected: boolean;
+  votingEnabled: boolean;
+} & React.ComponentPropsWithoutRef<"button">) {
+  return (
+    <button
+      {...rest}
+      type="button"
+      aria-pressed={selected}
+      className={clsx(
+        "relative rounded-md border shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400",
+        large
+          ? "w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center"
+          : "px-1 py-1",
+        !votingEnabled && "opacity-50 cursor-not-allowed grayscale",
+        selected
+          ? "bg-gray-800 border-gray-900 text-white ring-2 ring-gray-900"
+          : // gray-500 is the lightest border that still clears the 3:1 contrast
+            // the button's outline needs against white, being its only edge.
+            "bg-white border-gray-500 text-gray-700",
+        !selected && votingEnabled && "hover:bg-gray-100"
+      )}
+    >
+      <div className={large ? "text-sm sm:text-lg mb-1" : ""}>{emoji}</div>
+      {large && <div className="text-[10px] sm:text-xs">{label}</div>}
+      {selected && (
+        <span
+          aria-hidden="true"
+          className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-white bg-gray-900 text-[9px] leading-none text-white"
+        >
+          ✓
+        </span>
+      )}
+    </button>
   );
 }

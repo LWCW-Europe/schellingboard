@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Fixed
+
+- **The vote you picked is now unmistakable**: a chosen vote button was marked only by a pale blue tint, which was nearly invisible to attendees using a dark-mode browser extension and to anyone who has trouble telling colours apart — so it was impossible to see whether you had voted at all, let alone which of the three you had chosen. The chosen button is now filled in dark with a check mark on it, and screen readers announce it as selected
+
 ### Added
 
 - **Sort the attendee directory by who edited their profile last**: a "Sort by" choice next to the filters switches the list between "Name (A–Z)" and "Recently updated", so it's easy to catch up on profiles that are new or have changed since you last looked. Each row shows when that profile was last edited ("updated 3 days ago"). Nothing recorded edit times before this version, so every profile that already has something in it is dated from the upgrade and they all rank together, ahead of the ones nobody has filled in — those show no date and come last. Real edit times build up from the upgrade onwards. While a search is active the list stays ordered by how well each profile matches, and the choice is unavailable

@@ -25,25 +25,29 @@ test("should allow voting on proposals with different choices", async ({
   const interestedButton = proposalRow.getByRole("button", { name: "❤️" });
   await interestedButton.click();
 
-  // Verify the button shows active state (should have blue background)
-  await expect(interestedButton).toHaveClass(/bg-blue-200/);
+  // The chosen vote is exposed as a pressed toggle and marked with a check,
+  // not by background colour alone (see issue #802).
+  await expect(interestedButton).toHaveAttribute("aria-pressed", "true");
+  await expect(interestedButton).toContainText("✓");
 
   // Change vote to "Maybe" (⭐ emoji button)
   const maybeButton = proposalRow.getByRole("button", { name: "⭐" });
   await maybeButton.click();
 
   // Verify the maybe button is now active and interested is not
-  await expect(maybeButton).toHaveClass(/bg-blue-200/);
-  await expect(interestedButton).not.toHaveClass(/bg-blue-200/);
+  await expect(maybeButton).toHaveAttribute("aria-pressed", "true");
+  await expect(maybeButton).toContainText("✓");
+  await expect(interestedButton).toHaveAttribute("aria-pressed", "false");
+  await expect(interestedButton).not.toContainText("✓");
 
   // Change vote to "Skip" (👋🏽 emoji button)
   const skipButton = proposalRow.getByRole("button", { name: "👋🏽" });
   await skipButton.click();
 
   // Verify the skip button is now active and others are not
-  await expect(skipButton).toHaveClass(/bg-blue-200/);
-  await expect(maybeButton).not.toHaveClass(/bg-blue-200/);
-  await expect(interestedButton).not.toHaveClass(/bg-blue-200/);
+  await expect(skipButton).toHaveAttribute("aria-pressed", "true");
+  await expect(maybeButton).toHaveAttribute("aria-pressed", "false");
+  await expect(interestedButton).toHaveAttribute("aria-pressed", "false");
 });
 
 test("should navigate to quick voting and allow voting on proposals", async ({
@@ -139,8 +143,9 @@ test("votes from two users persist independently across reloads", async ({
   // The vote persists across a reload
   await page.reload();
   await expect(row).toBeVisible();
-  await expect(row.getByRole("button", { name: "❤️" })).toHaveClass(
-    /bg-blue-200/
+  await expect(row.getByRole("button", { name: "❤️" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
   );
 
   // A second user votes on the same proposal with a different choice.
@@ -148,8 +153,9 @@ test("votes from two users persist independently across reloads", async ({
   // combined count is asserted per-user here; tally aggregation is covered
   // by tests/integration/voting.test.ts.)
   await selectUser(page, /Charlie Test/i);
-  await expect(row.getByRole("button", { name: "❤️" })).not.toHaveClass(
-    /bg-blue-200/
+  await expect(row.getByRole("button", { name: "❤️" })).toHaveAttribute(
+    "aria-pressed",
+    "false"
   );
   await Promise.all([
     page.waitForResponse(
@@ -161,15 +167,18 @@ test("votes from two users persist independently across reloads", async ({
   // Each user still sees their own vote after a reload
   await page.reload();
   await expect(row).toBeVisible();
-  await expect(row.getByRole("button", { name: "⭐" })).toHaveClass(
-    /bg-blue-200/
+  await expect(row.getByRole("button", { name: "⭐" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
   );
   await selectUser(page, /Alice Test/i);
-  await expect(row.getByRole("button", { name: "❤️" })).toHaveClass(
-    /bg-blue-200/
+  await expect(row.getByRole("button", { name: "❤️" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
   );
-  await expect(row.getByRole("button", { name: "⭐" })).not.toHaveClass(
-    /bg-blue-200/
+  await expect(row.getByRole("button", { name: "⭐" })).toHaveAttribute(
+    "aria-pressed",
+    "false"
   );
 });
 
