@@ -164,8 +164,10 @@ const VOTE_OPTIONS = [
 // The chosen vote must stay recognisable without perceiving hue: a light tint
 // against white collapsed into "no visible difference" under the Dark Reader
 // extension and for colourblind attendees (issue #802). Hence three redundant
-// cues — aria-pressed, a dark fill that keeps its luminance gap under any
-// recolouring, and a check mark — rather than a background colour alone.
+// cues — aria-pressed, a solid `vote-chosen` fill that keeps its luminance gap
+// from the page under any recolouring, and a check mark — rather than a
+// background colour alone. Why that fill is a hue rather than a neutral is at
+// the token in `globals.css`.
 function VoteButton({
   emoji,
   label,
@@ -194,7 +196,7 @@ function VoteButton({
           : "px-1 py-1",
         !votingEnabled && "opacity-50 cursor-not-allowed grayscale",
         selected
-          ? "bg-surface-inverse border-line-strong text-fg-inverse ring-2 ring-line-strong"
+          ? "bg-vote-chosen border-line-strong text-on-vote-chosen ring-2 ring-line-strong"
           : "bg-surface-raised border-line-strong text-fg-muted",
         !selected && votingEnabled && "hover:bg-surface-muted"
       )}
@@ -204,7 +206,7 @@ function VoteButton({
       {selected && (
         <span
           aria-hidden="true"
-          className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-surface-raised bg-surface-inverse text-[9px] leading-none text-fg-inverse"
+          className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-surface-raised bg-bar text-[9px] leading-none text-bar-fg"
         >
           ✓
         </span>

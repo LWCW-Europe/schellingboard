@@ -8,8 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **The vote you picked is now unmistakable**: a chosen vote button was marked only by a pale blue tint, which was nearly invisible to attendees using a dark-mode browser extension and to anyone who has trouble telling colours apart — so it was impossible to see whether you had voted at all, let alone which of the three you had chosen. The chosen button is now filled in solid blue with a check mark on it, and screen readers announce it as selected. Blue rather than the site's usual red: the buttons are labelled with emoji, and a red heart on a red button was hard to make out
 - **Room colours on the schedule are readable**: a session's block was filled with its room's colour at full strength and lettered in white, which on a yellow, lime or amber room left the title all but invisible. A block is now a light wash of the room's colour with a strong border in that colour, lettered in the ordinary text colour — the room is still recognisable at a glance, and all 22 room colours read equally well. The room name shown beside a session in the list view is derived the same way
-- **The vote you picked is now unmistakable**: a chosen vote button was marked only by a pale blue tint, which was nearly invisible to attendees using a dark-mode browser extension and to anyone who has trouble telling colours apart — so it was impossible to see whether you had voted at all, let alone which of the three you had chosen. The chosen button is now filled in dark with a check mark on it, and screen readers announce it as selected
 
 ### Added
 

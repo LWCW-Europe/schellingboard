@@ -91,6 +91,18 @@
   --info-hover: #1e3a8a;
   --on-info: #ffffff;
 
+  /*
+   * The vote you picked. A hue rather than a neutral because neither neutral
+   * works: `surface-inverse` flips to near-white in dark mode and swallows the
+   * emoji labelling those buttons (colour glyphs, so their own colours never
+   * follow the theme), and an always-dark fill like `bar` sits 1.06:1 from the
+   * near-black dark page. Not `brand` either — a red heart on rose was the
+   * clash; blue is the one hue far enough from all three (❤️ ⭐ 👋🏽). It holds
+   * `info`'s value today, but the two are free to part.
+   */
+  --vote-chosen: #1d4ed8;
+  --on-vote-chosen: #ffffff;
+
   --overlay: #00000080;
 
   /*
@@ -155,6 +167,9 @@
     --link-hover: #bfdbfe;
     --info: #2563eb;
     --info-hover: #3b82f6;
+
+    /* Lighter here so it separates from a near-black page, not from white. */
+    --vote-chosen: #2563eb;
 
     --overlay: #000000b3;
 
@@ -221,6 +236,9 @@
   --color-info: var(--info);
   --color-info-hover: var(--info-hover);
   --color-on-info: var(--on-info);
+
+  --color-vote-chosen: var(--vote-chosen);
+  --color-on-vote-chosen: var(--on-vote-chosen);
 
   --color-overlay: var(--overlay);
 

@@ -44,6 +44,7 @@ const TEXT_PAIRS: [fg: string, bg: string, min: number][] = [
   ["--on-danger", "--danger", 4.5],
   ["--on-danger", "--danger-hover", 4.5],
   ["--on-info", "--info", 4.5],
+  ["--on-vote-chosen", "--vote-chosen", 4.5],
   ["--fg-inverse", "--surface-inverse-hover", 4.5],
   ["--brand-fg", "--surface", 4.5],
   ["--brand-fg", "--surface-raised", 4.5],
@@ -86,6 +87,11 @@ const NON_TEXT_PAIRS: [fg: string, bg: string, min: number][] = [
   ["--brand-accent", "--surface-sunken", 3],
   ["--danger", "--surface", 3],
   ["--danger", "--surface-raised", 3],
+  // A filled vote button has to be told apart from the page it sits on, which
+  // is the one thing a neutral dark fill failed at in dark mode: `bar` sat
+  // 1.06:1 from a near-black page.
+  ["--vote-chosen", "--surface", 3],
+  ["--vote-chosen", "--surface-raised", 3],
 ];
 
 const THEMES = readThemes(readFileSync(GLOBALS_CSS_PATH, "utf8"));
@@ -137,10 +143,32 @@ const HUES = [
   "pink",
   "rose",
 ];
+// The utilities that take a colour, optionally with the side or axis some of
+// them accept (`border-t-`, `divide-x-`). Anchoring on them is what keeps prose
+// out: a comment describing a token as "near-white" is not a class name.
+const COLOR_UTILITIES = [
+  "bg",
+  "text",
+  "border",
+  "divide",
+  "outline",
+  "ring",
+  "ring-offset",
+  "shadow",
+  "accent",
+  "caret",
+  "decoration",
+  "placeholder",
+  "fill",
+  "stroke",
+  "from",
+  "via",
+  "to",
+];
 // `\b` only guards the bare names; after the `]` of an arbitrary value there is
 // no word boundary to find.
 const LITERAL_COLOR = new RegExp(
-  `[\\w-]+-(?:\\[#[0-9a-fA-F]{3,8}\\]|(?:(?:${HUES.join("|")})-\\d{2,3}|white|black)\\b)`,
+  `\\b(?:${COLOR_UTILITIES.join("|")})(?:-[trblxyse])?-(?:\\[#[0-9a-fA-F]{3,8}\\]|(?:(?:${HUES.join("|")})-\\d{2,3}|white|black)\\b)`,
   "g"
 );
 
@@ -152,6 +180,15 @@ describe("components", () => {
       else if (/\.tsx?$/.test(entry.name)) yield full;
     }
   };
+
+  it("tell a class name from prose", () => {
+    expect(
+      "bg-gray-100 dark:text-white border-t-[#abcdef]".match(LITERAL_COLOR)
+    ).toEqual(["bg-gray-100", "text-white", "border-t-[#abcdef]"]);
+    expect("a fill that is near-white in dark mode".match(LITERAL_COLOR)).toBe(
+      null
+    );
+  });
 
   it("name a token rather than a literal colour", () => {
     const root = path.join(__dirname, "../../app");
