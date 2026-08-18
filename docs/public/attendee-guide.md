@@ -34,10 +34,12 @@ please only pick your own. If you'd rather it _were_ a login, see
 
 ## Propose a session
 
-You can browse, search, and sort existing proposals at any time. During the
-**proposal** phase, click "Add Proposal" to suggest a session: title,
-description, and optionally co-hosts. You can edit your own proposals until
-scheduling starts. Proposing is not a commitment — a proposal only becomes a
+You can browse, search, and sort existing proposals at any time. Search covers
+titles, hosts and the full description — a tool or prerequisite mentioned deep
+in a proposal is enough to find it — and while you are searching, results stay
+ordered by how well they match. During the **proposal** phase, click "Add
+Proposal" to suggest a session: title, description, and optionally co-hosts.
+You can edit your own proposals until scheduling starts. Proposing is not a commitment — a proposal only becomes a
 real session once someone puts it on the schedule.
 
 A proposal doesn't need a host. Leaving the host field empty is a way of

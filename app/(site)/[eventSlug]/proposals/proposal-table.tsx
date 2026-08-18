@@ -153,6 +153,14 @@ export function ProposalTable({
                 weight: 0.15,
               },
             ],
+            // Fuse scores a match by how near the start of the field it is
+            // and stops counting after ~100 characters, which hides most of
+            // a description. Matching anywhere costs precision, so the
+            // threshold comes down with it: at the default 0.6 a query
+            // matched half the list, at 0.3 it matches a handful and still
+            // forgives a typo.
+            ignoreLocation: true,
+            threshold: 0.3,
           })
         : null,
     [isSearching, filteredProposals]

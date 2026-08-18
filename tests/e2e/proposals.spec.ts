@@ -241,7 +241,7 @@ test("should open proposal detail page when clicking on a proposal", async ({
   ).toBeVisible();
 });
 
-test("filters the proposal list by search, matching and showing descriptions as plain text", async ({
+test("filters the proposal list by search, matching whole descriptions as plain text", async ({
   page,
 }) => {
   await loginAndGoto(page, "/Conference-Alpha/proposals");
@@ -269,6 +269,15 @@ test("filters the proposal list by search, matching and showing descriptions as 
   // The same phrase read straight off the screen: the search has to look at
   // the stripped text, or the "**" around the bold phrase defeats it.
   await search.fill("Bring your laptop");
+
+  await expect(kubernetes).toBeVisible();
+  await expect(designSystems).toHaveCount(0);
+
+  // "A free container registry account" is the last line of that description,
+  // far past the point where Fuse's default scoring stops counting a match —
+  // and reaching that deep must not turn the search into a sieve that lets
+  // every proposal through.
+  await search.fill("container registry");
 
   await expect(kubernetes).toBeVisible();
   await expect(designSystems).toHaveCount(0);
