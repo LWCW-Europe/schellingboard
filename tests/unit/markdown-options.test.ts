@@ -154,19 +154,63 @@ describe("markdown toolbar options", () => {
   });
 
   describe("Insert link", () => {
-    it("turns the selection into the link target", () => {
+    it("turns a selected address into the link target", () => {
+      const edit = apply("Insert link", "https://www.example.com", 0, 23);
+      expect(edit.value).toBe("[](https://www.example.com)");
+    });
+
+    it("recognises an address whatever the case of its scheme", () => {
+      const edit = apply("Insert link", "HTTP://EXAMPLE.COM", 0, 18);
+      expect(edit.value).toBe("[](HTTP://EXAMPLE.COM)");
+    });
+
+    it("turns any other selection into the link label", () => {
       const edit = apply("Insert link", "example.com", 0, 11);
-      expect(edit.value).toBe("[](example.com)");
+      expect(edit.value).toBe("[example.com](url)");
     });
 
-    it("puts the caret in the target of an empty link", () => {
+    // The placeholder is both the hint that an address goes there and what the
+    // address is typed over, so it has to arrive selected.
+    it("selects the placeholder target of an empty link", () => {
       const edit = apply("Insert link", "", 0);
-      expect(edit.value).toBe("[]()");
-      expect([edit.selectionStart, edit.selectionEnd]).toEqual([3, 3]);
+      expect(edit.value).toBe("[](url)");
+      expect([edit.selectionStart, edit.selectionEnd]).toEqual([3, 6]);
     });
 
-    // FIXME Known issue: only "[](target)" round-trips, a labelled link is
-    // wrapped again instead of being unwrapped.
+    it("unwraps a link whose target isn't an address", () => {
+      expect(apply("Insert link", "[](example.com)", 3, 14).value).toBe(
+        "example.com"
+      );
+    });
+
+    it("unwraps a link that is selected whole", () => {
+      expect(apply("Insert link", "[](https://a)", 0, 13).value).toBe(
+        "https://a"
+      );
+    });
+
+    // Whatever a press does, the press after it has to be able to take back —
+    // leaving "a](https://a)" behind is worse than doing nothing.
+    it("takes back the link it wrapped around a labelled link", () => {
+      const first = apply("Insert link", "[a](https://a)", 0, 14);
+      const second = apply(
+        "Insert link",
+        first.value,
+        first.selectionStart,
+        first.selectionEnd
+      );
+      expect(second.value).toBe("[a](https://a)");
+    });
+
+    it("unwraps a labelled link that still has its placeholder target", () => {
+      expect(apply("Insert link", "[example.com](url)", 1, 12).value).toBe(
+        "example.com"
+      );
+    });
+
+    // FIXME Known issue: a labelled link only round-trips while its target is
+    // still the "url" placeholder — once it is filled in, the link is wrapped
+    // again instead of being unwrapped.
     it.fails("unwraps a link that has a label", () => {
       expect(apply("Insert link", "[a](example.com)", 0, 16).value).toBe("a");
     });

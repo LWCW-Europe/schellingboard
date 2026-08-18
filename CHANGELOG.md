@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **The link button now guesses which half of the link you selected**: selecting a word in a description and pressing the link button (or Ctrl+K) used to put that word where the web address belongs, leaving `[](my blog)` — something no one wants. It now becomes the visible text of the link, `[my blog](url)`, with `url` left for you to replace by the address. Selecting a web address still does what it always did and puts it where the address belongs, and with nothing selected the `url` arrives ready to type over
 - **The vote you picked is now unmistakable**: a chosen vote button was marked only by a pale blue tint, which was nearly invisible to attendees using a dark-mode browser extension and to anyone who has trouble telling colours apart — so it was impossible to see whether you had voted at all, let alone which of the three you had chosen. The chosen button is now filled in dark with a check mark on it, and screen readers announce it as selected
 
 ### Added
