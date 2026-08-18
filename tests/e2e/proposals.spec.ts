@@ -240,3 +240,57 @@ test("should open proposal detail page when clicking on a proposal", async ({
     page.getByRole("row", { name: new RegExp(proposalTitle) })
   ).toBeVisible();
 });
+
+test("filters the proposal list by search and renders descriptions as plain text", async ({
+  page,
+}) => {
+  await loginAndGoto(page, "/Conference-Alpha/proposals");
+
+  const kubernetes = page.getByRole("row", {
+    name: /Hands-on Docker and Kubernetes/,
+  });
+  const designSystems = page.getByRole("row", { name: /Design Systems/ });
+
+  await expect(kubernetes).toBeVisible();
+  await expect(designSystems).toBeVisible();
+
+  // The description column shows markdown reduced to plain text, so the raw
+  // "**Bring your laptop**" of the seeded proposal must never reach the DOM.
+  await expect(kubernetes).toContainText("Bring your laptop");
+  await expect(kubernetes).not.toContainText("**");
+
+  const search = page.getByPlaceholder("Search proposals");
+  await search.fill("Kubernetes");
+
+  await expect(kubernetes).toBeVisible();
+  await expect(designSystems).toHaveCount(0);
+  await expect(kubernetes).toContainText("Bring your laptop");
+
+  await search.fill("");
+  await expect(designSystems).toBeVisible();
+});
+
+test("sorts proposals by title in both directions", async ({ page }) => {
+  await loginAndGoto(page, "/Conference-Alpha/proposals");
+
+  // Rows with data cells only: the header row's cells are columnheaders.
+  const rows = page
+    .getByRole("table")
+    .getByRole("row")
+    .filter({ has: page.getByRole("cell") });
+  const titles = async () =>
+    Promise.all(
+      (await rows.all()).map((row) => row.getByRole("cell").first().innerText())
+    );
+
+  const titleHeader = page.getByRole("columnheader", { name: /Title/ });
+
+  await titleHeader.click();
+  const ascending = await titles();
+  expect(ascending.length).toBeGreaterThan(1);
+  expect(ascending).toEqual([...ascending].sort((a, b) => a.localeCompare(b)));
+
+  await titleHeader.click();
+  const descending = await titles();
+  expect(descending).toEqual([...ascending].reverse());
+});

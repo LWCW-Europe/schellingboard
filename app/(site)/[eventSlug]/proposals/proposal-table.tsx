@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useContext } from "react";
+import { useState, useContext, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Fuse from "fuse.js";
@@ -52,10 +52,19 @@ export function ProposalTable({
   event: Event;
 }) {
   const { now } = useContext(EventContext);
-  const initialProposals = paramProposals.map((proposal) => {
-    const hostNames = proposal.hosts.map((h) => h.name);
-    return { ...proposal, hostNames };
-  });
+  // Both the desktop table and the mobile cards are mounted at once (CSS
+  // decides which is visible), so anything derived per row is paid twice per
+  // render. stripMarkdown runs a full remark parse and dominates that cost on
+  // large lists, hence deriving it here once per proposal instead of per row.
+  const initialProposals = useMemo(
+    () =>
+      paramProposals.map((proposal) => ({
+        ...proposal,
+        hostNames: proposal.hosts.map((h) => h.name),
+        plainDescription: stripMarkdown(proposal.description),
+      })),
+    [paramProposals]
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [resultFilter, setResultFilter] = useState<Filter>(undefined);
@@ -77,23 +86,27 @@ export function ProposalTable({
   // Derived: filter only applies when a user is selected. Hidden from data
   // and UI when logged out, without discarding the selection.
   const effectiveFilter: Filter = currentUserId ? resultFilter : undefined;
-  const filteredProposals = initialProposals.filter((pr) => {
-    if (effectiveFilter) {
-      const isMine = pr.hosts.some((h) => h.id === currentUserId);
-      const hasVoted = votes.some((vote) => vote.proposalId === pr.id);
-      let actual: Filter;
-      if (isMine) {
-        actual = "mine";
-      } else if (hasVoted) {
-        actual = "voted";
-      } else {
-        actual = "unvoted";
-      }
-      return effectiveFilter === actual;
-    } else {
-      return true;
-    }
-  });
+  const filteredProposals = useMemo(
+    () =>
+      initialProposals.filter((pr) => {
+        if (effectiveFilter) {
+          const isMine = pr.hosts.some((h) => h.id === currentUserId);
+          const hasVoted = votes.some((vote) => vote.proposalId === pr.id);
+          let actual: Filter;
+          if (isMine) {
+            actual = "mine";
+          } else if (hasVoted) {
+            actual = "voted";
+          } else {
+            actual = "unvoted";
+          }
+          return effectiveFilter === actual;
+        } else {
+          return true;
+        }
+      }),
+    [initialProposals, effectiveFilter, currentUserId, votes]
+  );
   const totalPages = Math.ceil(filteredProposals.length / ITEMS_PER_PAGE);
   const votingEnabled = !!currentUserId && inVotingPhase(event, now);
   const schedEnabled = inSchedPhase(event, now);
@@ -115,81 +128,96 @@ export function ProposalTable({
       oldFilter === newFilter ? undefined : newFilter
     );
   }
-  const fuse = new Fuse(filteredProposals, {
-    keys: [
-      {
-        name: "title",
-        weight: 0.6,
-      },
-      {
-        name: "hostNames",
-        weight: 0.25,
-      },
-      {
-        name: "description",
-        weight: 0.15,
-      },
-    ],
-  });
-  const searchResults = searchQuery.trim()
-    ? fuse.search(searchQuery).map((res) => res.item)
-    : filteredProposals;
-  searchResults.sort((a, b) => {
-    if (searchQuery.trim()) {
-      return 0;
+  const isSearching = searchQuery.trim() !== "";
+  // Indexing every proposal costs more than a search does, so the index is
+  // built only once a search is under way — the boolean, not the query,
+  // is the dependency, so typing reuses it. Voting rebuilds it, since
+  // filteredProposals is derived from the votes.
+  const fuse = useMemo(
+    () =>
+      isSearching
+        ? new Fuse(filteredProposals, {
+            keys: [
+              {
+                name: "title",
+                weight: 0.6,
+              },
+              {
+                name: "hostNames",
+                weight: 0.25,
+              },
+              {
+                name: "description",
+                weight: 0.15,
+              },
+            ],
+          })
+        : null,
+    [isSearching, filteredProposals]
+  );
+  const searchResults = useMemo(() => {
+    // A search is ordered by relevance; an explicit sort would throw that away.
+    if (fuse) {
+      return fuse.search(searchQuery).map((res) => res.item);
     }
-    const { key, direction } = sortConfig;
+    // Copy: filteredProposals is memoized, so sorting it in place would leave
+    // the cached value reordered for every later reader.
+    const sorted = [...filteredProposals];
+    sorted.sort((a, b) => {
+      const { key, direction } = sortConfig;
 
-    let cmp = 0;
-    if (key === "title") {
-      cmp = a[key].localeCompare(b[key]);
-    } else if (key === "hosts") {
-      if (a[key].length === 0 && b[key].length === 0) {
-        cmp = 0;
-      } else if (a[key].length === 0) {
-        cmp = -1;
-      } else if (b[key].length === 0) {
-        cmp = 1;
-      } else {
-        const hostNamesStr = (hosts: SessionProposal["hosts"]) =>
-          hosts
-            .map((h) => h.name)
-            .sort((x, y) => x.localeCompare(y))
-            .join("");
-        cmp = hostNamesStr(a.hosts).localeCompare(hostNamesStr(b.hosts));
-      }
-    } else if (key === "durationMinutes") {
-      cmp = (a[key] || 0) - (b[key] || 0);
-    } else if (key === "createdTime") {
-      cmp = a[key].getTime() - b[key].getTime();
-    } else if (key === "votesCount") {
-      cmp = (a[key] || 0) - (b[key] || 0);
-    } else if (key === "userVote") {
-      const getVoteOrder = (proposalId: string) => {
-        if (!currentUserId) return 3;
-        const userVote = votes.find(
-          (v) => v.proposalId === proposalId && v.guestId === currentUserId
-        );
-        if (!userVote) return 3; // no vote
-        switch (userVote.choice) {
-          case VoteChoice.interested:
-            return 0;
-          case VoteChoice.maybe:
-            return 1;
-          case VoteChoice.skip:
-            return 2;
-          default:
-            return 3; // no vote
+      let cmp = 0;
+      if (key === "title") {
+        cmp = a[key].localeCompare(b[key]);
+      } else if (key === "hosts") {
+        if (a[key].length === 0 && b[key].length === 0) {
+          cmp = 0;
+        } else if (a[key].length === 0) {
+          cmp = -1;
+        } else if (b[key].length === 0) {
+          cmp = 1;
+        } else {
+          const hostNamesStr = (hosts: SessionProposal["hosts"]) =>
+            hosts
+              .map((h) => h.name)
+              .sort((x, y) => x.localeCompare(y))
+              .join("");
+          cmp = hostNamesStr(a.hosts).localeCompare(hostNamesStr(b.hosts));
         }
-      };
-      cmp = getVoteOrder(a.id) - getVoteOrder(b.id);
-    } else if (key === "votes") {
-      const voteNum = (p: SessionProposal) =>
-        p.interestedVotesCount * 4 + p.maybeVotesCount;
-      cmp = voteNum(a) - voteNum(b);
-    }
-    return direction === "asc" ? cmp : -cmp;
-  });
+      } else if (key === "durationMinutes") {
+        cmp = (a[key] || 0) - (b[key] || 0);
+      } else if (key === "createdTime") {
+        cmp = a[key].getTime() - b[key].getTime();
+      } else if (key === "votesCount") {
+        cmp = (a[key] || 0) - (b[key] || 0);
+      } else if (key === "userVote") {
+        const getVoteOrder = (proposalId: string) => {
+          if (!currentUserId) return 3;
+          const userVote = votes.find(
+            (v) => v.proposalId === proposalId && v.guestId === currentUserId
+          );
+          if (!userVote) return 3; // no vote
+          switch (userVote.choice) {
+            case VoteChoice.interested:
+              return 0;
+            case VoteChoice.maybe:
+              return 1;
+            case VoteChoice.skip:
+              return 2;
+            default:
+              return 3; // no vote
+          }
+        };
+        cmp = getVoteOrder(a.id) - getVoteOrder(b.id);
+      } else if (key === "votes") {
+        const voteNum = (p: SessionProposal) =>
+          p.interestedVotesCount * 4 + p.maybeVotesCount;
+        cmp = voteNum(a) - voteNum(b);
+      }
+      return direction === "asc" ? cmp : -cmp;
+    });
+    return sorted;
+  }, [fuse, searchQuery, filteredProposals, sortConfig, currentUserId, votes]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -410,10 +438,10 @@ export function ProposalTable({
                 onClick={() => handleSort("title")}
                 scope="col"
                 className={`${schedEnabled ? "w-[18%]" : "w-[20%]"} text-left px-4 lg:px-6 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                  ${sortConfig.key === "title" && !searchQuery.trim() ? "text-fg font-semibold" : "text-fg-subtle"}`}
+                  ${sortConfig.key === "title" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
               >
                 Title
-                {!searchQuery.trim() &&
+                {!isSearching &&
                   (sortConfig.key === "title"
                     ? sortConfig.direction === "asc"
                       ? " ↓"
@@ -424,10 +452,10 @@ export function ProposalTable({
                 onClick={() => handleSort("hosts")}
                 scope="col"
                 className={`w-[15%] px-4 lg:px-6 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                  ${sortConfig.key === "hosts" && !searchQuery.trim() ? "text-fg font-semibold" : "text-fg-subtle"}`}
+                  ${sortConfig.key === "hosts" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
               >
                 Host(s)
-                {!searchQuery.trim() &&
+                {!isSearching &&
                   (sortConfig.key === "hosts"
                     ? sortConfig.direction === "asc"
                       ? " ↓"
@@ -444,10 +472,10 @@ export function ProposalTable({
                 onClick={() => handleSort("durationMinutes")}
                 scope="col"
                 className={`w-[10%] px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                  ${sortConfig.key === "durationMinutes" && !searchQuery.trim() ? "text-fg font-semibold" : "text-fg-subtle"}`}
+                  ${sortConfig.key === "durationMinutes" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
               >
                 Duration
-                {!searchQuery.trim() &&
+                {!isSearching &&
                   (sortConfig.key === "durationMinutes"
                     ? sortConfig.direction === "asc"
                       ? " ↓"
@@ -458,10 +486,10 @@ export function ProposalTable({
                 onClick={() => handleSort("userVote")}
                 scope="col"
                 className={`${schedEnabled ? "w-[7%]" : "w-[10%]"} px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                  ${sortConfig.key === "userVote" && !searchQuery.trim() ? "text-fg font-semibold" : "text-fg-subtle"}`}
+                  ${sortConfig.key === "userVote" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
               >
                 Your vote
-                {!searchQuery.trim() &&
+                {!isSearching &&
                   (sortConfig.key === "userVote"
                     ? sortConfig.direction === "asc"
                       ? " ↓"
@@ -473,10 +501,10 @@ export function ProposalTable({
                   onClick={() => handleSort("votes")}
                   scope="col"
                   className={`w-[10%] px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                    ${sortConfig.key === "votes" && !searchQuery.trim() ? "text-fg font-semibold" : "text-fg-subtle"}`}
+                    ${sortConfig.key === "votes" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
                 >
                   Votes
-                  {!searchQuery.trim() &&
+                  {!isSearching &&
                     (sortConfig.key === "votes"
                       ? sortConfig.direction === "asc"
                         ? " ↓"
@@ -494,7 +522,6 @@ export function ProposalTable({
           </thead>
           <tbody className="bg-surface-raised divide-y divide-line-subtle">
             {currentPageProposals.map((proposal) => {
-              const plainDescription = stripMarkdown(proposal.description);
               return (
                 <tr key={proposal.id} className="hover:bg-surface-hover">
                   <td className="px-4 lg:px-6 py-4" title={proposal.title}>
@@ -526,9 +553,12 @@ export function ProposalTable({
                       )}
                     </div>
                   </td>
-                  <td className="px-4 lg:px-6 py-4" title={plainDescription}>
+                  <td
+                    className="px-4 lg:px-6 py-4"
+                    title={proposal.plainDescription}
+                  >
                     <div className="text-sm text-fg-subtle line-clamp-2 leading-tight">
-                      {plainDescription || "-"}
+                      {proposal.plainDescription || "-"}
                     </div>
                   </td>
                   <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
@@ -669,7 +699,6 @@ export function ProposalTable({
       {/* Mobile Card View */}
       <div className="block md:hidden space-y-4">
         {currentPageProposals.map((proposal) => {
-          const plainDescription = stripMarkdown(proposal.description);
           return (
             <div
               key={proposal.id}
@@ -694,9 +723,9 @@ export function ProposalTable({
                   </p>
                 </div>
 
-                {plainDescription ? (
+                {proposal.plainDescription ? (
                   <p className="text-sm text-fg-muted line-clamp-3">
-                    {plainDescription}
+                    {proposal.plainDescription}
                   </p>
                 ) : (
                   <p className="text-sm text-fg-subtle">-</p>
