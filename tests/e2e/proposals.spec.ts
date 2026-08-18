@@ -241,7 +241,7 @@ test("should open proposal detail page when clicking on a proposal", async ({
   ).toBeVisible();
 });
 
-test("filters the proposal list by search and renders descriptions as plain text", async ({
+test("filters the proposal list by search, matching and showing descriptions as plain text", async ({
   page,
 }) => {
   await loginAndGoto(page, "/Conference-Alpha/proposals");
@@ -265,6 +265,13 @@ test("filters the proposal list by search and renders descriptions as plain text
   await expect(kubernetes).toBeVisible();
   await expect(designSystems).toHaveCount(0);
   await expect(kubernetes).toContainText("Bring your laptop");
+
+  // The same phrase read straight off the screen: the search has to look at
+  // the stripped text, or the "**" around the bold phrase defeats it.
+  await search.fill("Bring your laptop");
+
+  await expect(kubernetes).toBeVisible();
+  await expect(designSystems).toHaveCount(0);
 
   await search.fill("");
   await expect(designSystems).toBeVisible();

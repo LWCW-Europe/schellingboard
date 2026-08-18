@@ -147,7 +147,9 @@ export function ProposalTable({
                 weight: 0.25,
               },
               {
-                name: "description",
+                // The stripped text, not the markdown source: a phrase the
+                // reader sees is otherwise cut in two by the "**" around it.
+                name: "plainDescription",
                 weight: 0.15,
               },
             ],
