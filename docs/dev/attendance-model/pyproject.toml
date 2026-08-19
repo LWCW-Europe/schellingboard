@@ -1,0 +1,10 @@
+[project]
+name = "schellingboard-attendance-analysis"
+version = "0.1.0"
+description = "Fit a formula predicting session attendance from Schelling Board voting results"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.14",
+    "pandas>=2.2",
+]

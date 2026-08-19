@@ -13,6 +13,7 @@ This file covers what you need day to day. Longer chapters live under
 | [Releasing a new version](docs/dev/releasing.md)                | tagging, the release checklist, publishing Docker images                   |
 | [GitHub issues](docs/dev/github-issues.md)                      | setting Issue Type and Priority via `gh api graphql`                       |
 | [ADRs](docs/dev/adr/)                                           | why the significant decisions were made                                    |
+| [Attendance model](docs/dev/attendance-model/)                  | predicting how many people show up to a session, from its voting results   |
 
 ## Technology Stack
 

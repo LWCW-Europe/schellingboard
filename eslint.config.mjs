@@ -25,6 +25,7 @@ export default tseslint.config(
       ".jj/**",
       "site/**",
       "coverage/**",
+      "docs/dev/attendance-model/.venv/**",
     ],
   },
   ...dropTsPlugin(coreWebVitals),

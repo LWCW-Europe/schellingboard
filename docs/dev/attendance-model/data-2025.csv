@@ -1,0 +1,14 @@
+session_id,attendees_min,attendees_max,attendees_mid,rsvps,votes_total,votes_interested,votes_maybe,votes_skip
+Session 1,40,60,50,52,107,57,26,24
+Session 2,12,12,12,18,104,43,26,35
+Session 3,35,35,35,35,105,40,19,46
+Session 4,30,40,35,45,103,36,30,37
+Session 5,15,15,15,13,102,28,20,54
+Session 6,15,20,17.5,12,101,27,31,43
+Session 7,10,10,10,13,103,27,29,47
+Session 8,5,8,6.5,7,103,24,29,50
+Session 9,18,18,18,12,102,22,15,65
+Session 10,15,15,15,16,104,19,34,51
+Session 11,25,25,25,8,102,16,35,51
+Session 12,20,20,20,15,101,12,13,76
+Session 13,6,6,6,8,99,9,17,73
