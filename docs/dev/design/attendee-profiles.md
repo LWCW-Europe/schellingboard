@@ -5,24 +5,37 @@ This document is meant to guide implementation and to be removed afterwards.
 Requirements for reworking the attendee list and profile view, covering
 [#703](https://github.com/LWCW-Europe/schellingboard/issues/703) (filter to
 non-empty profiles),
-[#712](https://github.com/LWCW-Europe/schellingboard/issues/712) (sort order)
-and [#764](https://github.com/LWCW-Europe/schellingboard/issues/764) (read
-profiles without clicking through each one).
-
-Only [§ Sorting (#712)](#sorting-712) is implemented, on today's list rather
-than the reworked one: the `profileUpdatedAt` column exists, the toolbar has
-the "Sort by" dropdown, and each row carries its relative update time. The
-rest is still a plan.
+[#712](https://github.com/LWCW-Europe/schellingboard/issues/712) (sort order),
+[#764](https://github.com/LWCW-Europe/schellingboard/issues/764) (read
+profiles without clicking through each one) and
+[#806](https://github.com/LWCW-Europe/schellingboard/issues/806) (see the photo
+big without clicking it).
 
 Assumed scale: 150–400 attendees per event, 30–60% with a filled-in profile,
 `aboutMe` typically one to three paragraphs.
+
+## Status
+
+Keep this list current — it is how the next agent knows where to pick up.
+
+| Slice                                                                          | Issue      | State                                                                                              |
+| ------------------------------------------------------------------------------ | ---------- | -------------------------------------------------------------------------------------------------- |
+| [Sorting](#sorting-712)                                                        | #712       | Done, on today's list: `profileUpdatedAt` column, "Sort by" dropdown, per-row relative update time |
+| [The photo](#the-photo-806)                                                    | #806       | Not started                                                                                        |
+| [The list](#the-list) (cards, excerpt, "Has profile")                          | #703, #764 | Not started                                                                                        |
+| [The profile as a modal](#the-profile) + [Prev/Next](#moving-between-profiles) | #772, #764 | Not started                                                                                        |
+| [Back links](#back-links)                                                      | —          | Not started                                                                                        |
+
+The slices are in dependency order but not in strict sequence: the photo lands
+on today's profile page and is carried over unchanged when that page becomes a
+modal.
 
 ## Core user flow
 
 The list serves two jobs, and **the read-through is the primary one**: before
 the event, someone wants an idea of who is coming. Lookup ("who was that person
 who does X") is served entirely by search and needs no further design. Today's
-list is built for lookup, which is why all three issues exist.
+list is built for lookup, which is why #703, #712 and #764 exist.
 
 ### The list
 
@@ -78,13 +91,59 @@ Modal chrome is a **sticky header bar**, one layout on desktop and mobile:
 Chosen over lightbox-style edge arrows because it needs no width fallback, and
 because `×` must stay permanently on screen — see "browser history" below.
 
-Body, in the existing order: avatar, name, pronouns, host badge, based in,
+Body, in the existing order: photo, name, pronouns, host badge, based in,
 About me, prompts, Languages, Contacts, then Hosting and Proposals. On mobile
 the modal is a **full-screen sheet**, not a centred dialog.
 
 Avatar zoom becomes an **in-place size swap**. It must not be a second modal
 layer: a modal inside a modal means two focus traps and an Escape key that has
 to disambiguate them.
+
+### The photo (#806)
+
+The 112px round avatar is too small for the job the photo actually does:
+recognising someone. #806 asks for the Names & Faces treatment — a big picture,
+visible without clicking. Its mockup is two columns: a large portrait on the
+left with the name under it, About me and prompts on the right.
+
+- **256px, and no click required.** On desktop the photo takes a left column
+  (`w-64`) with the name, pronouns, host badge and based-in stacked beneath it;
+  the text sections run alongside. On mobile it is centred above the name, at
+  the same 256px cap rather than full-bleed — a 375px-wide photo plus the name
+  pushes the first line of About me off a phone screen, which trades one of
+  #764's wins for #806's.
+- **Rounded square, not a circle.** Stored avatars are already a centred square
+  crop, and a circle discards ~21% of it; at 48px that is invisible, at 256px it
+  eats hair and shoulders. The list keeps round thumbnails: round reads as an
+  identity chip beside text, and the shape difference marks "thumbnail" against
+  "the picture itself".
+- **Zoom stays but is demoted.** At 256px most faces are already legible, so the
+  enlarged view is for looking closely rather than the only way to see the
+  person. It keeps earning its place: the stored image is up to 1024px.
+- **Rendition ladder becomes 64 / 256 / 512 CSS px** (card, profile, zoom).
+  Each is a separate `next/image` URL — see the avatar note under
+  [§ Implementation shape](#implementation-shape).
+
+The mockup's portrait aspect ratio is deliberately not adopted; see
+[§ Explicit non-goals](#explicit-non-goals).
+
+#### Answers to the questions in #806
+
+- **Round preview in the list?** Yes — 64px, round.
+- **Where is a rectangular picture centred?** It already is, at upload:
+  `AvatarImageResourceRepository.decodeImage` (`utils/images.ts:196`)
+  cover-crops to a centred square, so every stored avatar is square and the
+  list, the profile and the zoom all show the same crop. There is nothing left
+  to decide per view. What the centred crop cannot do is rescue an off-centre
+  face — that needs a crop/reposition control at upload time, which is an
+  upload problem, not a browsing one, and belongs in its own issue.
+- **Size and aspect-ratio limits?** Unchanged, and no new ones needed: any
+  aspect ratio is accepted, the square crop must be at least
+  `MIN_AVATAR_WIDTH` (256px) so a panorama with a short side under that is
+  rejected, the upload is capped at `MAX_IMAGE_BYTES` (5MB), and the result is
+  stored at up to `AVATAR_MAX_SIZE` (1024px) without ever being upscaled. 1024
+  is exactly a 512 CSS px zoom on a 2× screen, so it stays sufficient as long
+  as the zoom does not grow.
 
 ### Moving between profiles
 
@@ -189,14 +248,16 @@ These follow from the UX decisions and are easy to lose.
   `languages`, `prompts`, `basedIn`) all need more than that. The limit that
   stays is `sanitizeGuest`'s: `email` must still never cross. Rewrite those two
   comments in the same change, or they will contradict the code.
-- **Avatars**: three renditions (64px list, 112px modal, 512px zoom) are three
-  different `next/image` URLs, so the thumbnail never satisfies the modal from
+- **Avatars**: three renditions (64px list, 256px profile, 512px zoom) are three
+  different `next/image` URLs, so the thumbnail never satisfies the profile from
   cache. `Avatar` only has `sm` (48px) and `lg` (112px), so the card size is a
   new variant, not a class override — `renderedSize` has to match it or
-  `next/image` picks the wrong srcset entry. Scale the already-decoded
-  thumbnail up as a blurred placeholder so the
-  swap reads as sharpening, prefetch the ±1 neighbours' modal-size images along
-  with their data, and fetch the zoom rendition only on zoom.
+  `next/image` picks the wrong srcset entry. The profile photo is square rather
+  than round, so it is its own component, not a third `Avatar` size; the
+  initials fallback is the part worth sharing. Scale the already-decoded
+  thumbnail up as a blurred placeholder so the swap reads as sharpening,
+  prefetch the ±1 neighbours' profile-size images along with their data, and
+  fetch the zoom rendition only on zoom.
 - **E2E tests** must reach profiles by clicking cards, never by constructing
   `/guests/<id>` — see `AGENTS.md § Key Considerations`.
 
@@ -237,6 +298,15 @@ These follow from the UX decisions and are easy to lose.
 - **"New"/"Updated since your last visit" badges.** This is what #703's comment
   thread actually asked for, and the recency sort only approximates it. Judged
   not worth the cost (last-visit state, cleared storage, multiple devices).
+- **Keeping each photo's original aspect ratio** (#806's mockup shows a
+  portrait). Uploads have been cover-cropped to a square since avatars existed,
+  so stored files no longer have an original to restore; keeping the ratio would
+  only apply to future uploads, split the collection into two shapes, and give
+  the list ragged rows and the profile a photo box whose height depends on who
+  you are looking at. Uniform squares are what make "see all the faces" scan.
+- **A crop/reposition control at upload.** The centred square crop is wrong for
+  an off-centre face, and today the only workaround is to pre-crop the photo
+  elsewhere. Real, but an upload-flow problem; needs its own issue.
 - **Hover-to-enlarge on list avatars** (#764's suggestion) — superseded by the
   modal, which is one click away and works on mobile. No desktop-only affordance
   duplicating it.
@@ -250,3 +320,12 @@ These follow from the UX decisions and are easy to lose.
   currently attends every event, so nothing is wrong today. Both scoping the
   list and restricting profile visibility to your own event are future
   improvements with their own issues.
+
+## Open questions
+
+- **Square instead of the mockup's portrait** (#806). The reasoning is above,
+  but it is a visible deviation from what was asked for.
+- **256px on mobile rather than full-bleed.** Chosen so About me stays on the
+  first screen; worth checking on a real phone.
+- **Should the off-centre-crop problem get its own issue?** It is the one thing
+  the #806 comment thread raised that this design does not fix.
