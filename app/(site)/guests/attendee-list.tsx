@@ -9,27 +9,40 @@ import {
   AttendeeSort,
   DEFAULT_ATTENDEE_SORT,
 } from "@/utils/attendee-search";
+import {
+  ATTENDEE_FILTERS,
+  AttendeeFilter,
+  serializeAttendeeFilters,
+} from "@/utils/attendee-filters";
 
-// Rows are serialized into the page payload, so only the fields the row
+// Rows are serialized into the page payload, so only the fields the card
 // actually renders may cross the server/client boundary — never the full
 // profile (contacts, prompts, …).
 export type AttendeeRowData = Pick<
   Attendee,
   "id" | "name" | "avatarUrl" | "pronouns" | "basedIn" | "isHost"
 > & {
-  // Already rendered ("3 days ago"), not a date: see the note in page.tsx.
+  // Both already rendered, not raw data: see the note in page.tsx.
+  excerpt: string | null;
   profileUpdated: string | null;
 };
 
 function AttendeeRow({
-  attendee: { id, avatarUrl, name, pronouns, basedIn, isHost, profileUpdated },
+  attendee: {
+    id,
+    avatarUrl,
+    name,
+    pronouns,
+    basedIn,
+    isHost,
+    excerpt,
+    profileUpdated,
+  },
   listQueryString,
 }: {
   attendee: AttendeeRowData;
   listQueryString: string;
 }) {
-  // Fixed row shape (avatar, name, pronouns, based-in) so the list stays
-  // consistent regardless of which optional profile fields are filled in.
   const href = listQueryString
     ? // Carries the list's current page/search/filter so the profile page's
       // "Back to attendees" link can return to the same view instead of
@@ -45,9 +58,9 @@ function AttendeeRow({
   return (
     <Link
       href={href}
-      className="flex items-center gap-4 hover:bg-surface-sunken rounded-md px-2"
+      className="flex items-start gap-4 hover:bg-surface-sunken rounded-md px-2 py-1"
     >
-      <Avatar name={name} size="sm" image={avatarUrl ?? undefined} />
+      <Avatar name={name} size="md" image={avatarUrl ?? undefined} />
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         {/* Wraps rather than squeezing the name to fit the badge beside it. */}
         <span className="font-medium text-fg flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -68,6 +81,9 @@ function AttendeeRow({
             <span className="sm:hidden">{updated}</span>
           </span>
         )}
+        {excerpt && (
+          <span className="text-sm text-fg-muted line-clamp-2">{excerpt}</span>
+        )}
       </div>
       {updated && (
         <span className="hidden shrink-0 self-start sm:block">{updated}</span>
@@ -82,8 +98,8 @@ export function AttendeeList(props: {
   page: number;
   pageSize: number;
   searchQuery: string;
-  filter?: string;
-  filters: { value: string; label: string }[];
+  filters: AttendeeFilter[];
+  canEditProfile: boolean;
   sort: AttendeeSort;
 }) {
   const { searchParams, setParams } = useTableParams();
@@ -94,32 +110,34 @@ export function AttendeeList(props: {
   const sortDisabled = props.searchQuery !== "";
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2">
-      {props.filters.map((f) => (
-        <button
-          key={f.value}
-          type="button"
-          onClick={() => {
-            setParams({
-              filter: props.filter === f.value ? null : f.value,
-              page: null,
-            });
-          }}
-          className={`text-sm px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
-            props.filter === f.value
-              ? "bg-info text-on-info hover:bg-info-hover"
-              : "bg-surface-muted text-fg-muted hover:bg-surface-hover"
-          }`}
-          aria-pressed={props.filter === f.value}
-          aria-label={`Filter by ${f.label}${props.filter === f.value ? " (active)" : ""}`}
-        >
-          {f.label}
-          {props.filter === f.value && (
-            <span className="bg-info-hover text-on-info text-xs px-1.5 py-0.5 rounded-full">
-              {props.total}
-            </span>
-          )}
-        </button>
-      ))}
+      {ATTENDEE_FILTERS.map((f) => {
+        const active = props.filters.includes(f.value);
+        return (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => {
+              setParams({
+                filter: serializeAttendeeFilters(
+                  active
+                    ? props.filters.filter((v) => v !== f.value)
+                    : [...props.filters, f.value]
+                ),
+                page: null,
+              });
+            }}
+            className={`text-sm px-3 py-2 rounded-md transition-colors ${
+              active
+                ? "bg-info text-on-info hover:bg-info-hover"
+                : "bg-surface-muted text-fg-muted hover:bg-surface-hover"
+            }`}
+            aria-pressed={active}
+            aria-label={`Filter by ${f.label}${active ? " (active)" : ""}`}
+          >
+            {f.label}
+          </button>
+        );
+      })}
       <label
         className="flex items-center gap-2 text-sm text-fg-muted"
         // On the label, not the select: browsers suppress pointer events on a
@@ -152,8 +170,40 @@ export function AttendeeList(props: {
           ))}
         </select>
       </label>
+      {/* With everyone on one page there is no pager to say how many there
+          are, and a filter that quietly removes people needs a number. */}
+      {props.total > 0 && (
+        <span className="text-sm text-fg-subtle">
+          {props.total} attendee{props.total === 1 ? "" : "s"}
+        </span>
+      )}
     </div>
   );
+  // Nobody at all with a profile is a state the reader can fix, so it asks
+  // rather than just reporting. A search or a second filter on top is the
+  // likelier reason for an empty list — "no host has" is not "nobody has" —
+  // and then the plain message is the honest one.
+  const onlyHasProfile =
+    props.filters.length === 1 && props.filters[0] === "hasProfile";
+  const emptyMessage =
+    onlyHasProfile && props.searchQuery === "" ? (
+      <>
+        Nobody has filled in a profile yet.
+        {props.canEditProfile && (
+          <>
+            {" "}
+            <Link
+              href="/guests/edit"
+              className="font-semibold text-brand-fg hover:text-brand-fg-hover"
+            >
+              Be the first!
+            </Link>
+          </>
+        )}
+      </>
+    ) : (
+      "No attendees match."
+    );
   return (
     <div className="pb-8">
       <DataTable
@@ -165,7 +215,8 @@ export function AttendeeList(props: {
         pageSize={props.pageSize}
         searchQuery={props.searchQuery}
         searchPlaceholder="Search names, languages, interests…"
-        emptyMessage="No attendees match."
+        emptyMessage={emptyMessage}
+        paginationFooter="when-paginated"
         listItem={(u) => (
           <AttendeeRow attendee={u} listQueryString={listQueryString} />
         )}

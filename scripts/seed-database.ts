@@ -293,9 +293,12 @@ const guestConfigs: GuestConfig[] = [
     ],
   },
   {
+    // No bio, but an answered prompt: the one profile shape where the
+    // directory card falls back to the prompt for its excerpt.
     name: "Yuki Tanaka",
     email: "yuki.tanaka@example.com",
     pronouns: "He/Him",
+    prompts: [{ prompt: "Ask me about", answer: "Retro handheld consoles" }],
   },
   { name: "Amara Okafor", email: "amara.okafor@example.com" },
   {

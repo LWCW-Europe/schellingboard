@@ -178,11 +178,16 @@ test.describe("Edit profile", () => {
     // Raw HTML is escaped and displayed as literal text, not executed.
     await expect(page.getByText("<script>alert(1)</script>")).toBeVisible();
 
-    // The attendees list no longer previews the bio: rows keep a fixed shape.
+    // The attendees list previews the bio as plain text: the markdown is
+    // flattened rather than rendered, so no link comes along with it.
     await page.getByRole("link", { name: "Attendees", exact: true }).click();
     await expect(page).toHaveURL(/\/guests$/);
-    await expect(page.getByRole("link", { name: /Alice Test/ })).toBeVisible();
-    await expect(page.getByText("Big header Bold statement")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Alice Test/ })).toContainText(
+      "Big header Bold statement and my site"
+    );
+    await expect(
+      page.getByRole("link", { name: "my site", exact: true })
+    ).toHaveCount(0);
   });
 
   test("edits the extended profile fields and finds them in the directory", async ({
@@ -439,21 +444,58 @@ test("shows an error on the edit page when no user is selected", async ({
   ).toHaveCount(0);
 });
 
-test("Back to attendees preserves pagination", async ({ page }) => {
+test("lists every attendee on one page, with their bios", async ({ page }) => {
   await login(page);
   await page.goto("/guests");
 
-  await page.getByRole("button", { name: "Next page" }).click();
-  await expect(page.getByText("Page 2 of 2")).toBeVisible();
-
-  // Seed data is 40 guests sorted alphabetically; "Mateo Quispe" is 26th,
-  // i.e. the first row of page 2.
-  await page.getByRole("link", { name: "Mateo Quispe" }).click();
-  await expect(page).toHaveURL(/\/guests\/[^/]+/);
-
-  await page.getByRole("link", { name: "Back to attendees" }).click();
-  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  // Seed data is 40 guests sorted alphabetically; "Mateo Quispe" is 26th, so
+  // he used to sit on page 2.
   await expect(page.getByRole("link", { name: "Mateo Quispe" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Next page" })).toHaveCount(0);
+
+  // The bio is readable without opening the profile. Not Alice's: she is the
+  // identity the editing tests act as, so her bio is whatever ran last.
+  await expect(page.getByRole("link", { name: "Ahmad Karimi" })).toContainText(
+    "Software engineer from Tehran, now in Amsterdam."
+  );
+
+  // Yuki has no bio, so his card falls back to an answered prompt rather than
+  // looking as empty as a profile nobody has touched.
+  await expect(page.getByRole("link", { name: "Yuki Tanaka" })).toContainText(
+    "Ask me about — Retro handheld consoles"
+  );
+});
+
+test("filters the directory to filled-in profiles", async ({ page }) => {
+  await login(page);
+  await page.goto("/guests");
+
+  const shown = async () =>
+    Number(
+      (await page.getByText(/^\d+ attendees?$/).textContent())!.match(/\d+/)![0]
+    );
+  const everyone = await shown();
+  // Amara Okafor is seeded with nothing but a name and an email.
+  await expect(page.getByRole("link", { name: "Amara Okafor" })).toBeVisible();
+
+  await page.getByRole("button", { name: /Filter by Has profile/ }).click();
+  await expect(page).toHaveURL(/[?&]filter=hasProfile/);
+  await expect(page.getByRole("link", { name: "Amara Okafor" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Alice Test" })).toBeVisible();
+  const withProfile = await shown();
+  expect(withProfile).toBeLessThan(everyone);
+
+  // The two toggles narrow the list together rather than replacing each other.
+  await page.getByRole("button", { name: /Filter by Session host/ }).click();
+  await expect(page).toHaveURL(/[?&]filter=isHost%2ChasProfile/);
+  await expect(
+    page.getByRole("button", { name: /Filter by Has profile \(active\)/ })
+  ).toBeVisible();
+  expect(await shown()).toBeLessThan(withProfile);
+
+  await page.getByRole("button", { name: /Filter by Has profile/ }).click();
+  await expect(page).toHaveURL(/[?&]filter=isHost/);
+  expect(await shown()).toBeGreaterThan(0);
 });
 
 test("Back to attendees preserves the search query", async ({ page }) => {

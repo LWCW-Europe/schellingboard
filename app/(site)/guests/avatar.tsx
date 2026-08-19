@@ -25,16 +25,21 @@ export function Avatar({
 }: {
   className?: string;
   name: string;
-  size?: "lg" | "sm";
+  size?: "lg" | "md" | "sm";
   image?: string;
   onDrop?: DragEventHandler<HTMLDivElement>;
   onClick?: MouseEventHandler<HTMLDivElement>;
 }) {
-  const dimensions = size === "lg" ? "h-28 w-28 text-3xl" : "h-12 w-12 text-sm";
-  // Matches the box above (h-28 = 112px, h-12 = 48px). Stored avatars are up to
-  // 1024px, so declaring the displayed size is what keeps next/image's 2x
-  // srcset entry at a thumbnail-sized rendition instead of a 640px one.
-  const renderedSize = size === "lg" ? 112 : 48;
+  const dimensions = {
+    lg: "h-28 w-28 text-3xl",
+    md: "h-16 w-16 text-lg",
+    sm: "h-12 w-12 text-sm",
+  }[size];
+  // Matches the box above (h-28 = 112px, h-16 = 64px, h-12 = 48px). Stored
+  // avatars are up to 1024px, so declaring the displayed size is what keeps
+  // next/image's 2x srcset entry at a thumbnail-sized rendition instead of a
+  // 640px one.
+  const renderedSize = { lg: 112, md: 64, sm: 48 }[size];
 
   return (
     <div

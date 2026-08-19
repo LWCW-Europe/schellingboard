@@ -13,13 +13,17 @@ import {
 import { formatRelativeTime } from "@/utils/relative-time";
 import { serverNow } from "@/utils/dev-clock-server";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import {
+  parseAttendeeFilters,
+  serializeAttendeeFilters,
+} from "@/utils/attendee-filters";
+import { hasFilledProfile, profileExcerpt } from "@/utils/attendee-profile";
 import { z } from "zod";
 
-const PAGE_SIZE = 25;
-
-export function getFilters() {
-  return [{ value: "isHost", label: "Session host" }];
-}
+// Everyone on one page: reading through who is coming is what the directory is
+// for, and at realistic attendee counts (a few hundred) a pager only gets in
+// the way. Above this it falls back to ordinary pagination.
+const PAGE_SIZE = 1000;
 
 export default async function GuestsPage({
   searchParams,
@@ -34,53 +38,46 @@ export default async function GuestsPage({
   const params = await searchParams;
 
   const paramSchema = pageRequestSchema.extend({
-    filter: z.enum(getFilters().map((filter) => filter.value)).optional(),
     sort: z
       .enum(ATTENDEE_SORTS.map((s) => s.value))
       .catch(DEFAULT_ATTENDEE_SORT),
   });
 
-  const { page, query, filter, sort } = paramSchema.parse({
+  const { page, query, sort } = paramSchema.parse({
     page: params.page,
     query: params.q,
-    filter: params.filter,
     sort: params.sort,
   });
+  const filters = parseAttendeeFilters(params.filter);
 
   const attendees = await getRepositories().guests.listAttendees({
-    host: filter === "isHost",
+    host: filters.includes("isHost"),
   });
-  const matches = searchAttendees(attendees, query, sort);
+  const filtered = filters.includes("hasProfile")
+    ? attendees.filter(hasFilledProfile)
+    : attendees;
+  const matches = searchAttendees(filtered, query, sort);
   const total = matches.length;
   const now = await serverNow();
   const rows = matches
     .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-    // Strip fields the list doesn't show; TypeScript's structural typing
+    // Strip fields the card doesn't show; TypeScript's structural typing
     // wouldn't stop a full Attendee from reaching the client payload. The
-    // update time is formatted here rather than shipped as a date: the list is
-    // a client component, and a "now" from the browser would disagree with the
-    // server-rendered markup.
-    .map(
-      ({
-        id,
-        name,
-        avatarUrl,
-        pronouns,
-        basedIn,
-        isHost,
-        profileUpdatedAt,
-      }) => ({
-        id,
-        name,
-        avatarUrl,
-        pronouns,
-        basedIn,
-        isHost,
-        profileUpdated: profileUpdatedAt
-          ? formatRelativeTime(profileUpdatedAt, now)
-          : null,
-      })
-    );
+    // excerpt and the update time are rendered here rather than shipped raw:
+    // the markdown parser has no business in the browser bundle, and a "now"
+    // from the browser would disagree with the server-rendered markup.
+    .map((attendee) => ({
+      id: attendee.id,
+      name: attendee.name,
+      avatarUrl: attendee.avatarUrl,
+      pronouns: attendee.pronouns,
+      basedIn: attendee.basedIn,
+      isHost: attendee.isHost,
+      excerpt: profileExcerpt(attendee),
+      profileUpdated: attendee.profileUpdatedAt
+        ? formatRelativeTime(attendee.profileUpdatedAt, now)
+        : null,
+    }));
 
   const redirectTarget = outOfRangePageRedirect({
     basePath: "/guests",
@@ -89,7 +86,7 @@ export default async function GuestsPage({
     pageSize: PAGE_SIZE,
     params: {
       q: query,
-      filter: filter ?? "",
+      filter: serializeAttendeeFilters(filters) ?? "",
       sort: sort === DEFAULT_ATTENDEE_SORT ? "" : sort,
     },
   });
@@ -117,8 +114,8 @@ export default async function GuestsPage({
       </div>
 
       <AttendeeList
-        filter={filter}
-        filters={getFilters()}
+        filters={filters}
+        canEditProfile={currentUser !== null}
         sort={sort}
         rows={rows}
         pageSize={PAGE_SIZE}

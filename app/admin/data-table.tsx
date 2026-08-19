@@ -116,7 +116,13 @@ type TableProps<T> = {
   searchPlaceholder?: string;
   toolbar?: ReactNode;
   bulkBar?: ReactNode;
-  emptyMessage?: string;
+  emptyMessage?: ReactNode;
+  /**
+   * Whether to keep the count-and-pager footer on a list that fits on one page.
+   * "when-paginated" suits lists sized so that normally never happens (the
+   * attendee directory): a pager that can only ever say "Page 1 of 1" is noise.
+   */
+  paginationFooter?: "always" | "when-paginated";
 } & (
   | {
       columns: Column<T>[];
@@ -149,6 +155,7 @@ export function DataTable<T>({
   mobileCard,
   listItem,
   emptyMessage = "Nothing to show.",
+  paginationFooter = "always",
 }: TableProps<T>) {
   const { setParams } = useTableParams();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -295,36 +302,38 @@ export function DataTable<T>({
         </>
       )}
 
-      <div className="flex items-center justify-between text-sm text-fg-muted">
-        <span>
-          {total === 0
-            ? "0 results"
-            : `${total} result${total === 1 ? "" : "s"}`}
-        </span>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setParams({ page: String(page - 1) })}
-            disabled={page <= 1}
-            aria-label="Previous page"
-            className="px-3 py-1 rounded-md border border-line bg-surface-raised disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-sunken"
-          >
-            Prev
-          </button>
+      {(paginationFooter === "always" || totalPages > 1) && (
+        <div className="flex items-center justify-between text-sm text-fg-muted">
           <span>
-            Page {page} of {totalPages}
+            {total === 0
+              ? "0 results"
+              : `${total} result${total === 1 ? "" : "s"}`}
           </span>
-          <button
-            type="button"
-            onClick={() => setParams({ page: String(page + 1) })}
-            disabled={page >= totalPages}
-            aria-label="Next page"
-            className="px-3 py-1 rounded-md border border-line bg-surface-raised disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-sunken"
-          >
-            Next
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setParams({ page: String(page - 1) })}
+              disabled={page <= 1}
+              aria-label="Previous page"
+              className="px-3 py-1 rounded-md border border-line bg-surface-raised disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-sunken"
+            >
+              Prev
+            </button>
+            <span>
+              Page {page} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setParams({ page: String(page + 1) })}
+              disabled={page >= totalPages}
+              aria-label="Next page"
+              className="px-3 py-1 rounded-md border border-line bg-surface-raised disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-sunken"
+            >
+              Next
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
