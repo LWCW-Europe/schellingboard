@@ -11,10 +11,10 @@ import { notFound } from "next/navigation";
 function CantEdit(props: { eventSlug: string; children: React.ReactNode }) {
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
-      <p className="text-gray-700">{props.children}</p>
+      <p className="text-fg-muted">{props.children}</p>
       <Link
         href={`/${props.eventSlug}/proposals`}
-        className="bg-rose-400 text-white font-semibold py-2 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
+        className="bg-brand text-on-brand font-semibold py-2 rounded shadow hover:bg-brand-hover active:bg-brand-hover w-fit px-12"
       >
         Back to proposals
       </Link>

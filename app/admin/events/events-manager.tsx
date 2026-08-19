@@ -64,11 +64,11 @@ function AddEventForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 border border-gray-200 rounded-md p-4 max-w-2xl"
+      className="space-y-3 border border-line-subtle rounded-md p-4 max-w-2xl"
     >
-      <h2 className="font-medium text-gray-900">New event</h2>
+      <h2 className="font-medium text-fg">New event</h2>
       <div className="flex flex-col gap-1">
-        <label htmlFor="ev-name" className="text-sm text-gray-600">
+        <label htmlFor="ev-name" className="text-sm text-fg-muted">
           Name *
         </label>
         <Input
@@ -80,7 +80,7 @@ function AddEventForm({
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor="ev-description" className="text-sm text-gray-600">
+        <label htmlFor="ev-description" className="text-sm text-fg-muted">
           Description
         </label>
         <textarea
@@ -88,12 +88,12 @@ function AddEventForm({
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
           rows={3}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y focus:outline-none focus:ring-2 focus:ring-gray-400"
+          className="w-full rounded-md border border-line px-3 py-2 text-sm shadow-sm resize-y focus:outline-none focus:ring-2 focus:ring-line"
         />
         <MarkdownHint />
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor="ev-website" className="text-sm text-gray-600">
+        <label htmlFor="ev-website" className="text-sm text-fg-muted">
           Website
         </label>
         <Input
@@ -105,7 +105,7 @@ function AddEventForm({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor="ev-start" className="text-sm text-gray-600">
+          <label htmlFor="ev-start" className="text-sm text-fg-muted">
             Start *
           </label>
           <Input
@@ -118,7 +118,7 @@ function AddEventForm({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="ev-end" className="text-sm text-gray-600">
+          <label htmlFor="ev-end" className="text-sm text-fg-muted">
             End *
           </label>
           <Input
@@ -133,7 +133,7 @@ function AddEventForm({
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor="ev-timezone" className="text-sm text-gray-600">
+          <label htmlFor="ev-timezone" className="text-sm text-fg-muted">
             Timezone *
           </label>
           <TimezoneSelect
@@ -143,7 +143,7 @@ function AddEventForm({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="ev-duration" className="text-sm text-gray-600">
+          <label htmlFor="ev-duration" className="text-sm text-fg-muted">
             Max session duration (min)
           </label>
           <Input
@@ -183,7 +183,7 @@ export function EventsManager({ events }: { events: Event[] }) {
   return (
     <div className="space-y-4">
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger-fg">
           {error}
         </p>
       )}
@@ -191,19 +191,17 @@ export function EventsManager({ events }: { events: Event[] }) {
       <AddEventForm onError={setError} />
 
       {events.length === 0 ? (
-        <p className="text-sm text-gray-500">No events yet.</p>
+        <p className="text-sm text-fg-subtle">No events yet.</p>
       ) : (
-        <ul className="divide-y divide-gray-200 border-t border-b border-gray-200">
+        <ul className="divide-y divide-line-subtle border-t border-b border-line-subtle">
           {events.map((event) => (
             <li
               key={event.id}
               className="py-3 flex items-center justify-between gap-3"
             >
               <div className="min-w-0">
-                <p className="font-medium text-gray-900 truncate">
-                  {event.name}
-                </p>
-                <p className="text-sm text-gray-500">
+                <p className="font-medium text-fg truncate">{event.name}</p>
+                <p className="text-sm text-fg-subtle">
                   {formatEventDate(event.start)} – {formatEventDate(event.end)}
                   {" · "}
                   {event.timezone}

@@ -43,7 +43,7 @@ export default async function ProposalsPage({
             <h1 className="text-3xl font-bold">
               {event.name}: Session Proposals
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-fg-muted mt-2">
               Browse session ideas or add your own proposal
             </p>
           </div>
@@ -52,16 +52,16 @@ export default async function ProposalsPage({
       </div>
 
       {proposals.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <h2 className="text-xl font-medium text-gray-600">
+        <div className="text-center py-12 bg-surface-sunken rounded-lg">
+          <h2 className="text-xl font-medium text-fg-muted">
             No proposals yet
           </h2>
-          <p className="text-gray-500 mt-2">
+          <p className="text-fg-subtle mt-2">
             Be the first to suggest a session!
           </p>
           <Link
             href={`/${eventSlug}/proposals/new`}
-            className="mt-4 inline-block bg-rose-400 text-white px-4 py-2 rounded-md hover:bg-rose-500"
+            className="mt-4 inline-block bg-brand text-on-brand px-4 py-2 rounded-md hover:bg-brand-hover"
           >
             Add Proposal
           </Link>

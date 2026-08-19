@@ -45,13 +45,13 @@ export function ResetPasswordForm({
   if (done) {
     return (
       <div className="flex flex-col gap-3">
-        <p role="status" className="text-sm text-green-700">
+        <p role="status" className="text-sm text-success-fg">
           Password set. Your name is now protected — log in with your new
           password.
         </p>
         <Link
           href="/"
-          className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm hover:bg-rose-500 self-start"
+          className="bg-brand text-on-brand font-semibold px-4 py-2 rounded shadow text-sm hover:bg-brand-hover self-start"
         >
           Go to sign in
         </Link>
@@ -67,14 +67,14 @@ export function ResetPasswordForm({
         void submit();
       }}
     >
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-fg-muted">
         Choose a new password. You&apos;ll use it to switch to your name from
         now on.
       </p>
       <PasswordManagerHint username={guestName} />
       <label
         htmlFor="reset-new-password"
-        className="text-sm font-medium text-gray-700"
+        className="text-sm font-medium text-fg-muted"
       >
         New password (at least 8 characters)
       </label>
@@ -84,10 +84,10 @@ export function ResetPasswordForm({
         autoComplete="new-password"
         value={newPassword}
         onChange={(e) => setNewPassword(e.target.value)}
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-rose-400 focus:border-transparent outline-none"
+        className="rounded-md border border-line px-3 py-2 text-sm focus:ring-2 focus:ring-brand-accent focus:border-transparent outline-none"
       />
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger-fg">
           {error}
         </p>
       )}
@@ -95,7 +95,7 @@ export function ResetPasswordForm({
         <button
           type="submit"
           disabled={busy || newPassword.length === 0}
-          className="bg-rose-400 text-white font-semibold px-4 py-2 rounded shadow text-sm disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500"
+          className="bg-brand text-on-brand font-semibold px-4 py-2 rounded shadow text-sm disabled:bg-surface-hover disabled:text-fg-subtle disabled:shadow-none hover:bg-brand-hover active:bg-brand-hover"
         >
           Set password
         </button>

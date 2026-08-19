@@ -40,7 +40,7 @@ export function LocationCol(props: {
       {nowOffsetPx != null && (
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 z-10 h-0.5 bg-red-500 pointer-events-none"
+          className="absolute inset-x-0 z-10 h-0.5 bg-danger pointer-events-none"
           style={{ top: nowOffsetPx }}
         />
       )}

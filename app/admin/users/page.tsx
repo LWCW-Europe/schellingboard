@@ -51,7 +51,7 @@ export default async function AdminUsersPage({
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+        <h1 className="text-2xl font-bold text-fg">Users</h1>
         <Link href="/admin/users/import" className={SECONDARY_BUTTON}>
           Import CSV
         </Link>

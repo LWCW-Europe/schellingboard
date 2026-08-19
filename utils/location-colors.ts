@@ -1,9 +1,7 @@
-// The schedule renders location colours as Tailwind palette classes
-// (`bg-${color}-500`, `border-${color}-600`, …), so a location's `color` must
-// be one of Tailwind's palette *names* — not an arbitrary hex value. The full
-// set of shade classes for every name below is safelisted via `@source
-// inline(...)` in `app/globals.css` so the production build keeps them.
-// tests/unit/location-colors-safelist.test.ts keeps the two lists in sync.
+// A location's `color` is one of Tailwind's palette *names*, not an arbitrary
+// hex value: the schedule renders it as a `loc-${color}` class, and everything
+// it draws is mixed from that hue in `app/globals.css`.
+// tests/unit/location-colors.test.ts keeps the two lists in sync.
 
 export const LOCATION_COLOR_NAMES = [
   "slate",

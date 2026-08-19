@@ -125,11 +125,11 @@ function LocationForm({
       // message below never gets a chance to render. zod owns validation here.
       noValidate
       onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}
-      className="space-y-3 rounded-md border border-gray-200 p-4"
+      className="space-y-3 rounded-md border border-line-subtle p-4"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${idPrefix}-name`} className="text-sm text-gray-600">
+          <label htmlFor={`${idPrefix}-name`} className="text-sm text-fg-muted">
             Name
           </label>
           <Input
@@ -138,14 +138,14 @@ function LocationForm({
             {...form.register("name")}
             className="w-full h-10"
           />
-          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+          <span className="text-xs text-danger-fg min-h-(--text-xs)">
             {form.formState.errors.name?.message}
           </span>
         </div>
         <div className="flex flex-col gap-1">
           <label
             htmlFor={`${idPrefix}-capacity`}
-            className="text-sm text-gray-600"
+            className="text-sm text-fg-muted"
           >
             Capacity
           </label>
@@ -158,7 +158,7 @@ function LocationForm({
             {...form.register("capacity", { valueAsNumber: true })}
             className="w-full h-10"
           />
-          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+          <span className="text-xs text-danger-fg min-h-(--text-xs)">
             {form.formState.errors.capacity?.message}
           </span>
         </div>
@@ -167,7 +167,7 @@ function LocationForm({
       <div className="flex flex-col gap-1">
         <label
           htmlFor={`${idPrefix}-description`}
-          className="text-sm text-gray-600"
+          className="text-sm text-fg-muted"
         >
           Description
         </label>
@@ -175,16 +175,16 @@ function LocationForm({
           id={`${idPrefix}-description`}
           {...form.register("description")}
           rows={2}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
+          className="rounded-md border border-line bg-surface-raised px-4 py-2 shadow-sm focus:ring-2 focus:ring-brand-accent focus:outline-0 focus:border-none"
         />
-        <span className="text-xs text-rose-400 min-h-(--text-xs)">
+        <span className="text-xs text-danger-fg min-h-(--text-xs)">
           {form.formState.errors.description?.message}
         </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${idPrefix}-area`} className="text-sm text-gray-600">
+          <label htmlFor={`${idPrefix}-area`} className="text-sm text-fg-muted">
             Area description
           </label>
           <Input
@@ -193,14 +193,14 @@ function LocationForm({
             {...form.register("areaDescription")}
             className="w-full h-10"
           />
-          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+          <span className="text-xs text-danger-fg min-h-(--text-xs)">
             {form.formState.errors.areaDescription?.message}
           </span>
         </div>
         <div className="flex flex-col gap-1">
           <label
             htmlFor={`${idPrefix}-color`}
-            className="text-sm text-gray-600"
+            className="text-sm text-fg-muted"
           >
             Color
           </label>
@@ -208,14 +208,14 @@ function LocationForm({
             <span
               aria-hidden
               className={clsx(
-                "h-10 w-10 shrink-0 rounded-md border border-gray-300",
-                `bg-${color}-500`
+                "h-10 w-10 shrink-0 rounded-md border border-line loc-swatch",
+                `loc-${color}`
               )}
             />
             <select
               id={`${idPrefix}-color`}
               {...form.register("color")}
-              className="h-10 flex-1 rounded-md border border-gray-300 bg-white px-2 capitalize shadow-sm focus:ring-2 focus:ring-rose-400 focus:outline-0"
+              className="h-10 flex-1 rounded-md border border-line bg-surface-raised px-2 capitalize shadow-sm focus:ring-2 focus:ring-brand-accent focus:outline-0"
             >
               {LOCATION_COLOR_NAMES.map((name) => (
                 <option key={name} value={name} className="capitalize">
@@ -224,26 +224,26 @@ function LocationForm({
               ))}
             </select>
           </div>
-          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+          <span className="text-xs text-danger-fg min-h-(--text-xs)">
             {form.formState.errors.color?.message}
           </span>
         </div>
       </div>
 
       <div className="flex gap-6">
-        <label className="flex items-center gap-2 text-sm text-gray-600">
+        <label className="flex items-center gap-2 text-sm text-fg-muted">
           <input
             type="checkbox"
             {...form.register("hidden")}
-            className="rounded border-gray-300 text-rose-600 focus:ring-rose-400"
+            className="rounded border-line text-brand focus:ring-brand-accent"
           />
           Hidden
         </label>
-        <label className="flex items-center gap-2 text-sm text-gray-600">
+        <label className="flex items-center gap-2 text-sm text-fg-muted">
           <input
             type="checkbox"
             {...form.register("bookable")}
-            className="rounded border-gray-300 text-rose-600 focus:ring-rose-400"
+            className="rounded border-line text-brand focus:ring-brand-accent"
           />
           Bookable
         </label>
@@ -251,12 +251,12 @@ function LocationForm({
 
       {events.length > 0 && (
         <fieldset className="space-y-1">
-          <legend className="text-sm text-gray-600">Events</legend>
+          <legend className="text-sm text-fg-muted">Events</legend>
           <div className="flex flex-wrap gap-x-6 gap-y-1">
             {events.map((event) => (
               <label
                 key={event.id}
-                className="flex items-center gap-2 text-sm text-gray-600"
+                className="flex items-center gap-2 text-sm text-fg-muted"
               >
                 <input
                   type="checkbox"
@@ -270,20 +270,20 @@ function LocationForm({
                         : selectedEventIds.filter((id) => id !== event.id)
                     )
                   }
-                  className="rounded border-gray-300 text-rose-600 focus:ring-rose-400"
+                  className="rounded border-line text-brand focus:ring-brand-accent"
                 />
                 {event.name}
               </label>
             ))}
           </div>
-          <span className="text-xs text-rose-400 min-h-(--text-xs)">
+          <span className="text-xs text-danger-fg min-h-(--text-xs)">
             {form.formState.errors.eventIds?.message}
           </span>
         </fieldset>
       )}
 
       <div className="flex flex-col gap-1">
-        <label htmlFor={`${idPrefix}-image`} className="text-sm text-gray-600">
+        <label htmlFor={`${idPrefix}-image`} className="text-sm text-fg-muted">
           Image
         </label>
         {location?.imageUrl && (
@@ -292,7 +292,7 @@ function LocationForm({
             alt={`Current image of ${location.name}`}
             width={160}
             height={120}
-            className="rounded border border-gray-200"
+            className="rounded border border-line-subtle"
           />
         )}
         <input
@@ -300,10 +300,10 @@ function LocationForm({
           type="file"
           accept="image/jpeg,image/png,image/webp"
           {...form.register("image")}
-          className="text-sm text-gray-600 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200"
+          className="text-sm text-fg-muted file:mr-3 file:rounded-md file:border-0 file:bg-surface-muted file:px-3 file:py-2 file:text-sm file:font-medium file:text-fg-muted hover:file:bg-surface-hover"
         />
-        <p className="text-xs text-gray-500">{IMAGE_REQUIREMENTS_HINT}</p>
-        <span className="text-xs text-rose-400 min-h-(--text-xs)">
+        <p className="text-xs text-fg-subtle">{IMAGE_REQUIREMENTS_HINT}</p>
+        <span className="text-xs text-danger-fg min-h-(--text-xs)">
           {form.formState.errors.image?.message}
         </span>
       </div>
@@ -352,8 +352,8 @@ function DeleteConfirmation({
   };
 
   return (
-    <div className="space-y-2 rounded-md border border-red-200 bg-red-50/50 p-3">
-      <p className="text-sm text-red-700">
+    <div className="space-y-2 rounded-md border border-danger-border bg-danger-tint/50 p-3">
+      <p className="text-sm text-danger-fg">
         Deleting “{location.name}” removes it from {sessionLinkCount}{" "}
         {sessionLinkCount === 1 ? "session" : "sessions"} and {eventIds.length}{" "}
         {eventIds.length === 1 ? "event" : "events"}. This cannot be undone.
@@ -453,23 +453,23 @@ function LocationRow({
             alt={location.name}
             width={80}
             height={60}
-            className="rounded border border-gray-200 shrink-0"
+            className="rounded border border-line-subtle shrink-0"
           />
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 truncate flex items-center gap-2">
+          <p className="font-medium text-fg truncate flex items-center gap-2">
             {isLocationColorName(location.color) && (
               <span
                 aria-hidden
                 className={clsx(
-                  "inline-block w-3 h-3 rounded-full border border-gray-300 shrink-0",
-                  `bg-${location.color}-500`
+                  "inline-block w-3 h-3 rounded-full border border-line shrink-0 loc-swatch",
+                  `loc-${location.color}`
                 )}
               />
             )}
             {location.name}
           </p>
-          <p className="text-sm text-gray-500 truncate">
+          <p className="text-sm text-fg-subtle truncate">
             {[
               location.capacity ? `max ${location.capacity}` : null,
               location.hidden ? "hidden" : null,
@@ -516,7 +516,7 @@ function LocationRow({
             }}
             className={clsx(
               SECONDARY_BUTTON,
-              "text-red-700 hover:bg-red-50 bg-red-50/50"
+              "text-danger-fg hover:bg-danger-tint bg-danger-tint/50"
             )}
           >
             Delete
@@ -556,7 +556,7 @@ export function LocationsManager({
   return (
     <div className="space-y-4">
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger-fg">
           {error}
         </p>
       )}
@@ -580,9 +580,9 @@ export function LocationsManager({
       )}
 
       {locations.length === 0 ? (
-        <p className="text-sm text-gray-500">No locations yet.</p>
+        <p className="text-sm text-fg-subtle">No locations yet.</p>
       ) : (
-        <ul className="divide-y divide-gray-200 border-t border-b border-gray-200">
+        <ul className="divide-y divide-line-subtle border-t border-b border-line-subtle">
           {locations.map((adminLocation, index) => (
             <LocationRow
               key={adminLocation.location.id}

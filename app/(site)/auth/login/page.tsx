@@ -16,7 +16,7 @@ export default async function AuthLoginPage({
   if (!guest) {
     return (
       <div className="max-w-2xl mx-auto px-4 sm:px-0">
-        <p className="text-gray-700">
+        <p className="text-fg-muted">
           This login link is invalid. Request a new code from the name selector
           or your settings page.
         </p>

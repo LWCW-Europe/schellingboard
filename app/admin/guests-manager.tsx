@@ -50,7 +50,7 @@ function AddGuestForm() {
         className="flex flex-col sm:flex-row gap-2 sm:items-center"
       >
         <div className="flex flex-col gap-1 flex-1">
-          <label htmlFor="new-user-name" className="text-sm text-gray-600">
+          <label htmlFor="new-user-name" className="text-sm text-fg-muted">
             Name
           </label>
           <Input
@@ -59,12 +59,12 @@ function AddGuestForm() {
             {...form.register("name")}
             className="w-full h-10"
           />
-          <span className="text-rose-400 text-sm min-h-(--text-sm)">
+          <span className="text-brand-fg text-sm min-h-(--text-sm)">
             {form.formState.errors.name?.message}
           </span>
         </div>
         <div className="flex flex-col gap-1 flex-1">
-          <label htmlFor="new-user-email" className="text-sm text-gray-600">
+          <label htmlFor="new-user-email" className="text-sm text-fg-muted">
             Email
           </label>
           <Input
@@ -74,7 +74,7 @@ function AddGuestForm() {
             {...form.register("email")}
             className="w-full h-10"
           />
-          <span className="text-rose-400 text-sm min-h-(--text-sm)">
+          <span className="text-brand-fg text-sm min-h-(--text-sm)">
             {form.formState.errors.email?.message}
           </span>
         </div>
@@ -89,7 +89,7 @@ function AddGuestForm() {
         </div>
       </form>
       {form.formState.errors.root && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger-fg">
           {form.formState.errors.root.message}
         </p>
       )}
@@ -181,7 +181,7 @@ function GuestRow({
               {...form.register("name")}
               className="flex-1 h-10"
             />
-            <span className="text-rose-400 text-sm min-h-(--text-sm)">
+            <span className="text-brand-fg text-sm min-h-(--text-sm)">
               {form.formState.errors.name?.message}
             </span>
           </div>
@@ -193,7 +193,7 @@ function GuestRow({
               {...form.register("email")}
               className="flex-1 h-10"
             />
-            <span className="text-rose-400 text-sm min-h-(--text-sm)">
+            <span className="text-brand-fg text-sm min-h-(--text-sm)">
               {form.formState.errors.email?.message}
             </span>
           </div>
@@ -219,7 +219,7 @@ function GuestRow({
           </div>
         </form>
         {form.formState.errors.root && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-sm text-danger-fg">
             {form.formState.errors.root.message}
           </p>
         )}
@@ -231,16 +231,16 @@ function GuestRow({
     <div>
       <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 truncate">{guest.name}</p>
-          <p className="text-sm text-gray-500 truncate">{guest.info.email}</p>
+          <p className="font-medium text-fg truncate">{guest.name}</p>
+          <p className="text-sm text-fg-subtle truncate">{guest.info.email}</p>
           {events.length > 0 && (
-            <p className="text-sm text-gray-500 truncate">
+            <p className="text-sm text-fg-subtle truncate">
               {events.map((event, i) => (
                 <Fragment key={event.id}>
                   {i > 0 && " · "}
                   <Link
                     href={`/admin/events/${event.id}`}
-                    className="underline hover:text-gray-700"
+                    className="underline hover:text-fg-muted"
                   >
                     {event.name}
                   </Link>
@@ -251,7 +251,7 @@ function GuestRow({
         </div>
         {mode === "delete" ? (
           <div className="flex gap-2 items-center">
-            <span className="text-sm text-red-700">Delete this user?</span>
+            <span className="text-sm text-danger-fg">Delete this user?</span>
             <button
               onClick={handleDelete}
               disabled={isDeleting}
@@ -289,7 +289,7 @@ function GuestRow({
               }}
               className={clsx(
                 SECONDARY_BUTTON,
-                "text-red-700 hover:bg-red-50 bg-red-50/50"
+                "text-danger-fg hover:bg-danger-tint bg-danger-tint/50"
               )}
             >
               Delete
@@ -298,7 +298,7 @@ function GuestRow({
         )}
       </div>
       {viewError && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger-fg">
           {viewError}
         </p>
       )}

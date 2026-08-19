@@ -9,8 +9,8 @@ export default async function AdminUserImportPage() {
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Import users</h1>
-      <p className="text-sm text-gray-600">
+      <h1 className="text-2xl font-bold text-fg">Import users</h1>
+      <p className="text-sm text-fg-muted">
         Upload a CSV file with a header row containing <code>name</code> and{" "}
         <code>email</code> columns (extra columns are ignored). Users are
         matched by email: existing users are left unchanged, new ones are

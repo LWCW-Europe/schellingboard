@@ -33,7 +33,7 @@ export default function NavBar({
   return (
     <Disclosure
       as="nav"
-      className="bg-white border-b border-gray-300 fixed w-full z-30"
+      className="bg-surface-raised border-b border-line fixed w-full z-30"
     >
       {({ open }) => (
         <>
@@ -41,7 +41,7 @@ export default function NavBar({
             <div className="relative flex h-16 items-center justify-between">
               <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
                 {/* Mobile menu button*/}
-                <Disclosure.Button className="relative inline-flex items-center justify-center rounded-md p-2 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-rose-400">
+                <Disclosure.Button className="relative inline-flex items-center justify-center rounded-md p-2 text-brand-fg hover:bg-brand-tint focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-accent">
                   <span className="absolute -inset-0.5" />
                   {open ? (
                     <XMarkIcon className="block h-6 w-6 stroke-2" />
@@ -69,7 +69,7 @@ export default function NavBar({
                   {showGuestsLink && (
                     <Link
                       href="/guests"
-                      className="hidden sm:flex group gap-1 cursor-pointer items-center rounded-md px-3 py-2 text-sm font-medium text-gray-400 hover:bg-gray-100"
+                      className="hidden sm:flex group gap-1 cursor-pointer items-center rounded-md px-3 py-2 text-sm font-medium text-fg-subtle hover:bg-surface-muted"
                     >
                       <UserGroupIcon className="block h-5 w-auto" />
                       Attendees
@@ -94,7 +94,7 @@ export default function NavBar({
                 <Disclosure.Button
                   as="a"
                   href="/guests"
-                  className="flex gap-2 items-center rounded-md px-3 py-2 text-base font-medium text-gray-400 hover:bg-gray-100"
+                  className="flex gap-2 items-center rounded-md px-3 py-2 text-base font-medium text-fg-subtle hover:bg-surface-muted"
                 >
                   <UserGroupIcon className="block h-5 w-auto" />
                   Attendees
@@ -120,8 +120,8 @@ function NavBarItem(props: { item: NavItem; highlightCurrent: boolean }) {
       href={item.href}
       className={clsx(
         isCurrentPage
-          ? "bg-rose-50 text-rose-400"
-          : "text-gray-400 hover:bg-gray-100",
+          ? "bg-brand-tint text-brand-fg"
+          : "text-fg-subtle hover:bg-surface-muted",
         "group flex gap-1 cursor-pointer items-center rounded-md px-3 py-2 text-sm font-medium"
       )}
     >
@@ -144,8 +144,8 @@ function SmallNavBarItem(props: { item: NavItem; highlightCurrent: boolean }) {
       href={item.href}
       className={clsx(
         isCurrentPage
-          ? "bg-rose-50 text-rose-400"
-          : "text-gray-400 hover:bg-gray-100",
+          ? "bg-brand-tint text-brand-fg"
+          : "text-fg-subtle hover:bg-surface-muted",
         "flex gap-2 rounded-md px-3 py-2 text-base font-medium"
       )}
     >

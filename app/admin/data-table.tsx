@@ -72,18 +72,18 @@ export function BulkActionsBar({
     <div
       role="region"
       aria-label="Bulk actions"
-      className={`flex flex-wrap items-center gap-3 rounded-md border border-gray-300 bg-gray-50 px-3 py-2 text-sm ${
+      className={`flex flex-wrap items-center gap-3 rounded-md border border-line bg-surface-sunken px-3 py-2 text-sm ${
         selectedCount === 0 ? "invisible" : ""
       }`}
     >
-      <span className="font-medium text-gray-700">
+      <span className="font-medium text-fg-muted">
         {selectedCount} selected
       </span>
       <button
         type="button"
         onClick={onAssign}
         disabled={isPending}
-        className="px-3 py-1 rounded-md border border-gray-900 bg-gray-900 text-white disabled:opacity-50 hover:bg-gray-700"
+        className="px-3 py-1 rounded-md border border-line-strong bg-surface-inverse text-fg-inverse disabled:opacity-50 hover:bg-surface-inverse-hover"
       >
         Assign selected
       </button>
@@ -91,14 +91,14 @@ export function BulkActionsBar({
         type="button"
         onClick={onRemove}
         disabled={isPending}
-        className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+        className="px-3 py-1 rounded-md border border-line bg-surface-raised text-fg-muted disabled:opacity-50 hover:bg-surface-sunken"
       >
         Remove selected
       </button>
       <button
         type="button"
         onClick={onClear}
-        className="px-3 py-1 rounded-md text-gray-600 hover:text-gray-900"
+        className="px-3 py-1 rounded-md text-fg-muted hover:text-fg"
       >
         Clear
       </button>
@@ -188,11 +188,11 @@ export function DataTable<T>({
             defaultValue={searchQuery}
             placeholder={searchPlaceholder}
             aria-label="Search"
-            className="px-3 py-1.5 text-sm rounded-md border border-gray-300 focus:border-gray-500 focus:outline-none"
+            className="px-3 py-1.5 text-sm rounded-md border border-line focus:border-line-strong focus:outline-none"
           />
           <button
             type="submit"
-            className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+            className="px-3 py-1.5 text-sm rounded-md border border-line bg-surface-raised text-fg-muted hover:bg-surface-sunken"
           >
             Search
           </button>
@@ -203,9 +203,9 @@ export function DataTable<T>({
       {bulkBar}
 
       {rows.length === 0 ? (
-        <p className="text-sm text-gray-500">{emptyMessage}</p>
+        <p className="text-sm text-fg-subtle">{emptyMessage}</p>
       ) : listItem ? (
-        <ul className="divide-y divide-gray-200 border-t border-b border-gray-200">
+        <ul className="divide-y divide-line-subtle border-t border-b border-line-subtle">
           {rows.map((row) => (
             <li key={rowKey(row)} className="py-3">
               {listItem(row)}
@@ -217,7 +217,7 @@ export function DataTable<T>({
           {/* Desktop: a table. */}
           <table className="hidden w-full text-sm sm:table">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-600">
+              <tr className="border-b border-line-subtle text-left text-fg-muted">
                 {selection && (
                   <th className="py-2 pr-4 font-medium">
                     <input
@@ -247,7 +247,7 @@ export function DataTable<T>({
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={rowKey(row)} className="border-b border-gray-100">
+                <tr key={rowKey(row)} className="border-b border-line-subtle">
                   {selection && (
                     <td className="py-2 pr-4">
                       <input
@@ -277,7 +277,7 @@ export function DataTable<T>({
             {rows.map((row) => (
               <li
                 key={rowKey(row)}
-                className="flex items-start gap-3 rounded-md border border-gray-200 p-3"
+                className="flex items-start gap-3 rounded-md border border-line-subtle p-3"
               >
                 {selection && (
                   <input
@@ -295,7 +295,7 @@ export function DataTable<T>({
         </>
       )}
 
-      <div className="flex items-center justify-between text-sm text-gray-600">
+      <div className="flex items-center justify-between text-sm text-fg-muted">
         <span>
           {total === 0
             ? "0 results"
@@ -307,7 +307,7 @@ export function DataTable<T>({
             onClick={() => setParams({ page: String(page - 1) })}
             disabled={page <= 1}
             aria-label="Previous page"
-            className="px-3 py-1 rounded-md border border-gray-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="px-3 py-1 rounded-md border border-line bg-surface-raised disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-sunken"
           >
             Prev
           </button>
@@ -319,7 +319,7 @@ export function DataTable<T>({
             onClick={() => setParams({ page: String(page + 1) })}
             disabled={page >= totalPages}
             aria-label="Next page"
-            className="px-3 py-1 rounded-md border border-gray-300 bg-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50"
+            className="px-3 py-1 rounded-md border border-line bg-surface-raised disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-sunken"
           >
             Next
           </button>

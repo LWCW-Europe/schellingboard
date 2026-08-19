@@ -51,7 +51,7 @@ export function UserSelect({
           selectMany={false}
           showProtected
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger-fg">{error}</p>}
         {pendingGuest && (
           <GuestLoginForm
             guestId={pendingGuest.id}

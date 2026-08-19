@@ -59,11 +59,11 @@ export function SessionModal({
       aria-modal="true"
       aria-label="Session details"
     >
-      <div className="fixed inset-0 bg-black/50" onClick={onDismiss} />
-      <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 bg-overlay" onClick={onDismiss} />
+      <div className="relative bg-surface-raised rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <button
           onClick={onDismiss}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+          className="absolute top-4 right-4 text-fg-subtle hover:text-fg-muted"
           aria-label="Close"
         >
           <svg

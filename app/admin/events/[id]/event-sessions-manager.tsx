@@ -133,11 +133,11 @@ function SessionRsvps({
 
   return (
     <details className="text-sm">
-      <summary className="cursor-pointer text-gray-600">
+      <summary className="cursor-pointer text-fg-muted">
         RSVPs ({session.rsvps.length})
       </summary>
       {session.rsvps.length === 0 ? (
-        <p className="mt-2 text-gray-500">No RSVPs.</p>
+        <p className="mt-2 text-fg-subtle">No RSVPs.</p>
       ) : (
         <ul className="mt-2 space-y-1">
           {session.rsvps.map((r) => (
@@ -145,21 +145,21 @@ function SessionRsvps({
               key={r.guestId}
               className="flex items-center justify-between gap-3"
             >
-              <span className="text-gray-700">{r.name}</span>
+              <span className="text-fg-muted">{r.name}</span>
               {confirmingId === r.guestId ? (
                 <span className="flex items-center gap-2">
-                  <span className="text-red-700">Remove?</span>
+                  <span className="text-danger-fg">Remove?</span>
                   <button
                     onClick={() => remove(r.guestId)}
                     disabled={pendingId === r.guestId}
-                    className="text-red-600 hover:underline"
+                    className="text-danger-fg hover:underline"
                   >
                     Confirm
                   </button>
                   <button
                     onClick={() => setConfirmingId(null)}
                     disabled={pendingId === r.guestId}
-                    className="text-gray-500 hover:underline"
+                    className="text-fg-subtle hover:underline"
                   >
                     Cancel
                   </button>
@@ -167,7 +167,7 @@ function SessionRsvps({
               ) : (
                 <button
                   onClick={() => setConfirmingId(r.guestId)}
-                  className="text-red-600 hover:underline"
+                  className="text-danger-fg hover:underline"
                   aria-label={`Remove RSVP ${r.name}`}
                 >
                   Remove
@@ -245,7 +245,7 @@ function SessionForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="flex flex-col gap-1">
-        <label htmlFor={`${idPrefix}-title`} className="text-sm text-gray-600">
+        <label htmlFor={`${idPrefix}-title`} className="text-sm text-fg-muted">
           Title *
         </label>
         <Input
@@ -257,14 +257,14 @@ function SessionForm({
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor={`${idPrefix}-desc`} className="text-sm text-gray-600">
+        <label htmlFor={`${idPrefix}-desc`} className="text-sm text-fg-muted">
           Description
         </label>
         <textarea
           id={`${idPrefix}-desc`}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-gray-400"
+          className="w-full rounded-md border border-line px-3 py-2 text-sm shadow-sm resize-y h-24 focus:outline-none focus:ring-2 focus:ring-line"
         />
         <MarkdownHint />
       </div>
@@ -272,7 +272,7 @@ function SessionForm({
         <div className="flex flex-col gap-1">
           <label
             htmlFor={`${idPrefix}-start`}
-            className="text-sm text-gray-600"
+            className="text-sm text-fg-muted"
           >
             Start ({timezone}) — leave empty if not scheduled
           </label>
@@ -286,7 +286,7 @@ function SessionForm({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${idPrefix}-end`} className="text-sm text-gray-600">
+          <label htmlFor={`${idPrefix}-end`} className="text-sm text-fg-muted">
             End ({timezone})
           </label>
           <Input
@@ -302,7 +302,7 @@ function SessionForm({
       <div className="flex flex-col gap-1">
         <label
           htmlFor={`${idPrefix}-capacity`}
-          className="text-sm text-gray-600"
+          className="text-sm text-fg-muted"
         >
           Capacity
         </label>
@@ -316,8 +316,8 @@ function SessionForm({
         />
       </div>
       <fieldset className="flex flex-col gap-1">
-        <legend className="text-sm text-gray-600">Flags</legend>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
+        <legend className="text-sm text-fg-muted">Flags</legend>
+        <label className="flex items-center gap-2 text-sm text-fg-muted">
           <input
             type="checkbox"
             checked={blocker}
@@ -326,7 +326,7 @@ function SessionForm({
           />
           Blocker
         </label>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
+        <label className="flex items-center gap-2 text-sm text-fg-muted">
           <input
             type="checkbox"
             checked={closed}
@@ -335,7 +335,7 @@ function SessionForm({
           />
           Closed
         </label>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
+        <label className="flex items-center gap-2 text-sm text-fg-muted">
           <input
             type="checkbox"
             checked={adminManaged}
@@ -346,11 +346,11 @@ function SessionForm({
         </label>
       </fieldset>
       <div className="flex flex-col gap-1">
-        <label htmlFor={`${idPrefix}-hosts`} className="text-sm text-gray-600">
+        <label htmlFor={`${idPrefix}-hosts`} className="text-sm text-fg-muted">
           Hosts
         </label>
         {hostCandidates.length === 0 ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-fg-subtle">
             No guests assigned to this event yet.
           </p>
         ) : (
@@ -364,16 +364,16 @@ function SessionForm({
         )}
       </div>
       <fieldset className="flex flex-col gap-1">
-        <legend className="text-sm text-gray-600">Locations</legend>
+        <legend className="text-sm text-fg-muted">Locations</legend>
         {locationCandidates.length === 0 ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-fg-subtle">
             No locations assigned to this event yet.
           </p>
         ) : (
           locationCandidates.map((l) => (
             <label
               key={l.id}
-              className="flex items-center gap-2 text-sm text-gray-700"
+              className="flex items-center gap-2 text-sm text-fg-muted"
             >
               <input
                 type="checkbox"
@@ -478,8 +478,8 @@ function SessionItem({
   if (deleteMode) {
     return (
       <div className="space-y-2">
-        <p className="font-medium text-gray-900">{session.title}</p>
-        <p className="text-sm text-red-700">
+        <p className="font-medium text-fg">{session.title}</p>
+        <p className="text-sm text-danger-fg">
           This will permanently delete the session and its {session.numRsvps}{" "}
           {session.numRsvps === 1 ? "RSVP" : "RSVPs"}. Host and location links
           are removed; the guests and locations themselves are kept.
@@ -487,7 +487,7 @@ function SessionItem({
         <div className="flex flex-col gap-1">
           <label
             htmlFor={`sess-delete-${session.id}`}
-            className="text-sm text-gray-700"
+            className="text-sm text-fg-muted"
           >
             Type the session title to confirm
           </label>
@@ -528,11 +528,11 @@ function SessionItem({
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <p className="font-medium text-gray-900">{session.title}</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-fg">{session.title}</p>
+            <p className="text-sm text-fg-subtle">
               {timeLabel(session, timezone)} · {joinNames(session.locations)}
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-fg-subtle">
               Hosts: {joinNames(session.hosts)} · {session.numRsvps} RSVPs
               {flagLabels(session).length > 0
                 ? ` · ${flagLabels(session).join(", ")}`
@@ -655,8 +655,8 @@ function AddSession({
   }
 
   return (
-    <div className="space-y-3 border border-gray-200 rounded-md p-4">
-      <h3 className="font-medium text-gray-900">New session</h3>
+    <div className="space-y-3 border border-line-subtle rounded-md p-4">
+      <h3 className="font-medium text-fg">New session</h3>
       <SessionForm
         initial={EMPTY_SESSION}
         idPrefix="sess-new"
@@ -704,11 +704,11 @@ export function EventSessionsManager({
 
   return (
     <section aria-label="Sessions" className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Sessions</h2>
-      <p className="text-sm text-gray-500">
+      <h2 className="text-lg font-semibold text-fg">Sessions</h2>
+      <p className="text-sm text-fg-subtle">
         All times are in the event timezone ({timezone}).
       </p>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger-fg">{error}</p>}
 
       <AddSession
         eventId={eventId}

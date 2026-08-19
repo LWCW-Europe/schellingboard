@@ -37,7 +37,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@docmd/core": "^0.9.1",
+        "@docmd/core": "^0.9.2",
         "@playwright/test": "^1.62.1",
         "@tailwindcss/postcss": "^4.3.3",
         "@types/better-sqlite3": "^9.6.0",
@@ -106,7 +106,7 @@
 
     "@docmd/api": ["@docmd/api@0.9.2", "", { "dependencies": { "@docmd/parser": "^0.9.2", "@docmd/tui": "^0.9.2", "@docmd/utils": "^0.9.2" }, "optionalDependencies": { "@docmd/engine-js": "^0.9.2", "@docmd/engine-rust": "^0.9.2" } }, "sha512-57pcKbHFopHp8xpFdGj1HL6/67CeMu4+3oAJmSt/QAvYYPXg8+8HsmjUjvD9Zb6uaR6e4O9eKNomR3jamJGpXg=="],
 
-    "@docmd/core": ["@docmd/core@0.9.1", "", { "dependencies": { "@docmd/api": "^0.9.1", "@docmd/deployer": "^0.9.1", "@docmd/live": "^0.9.1", "@docmd/parser": "^0.9.1", "@docmd/plugin-ai": "^0.9.1", "@docmd/plugin-analytics": "^0.9.1", "@docmd/plugin-git": "^0.9.1", "@docmd/plugin-installer": "^0.9.1", "@docmd/plugin-llms": "^0.9.1", "@docmd/plugin-mermaid": "^0.9.1", "@docmd/plugin-okf": "^0.9.1", "@docmd/plugin-openapi": "^0.9.1", "@docmd/plugin-search": "^0.9.1", "@docmd/plugin-seo": "^0.9.1", "@docmd/plugin-sitemap": "^0.9.1", "@docmd/themes": "^0.9.1", "@docmd/tui": "^0.9.1", "@docmd/ui": "^0.9.1", "@docmd/utils": "^0.9.1", "esbuild": "^0.28.2", "ws": "^8.21.3" }, "bin": { "docmd": "dist/bin/docmd.js" } }, "sha512-7hN6brk6zKkNDwpt2mVdKMGqqbv3pjD621y0g0MLzZjLDbi7USBbtQF3aJoyhZmSKc+zIgRtWvvzVQ2GGA/rQw=="],
+    "@docmd/core": ["@docmd/core@0.9.2", "", { "dependencies": { "@docmd/api": "^0.9.2", "@docmd/deployer": "^0.9.2", "@docmd/live": "^0.9.2", "@docmd/parser": "^0.9.2", "@docmd/plugin-ai": "^0.9.2", "@docmd/plugin-analytics": "^0.9.2", "@docmd/plugin-git": "^0.9.2", "@docmd/plugin-installer": "^0.9.2", "@docmd/plugin-llms": "^0.9.2", "@docmd/plugin-mermaid": "^0.9.2", "@docmd/plugin-okf": "^0.9.2", "@docmd/plugin-openapi": "^0.9.2", "@docmd/plugin-search": "^0.9.2", "@docmd/plugin-seo": "^0.9.2", "@docmd/plugin-sitemap": "^0.9.2", "@docmd/themes": "^0.9.2", "@docmd/tui": "^0.9.2", "@docmd/ui": "^0.9.2", "@docmd/utils": "^0.9.2", "esbuild": "^0.28.2", "ws": "^8.21.3" }, "bin": { "docmd": "dist/bin/docmd.js" } }, "sha512-wy5K4oxeHrgPdEquQpxrov6OkJeGdEg9WAuudrJ/HY+7kHrVHaSVkftevXDaw86kYfSqbmUz9u6llA8jZQij0g=="],
 
     "@docmd/deployer": ["@docmd/deployer@0.9.2", "", { "dependencies": { "@docmd/api": "^0.9.2" } }, "sha512-Po99QAMzD++UCC99/9IOkQUcQITKWDP4rdk9lmoMBDPCVk57u8hdz4v8avA+V54x2xFtqTMBITxLkLdvU+mGXg=="],
 

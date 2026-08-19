@@ -40,20 +40,20 @@ function AttendeeRow({
   // have no room for it beside the name, so it rides along under the name
   // there and only moves out to the right edge from sm up.
   const updated = profileUpdated && (
-    <span className="text-xs text-gray-400">updated {profileUpdated}</span>
+    <span className="text-xs text-fg-subtle">updated {profileUpdated}</span>
   );
   return (
     <Link
       href={href}
-      className="flex items-center gap-4 hover:bg-gray-50 rounded-md px-2"
+      className="flex items-center gap-4 hover:bg-surface-sunken rounded-md px-2"
     >
       <Avatar name={name} size="sm" image={avatarUrl ?? undefined} />
       <div className="flex flex-col gap-1 min-w-0 flex-1">
         {/* Wraps rather than squeezing the name to fit the badge beside it. */}
-        <span className="font-medium text-gray-900 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="font-medium text-fg flex flex-wrap items-center gap-x-2 gap-y-1">
           {name}
           {isHost && (
-            <span className="w-fit rounded-full bg-rose-100 text-rose-700 text-xs font-semibold px-3 py-1">
+            <span className="w-fit rounded-full bg-brand-tint-hover text-brand-fg text-xs font-semibold px-3 py-1">
               Session host
             </span>
           )}
@@ -61,7 +61,7 @@ function AttendeeRow({
         {(pronouns || basedIn || updated) && (
           <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             {(pronouns || basedIn) && (
-              <span className="text-sm text-gray-500 line-clamp-1">
+              <span className="text-sm text-fg-subtle line-clamp-1">
                 {[pronouns, basedIn].filter(Boolean).join(" · ")}
               </span>
             )}
@@ -104,24 +104,24 @@ export function AttendeeList(props: {
               page: null,
             });
           }}
-          className={`text-sm text-white px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
+          className={`text-sm px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
             props.filter === f.value
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-gray-400 hover:bg-gray-500"
+              ? "bg-info text-on-info hover:bg-info-hover"
+              : "bg-surface-muted text-fg-muted hover:bg-surface-hover"
           }`}
           aria-pressed={props.filter === f.value}
           aria-label={`Filter by ${f.label}${props.filter === f.value ? " (active)" : ""}`}
         >
           {f.label}
           {props.filter === f.value && (
-            <span className="bg-blue-800 text-white text-xs px-1.5 py-0.5 rounded-full">
+            <span className="bg-info-hover text-on-info text-xs px-1.5 py-0.5 rounded-full">
               {props.total}
             </span>
           )}
         </button>
       ))}
       <label
-        className="flex items-center gap-2 text-sm text-gray-600"
+        className="flex items-center gap-2 text-sm text-fg-muted"
         // On the label, not the select: browsers suppress pointer events on a
         // disabled control, so a title there would never show a tooltip.
         title={
@@ -143,7 +143,7 @@ export function AttendeeList(props: {
           }}
           // pr-9 clears the chevron the forms plugin paints in the right
           // padding; a plain px-2 would let the longest option run under it.
-          className="pl-2 pr-9 py-1.5 text-sm rounded-md border border-gray-300 bg-white disabled:bg-gray-100 disabled:text-gray-400"
+          className="pl-2 pr-9 py-1.5 text-sm rounded-md border border-line bg-surface-raised disabled:bg-surface-muted disabled:text-fg-subtle"
         >
           {ATTENDEE_SORTS.map((s) => (
             <option key={s.value} value={s.value}>

@@ -37,7 +37,7 @@ export function ZoomableAvatar({
       <button
         type="button"
         aria-label={`Enlarge photo of ${name}`}
-        className="w-fit rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
+        className="w-fit rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
         onClick={() => setOpen(true)}
       >
         <Avatar name={name} image={image} />

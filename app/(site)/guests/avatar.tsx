@@ -42,7 +42,7 @@ export function Avatar({
       className={clsx(
         className,
         dimensions,
-        "shrink-0 rounded-full bg-rose-100 text-rose-600 font-semibold flex items-center justify-center overflow-hidden"
+        "shrink-0 rounded-full bg-brand-tint-hover text-brand-fg font-semibold flex items-center justify-center overflow-hidden"
       )}
       onClick={onClick}
       onDrop={onDrop}

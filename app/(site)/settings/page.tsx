@@ -4,6 +4,7 @@ import { getRepositories } from "@/db/container";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { SettingsForm } from "./settings-form";
 import { AccountSecurity } from "./account-security";
+import { AppearanceSettings } from "./appearance";
 
 export default async function SettingsPage() {
   const cookieStore = await cookies();
@@ -11,20 +12,25 @@ export default async function SettingsPage() {
   // guest must not grant access to that guest's settings.
   const currentUser = await verifiedCurrentUser(cookieStore);
 
+  // AppearanceSettings is repeated in every branch on purpose: it is about the
+  // device, so it stays available to a visitor who has not said who they are.
   if (!currentUser) {
     return (
-      <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
-        <p className="text-gray-700">
-          You need to select who you are before changing your settings. Pick
-          your name via the &ldquo;Select your name&rdquo; chip in the header at
-          the top of the page.
-        </p>
-        <Link
-          href="/guests"
-          className="bg-rose-400 text-white font-semibold py-2 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
-        >
-          Back to attendees
-        </Link>
+      <div className="flex flex-col gap-8">
+        <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
+          <p className="text-fg-muted">
+            You need to select who you are before changing your settings. Pick
+            your name via the &ldquo;Select your name&rdquo; chip in the header
+            at the top of the page.
+          </p>
+          <Link
+            href="/guests"
+            className="bg-brand text-on-brand font-semibold py-2 rounded shadow hover:bg-brand-hover active:bg-brand-hover w-fit px-12"
+          >
+            Back to attendees
+          </Link>
+        </div>
+        <AppearanceSettings />
       </div>
     );
   }
@@ -33,7 +39,10 @@ export default async function SettingsPage() {
 
   if (!guest) {
     return (
-      <p className="text-gray-600">Profile not found, please log in again.</p>
+      <div className="flex flex-col gap-8">
+        <p className="text-fg-muted">Profile not found, please log in again.</p>
+        <AppearanceSettings />
+      </div>
     );
   }
 
@@ -49,6 +58,7 @@ export default async function SettingsPage() {
           authProtected={guest.authProtected ?? false}
         />
       </div>
+      <AppearanceSettings />
     </div>
   );
 }

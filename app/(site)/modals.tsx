@@ -15,7 +15,7 @@ export function MapModal({ mapImageUrl }: { mapImageUrl: string }) {
       <button
         type="button"
         aria-label="Show map"
-        className="relative inline-flex items-center justify-center rounded-md p-1.5 bg-rose-400 text-white hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-rose-400"
+        className="relative inline-flex items-center justify-center rounded-md p-1.5 bg-brand text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-accent"
         onClick={() => setOpen(true)}
       >
         <MapIcon className="h-5 w-5 stroke-2" aria-hidden="true" />
@@ -78,7 +78,7 @@ export function CurrentUserModal(props: {
       {sessionInfoDisplay}
       {
         <div className="mt-2">
-          <span className="text-gray-500">RSVPing as...</span>
+          <span className="text-fg-subtle">RSVPing as...</span>
           <UserSelect guests={guests} />
         </div>
       }
@@ -86,14 +86,14 @@ export function CurrentUserModal(props: {
         <div className="relative inline-block group">
           <button
             type="button"
-            className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm disabled:bg-gray-400 px-4 py-2 bg-rose-400 text-base font-medium text-white hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 sm:text-sm mt-4"
+            className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm disabled:bg-surface-hover disabled:text-fg-subtle px-4 py-2 bg-brand text-base font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent sm:text-sm mt-4"
             onClick={onClickHandler}
             disabled={isDisabled}
           >
             {rsvpd ? "Un-RSVP" : "RSVP"}
           </button>
           {isDisabled && (
-            <div className="absolute bottom-3/4 left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-sm text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+            <div className="absolute bottom-3/4 left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-sm text-fg-inverse bg-surface-inverse rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
               Cannot RSVP to your own event
             </div>
           )}
@@ -119,7 +119,7 @@ export function ConfirmDeletionModal(props: {
     <>
       <button
         type="submit"
-        className="bg-white-400 text-red-900 font-semibold py-2 rounded shadow disabled:bg-gray-200 border-2 border-red-500 mx-auto px-12 hover:bg-rose-100 active:bg-rose-100"
+        className="bg-surface-raised text-danger-fg font-semibold py-2 rounded shadow disabled:bg-surface-hover border-2 border-danger mx-auto px-12 hover:bg-danger-tint active:bg-danger-tint"
         onClick={() => setOpen(true)}
         disabled={btnDisabled}
       >
@@ -130,14 +130,14 @@ export function ConfirmDeletionModal(props: {
         <div className="mt-4">
           <button
             type="button"
-            className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-rose-400 font-medium text-white hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400"
+            className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-brand font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent"
             onClick={() => void clickHandler()}
           >
             Yes
           </button>
           <button
             type="button"
-            className="ml-4 rounded-md border border-black shadow-sm px-6 py-2 bg-white font-medium text-black hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
+            className="ml-4 rounded-md border border-line-strong shadow-sm px-6 py-2 bg-surface-raised font-medium text-fg hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-line"
             onClick={() => setOpen(false)}
           >
             No
@@ -174,14 +174,14 @@ export function ConfirmationModal(props: {
         <div className="mt-4">
           <button
             type="button"
-            className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-rose-400 font-medium text-white hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400"
+            className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-brand font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent"
             onClick={clickHandler}
           >
             Yes
           </button>
           <button
             type="button"
-            className="ml-4 rounded-md border border-black shadow-sm px-6 py-2 bg-white font-medium text-black hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-200"
+            className="ml-4 rounded-md border border-line-strong shadow-sm px-6 py-2 bg-surface-raised font-medium text-fg hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-line"
             onClick={close}
           >
             No
@@ -212,7 +212,7 @@ export function AlertModal(props: {
       <div className="mt-4">
         <button
           type="button"
-          className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-rose-400 font-medium text-white hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400"
+          className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-brand font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent"
           onClick={close}
         >
           OK
@@ -259,7 +259,7 @@ export function Modal(props: {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gray-500/75 transition-opacity" />
+            <div className="fixed inset-0 bg-overlay transition-opacity" />
           </Transition.Child>
           <div className={`fixed inset-0 ${zIndex} w-full overflow-y-auto`}>
             <div className="flex min-h-full w-full items-center justify-center p-4 text-center sm:p-0">
@@ -272,13 +272,13 @@ export function Modal(props: {
                 leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                 leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
-                <Dialog.Panel className="relative mb-10 transform overflow-visible rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                <Dialog.Panel className="relative mb-10 transform overflow-visible rounded-lg bg-surface-raised px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                   {children}
                   {!hideClose && (
                     <div className="mt-4">
                       <button
                         type="button"
-                        className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-rose-400 text-base font-medium text-white hover:bg-rose-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 sm:text-sm"
+                        className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-brand text-base font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent sm:text-sm"
                         onClick={() => setOpen(false)}
                       >
                         Close

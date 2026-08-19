@@ -19,7 +19,7 @@ function ProfileItemLink({
   return (
     <Link
       {...props}
-      className="text-rose-500 hover:text-rose-600 hover:underline"
+      className="text-brand-fg hover:text-brand-fg-hover hover:underline"
     >
       {children}
     </Link>

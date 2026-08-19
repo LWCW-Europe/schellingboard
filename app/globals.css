@@ -2,17 +2,421 @@
 @config "../tailwind.config.ts";
 
 /*
- * Location colors are stored as Tailwind palette names and rendered as
- * dynamic classes (bg-${color}-500, …), which Tailwind's static content
- * scanner can't see. Safelist every shade actually used across the app.
- * Keep the color list here in sync with LOCATION_COLOR_NAMES in
- * utils/location-colors.ts — tests/unit/location-colors-safelist.test.ts
- * enforces it.
+ * `dark` has to answer three states rather than two: an explicit choice is a
+ * class on <html>, and its absence ("system") leaves the OS to decide.
+ * Resolving that here instead of with a blocking inline script keeps the first
+ * paint correct with no script at all, and it still works with JavaScript off.
+ *
+ * This is the only definition of "am I dark": the token rule below applies it
+ * to itself with `@variant dark`, so nothing has to restate the condition.
  */
-@source inline("bg-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{100,200,400,500}");
-@source inline("border-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{400,600}");
-@source inline("text-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-{400,500}");
-@source inline("focus:ring-{slate,gray,zinc,neutral,stone,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose}-400");
+@custom-variant dark {
+  &:where(.dark, .dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(html:not(.light), html:not(.light) *) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * Semantic colour tokens. Components name the *role* a colour plays
+ * (`bg-surface`, `text-fg-muted`) instead of a palette shade, so this rule is
+ * the only place a colour is chosen. Adding `dark:` to every utility instead
+ * would leave every future component free to forget one.
+ *
+ * The `@variant dark` block at the end holds only what changes, and it is not
+ * an inversion: elevation can no longer come from a shadow, so a raised
+ * surface is *lighter* than the page, and the pale tints become deep grounds
+ * instead of darkened pastels. `color-scheme` rides along so native controls,
+ * scrollbars and autofill follow the theme too.
+ *
+ * tests/unit/theme-contrast.test.ts asserts the WCAG ratio of each pair that
+ * occurs in the UI, in both themes — change a value here and it will tell you
+ * what it broke.
+ */
+:root {
+  color-scheme: light;
+
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f9fafb;
+  --surface-muted: #f3f4f6;
+  --surface-hover: #e5e7eb;
+  --surface-inverse: #1f2937;
+  --surface-inverse-hover: #111827;
+
+  --fg: #111827;
+  --fg-muted: #4b5563;
+  --fg-subtle: #6b7280;
+  /* Decorative only — separators, disabled glyphs. Never carries meaning. */
+  --fg-faint: #9ca3af;
+  --fg-inverse: #ffffff;
+  --fg-inverse-muted: #d1d5db;
+
+  /* Draws text inputs and selects, hence the 3:1 floor of WCAG 1.4.11. */
+  --line: #868e9c;
+  --line-subtle: #e5e7eb;
+  --line-strong: #4b5563;
+
+  --brand: #e11d48;
+  --brand-hover: #be123c;
+  --brand-fg: #be123c;
+  --brand-fg-hover: #9f1239;
+  /* Rings and borders, which only need 3:1 — a lighter rose than text may use. */
+  --brand-accent: #f43f5e;
+  --brand-tint: #fff1f2;
+  --brand-tint-hover: #ffe4e6;
+  --on-brand: #ffffff;
+
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-fg: #b91c1c;
+  --danger-fg-hover: #7f1d1d;
+  --danger-tint: #fef2f2;
+  --danger-border: #fca5a5;
+  --on-danger: #ffffff;
+
+  --warning: #f59e0b;
+  --warning-fg: #b45309;
+  --warning-tint: #fffbeb;
+
+  --success-fg: #15803d;
+
+  --link: #2563eb;
+  --link-hover: #1e40af;
+  --info: #1d4ed8;
+  --info-hover: #1e3a8a;
+  --on-info: #ffffff;
+
+  /*
+   * The vote you picked. A hue rather than a neutral because neither neutral
+   * works: `surface-inverse` flips to near-white in dark mode and swallows the
+   * emoji labelling those buttons (colour glyphs, so their own colours never
+   * follow the theme), and an always-dark fill like `bar` sits 1.06:1 from the
+   * near-black dark page. Not `brand` either — a red heart on rose was the
+   * clash; blue is the one hue far enough from all three (❤️ ⭐ 👋🏽). It holds
+   * `info`'s value today, but the two are free to part.
+   */
+  --vote-chosen: #1d4ed8;
+  --on-vote-chosen: #ffffff;
+
+  --overlay: #00000080;
+
+  /*
+   * Chrome that is dark in both themes — the admin header, toasts. Not
+   * `surface-inverse`, which flips to light and would turn the admin bar white
+   * in dark mode; these only get *darker* so they still separate from the page.
+   */
+  --bar: #111827;
+  --bar-fg: #f3f4f6;
+  --bar-fg-subtle: #b9c0cc;
+  /* How much of a location's hue survives each mix — see `loc-*` below. */
+  --loc-fill-mix: 55%;
+  --loc-dim-mix: 25%;
+  --loc-edge-mix: 65%;
+  --loc-badge-mix: 55%;
+  --loc-tint-mix: 14%;
+  --loc-fg-mix: 45%;
+
+  /* Only the tokens that differ; the rest are inherited from above. */
+  @variant dark {
+    color-scheme: dark;
+
+    --surface: #16181d;
+    --surface-raised: #1f232b;
+    --surface-sunken: #0f1114;
+    --surface-muted: #262b34;
+    --surface-hover: #333a46;
+    --surface-inverse: #e8eaee;
+    --surface-inverse-hover: #ffffff;
+
+    --fg: #e8eaee;
+    --fg-muted: #aab1bd;
+    --fg-subtle: #8c94a3;
+    --fg-faint: #6b7280;
+    --fg-inverse: #16181d;
+    --fg-inverse-muted: #4b5563;
+
+    --line: #6a7382;
+    --line-subtle: #2c313b;
+    --line-strong: #8c94a3;
+
+    /* Lighter on hover here, darker in light mode — both move away from the page. */
+    --brand: #be123c;
+    --brand-hover: #e11d48;
+    --brand-fg: #fb7185;
+    --brand-fg-hover: #fda4af;
+    --brand-accent: #fb7185;
+    --brand-tint: #3b1220;
+    --brand-tint-hover: #4d1727;
+
+    --danger-fg: #fca5a5;
+    --danger-fg-hover: #fecaca;
+    --danger-tint: #3f1515;
+    --danger-border: #7f1d1d;
+
+    --warning-fg: #fbbf24;
+    --warning-tint: #3a2a08;
+
+    --success-fg: #4ade80;
+
+    --link: #93c5fd;
+    --link-hover: #bfdbfe;
+    --info: #2563eb;
+    --info-hover: #3b82f6;
+
+    /* Lighter here so it separates from a near-black page, not from white. */
+    --vote-chosen: #2563eb;
+
+    --overlay: #000000b3;
+
+    --bar: #0f1114;
+
+    /* Less hue is needed against a dark ground to read as the same colour. */
+    --loc-fill-mix: 32%;
+    --loc-dim-mix: 15%;
+    --loc-edge-mix: 90%;
+    --loc-badge-mix: 75%;
+    --loc-tint-mix: 18%;
+  }
+}
+
+/*
+ * `inline` is what makes the swap work: a plain `@theme` bakes the value into
+ * the generated utility at build time, so `.dark` could never override it.
+ */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-surface-inverse-hover: var(--surface-inverse-hover);
+
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-fg-faint: var(--fg-faint);
+  --color-fg-inverse: var(--fg-inverse);
+  --color-fg-inverse-muted: var(--fg-inverse-muted);
+
+  --color-line: var(--line);
+  --color-line-subtle: var(--line-subtle);
+  --color-line-strong: var(--line-strong);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-fg-hover: var(--brand-fg-hover);
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-tint: var(--brand-tint);
+  --color-brand-tint-hover: var(--brand-tint-hover);
+  --color-on-brand: var(--on-brand);
+
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-fg-hover: var(--danger-fg-hover);
+  --color-danger-tint: var(--danger-tint);
+  --color-danger-border: var(--danger-border);
+  --color-on-danger: var(--on-danger);
+
+  --color-warning: var(--warning);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-tint: var(--warning-tint);
+
+  --color-success-fg: var(--success-fg);
+
+  --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+  --color-info: var(--info);
+  --color-info-hover: var(--info-hover);
+  --color-on-info: var(--on-info);
+
+  --color-vote-chosen: var(--vote-chosen);
+  --color-on-vote-chosen: var(--on-vote-chosen);
+
+  --color-overlay: var(--overlay);
+
+  --color-bar: var(--bar);
+  --color-bar-fg: var(--bar-fg);
+  --color-bar-fg-subtle: var(--bar-fg-subtle);
+}
+
+/*
+ * A location stores a Tailwind palette *name*; `loc-<name>` puts that hue into
+ * `--loc` and every role below mixes it with the page instead of using the
+ * shade directly. Two reasons: one class then works in both themes, and the
+ * text on a block always sits on a mix of the hue with `--surface`, so it is
+ * readable for all 22 hues — white on `yellow-500` was 1.8:1.
+ *
+ * These are plain rules rather than dynamic `bg-${color}-500` utilities, so
+ * nothing has to be safelisted for the scanner.
+ * tests/unit/location-colors.test.ts keeps the list in sync with
+ * LOCATION_COLOR_NAMES and checks the derived contrast for every hue.
+ */
+/* An unknown palette name still renders, in the default hue. */
+html {
+  --loc: var(--color-slate-500);
+}
+
+.loc-slate {
+  --loc: var(--color-slate-500);
+}
+.loc-gray {
+  --loc: var(--color-gray-500);
+}
+.loc-zinc {
+  --loc: var(--color-zinc-500);
+}
+.loc-neutral {
+  --loc: var(--color-neutral-500);
+}
+.loc-stone {
+  --loc: var(--color-stone-500);
+}
+.loc-red {
+  --loc: var(--color-red-500);
+}
+.loc-orange {
+  --loc: var(--color-orange-500);
+}
+.loc-amber {
+  --loc: var(--color-amber-500);
+}
+.loc-yellow {
+  --loc: var(--color-yellow-500);
+}
+.loc-lime {
+  --loc: var(--color-lime-500);
+}
+.loc-green {
+  --loc: var(--color-green-500);
+}
+.loc-emerald {
+  --loc: var(--color-emerald-500);
+}
+.loc-teal {
+  --loc: var(--color-teal-500);
+}
+.loc-cyan {
+  --loc: var(--color-cyan-500);
+}
+.loc-sky {
+  --loc: var(--color-sky-500);
+}
+.loc-blue {
+  --loc: var(--color-blue-500);
+}
+.loc-indigo {
+  --loc: var(--color-indigo-500);
+}
+.loc-violet {
+  --loc: var(--color-violet-500);
+}
+.loc-purple {
+  --loc: var(--color-purple-500);
+}
+.loc-fuchsia {
+  --loc: var(--color-fuchsia-500);
+}
+.loc-pink {
+  --loc: var(--color-pink-500);
+}
+.loc-rose {
+  --loc: var(--color-rose-500);
+}
+
+/* A scheduled session. */
+@utility loc-block {
+  background-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-fill-mix),
+    var(--surface)
+  );
+  border-color: color-mix(in oklab, var(--loc) var(--loc-edge-mix), var(--fg));
+  color: var(--fg);
+}
+
+/* A session that is over or otherwise pushed into the background. */
+@utility loc-block-dim {
+  background-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-dim-mix),
+    var(--surface)
+  );
+  border-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-fill-mix),
+    var(--surface)
+  );
+  color: var(--fg-muted);
+}
+
+/*
+ * The RSVP count, sitting on top of a `loc-block`. Mixed toward the
+ * foreground rather than the page so it separates from the fill underneath —
+ * which means its own text is the page colour, in both themes.
+ */
+@utility loc-badge {
+  background-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-badge-mix),
+    var(--fg)
+  );
+  color: var(--surface);
+}
+
+/* The location's name as a pill, on the page rather than on a block. */
+@utility loc-tag {
+  background-color: color-mix(
+    in oklab,
+    var(--loc) var(--loc-tint-mix),
+    var(--surface)
+  );
+  border-color: color-mix(in oklab, var(--loc) var(--loc-edge-mix), var(--fg));
+  /* Blending toward the foreground is what keeps this legible in both
+     themes: dark in light mode, pastel in dark mode, without a second value. */
+  color: color-mix(in oklab, var(--loc) var(--loc-fg-mix), var(--fg));
+}
+
+/* Admin's colour preview — the hue itself, with no text on it. */
+@utility loc-swatch {
+  background-color: var(--loc);
+}
+
+/*
+ * `@tailwindcss/forms` paints every field, select, checkbox and radio a literal
+ * `#fff`, which stays white in dark mode. Its rules land at the end of `base`,
+ * so out-ranking them by source order or specificity is not an option; the
+ * `components` layer beats `base` wholesale while still yielding to a `bg-*`
+ * utility on an individual field.
+ *
+ * That same bluntness is why the exclusions are listed by hand: the plugin
+ * skips the button-like and native-widget types, and a ticked box takes its
+ * fill from `currentColor` in a `base` rule this would otherwise cover.
+ */
+@layer components {
+  input:where(
+      :not(
+        [type="file"],
+        [type="range"],
+        [type="color"],
+        [type="submit"],
+        [type="reset"],
+        [type="button"],
+        [type="image"]
+      )
+    ):not(:checked, :indeterminate),
+  textarea,
+  select {
+    background-color: var(--surface-raised);
+  }
+}
 
 html {
   scrollbar-gutter: stable;

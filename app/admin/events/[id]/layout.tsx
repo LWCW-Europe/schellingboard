@@ -22,7 +22,7 @@ export default async function AdminEventDetailLayout({
       <div>
         <BackLink href="/admin/events">Events</BackLink>
       </div>
-      <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
+      <h1 className="text-2xl font-bold text-fg">{event.name}</h1>
       <EventTabs eventId={id} />
       {children}
     </div>

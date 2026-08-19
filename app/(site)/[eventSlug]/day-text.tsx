@@ -63,7 +63,7 @@ export function DayText(props: {
           .setZone(timezone)
           .toFormat("EEEE, MMMM d")}{" "}
       </h2>
-      <div className="flex flex-col divide-y divide-gray-300">
+      <div className="flex flex-col divide-y divide-line-subtle">
         {sessions.length > 0 ? (
           <>
             {sessions.map((session) => (
@@ -78,7 +78,7 @@ export function DayText(props: {
             ))}
           </>
         ) : (
-          <p className="text-gray-500 italic text-sm w-full text-left">
+          <p className="text-fg-subtle italic text-sm w-full text-left">
             No sessions
           </p>
         )}

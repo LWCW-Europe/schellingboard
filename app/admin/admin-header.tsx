@@ -33,8 +33,8 @@ function NavLinks({ block }: { block?: boolean }) {
               "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
               block && "block",
               active
-                ? "bg-white/15 text-white"
-                : "text-gray-300 hover:bg-white/10 hover:text-white"
+                ? "bg-bar-fg/15 text-bar-fg"
+                : "text-bar-fg-subtle hover:bg-bar-fg/10 hover:text-bar-fg"
             )}
           >
             {link.label}
@@ -53,11 +53,14 @@ export function AdminHeader({
   isAdmin: boolean;
 }) {
   return (
-    <Disclosure as="header" className="bg-gray-900 text-white">
+    <Disclosure as="header" className="bg-bar text-bar-fg">
       {({ open }) => (
         <>
           <div className="max-w-6xl mx-auto px-3 lg:px-8 py-3 flex items-center justify-between gap-4">
-            <Link href="/admin" className="font-semibold hover:text-gray-300">
+            <Link
+              href="/admin"
+              className="font-semibold hover:text-bar-fg-subtle"
+            >
               {title} Admin
             </Link>
 
@@ -72,7 +75,7 @@ export function AdminHeader({
                 {/* Mobile: collapse everything behind a hamburger */}
                 <Disclosure.Button
                   aria-label={open ? "Close admin menu" : "Open admin menu"}
-                  className="sm:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-300 hover:bg-gray-800 hover:text-white"
+                  className="sm:hidden inline-flex items-center justify-center rounded-md p-2 text-bar-fg-subtle hover:bg-bar-fg/10 hover:text-bar-fg"
                 >
                   {open ? (
                     <XMarkIcon className="h-6 w-6" />
@@ -85,7 +88,7 @@ export function AdminHeader({
           </div>
 
           {isAdmin && (
-            <Disclosure.Panel className="sm:hidden border-t border-gray-800 px-3 py-3 space-y-3">
+            <Disclosure.Panel className="sm:hidden border-t border-bar-fg/20 px-3 py-3 space-y-3">
               <NavLinks block />
               <AdminLogoutButton />
             </Disclosure.Panel>

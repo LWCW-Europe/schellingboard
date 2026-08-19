@@ -88,7 +88,7 @@ export function ViewProposal(props: {
       <Proposal proposal={proposal} />
 
       {proposal.hosts.length === 0 && (
-        <p className="mt-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-gray-700">
+        <p className="mt-4 rounded-md border border-brand-tint-hover bg-brand-tint px-3 py-2 text-sm text-fg-muted">
           Nobody is offering this session yet. If you could give it, take it on:
           click Edit and add yourself as a host.
         </p>
@@ -99,7 +99,7 @@ export function ViewProposal(props: {
           <div className="relative inline-block group">
             <Link
               href={`/${eventSlug}/proposals/${proposal.id}/edit`}
-              className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors"
+              className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-brand-accent text-brand-fg hover:bg-brand-tint focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition-colors"
             >
               <PencilIcon className="h-3 w-3 mr-1" />
               Edit
@@ -112,7 +112,7 @@ export function ViewProposal(props: {
           >
             <button
               onClick={handleScheduleClick}
-              className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-rose-400 text-rose-400 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-400 transition-colors ${
+              className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-brand-accent text-brand-fg hover:bg-brand-tint focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition-colors ${
                 schedEnabled ? "" : "opacity-50 cursor-not-allowed"
               }`}
             >
@@ -137,7 +137,7 @@ export function ViewProposal(props: {
       {schedEnabled && (
         <div className="mt-6 space-y-3">
           {!isHost() && (
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-fg-muted">
               Your vote:
               <span
                 title={(() => {
@@ -164,18 +164,18 @@ export function ViewProposal(props: {
               </span>
             </div>
           )}
-          <div className="text-sm text-gray-700">
+          <div className="text-sm text-fg-muted">
             Total votes:
             <span className="ml-2 inline-flex items-center gap-3">
               <span
                 title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
-                className="inline-flex items-center gap-1 text-sm text-gray-500"
+                className="inline-flex items-center gap-1 text-sm text-fg-subtle"
               >
                 ❤️&nbsp;{proposal.interestedVotesCount}
               </span>
               <span
                 title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
-                className="inline-flex items-center gap-1 text-sm text-gray-500"
+                className="inline-flex items-center gap-1 text-sm text-fg-subtle"
               >
                 ⭐&nbsp;{proposal.maybeVotesCount}
               </span>
@@ -184,7 +184,7 @@ export function ViewProposal(props: {
         </div>
       )}
       {schedEnabled && (
-        <div className="mt-6 text-sm text-gray-600">
+        <div className="mt-6 text-sm text-fg-muted">
           {sessions.length === 0 ? (
             <p>This proposal has not been scheduled yet.</p>
           ) : sessions.length === 1 ? (
@@ -192,7 +192,7 @@ export function ViewProposal(props: {
               This proposal was scheduled on{" "}
               <Link
                 {...viewSessionLinkFromElsewhere(eventSlug, sessions[0].id)}
-                className="text-rose-500 underline hover:text-rose-600 transition-colors"
+                className="text-brand-fg underline hover:text-brand-fg-hover transition-colors"
               >
                 {DateTime.fromJSDate(sessions[0].startTime ?? new Date())
                   .setZone(event.timezone)
@@ -213,7 +213,7 @@ export function ViewProposal(props: {
                   <li key={session.id}>
                     <Link
                       {...viewSessionLinkFromElsewhere(eventSlug, session.id)}
-                      className="text-rose-500 underline hover:text-rose-600 transition-colors"
+                      className="text-brand-fg underline hover:text-brand-fg-hover transition-colors"
                     >
                       {DateTime.fromJSDate(session.startTime ?? new Date())
                         .setZone(event.timezone)

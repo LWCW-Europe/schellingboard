@@ -9,7 +9,7 @@ export default async function AdminSettingsPage() {
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+      <h1 className="text-2xl font-bold text-fg">Settings</h1>
       <section aria-label="Site settings" className="space-y-4">
         <SettingsManager settings={settings} />
       </section>

@@ -70,8 +70,8 @@ export function CommentLikes({
           aria-pressed={liked}
           className={`cursor-pointer disabled:opacity-50 ${
             liked
-              ? "font-semibold text-rose-500 hover:text-rose-600"
-              : "hover:text-gray-800 hover:underline"
+              ? "font-semibold text-brand-fg hover:text-brand-fg-hover"
+              : "hover:text-fg hover:underline"
           }`}
         >
           {liked ? "Liked" : "Like"}
@@ -91,12 +91,12 @@ export function CommentLikes({
               setPreviewing(false);
               setShowingLikers(true);
             }}
-            className="cursor-pointer hover:text-gray-800 hover:underline"
+            className="cursor-pointer hover:text-fg hover:underline"
           >
             {countLabel}
           </button>
           <span
-            className={`pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 rounded bg-gray-800 px-2 py-1 text-sm whitespace-nowrap text-white transition-opacity duration-200 [@media(hover:hover)]:block ${
+            className={`pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 rounded bg-surface-inverse px-2 py-1 text-sm whitespace-nowrap text-fg-inverse transition-opacity duration-200 [@media(hover:hover)]:block ${
               previewing && !showingLikers ? "opacity-100" : "opacity-0"
             }`}
             role="tooltip"
@@ -107,7 +107,7 @@ export function CommentLikes({
               </span>
             ))}
             {beyondPreview > 0 && (
-              <span className="block text-gray-300">
+              <span className="block text-fg-inverse-muted">
                 and {beyondPreview} more
               </span>
             )}
@@ -115,11 +115,11 @@ export function CommentLikes({
         </span>
       )}
 
-      {error && <span className="text-red-500">{error}</span>}
+      {error && <span className="text-danger-fg">{error}</span>}
 
       {showingLikers && (
         <Modal open setOpen={setShowingLikers} zIndex="z-[60]" portal>
-          <Dialog.Title className="text-base font-semibold text-gray-900">
+          <Dialog.Title className="text-base font-semibold text-fg">
             Liked by
           </Dialog.Title>
           <ul className="mt-3 max-h-72 overflow-y-auto text-sm">
@@ -127,7 +127,7 @@ export function CommentLikes({
               <li key={liker.id}>
                 <Link
                   href={`/guests/${liker.id}`}
-                  className="flex items-center gap-3 rounded-md px-2 py-1.5 font-medium text-gray-900 hover:bg-gray-50"
+                  className="flex items-center gap-3 rounded-md px-2 py-1.5 font-medium text-fg hover:bg-surface-sunken"
                 >
                   <Avatar
                     name={liker.name}

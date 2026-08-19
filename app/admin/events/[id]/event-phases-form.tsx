@@ -57,13 +57,13 @@ export function EventPhasesForm({ event }: { event: Event }) {
 
   return (
     <form onSubmit={handleSave} className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Phases</h2>
-      <p className="text-sm text-gray-500">
+      <h2 className="text-lg font-semibold text-fg">Phases</h2>
+      <p className="text-sm text-fg-subtle">
         All times are in the event timezone ({event.timezone}). Leave fields
         empty to unset a phase. A phase with no end runs until the next phase
         starts; set an end earlier than the next start to leave an inactive gap.
       </p>
-      {saveError && <p className="text-sm text-red-600">{saveError}</p>}
+      {saveError && <p className="text-sm text-danger-fg">{saveError}</p>}
 
       {(
         [
@@ -85,10 +85,10 @@ export function EventPhasesForm({ event }: { event: Event }) {
         ] as const
       ).map(({ label, startKey, endKey }) => (
         <fieldset key={label}>
-          <legend className="text-sm font-medium text-gray-700">{label}</legend>
+          <legend className="text-sm font-medium text-fg-muted">{label}</legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
             <div className="flex flex-col gap-1">
-              <label htmlFor={startKey} className="text-sm text-gray-600">
+              <label htmlFor={startKey} className="text-sm text-fg-muted">
                 Start
               </label>
               <Input
@@ -100,7 +100,7 @@ export function EventPhasesForm({ event }: { event: Event }) {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor={endKey} className="text-sm text-gray-600">
+              <label htmlFor={endKey} className="text-sm text-fg-muted">
                 End
               </label>
               <Input
@@ -119,7 +119,7 @@ export function EventPhasesForm({ event }: { event: Event }) {
         <button type="submit" disabled={isSaving} className={PRIMARY_BUTTON}>
           {isSaving ? "Saving..." : "Save phases"}
         </button>
-        {saveSuccess && <span className="text-sm text-green-600">Saved!</span>}
+        {saveSuccess && <span className="text-sm text-success-fg">Saved!</span>}
       </div>
     </form>
   );

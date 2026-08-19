@@ -225,17 +225,17 @@ export function ProfileForm({ guest }: { guest: Guest }) {
     <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
       <Link
         href="/guests"
-        className="bg-rose-400 text-white font-semibold py-2 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
+        className="bg-brand text-on-brand font-semibold py-2 rounded shadow hover:bg-brand-hover active:bg-brand-hover w-fit px-12"
       >
         Back to attendees
       </Link>
       <h1 className="text-2xl font-bold">Edit profile</h1>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-fg-subtle">
         Everything here is shown on your public profile. Email notifications and
         other private preferences live in{" "}
         <Link
           href="/settings"
-          className="text-rose-500 hover:text-rose-600 underline"
+          className="text-brand-fg hover:text-brand-fg-hover underline"
         >
           Settings
         </Link>
@@ -252,11 +252,11 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           <button
             className={clsx(
               "flex items-center gap-4 cursor-pointer pe-4 border-solid border-e",
-              "hover:text-rose-500 active:text-rose-600 drop:boder-rose-400",
-              "transition-outline duration-200 ease-in-out outline-gray-500 outline-dashed outline-0",
+              "hover:text-brand-fg active:text-brand-fg-hover",
+              "transition-outline duration-200 ease-in-out outline-line outline-dashed outline-0",
               isDragging
                 ? "cursor-grabbing outline-4 rounded-full border-transparent"
-                : "border-gray-500"
+                : "border-line-strong"
             )}
             type="button"
             ref={avatarPicker}
@@ -279,7 +279,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           </button>
           <button
             type="button"
-            className="text-rose-400 hover:text-rose-500 active:text-rose-600 cursor-pointer"
+            className="text-brand-fg hover:text-brand-fg-hover active:text-brand-fg-hover cursor-pointer"
             onClick={() => form.setValue("avatar", null)}
           >
             Reset
@@ -296,7 +296,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
             hidden
           />
         </div>
-        <span className="text-rose-400 text-sm">
+        <span className="text-brand-fg text-sm">
           {form.formState.errors.avatar?.message}
         </span>
 
@@ -304,7 +304,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           <div className="flex flex-1 flex-col gap-1">
             <label className="font-medium" htmlFor="profile-name">
               Name
-              <span className="text-rose-500 mx-1">*</span>
+              <span className="text-brand-fg mx-1">*</span>
             </label>
             <Input
               id="profile-name"
@@ -312,7 +312,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
               {...form.register("name")}
               placeholder="Your name"
             />
-            <span className="text-rose-400 text-sm">
+            <span className="text-brand-fg text-sm">
               {form.formState.errors.name?.message}
             </span>
           </div>
@@ -330,7 +330,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
               invalid={pronounController.fieldState.invalid}
               fieldRef={pronounController.field.ref}
             />
-            <span className="text-rose-400 text-sm">
+            <span className="text-brand-fg text-sm">
               {form.formState.errors.pronouns?.message}
             </span>
           </div>
@@ -346,7 +346,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
             {...form.register("basedIn")}
             placeholder="City, region, or country"
           />
-          <span className="text-rose-400 text-sm">
+          <span className="text-brand-fg text-sm">
             {form.formState.errors.basedIn?.message}
           </span>
         </div>
@@ -362,7 +362,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
             className={form.formState.errors.aboutMe ? "invalid" : ""}
           />
           <MarkdownHint />
-          <span className="text-rose-400 text-sm">
+          <span className="text-brand-fg text-sm">
             {form.formState.errors.aboutMe?.message}
           </span>
         </div>
@@ -391,14 +391,14 @@ export function ProfileForm({ guest }: { guest: Guest }) {
                         type="button"
                         aria-label="Suggest a different prompt"
                         title="Suggest a different prompt"
-                        className="text-rose-400 hover:text-rose-500"
+                        className="text-brand-fg hover:text-brand-fg-hover"
                         onClick={() => swapPrompt(i)}
                       >
                         <ArrowPathIcon className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
-                        className="text-sm text-rose-400 hover:text-rose-500"
+                        className="text-sm text-brand-fg hover:text-brand-fg-hover"
                         onClick={() => prompts.remove(i)}
                       >
                         Remove
@@ -414,7 +414,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
                   {...form.register(`prompts.${i}.answer`)}
                   placeholder="A sentence or two"
                 />
-                <span className="text-rose-400 text-sm">
+                <span className="text-brand-fg text-sm">
                   {form.formState.errors.prompts?.[i]?.answer?.message}
                 </span>
               </div>
@@ -422,7 +422,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           })}
           <button
             type="button"
-            className="text-sm font-semibold text-rose-500 hover:text-rose-600 w-fit"
+            className="text-sm font-semibold text-brand-fg hover:text-brand-fg-hover w-fit"
             onClick={suggestPrompt}
           >
             Suggest a prompt
@@ -456,7 +456,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
                         fieldRef={f.ref}
                       />
                       {fieldState.error && (
-                        <span className="text-rose-400 text-sm">
+                        <span className="text-brand-fg text-sm">
                           {fieldState.error.message}
                         </span>
                       )}
@@ -466,7 +466,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
               </div>
               <button
                 type="button"
-                className="text-sm text-rose-400 hover:text-rose-500"
+                className="text-sm text-brand-fg hover:text-brand-fg-hover"
                 onClick={() => languages.remove(i)}
               >
                 Remove
@@ -475,13 +475,13 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           ))}
           <button
             type="button"
-            className="text-sm font-semibold text-rose-500 hover:text-rose-600 w-fit disabled:text-gray-400"
+            className="text-sm font-semibold text-brand-fg hover:text-brand-fg-hover w-fit disabled:text-fg-subtle"
             disabled={languages.fields.length >= MAX_LANGUAGES}
             onClick={() => languages.append({ value: "" })}
           >
             Add language
           </button>
-          <span className="text-rose-400 text-sm">
+          <span className="text-brand-fg text-sm">
             {form.formState.errors.languages?.root?.message ??
               form.formState.errors.languages?.message}
           </span>
@@ -500,7 +500,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
                 <select
                   aria-label="Contact type"
                   {...form.register(`contacts.${i}.type`)}
-                  className="h-12 sm:w-40 rounded-md border border-gray-300 bg-white px-3 shadow-sm focus:ring-2 focus:ring-rose-400 focus:outline-0"
+                  className="h-12 sm:w-40 rounded-md border border-line bg-surface-raised px-3 shadow-sm focus:ring-2 focus:ring-brand-accent focus:outline-0"
                 >
                   {CONTACT_TYPES.map((type) => (
                     <option key={type} value={type}>
@@ -532,13 +532,13 @@ export function ProfileForm({ guest }: { guest: Guest }) {
                 />
                 <button
                   type="button"
-                  className="text-sm text-rose-400 hover:text-rose-500"
+                  className="text-sm text-brand-fg hover:text-brand-fg-hover"
                   onClick={() => contacts.remove(i)}
                 >
                   Remove
                 </button>
               </div>
-              <span className="text-rose-400 text-sm">
+              <span className="text-brand-fg text-sm">
                 {form.formState.errors.contacts?.[i]?.label?.message ??
                   form.formState.errors.contacts?.[i]?.value?.message}
               </span>
@@ -546,7 +546,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
           ))}
           <button
             type="button"
-            className="text-sm font-semibold text-rose-500 hover:text-rose-600 w-fit disabled:text-gray-400"
+            className="text-sm font-semibold text-brand-fg hover:text-brand-fg-hover w-fit disabled:text-fg-subtle"
             disabled={contacts.fields.length >= MAX_CONTACTS}
             onClick={() =>
               contacts.append({ type: "email", label: "", value: "" })
@@ -555,7 +555,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
             Add contact
           </button>
           <MarkdownHint />
-          <span className="text-rose-400 text-sm">
+          <span className="text-brand-fg text-sm">
             {form.formState.errors.contacts?.root?.message ??
               form.formState.errors.contacts?.message}
           </span>
@@ -573,7 +573,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
 
         <button
           type="submit"
-          className="bg-rose-400 text-white font-semibold py-2 rounded shadow disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500 mx-auto px-12"
+          className="bg-brand text-on-brand font-semibold py-2 rounded shadow disabled:bg-surface-hover disabled:text-fg-subtle disabled:shadow-none hover:bg-brand-hover active:bg-brand-hover mx-auto px-12"
           disabled={form.formState.isSubmitting}
         >
           {form.formState.isSubmitting ? "Saving..." : "Save"}
@@ -610,11 +610,11 @@ function DisclosureSection({
         // this section's own jump: another section's is none of its business.
         if (!e.currentTarget.open && forceOpen) onCollapse?.();
       }}
-      className="rounded-md border border-gray-200 bg-white shadow-sm"
+      className="rounded-md border border-line-subtle bg-surface-raised shadow-sm"
     >
       <summary className="cursor-pointer select-none px-4 py-3">
         <span className="font-medium">{title}</span>
-        <span className="block text-sm text-gray-500">{hint}</span>
+        <span className="block text-sm text-fg-subtle">{hint}</span>
       </summary>
       <div className="flex flex-col gap-4 px-4 pb-4">{children}</div>
     </details>
@@ -688,10 +688,10 @@ function FreeformCombobox({
       <Combobox value={value ?? null} onChange={onChange} immediate>
         <ComboboxInput
           className={clsx(
-            "h-12 w-full rounded-md border bg-white px-4 shadow-sm transition-colors invalid:border-red-500 invalid:text-red-900 invalid:placeholder-red-300 focus:outline-none disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-500",
+            "h-12 w-full rounded-md border bg-surface-raised px-4 shadow-sm transition-colors invalid:border-danger invalid:text-danger-fg invalid:placeholder-danger-border focus:outline-none disabled:cursor-not-allowed disabled:border-line-subtle disabled:bg-surface-sunken disabled:text-fg-subtle",
             invalid
-              ? "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500" // matches invalid: styles
-              : "border-gray-300 placeholder-gray-400 focus:ring-2 focus:ring-rose-400 focus:outline-0 focus:border-none"
+              ? "border-danger-border text-danger-fg placeholder-danger-border focus:border-danger focus:ring-danger" // matches invalid: styles
+              : "border-line placeholder-fg-subtle focus:ring-2 focus:ring-brand-accent focus:outline-0 focus:border-none"
           )}
           id={id}
           aria-label={ariaLabel}
@@ -712,12 +712,12 @@ function FreeformCombobox({
           }}
         />
         <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-2">
-          <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+          <ChevronUpDownIcon className="h-5 w-5 text-fg-subtle" />
         </ComboboxButton>
         {/* modal={false} keeps the page scrollable while the list is open */}
         <ComboboxOptions
           modal={false}
-          className="absolute mt-1 z-10 w-full rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm"
+          className="absolute mt-1 z-10 w-full rounded-md bg-surface-raised py-1 text-base shadow-lg ring-1 ring-line-subtle focus:outline-none sm:text-sm"
         >
           <div className="max-h-60 overflow-auto">
             {shownOptions.map((option) => (
@@ -726,14 +726,14 @@ function FreeformCombobox({
                 value={option}
                 className={({ focus }) =>
                   clsx`relative cursor-pointer select-none py-2 pl-10 pr-4 z-10
-                    ${focus ? "bg-rose-100 text-rose-900" : "text-gray-900 bg-white"}`
+                    ${focus ? "bg-brand-tint-hover text-brand-fg" : "text-fg bg-surface-raised"}`
                 }
               >
                 {option}
               </ComboboxOption>
             ))}
           </div>
-          <div className="border-t border-gray-100 px-4 py-2 text-xs text-gray-500">
+          <div className="border-t border-line-subtle px-4 py-2 text-xs text-fg-subtle">
             Pick one or type any text
           </div>
         </ComboboxOptions>

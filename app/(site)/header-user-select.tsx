@@ -48,11 +48,11 @@ export function HeaderUserSelect({ guests }: { guests: Guest[] }) {
   };
 
   const chipClasses =
-    "flex min-w-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-rose-400";
+    "flex min-w-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-accent";
 
   const selectModal = (
     <Modal open={open} setOpen={setOpen}>
-      <label htmlFor="user-selection" className="text-gray-500">
+      <label htmlFor="user-selection" className="text-fg-subtle">
         My name is:
       </label>
       <UserSelect guests={guests} onSelect={() => setOpen(false)} />
@@ -71,7 +71,7 @@ export function HeaderUserSelect({ guests }: { guests: Guest[] }) {
           className={clsx(
             chipClasses,
             // No name set: gently draw attention to prompt a selection.
-            "bg-rose-50 text-rose-500 hover:bg-rose-100"
+            "bg-brand-tint text-brand-fg hover:bg-brand-tint-hover"
           )}
         >
           <UserCircleIcon className="h-5 w-5 shrink-0 stroke-2" />
@@ -87,7 +87,7 @@ export function HeaderUserSelect({ guests }: { guests: Guest[] }) {
   const itemClasses = (focus: boolean) =>
     clsx(
       "block w-full text-left px-4 py-2 text-sm",
-      focus ? "bg-gray-100 text-gray-900" : "text-gray-700"
+      focus ? "bg-surface-muted text-fg" : "text-fg-muted"
     );
 
   return (
@@ -95,7 +95,7 @@ export function HeaderUserSelect({ guests }: { guests: Guest[] }) {
       <Menu>
         <MenuButton
           aria-label={`Your name: ${currentGuest.name}`}
-          className={clsx(chipClasses, "text-gray-600 hover:bg-gray-100")}
+          className={clsx(chipClasses, "text-fg-muted hover:bg-surface-muted")}
         >
           <UserCircleIcon className="h-5 w-5 shrink-0 stroke-2" />
           <span className="max-w-[40vw] truncate sm:max-w-[12rem]">
@@ -105,7 +105,7 @@ export function HeaderUserSelect({ guests }: { guests: Guest[] }) {
         </MenuButton>
         <MenuItems
           anchor="bottom end"
-          className="z-40 mt-1 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none"
+          className="z-40 mt-1 w-48 rounded-md bg-surface-raised py-1 shadow-lg ring-1 ring-line-subtle focus:outline-none"
         >
           <MenuItem>
             {({ focus }) => (
@@ -131,7 +131,7 @@ export function HeaderUserSelect({ guests }: { guests: Guest[] }) {
               </Link>
             )}
           </MenuItem>
-          <MenuSeparator className="my-1 h-px bg-gray-100" />
+          <MenuSeparator className="my-1 h-px bg-surface-muted" />
           <MenuItem>
             {({ focus }) => (
               <button

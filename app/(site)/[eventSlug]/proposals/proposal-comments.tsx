@@ -81,7 +81,7 @@ export function ProposalComments({
   }, [highlightedId, comments]);
 
   return (
-    <section className="mt-8 border-t border-gray-200 pt-6">
+    <section className="mt-8 border-t border-line-subtle pt-6">
       <h2 className="text-lg font-semibold mb-4">
         {total === 1 ? "1 comment" : `${total} comments`}
       </h2>
@@ -112,7 +112,7 @@ export function ProposalComments({
           submitLabel="Comment"
         />
       ) : (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-fg-subtle">
           Select your name to leave a comment.
         </p>
       )}
@@ -149,7 +149,7 @@ function CommentThread({
 
   const permalink = `/${eventSlug}/proposals?viewProposal=${proposalId}#comment-${node.id}`;
   const isAuthor = !!currentUserId && node.author?.id === currentUserId;
-  const background = depth % 2 === 1 ? "bg-[#f2f2f2]" : "bg-white";
+  const background = depth % 2 === 1 ? "bg-surface-muted" : "bg-surface-raised";
 
   const onDelete = async () => {
     setError(null);
@@ -169,14 +169,16 @@ function CommentThread({
     <div
       className={`relative rounded ${background} ${
         depth === 0
-          ? "mb-[17px] border border-gray-200"
-          : "border-l-2 border-gray-300"
+          ? "mb-[17px] border border-line-subtle"
+          : "border-l-2 border-line"
       }`}
     >
       <div
         id={`comment-${node.id}`}
         className={`rounded ${depth > 0 ? "pl-3 pr-2 py-2" : "px-3 py-2"} ${
-          node.id === highlightedId ? "relative z-10 ring-2 ring-rose-400" : ""
+          node.id === highlightedId
+            ? "relative z-10 ring-2 ring-brand-accent"
+            : ""
         }`}
       >
         <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
@@ -185,12 +187,12 @@ function CommentThread({
             onClick={() => setCollapsed(!collapsed)}
             aria-expanded={!collapsed}
             aria-label={collapsed ? "Expand comment" : "Collapse comment"}
-            className="cursor-pointer font-mono text-xs text-gray-500 hover:text-gray-800"
+            className="cursor-pointer font-mono text-xs text-fg-muted hover:text-fg"
           >
             [{collapsed ? "+" : "-"}]
           </button>
           {node.deleted ? (
-            <span className="text-sm italic text-gray-500">
+            <span className="text-sm italic text-fg-muted">
               Comment deleted
             </span>
           ) : (
@@ -198,13 +200,13 @@ function CommentThread({
               {node.author ? (
                 <Link
                   href={`/guests/${node.author.id}`}
-                  className="font-medium text-rose-500 hover:text-rose-600 hover:underline"
+                  className="font-medium text-brand-fg hover:text-brand-fg-hover hover:underline"
                 >
                   {node.author.name}
                 </Link>
               ) : (
                 // The author's guest was removed; there is no profile to link.
-                <span className="font-medium text-gray-500">Unknown</span>
+                <span className="font-medium text-fg-muted">Unknown</span>
               )}
               <Link
                 href={permalink}
@@ -214,7 +216,7 @@ function CommentThread({
                 replace
                 scroll={false}
                 onClick={() => highlight(node.id)}
-                className="text-xs text-gray-500 hover:text-gray-800 hover:underline"
+                className="text-xs text-fg-muted hover:text-fg hover:underline"
               >
                 <time dateTime={node.createdTime.toISOString()}>
                   {formatInLocalZone(node.createdTime, timezone, localZone)}
@@ -222,7 +224,7 @@ function CommentThread({
               </Link>
               {node.editedTime && (
                 <span
-                  className="text-xs text-gray-400"
+                  className="text-xs text-fg-muted"
                   title={`Edited ${formatInLocalZone(node.editedTime, timezone, localZone)}`}
                 >
                   (edited)
@@ -246,19 +248,19 @@ function CommentThread({
                 onDone={() => setEditing(false)}
               />
             ) : (
-              <div className="mt-1 text-sm text-gray-800 break-words">
+              <div className="mt-1 text-sm text-fg break-words">
                 <Markdown>{node.body}</Markdown>
               </div>
             )}
 
             {!editing && (
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-fg-muted">
                 <CommentLikes comment={node} eventSlug={eventSlug} />
                 {currentUserId && (
                   <button
                     type="button"
                     onClick={() => setReplying(!replying)}
-                    className="cursor-pointer hover:text-gray-800 hover:underline"
+                    className="cursor-pointer hover:text-fg hover:underline"
                   >
                     Reply
                   </button>
@@ -268,14 +270,14 @@ function CommentThread({
                     <button
                       type="button"
                       onClick={() => setEditing(true)}
-                      className="cursor-pointer hover:text-gray-800 hover:underline"
+                      className="cursor-pointer hover:text-fg hover:underline"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmingDelete(true)}
-                      className="cursor-pointer hover:text-red-600 hover:underline"
+                      className="cursor-pointer hover:text-danger-fg hover:underline"
                     >
                       Delete
                     </button>
@@ -284,7 +286,7 @@ function CommentThread({
               </div>
             )}
 
-            {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+            {error && <p className="mt-1 text-sm text-danger-fg">{error}</p>}
 
             {replying && (
               <CommentForm
@@ -303,7 +305,7 @@ function CommentThread({
 
       {!collapsed && node.replies.length > 0 && (
         <div className="flex">
-          <span className="w-3 shrink-0 hover:bg-black/10" />
+          <span className="w-3 shrink-0 hover:bg-surface-hover" />
           <div className="min-w-0 flex-1">
             {node.replies.map((reply) => (
               <CommentThread
@@ -411,7 +413,7 @@ function CommentForm({
         maxLength={COMMENT_MAX_LENGTH}
         onChange={(e) => setBody(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-rose-400 focus:ring-rose-400"
+        className="w-full rounded-md border border-line p-2 text-sm focus:border-brand-accent focus:ring-brand-accent"
       />
       <div className="mt-1 flex items-center justify-between gap-2">
         <MarkdownHint />
@@ -420,7 +422,7 @@ function CommentForm({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-md border border-gray-300 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              className="rounded-md border border-line px-3 py-1 text-sm font-medium text-fg-muted hover:bg-surface-muted"
             >
               Cancel
             </button>
@@ -428,13 +430,13 @@ function CommentForm({
           <button
             type="submit"
             disabled={submitting || body.trim().length === 0}
-            className="rounded-md bg-rose-400 px-3 py-1 text-sm font-medium text-white hover:bg-rose-500 disabled:opacity-50"
+            className="rounded-md bg-brand px-3 py-1 text-sm font-medium text-on-brand hover:bg-brand-hover disabled:opacity-50"
           >
             {submitting ? "Saving..." : submitLabel}
           </button>
         </div>
       </div>
-      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-sm text-danger-fg">{error}</p>}
     </form>
   );
 }

@@ -31,14 +31,14 @@ export function SelectHosts<
 
   const comboboxContent = (
     <div className="relative mt-1">
-      <div className="relative w-full min-h-12 h-fit rounded-md border transition-colors border-gray-300 bg-white py-2 pl-3 pr-10 focus-within:ring-2 focus-within:ring-rose-400 focus-within:border-transparent">
+      <div className="relative w-full min-h-12 h-fit rounded-md border transition-colors border-line bg-surface-raised py-2 pl-3 pr-10 focus-within:ring-2 focus-within:ring-brand-accent focus-within:border-transparent">
         <div className="flex flex-wrap gap-1 items-center">
           {hosts.length > 0 && (
             <>
               {hosts.map((host) => (
                 <span
                   key={host.id}
-                  className="py-1 px-2 bg-gray-100 rounded text-nowrap text-sm flex items-center gap-1"
+                  className="py-1 px-2 bg-surface-muted rounded text-nowrap text-sm flex items-center gap-1"
                 >
                   {host.name}
                   <button
@@ -49,7 +49,7 @@ export function SelectHosts<
                     }}
                     aria-label={`Remove ${host.name}`}
                   >
-                    <XMarkIcon className="h-4 w-4 text-gray-400 hover:text-gray-700" />
+                    <XMarkIcon className="h-4 w-4 text-fg-subtle hover:text-fg-muted" />
                   </button>
                 </span>
               ))}
@@ -59,12 +59,12 @@ export function SelectHosts<
             id={id}
             onChange={(event) => setQuery(event.target.value)}
             value={query}
-            className="border-none focus:ring-0 px-0 py-1 text-sm flex-1 min-w-8 bg-transparent placeholder:text-gray-400 outline-none"
+            className="border-none focus:ring-0 px-0 py-1 text-sm flex-1 min-w-8 bg-transparent placeholder:text-fg-subtle outline-none"
           />
         </div>
       </div>
       <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-        <ChevronUpDownIcon className="h-5 w-5 text-gray-400" />
+        <ChevronUpDownIcon className="h-5 w-5 text-fg-subtle" />
       </Combobox.Button>
       <Transition
         as={Fragment}
@@ -73,9 +73,9 @@ export function SelectHosts<
         leaveTo="opacity-0"
         afterLeave={() => setQuery("")}
       >
-        <Combobox.Options className="absolute mt-1 max-h-60 z-10 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+        <Combobox.Options className="absolute mt-1 max-h-60 z-10 w-full overflow-auto rounded-md bg-surface-raised py-1 text-base shadow-lg ring-1 ring-line-subtle focus:outline-none sm:text-sm">
           {filteredGuests.length === 0 && query !== "" ? (
-            <div className="relative cursor-default select-none px-4 py-2 text-gray-700">
+            <div className="relative cursor-default select-none px-4 py-2 text-fg-muted">
               Nothing found.
             </div>
           ) : (
@@ -86,8 +86,8 @@ export function SelectHosts<
                   clsx(
                     "relative cursor-pointer select-none py-2 pl-10 pr-4 z-10",
                     active
-                      ? "bg-rose-100 text-rose-900"
-                      : "text-gray-900 bg-white"
+                      ? "bg-brand-tint-hover text-brand-fg"
+                      : "text-fg bg-surface-raised"
                   )
                 }
                 value={guest}
@@ -98,19 +98,19 @@ export function SelectHosts<
                       className={clsx(
                         "flex items-center gap-1.5 truncate",
                         selected ? "font-medium" : "font-normal",
-                        disabled ? "text-gray-400" : "text-gray-900"
+                        disabled ? "text-fg-subtle" : "text-fg"
                       )}
                     >
                       <span className="truncate">{guest.name}</span>
                       {showProtected && guest.authProtected && (
                         <LockIcon
-                          className="h-3.5 w-3.5 shrink-0 text-gray-400"
+                          className="h-3.5 w-3.5 shrink-0 text-fg-subtle"
                           title="Protected — password or emailed code needed"
                         />
                       )}
                     </span>
                     {selected ? (
-                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-rose-400">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-brand-fg">
                         <CheckIcon className="h-5 w-5" />
                       </span>
                     ) : null}

@@ -29,7 +29,7 @@ export default function SummaryPage(props: {
           {sortedEvents.map((event) => (
             <div key={event.name}>
               <h1 className="sm:text-2xl text-xl font-bold">{event.name}</h1>
-              <div className="flex text-gray-500 text-xs mt-1 gap-5 font-medium">
+              <div className="flex text-fg-subtle text-xs mt-1 gap-5 font-medium">
                 <span className="flex gap-1 items-center">
                   <CalendarIcon className="3 w-3 stroke-2" />
                   <span>
@@ -52,12 +52,12 @@ export default function SummaryPage(props: {
                   </a>
                 )}
               </div>
-              <div className="text-gray-900 mt-2">
+              <div className="text-fg mt-2">
                 <Markdown>{event.description}</Markdown>
               </div>
               <Link
                 href={`/${event.slug}`}
-                className="font-semibold text-rose-400 hover:text-rose-500 flex gap-1 items-center text-sm justify-end mt-2"
+                className="font-semibold text-brand-fg hover:text-brand-fg-hover flex gap-1 items-center text-sm justify-end mt-2"
               >
                 View event
                 <ArrowRightIcon className="h-4 w-4" />

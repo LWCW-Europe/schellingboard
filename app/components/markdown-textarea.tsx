@@ -16,7 +16,7 @@ import {
 } from "@/app/components/markdown-options";
 
 const TAB_STYLE =
-  "first:rounded-tl-md border-e-1 border-gray-400 p-2 hover:bg-gray-300 cursor-pointer";
+  "first:rounded-tl-md border-e-1 border-line p-2 hover:bg-surface-hover cursor-pointer";
 
 /**
  * A textarea with a Markdown toolbar and a preview tab.
@@ -61,20 +61,20 @@ export const MarkdownTextarea = forwardRef<
     <div
       className={clsx(
         wrapperClassName,
-        "flex flex-col shadow-sm rounded-md focus-within:outline-none border border-gray-300 focus-within:ring-2 focus-within:ring-rose-400 focus-within:outline-0 focus-within:border-rose-400"
+        "flex flex-col shadow-sm rounded-md focus-within:outline-none border border-line focus-within:ring-2 focus-within:ring-brand-accent focus-within:outline-0 focus-within:border-brand-accent"
       )}
     >
-      <div className="flex flex-row rounded-md rounded-b-none border-b border-gray-400 bg-gray-200 text-sm items-center">
+      <div className="flex flex-row rounded-md rounded-b-none border-b border-line bg-surface-muted text-sm items-center">
         <button
           type="button"
-          className={clsx(TAB_STYLE, preview === null && "bg-gray-300")}
+          className={clsx(TAB_STYLE, preview === null && "bg-surface-hover")}
           onClick={() => setPreview(null)}
         >
           Edit
         </button>
         <button
           type="button"
-          className={clsx(TAB_STYLE, preview !== null && "bg-gray-300")}
+          className={clsx(TAB_STYLE, preview !== null && "bg-surface-hover")}
           onClick={() => setPreview(textarea.current?.value ?? "")}
         >
           Preview
@@ -84,7 +84,7 @@ export const MarkdownTextarea = forwardRef<
             <button
               key={option.label}
               type="button"
-              className="last:m-1 my-1 p-1 h-fit cursor-pointer active:border-rose-400 border-solid border border-transparent hover:bg-gray-300 rounded-md"
+              className="last:m-1 my-1 p-1 h-fit cursor-pointer active:border-brand-accent border-solid border border-transparent hover:bg-surface-hover rounded-md"
               onClick={() => {
                 if (textarea.current) {
                   applyToTextarea(option.template, textarea.current);
@@ -106,7 +106,7 @@ export const MarkdownTextarea = forwardRef<
         ref={setTextareaRefs}
         onKeyDown={onKeyDown}
         className={clsx(
-          "w-full font-(family-name:--font-mono) rounded-t-none rounded-md text-sm resize-y h-40 border-none ring-0 outline-0 bg-white px-4 py-2 placeholder-gray-400 transition-colors",
+          "w-full font-(family-name:--font-mono) rounded-t-none rounded-md text-sm resize-y h-40 border-none ring-0 outline-0 bg-surface-raised px-4 py-2 placeholder-fg-subtle transition-colors",
           props.className,
           preview !== null && "hidden"
         )}

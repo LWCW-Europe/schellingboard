@@ -32,7 +32,7 @@ const blockComponents: Components = {
       // behind blank.
       target={/^https?:/i.test(href ?? "") ? "_blank" : undefined}
       rel="noopener noreferrer nofollow"
-      className="text-rose-500 underline hover:text-rose-600"
+      className="text-brand-fg underline hover:text-brand-fg-hover"
     >
       {
         children ||
@@ -47,21 +47,21 @@ const blockComponents: Components = {
     <ol className="list-decimal pl-5 my-2 first:mt-0 last:mb-0">{children}</ol>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="border-l-4 border-gray-300 pl-3 text-gray-600 my-2">
+    <blockquote className="border-l-4 border-line pl-3 text-fg-muted my-2">
       {children}
     </blockquote>
   ),
   code: ({ children }) => (
-    <code className="bg-gray-100 rounded px-1 font-mono text-[0.9em]">
+    <code className="bg-surface-muted rounded px-1 font-mono text-[0.9em]">
       {children}
     </code>
   ),
   pre: ({ children }) => (
-    <pre className="bg-gray-100 rounded p-2 my-2 overflow-x-auto">
+    <pre className="bg-surface-muted rounded p-2 my-2 overflow-x-auto">
       {children}
     </pre>
   ),
-  hr: () => <hr className="my-3 border-gray-200" />,
+  hr: () => <hr className="my-3 border-line-subtle" />,
 };
 
 // Fields written in a single-line input and shown inside a line of text (a
@@ -92,7 +92,7 @@ const inlineComponents: Components = {
 };
 
 export function MarkdownHint() {
-  return <p className="text-xs text-gray-500">Markdown supported</p>;
+  return <p className="text-xs text-fg-subtle">Markdown supported</p>;
 }
 
 function MarkdownRoot({

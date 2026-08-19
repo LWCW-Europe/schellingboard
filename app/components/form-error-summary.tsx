@@ -68,7 +68,7 @@ export function FormErrorSummary<
   return (
     <div
       role="alert"
-      className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md"
+      className="bg-danger-tint border border-danger-border text-danger-fg px-4 py-3 rounded-md"
     >
       <p className="text-sm font-medium">{heading(entries)}</p>
       <ul className="mt-1 ps-5 list-disc space-y-1 text-sm">
@@ -79,7 +79,7 @@ export function FormErrorSummary<
             ) : (
               <button
                 type="button"
-                className="text-start underline hover:text-red-900"
+                className="text-start underline hover:text-danger-fg-hover"
                 // Focusing scrolls the field into view; fields react-hook-form
                 // holds no ref for (custom inputs) simply don't move.
                 // setFocus defers by a tick, so onJump's re-render lands first.

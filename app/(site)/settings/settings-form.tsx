@@ -48,11 +48,11 @@ export function SettingsForm({
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-6 px-4 sm:px-0">
       <h1 className="text-2xl font-bold">Settings</h1>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-fg-subtle">
         Everything here is private and never shown to other attendees. Your{" "}
         <Link
           href="/guests/edit"
-          className="text-rose-500 hover:text-rose-600 underline"
+          className="text-brand-fg hover:text-brand-fg-hover underline"
         >
           public profile
         </Link>{" "}
@@ -67,34 +67,34 @@ export function SettingsForm({
           <legend className="text-lg font-semibold mb-1">
             Email me when&hellip;
           </legend>
-          <p className="text-sm text-gray-500 mb-1">
+          <p className="text-sm text-fg-subtle mb-1">
             Notifications go to the email address the organizers have for you.
             Contact an organizer to change it.
           </p>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("rsvpChange")} />a session
             I&rsquo;ve RSVP&rsquo;d to changes time or location, or is deleted
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("hostChange")} />a session
             I&rsquo;m hosting changes time or location, or is deleted
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("cohostAdd")} />
             someone adds me as a session co-host
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("proposalComment")} />
             someone comments on a proposal I&rsquo;m hosting
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("commentThread")} />
             someone comments on a proposal I&rsquo;ve commented on
           </label>
         </fieldset>
 
         {form.formState.errors.root && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          <div className="bg-danger-tint border border-danger-border text-danger-fg px-4 py-3 rounded-md">
             <p className="text-sm font-medium">
               Error: {form.formState.errors.root.message}
             </p>
@@ -104,13 +104,13 @@ export function SettingsForm({
         <div className="flex items-center gap-4">
           <button
             type="submit"
-            className="bg-rose-400 text-white font-semibold py-2 rounded shadow disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500 px-12"
+            className="bg-brand text-on-brand font-semibold py-2 rounded shadow disabled:bg-surface-hover disabled:text-fg-subtle disabled:shadow-none hover:bg-brand-hover active:bg-brand-hover px-12"
             disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting ? "Saving..." : "Save"}
           </button>
           {saved && !form.formState.isDirty && (
-            <span role="status" className="text-sm text-green-700">
+            <span role="status" className="text-sm text-success-fg">
               Saved
             </span>
           )}

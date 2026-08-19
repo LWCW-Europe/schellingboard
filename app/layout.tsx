@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat, Roboto, Fira_Code } from "next/font/google";
+import { cookies } from "next/headers";
+import clsx from "clsx";
 import "./globals.css";
 import { getRepositories } from "@/db/container";
+import { THEME_COOKIE, normalizeTheme, themeClass } from "@/utils/theme";
+import { ThemeProvider } from "./theme-context";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -45,15 +49,17 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const theme = normalizeTheme((await cookies()).get(THEME_COOKIE)?.value);
+
   return (
-    <html lang="en" className={fontVars}>
-      <body className="font-monteserrat flex flex-col min-h-screen">
-        {children}
+    <html lang="en" className={clsx(fontVars, themeClass(theme))}>
+      <body className="font-monteserrat flex flex-col min-h-screen bg-surface text-fg">
+        <ThemeProvider initial={theme}>{children}</ThemeProvider>
       </body>
     </html>
   );

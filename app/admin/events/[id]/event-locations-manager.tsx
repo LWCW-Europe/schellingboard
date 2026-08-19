@@ -166,7 +166,7 @@ export function EventLocationsManager({
     {
       header: "Capacity",
       cell: (l) => l.capacity,
-      cellClassName: "text-gray-500",
+      cellClassName: "text-fg-subtle",
     },
     { header: "Assigned", cell: assignedCheckbox },
   ];
@@ -185,8 +185,8 @@ export function EventLocationsManager({
           }
           className={`px-3 py-1 text-sm rounded-md border ${
             filter === f.value
-              ? "bg-gray-900 text-white border-gray-900"
-              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              ? "bg-surface-inverse text-fg-inverse border-line-strong"
+              : "bg-surface-raised text-fg-muted border-line hover:bg-surface-sunken"
           }`}
         >
           {f.label}
@@ -197,8 +197,8 @@ export function EventLocationsManager({
 
   return (
     <section aria-label="Locations" className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Locations</h2>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <h2 className="text-lg font-semibold text-fg">Locations</h2>
+      {error && <p className="text-sm text-danger-fg">{error}</p>}
 
       <DataTable
         rows={locations}
@@ -216,8 +216,8 @@ export function EventLocationsManager({
         mobileCard={(l) => (
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-medium text-gray-900">{l.name}</p>
-              <p className="text-gray-500">Capacity: {l.capacity}</p>
+              <p className="font-medium text-fg">{l.name}</p>
+              <p className="text-fg-subtle">Capacity: {l.capacity}</p>
             </div>
             {assignedCheckbox(l)}
           </div>

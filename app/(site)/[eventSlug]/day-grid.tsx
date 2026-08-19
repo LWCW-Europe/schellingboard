@@ -53,7 +53,7 @@ export function DayGrid(props: {
 
   return (
     <div
-      className="grid bg-white"
+      className="grid bg-surface"
       style={{
         gridTemplateColumns: `${GUTTER} repeat(${numLocations}, minmax(120px, 240px))`,
       }}
@@ -61,9 +61,9 @@ export function DayGrid(props: {
       {/* Row 1 — room-name header, sticky to the top. The corner cell (where no
           hour is) carries the day's date, so it gets replaced by the next day's
           date as that day scrolls into view. */}
-      <div className="sticky top-0 left-0 z-21 flex flex-col justify-end bg-white border-b border-r border-gray-100 p-1 leading-tight">
+      <div className="sticky top-0 left-0 z-21 flex flex-col justify-end bg-surface border-b border-r border-line-subtle p-1 leading-tight">
         <span className="text-[11px] font-bold">{date.toFormat("EEE")}</span>
-        <span className="text-[10px] text-gray-500">
+        <span className="text-[10px] text-fg-subtle">
           {date.toFormat("MMM d")}
         </span>
       </div>
@@ -73,7 +73,7 @@ export function DayGrid(props: {
           content={
             loc.description ? (
               <div className="p-2 space-y-1">
-                <p className="text-xs font-semibold text-gray-700">
+                <p className="text-xs font-semibold text-fg-muted">
                   {loc.name}
                 </p>
                 <p className="text-sm">{loc.description}</p>
@@ -81,7 +81,7 @@ export function DayGrid(props: {
             ) : undefined
           }
           placement="bottom-start"
-          className="sticky top-0 z-20 bg-white border-b border-l border-gray-100"
+          className="sticky top-0 z-20 bg-surface border-b border-l border-line-subtle"
         >
           <div className="p-1 h-full">
             <h3 className="font-semibold text-xs sm:text-sm">{loc.name}</h3>
@@ -89,13 +89,13 @@ export function DayGrid(props: {
         </Tooltip>
       ))}
       {/* Row 2 — room description */}
-      <div className="sticky top-0 z-20 bg-white border-r border-gray-100" />
+      <div className="sticky top-0 z-20 bg-surface border-r border-line-subtle" />
       {includedLocations.map((loc) => (
-        <div key={loc.name} className="border-l border-gray-100 p-1">
-          <p className="text-[10px] text-gray-500">
+        <div key={loc.name} className="border-l border-line-subtle p-1">
+          <p className="text-[10px] text-fg-subtle">
             {loc.areaDescription ?? <br />}
           </p>
-          <p className="text-[10px] text-gray-500">
+          <p className="text-[10px] text-fg-subtle">
             {loc.capacity ? `max ${loc.capacity}` : <br />}
           </p>
         </div>
@@ -103,9 +103,9 @@ export function DayGrid(props: {
       {/* Row 3 — room images */}
       {hasImages && (
         <>
-          <div className="sticky left-0 z-20 bg-white border-r border-gray-100" />
+          <div className="sticky left-0 z-20 bg-surface border-r border-line-subtle" />
           {includedLocations.map((loc) => (
-            <div key={loc.name} className="border-l border-gray-100 p-1">
+            <div key={loc.name} className="border-l border-line-subtle p-1">
               {loc.imageUrl && (
                 <Image
                   src={loc.imageUrl}
@@ -125,14 +125,14 @@ export function DayGrid(props: {
           its session blocks in a matching 44px-row grid so the times line up. */}
       <div
         className={clsx(
-          "sticky left-0 z-20 grid bg-white border-r border-gray-100",
+          "sticky left-0 z-20 grid bg-surface border-r border-line-subtle",
           `grid-rows-[repeat(${numSlots},44px)]`
         )}
       >
         {Array.from({ length: numSlots }).map((_, i) => (
           <div
             key={i}
-            className="border-b border-gray-100 text-[10px] p-1 h-[44px]"
+            className="border-b border-line-subtle text-[10px] p-1 h-[44px]"
           >
             {DateTime.fromMillis(
               day.start.getTime() + i * slotIncrement * 60 * 1000
@@ -145,7 +145,7 @@ export function DayGrid(props: {
           <div
             data-testid="now-line"
             aria-hidden="true"
-            className="absolute inset-x-0 z-10 h-0.5 bg-red-500 pointer-events-none"
+            className="absolute inset-x-0 z-10 h-0.5 bg-danger pointer-events-none"
             style={{ top: nowOffsetPx }}
           />
         )}

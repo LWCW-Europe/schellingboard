@@ -10,7 +10,7 @@ export default async function AdminEventsPage() {
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Events</h1>
+      <h1 className="text-2xl font-bold text-fg">Events</h1>
       <section aria-label="Events" className="space-y-4">
         <EventsManager events={events} />
       </section>

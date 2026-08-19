@@ -1,5 +1,12 @@
 "use client";
 import { getAppVersion } from "@/utils/git";
+import { ThemeSelect } from "./theme-select";
+
+// Flexbox centres each item's *box*, but Montserrat's font box is top-heavy
+// (12px ascent to 3px descent at our 12px size), so the glyphs land 1.5px
+// below the centre of the taller theme switch beside them. Nudge them back on
+// to its optical centre; a transform, so a wrapped footer keeps its height.
+const OPTICAL_CENTRE = "-translate-y-[1.5px]";
 
 // `inline` renders the footer as normal content inside the schedule's fixed
 // frame (see EventDisplay) instead of as the site-wide bar: at the end of the
@@ -12,18 +19,23 @@ export default function Footer({ inline }: { inline?: boolean }) {
   const content = (
     // Wrapping matters on narrow phones: the version can be a long dev string
     // (`a1b2c3d4-dirty`), and three links plus it no longer fit on one line.
-    <div className="px-3 flex flex-wrap gap-x-2 justify-between items-center text-xs text-gray-500">
-      <span className="flex gap-1">
+    <div className="px-3 flex flex-wrap gap-x-2 gap-y-1 justify-between items-center text-xs text-fg-subtle">
+      <span className={`flex gap-1 ${OPTICAL_CENTRE}`}>
         <span className="hidden sm:block">Version: </span>
         {appVersion}
       </span>
-      <div className="flex flex-wrap justify-end items-center gap-1">
+      {/* The only control that is on every page, which is why the theme lives
+          here: the settings page needs a name to have been picked first. */}
+      <ThemeSelect />
+      <div
+        className={`flex flex-wrap justify-end items-center gap-1 ${OPTICAL_CENTRE}`}
+      >
         <span className="hidden sm:block">Powered by</span>
         <a
           href="https://schellingboard.org"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className="text-link hover:underline"
         >
           SchellingBoard
         </a>
@@ -32,7 +44,7 @@ export default function Footer({ inline }: { inline?: boolean }) {
           href="https://docs.schellingboard.org"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className="text-link hover:underline"
         >
           Help
         </a>
@@ -41,7 +53,7 @@ export default function Footer({ inline }: { inline?: boolean }) {
           href="https://github.com/LWCW-Europe/schellingboard/issues"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:underline"
+          className="text-link hover:underline"
         >
           Report a Bug
         </a>
@@ -50,11 +62,11 @@ export default function Footer({ inline }: { inline?: boolean }) {
   );
 
   return inline ? (
-    <footer className="bg-gray-50 border-t border-gray-200 py-2">
+    <footer className="bg-surface-sunken border-t border-line-subtle py-2">
       <div className="sticky left-0 max-w-[100dvw]">{content}</div>
     </footer>
   ) : (
-    <footer className="lg:fixed bottom-0 left-0 right-0 bg-gray-50 border-t border-gray-200 py-2 z-20 mt-auto">
+    <footer className="lg:fixed bottom-0 left-0 right-0 bg-surface-sunken border-t border-line-subtle py-2 z-20 mt-auto">
       {content}
     </footer>
   );

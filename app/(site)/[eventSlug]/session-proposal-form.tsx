@@ -121,7 +121,7 @@ export function SessionProposalForm(props: {
   return (
     <div className="flex flex-col gap-4">
       <Link
-        className="bg-rose-400 text-white font-semibold py-2 px-4 rounded shadow hover:bg-rose-500 active:bg-rose-500 w-fit px-12"
+        className="bg-brand text-on-brand font-semibold py-2 px-4 rounded shadow hover:bg-brand-hover active:bg-brand-hover w-fit px-12"
         href={`/${eventSlug}/proposals`}
       >
         Back to Proposals
@@ -130,7 +130,7 @@ export function SessionProposalForm(props: {
         <h2 className="text-2xl font-bold">
           {proposal ? "Edit" : "Add"} Session Proposal
         </h2>
-        <p className="text-sm text-gray-500 mt-2">
+        <p className="text-sm text-fg-subtle mt-2">
           Share your session idea with the community. Only the title is
           required.
         </p>
@@ -143,7 +143,7 @@ export function SessionProposalForm(props: {
         <div className="flex flex-col gap-1">
           <label className="font-medium" htmlFor="proposal-title">
             Title
-            <span className="text-rose-500 mx-1">*</span>
+            <span className="text-brand-fg mx-1">*</span>
           </label>
           <Input
             id="proposal-title"
@@ -151,7 +151,7 @@ export function SessionProposalForm(props: {
             autoFocus
             placeholder="Enter a clear, descriptive title"
           />
-          <span className="text-rose-400 text-sm">
+          <span className="text-danger-fg text-sm">
             {form.formState.errors.title?.message}
           </span>
         </div>
@@ -166,7 +166,7 @@ export function SessionProposalForm(props: {
             placeholder="Describe what your session will cover"
           />
           <MarkdownHint />
-          <span className="text-rose-400 text-sm">
+          <span className="text-danger-fg text-sm">
             {form.formState.errors.description?.message}
           </span>
         </div>
@@ -175,7 +175,7 @@ export function SessionProposalForm(props: {
           <label className="font-medium" htmlFor="proposal-hosts">
             Host(s)
           </label>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-fg-subtle mt-1">
             Leave empty to ask for a session without offering to give it
             yourself — anyone who can host it may add themselves here later.
           </p>
@@ -190,7 +190,7 @@ export function SessionProposalForm(props: {
             }
             selectMany={true}
           />
-          <span className="text-rose-400 text-sm">
+          <span className="text-danger-fg text-sm">
             {form.formState.errors.hostIds?.message}
           </span>
         </div>
@@ -208,11 +208,11 @@ export function SessionProposalForm(props: {
                     onChange={() =>
                       durationMinutesController.field.onChange(value)
                     }
-                    className="h-4 w-4 border-gray-300 text-rose-400 focus:ring-rose-400"
+                    className="h-4 w-4 border-line text-brand focus:ring-brand-accent"
                   />
                   <label
                     htmlFor={`duration-${value ?? "undecided"}`}
-                    className="ml-3 block text-sm font-medium leading-6 text-gray-900"
+                    className="ml-3 block text-sm font-medium leading-6 text-fg"
                   >
                     {value
                       ? formatDuration(
@@ -225,7 +225,7 @@ export function SessionProposalForm(props: {
               ))}
             </div>
           </fieldset>
-          <span className="text-rose-400 text-sm">
+          <span className="text-danger-fg text-sm">
             {form.formState.errors.durationMinutes?.message}
           </span>
         </div>
@@ -234,7 +234,7 @@ export function SessionProposalForm(props: {
 
         <button
           type="submit"
-          className="bg-rose-400 text-white font-semibold py-2 rounded shadow disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none hover:bg-rose-500 active:bg-rose-500 mx-auto px-12"
+          className="bg-brand text-on-brand font-semibold py-2 rounded shadow disabled:bg-surface-hover disabled:text-fg-muted disabled:shadow-none hover:bg-brand-hover active:bg-brand-hover mx-auto px-12"
           disabled={!title || form.formState.isSubmitting || isDeleting}
         >
           {form.formState.isSubmitting ? "Submitting..." : "Submit"}

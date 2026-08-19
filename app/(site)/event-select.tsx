@@ -19,8 +19,8 @@ export function EventSelect(props: { eventNames: string[] }) {
           }}
           className={clsx(
             urlSearchParams.get("event") === name
-              ? "bg-rose-100 text-rose-700"
-              : "text-gray-500 hover:text-gray-700",
+              ? "bg-brand-tint-hover text-brand-fg"
+              : "text-fg-subtle hover:text-fg-muted",
             "rounded-md px-3 py-2 text-sm font-medium"
           )}
         >

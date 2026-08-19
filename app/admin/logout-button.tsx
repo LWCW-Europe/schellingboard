@@ -14,7 +14,7 @@ export function AdminLogoutButton() {
       disabled={isPending}
       className={clsx(
         "flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors",
-        "text-gray-300 hover:text-white hover:bg-gray-800",
+        "text-bar-fg-subtle hover:text-bar-fg hover:bg-bar-fg/10",
         "disabled:opacity-50 disabled:cursor-not-allowed"
       )}
     >

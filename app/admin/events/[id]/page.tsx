@@ -37,11 +37,11 @@ export default async function AdminEventConfigPage({
       <div className="max-w-3xl">
         <EventDetailForm event={event} />
       </div>
-      <hr className="border-gray-200" />
+      <hr className="border-line-subtle" />
       <div className="max-w-3xl">
         <EventPhasesForm event={event} />
       </div>
-      <hr className="border-gray-200" />
+      <hr className="border-line-subtle" />
       <EventDaysManager days={days} eventId={id} timezone={event.timezone} />
     </div>
   );

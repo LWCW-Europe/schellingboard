@@ -49,7 +49,7 @@ export function TimezoneSelect({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       required
-      className="w-full h-10 rounded-md border border-gray-300 bg-white px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+      className="w-full h-10 rounded-md border border-line bg-surface-raised px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-accent"
     >
       {options.map((tz) => (
         <option key={tz} value={tz}>

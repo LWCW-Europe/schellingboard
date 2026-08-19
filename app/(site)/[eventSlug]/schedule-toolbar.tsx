@@ -29,16 +29,16 @@ export function ScheduleToolbar(props: { event: Event }) {
     // The outer div spans the (possibly horizontally overflowing) grid width;
     // the inner one sticks the controls to the visible area — same pattern as
     // the fold bars and the inline footer.
-    <div className="w-full border-b border-gray-200 bg-white">
+    <div className="w-full border-b border-line-subtle bg-surface">
       <div className="sticky left-0 flex max-w-[100dvw] flex-wrap items-center gap-x-4 gap-y-1 px-2 py-1.5 sm:px-3">
         <SelectView />
         {/* Divider keeps the segmented view toggle visually distinct from the
             navigation links that follow. */}
-        <span className="hidden h-5 w-px bg-gray-200 sm:block" aria-hidden />
+        <span className="hidden h-5 w-px bg-line-subtle sm:block" aria-hidden />
         <div className="flex items-center gap-x-4 gap-y-1">
           <button
             onClick={() => setDetailsOpen(true)}
-            className="flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-gray-500 hover:text-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-400"
+            className="flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-fg-subtle hover:text-brand-fg focus:outline-none focus:ring-2 focus:ring-brand-accent"
           >
             <InformationCircleIcon className="h-4 w-4 stroke-2" />
             Event details
@@ -46,7 +46,7 @@ export function ScheduleToolbar(props: { event: Event }) {
           {hasPhases(event) && (
             <Link
               href={`/${event.slug}/proposals`}
-              className="flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-gray-500 hover:text-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-400"
+              className="flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-fg-subtle hover:text-brand-fg focus:outline-none focus:ring-2 focus:ring-brand-accent"
             >
               <ClipboardDocumentListIcon className="h-4 w-4 stroke-2" />
               Proposals
@@ -68,8 +68,8 @@ function EventDetails(props: { event: Event }) {
   const multipleDays = event.start.getTime() !== event.end.getTime();
   return (
     <div className="max-h-[70dvh] overflow-y-auto">
-      <h2 className="text-lg font-bold text-gray-900">{event.name}</h2>
-      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium text-gray-500">
+      <h2 className="text-lg font-bold text-fg">{event.name}</h2>
+      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium text-fg-subtle">
         <span className="flex items-center gap-1">
           <CalendarIcon className="h-4 w-4 stroke-2" />
           <span>
@@ -98,7 +98,7 @@ function EventDetails(props: { event: Event }) {
           </a>
         )}
       </div>
-      <div className="mt-3 text-gray-900">
+      <div className="mt-3 text-fg">
         <Markdown>{event.description}</Markdown>
       </div>
     </div>
@@ -134,10 +134,10 @@ function SelectView() {
         <button
           key={v.name}
           className={clsx(
-            "flex gap-1 items-center rounded-md text-xs sm:text-sm py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-rose-400",
+            "flex gap-1 items-center rounded-md text-xs sm:text-sm py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-accent",
             view === v.name
-              ? "bg-rose-400 text-white"
-              : "text-gray-400 hover:bg-gray-50 ring-1 ring-inset ring-gray-300"
+              ? "bg-brand text-on-brand"
+              : "text-fg-subtle hover:bg-surface-sunken ring-1 ring-inset ring-line"
           )}
           onClick={() => {
             if (view === v.name) return;

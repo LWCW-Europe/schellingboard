@@ -244,3 +244,14 @@ someone adds you as a co-host, and when someone comments on a proposal you're
 hosting. These are on by default and can be turned off independently. One
 further setting is off by default: emails about every new comment on a
 proposal you have commented on yourself.
+
+## Dark mode
+
+The switch at the very bottom of every page — System, Light, Dark — chooses
+how the site looks. **System** follows whatever your phone or laptop is set
+to, so the site turns dark in the evening if your device does. The same switch
+is on the settings page under "Appearance".
+
+The choice is remembered on the device you made it on, not on your name: you
+can read the schedule in the dark on your phone while your laptop stays light,
+and it works before you have picked your name.
