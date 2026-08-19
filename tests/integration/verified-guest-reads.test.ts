@@ -26,18 +26,17 @@ vi.mock("next/headers", () => ({
     }),
 }));
 
-// These pages render heavy client components (a file-upload form, a table
+// These pages render heavy client components (a file-upload form, a directory
 // that reads router search params) that need a browser-like environment this
 // test file doesn't set up. Stubbed out: this test only cares which branch
-// the page takes, not those components' own behavior (covered elsewhere).
+// the page takes, not those components' own behavior (covered elsewhere). The
+// directory stub echoes the guest it was handed, since that is the branch.
 vi.mock("@/app/(site)/guests/edit/profile-form", () => ({
   ProfileForm: () => "PROFILE_FORM_STUB",
 }));
-vi.mock("@/app/(site)/guests/attendee-list", () => ({
-  AttendeeList: () => "ATTENDEE_LIST_STUB",
-}));
-vi.mock("@/app/(site)/guests/profile-photo", () => ({
-  ProfilePhoto: () => "PROFILE_PHOTO_STUB",
+vi.mock("@/app/(site)/guests/directory", () => ({
+  AttendeeDirectory: ({ currentUserId }: { currentUserId: string | null }) =>
+    `CURRENT_USER:${currentUserId ?? "none"}`,
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
@@ -93,59 +92,30 @@ describe("server components read the verified guest, not the raw cookie", () => 
     });
   });
 
-  describe("guests/[guestId] page", () => {
-    it("doesn't show 'Edit profile' to an unverified protected guest viewing their own page", async () => {
-      const { default: GuestProfilePage } =
-        await import("@/app/(site)/guests/[guestId]/page");
+  // One layout serves both /guests and /guests/<id>: it resolves the acting
+  // guest once and hands it down, which is what decides whether "Edit profile"
+  // shows beside the list and on the reader's own profile.
+  describe("attendee directory layout", () => {
+    const renderLayout = async () => {
+      const { default: DirectoryLayout } =
+        await import("@/app/(site)/guests/(directory)/layout");
+      return renderToStaticMarkup(await DirectoryLayout({ children: null }));
+    };
+
+    it("treats an unverified protected guest as logged out", async () => {
       const guest = await createGuest();
       await protectGuest(guest.id);
       cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
-      const html = renderToStaticMarkup(
-        await GuestProfilePage({
-          params: Promise.resolve({ guestId: guest.id }),
-          searchParams: Promise.resolve({}),
-        })
-      );
-      expect(html).not.toMatch(/edit profile/i);
+      expect(await renderLayout()).toContain("CURRENT_USER:none");
     });
 
-    it("shows 'Edit profile' to a verified protected guest viewing their own page", async () => {
-      const { default: GuestProfilePage } =
-        await import("@/app/(site)/guests/[guestId]/page");
+    it("passes on a verified protected guest", async () => {
       const guest = await createGuest();
       await protectGuest(guest.id);
       cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
-      const html = renderToStaticMarkup(
-        await GuestProfilePage({
-          params: Promise.resolve({ guestId: guest.id }),
-          searchParams: Promise.resolve({}),
-        })
-      );
-      expect(html).toMatch(/edit profile/i);
-    });
-  });
-
-  describe("guests page", () => {
-    it("doesn't show 'Edit profile' for an unverified protected guest", async () => {
-      const { default: GuestsPage } = await import("@/app/(site)/guests/page");
-      const guest = await createGuest();
-      await protectGuest(guest.id);
-      cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
-
-      const html = renderToStaticMarkup(await GuestsPage());
-      expect(html).not.toMatch(/edit profile/i);
-    });
-
-    it("shows 'Edit profile' for a verified protected guest", async () => {
-      const { default: GuestsPage } = await import("@/app/(site)/guests/page");
-      const guest = await createGuest();
-      await protectGuest(guest.id);
-      cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
-
-      const html = renderToStaticMarkup(await GuestsPage());
-      expect(html).toMatch(/edit profile/i);
+      expect(await renderLayout()).toContain(`CURRENT_USER:${guest.id}`);
     });
   });
 });

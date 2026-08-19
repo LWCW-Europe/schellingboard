@@ -123,7 +123,7 @@ export function dismissViewSession() {
 // Mirror next/link's own modifier-key check so plain clicks are handled in
 // place, but Cmd/Ctrl/Shift/middle clicks fall through to the browser's normal
 // "open in new tab/window" behavior.
-function isPlainLeftClick(e: MouseEvent<HTMLAnchorElement>) {
+export function isPlainLeftClick(e: MouseEvent<HTMLAnchorElement>) {
   return (
     !e.defaultPrevented &&
     e.button === 0 &&

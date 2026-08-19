@@ -197,15 +197,21 @@ that you can be at most five minutes late, but doesn't block your RSVP.
 
 ## Attendee directory & profiles
 
-Every attendee gets a profile page with their bio, proposals, and the sessions
-they're hosting — click any name wherever it appears to see it. The photo is
-shown large, since that is how you recognise someone; click it to see it larger
-still. On a wide window it stays beside you as you scroll, together with the
-name, pronouns, location and languages. The attendee directory lists everyone
-at the event on a single page, each with their photo and the first couple of
-lines of their bio — or the first conversation starter they answered, if they
-haven't written a bio — so you can read through who is coming without opening
-anything. Search covers everything on a profile — names, pronouns, bios,
+Every attendee gets a profile with their bio, proposals, and the sessions
+they're hosting — click any name wherever it appears to see it. It opens over
+the attendee directory rather than replacing it, so from the directory,
+closing a profile puts you back exactly where you were, search and filters
+intact. **Prev** and **Next** at the top move through the attendees one after
+another without going back to the list in between — the arrow keys do the same.
+They follow whatever the list is showing, so a search or a filter narrows what
+you read through, and the count at the top says where you are. Escape closes
+the profile. The photo is shown large, since that is how you recognise
+someone; click it to see it larger still. On a wide window it stays beside you
+as you scroll, together with the name, pronouns, location and languages. The
+attendee directory lists everyone at the event on a single page, each with
+their photo and the first couple of lines of their bio — or the first
+conversation starter they answered, if they haven't written a bio — so you can
+read through who is coming without opening anything. Search covers everything on a profile — names, pronouns, bios,
 languages, where someone is based, prompts and their answers, and any contact
 details they published — so a remembered handle, a service name like "Signal",
 or a shared interest is enough to find someone.

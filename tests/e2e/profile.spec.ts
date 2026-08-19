@@ -82,14 +82,16 @@ test.describe("Edit profile", () => {
     });
     await page.getByRole("button", { name: /^Save$/ }).click();
 
-    // Lands on Alice's profile with the new About me text.
+    // Lands on Alice's profile with the new About me text. Scoped to the
+    // profile: it opens over the directory, whose cards preview the same bio.
     await expect(page).toHaveURL(/\/guests\/[^/]+$/);
+    const profile = page.getByRole("dialog");
     await expect(
-      page.getByRole("heading", { level: 1, name: "Alice Test" })
+      profile.getByRole("heading", { level: 1, name: "Alice Test" })
     ).toBeVisible();
-    await expect(page.getByText(aboutMe)).toBeVisible();
+    await expect(profile.getByText(aboutMe)).toBeVisible();
     await expect(
-      page.getByAltText("Profile avatar of Alice Test")
+      profile.getByAltText("Profile avatar of Alice Test")
     ).toBeVisible();
   });
 
@@ -161,26 +163,28 @@ test.describe("Edit profile", () => {
     await page.getByRole("button", { name: /^Save$/ }).click();
     await expect(page).toHaveURL(/\/guests\/[^/]+$/);
 
-    // Markdown renders: bold text and a real link.
+    // Markdown renders: bold text and a real link. Scoped to the profile,
+    // since the list behind it previews the same bio on Alice's card.
+    const profile = page.getByRole("dialog");
     await expect(
-      page.locator("strong", { hasText: "Bold statement" })
+      profile.locator("strong", { hasText: "Bold statement" })
     ).toBeVisible();
-    const link = page.getByRole("link", { name: "my site" });
+    const link = profile.getByRole("link", { name: "my site" });
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute("href", "https://example.com");
 
     // Headings are capped: text shows but not as a heading element.
-    await expect(page.getByText("Big header")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Big header" })).toHaveCount(
-      0
-    );
+    await expect(profile.getByText("Big header")).toBeVisible();
+    await expect(
+      profile.getByRole("heading", { name: "Big header" })
+    ).toHaveCount(0);
 
     // Raw HTML is escaped and displayed as literal text, not executed.
-    await expect(page.getByText("<script>alert(1)</script>")).toBeVisible();
+    await expect(profile.getByText("<script>alert(1)</script>")).toBeVisible();
 
     // The attendees list previews the bio as plain text: the markdown is
     // flattened rather than rendered, so no link comes along with it.
-    await page.getByRole("link", { name: "Attendees", exact: true }).click();
+    await profile.getByRole("button", { name: "Close" }).click();
     await expect(page).toHaveURL(/\/guests$/);
     await expect(page.getByRole("link", { name: /Alice Test/ })).toContainText(
       "Big header Bold statement and my site"
@@ -268,30 +272,32 @@ test.describe("Edit profile", () => {
 
     await page.getByRole("button", { name: /^Save$/ }).click();
 
-    // Profile page shows every filled-in section.
+    // The profile shows every filled-in section. Scoped to it: it opens over
+    // the directory, which previews the same fields on the cards behind.
     await expect(page).toHaveURL(/\/guests\/[^/]+$/);
-    await expect(page.getByText("Berlin")).toBeVisible();
+    const profile = page.getByRole("dialog");
+    await expect(profile.getByText("Berlin")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Ask me about" })
+      profile.getByRole("heading", { name: "Ask me about" })
     ).toBeVisible();
-    await expect(page.getByText("Urban beekeeping")).toBeVisible();
+    await expect(profile.getByText("Urban beekeeping")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: swappedPrompt })
+      profile.getByRole("heading", { name: swappedPrompt })
     ).toHaveCount(0);
-    await expect(page.getByText("Italian")).toBeVisible();
-    await expect(page.getByText("Signal:")).toBeVisible();
-    await expect(page.getByText("@alice.01")).toBeVisible();
+    await expect(profile.getByText("Italian")).toBeVisible();
+    await expect(profile.getByText("Signal:")).toBeVisible();
+    await expect(profile.getByText("@alice.01")).toBeVisible();
 
     // Markdown in prompt answers and contacts: pasted links are clickable.
     await expect(
-      page.getByRole("link", { name: "https://bees.example.com" })
+      profile.getByRole("link", { name: "https://bees.example.com" })
     ).toHaveAttribute("href", "https://bees.example.com");
     await expect(
-      page.getByRole("link", { name: "my homepage" })
+      profile.getByRole("link", { name: "my homepage" })
     ).toHaveAttribute("href", "https://alice.example.com");
 
     // The directory row shows Based in, and search finds the language.
-    await page.getByRole("link", { name: "Back to attendees" }).click();
+    await profile.getByRole("button", { name: "Close" }).click();
     const aliceRow = page.getByRole("link", { name: /Alice Test/ });
     await expect(aliceRow).toContainText("Berlin");
 
@@ -546,30 +552,6 @@ test("searches, filters and sorts without going back to the server", async ({
   await expect(page).toHaveURL(/[?&]sort=updated/);
 });
 
-test("Back to attendees preserves the search query", async ({ page }) => {
-  await login(page);
-  await page.goto("/guests");
-
-  await page.getByLabel("Search").fill("Test");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
-  // Wait for the query to reach the URL before going on: the seeded directory
-  // lists everyone alphabetically, so the "Test"
-  // guests are on page 1 unfiltered too — asserting only on them would let the
-  // test proceed on the pre-search page and then follow a link that carries no
-  // query at all, which is what "Back to attendees" is supposed to restore.
-  await expect(page).toHaveURL(/[?&]q=Test/);
-  await expect(page.getByRole("link", { name: "Alice Test" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Bob Test" })).toBeVisible();
-
-  await page.getByRole("link", { name: "Alice Test" }).click();
-  await expect(page).toHaveURL(/\/guests\/[^/]+/);
-
-  await page.getByRole("link", { name: "Back to attendees" }).click();
-  await expect(page.getByLabel("Search")).toHaveValue("Test");
-  await expect(page.getByRole("link", { name: "Bob Test" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Charlie Test" })).toBeVisible();
-});
-
 test("sorts the attendee directory by recently updated", async ({ page }) => {
   await login(page);
   await page.goto("/Conference-Alpha/proposals");
@@ -583,7 +565,10 @@ test("sorts the attendee directory by recently updated", async ({ page }) => {
   // The save redirects here itself; a click that lands while that navigation
   // is still in flight is dropped, so retry until it takes.
   await expect(async () => {
-    await page.getByRole("link", { name: "Back to attendees" }).click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Close" })
+      .click();
     await expect(page).toHaveURL(/\/guests$/, { timeout: 2000 });
   }).toPass();
 

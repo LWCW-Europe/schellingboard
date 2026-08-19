@@ -11,11 +11,14 @@ test("shows the photo big enough to recognise someone, without clicking", async 
   await login(page);
   await page.goto("/guests");
   await page.getByRole("link", { name: GUEST }).click();
+  // Scoped to the profile: the list stays behind it, and its cards carry
+  // thumbnails of the same people.
+  const profile = page.getByRole("dialog");
   await expect(
-    page.getByRole("heading", { level: 1, name: GUEST })
+    profile.getByRole("heading", { level: 1, name: GUEST })
   ).toBeVisible();
 
-  const photo = page.getByAltText(`Profile avatar of ${GUEST}`);
+  const photo = profile.getByAltText(`Profile avatar of ${GUEST}`);
   const box = (await photo.boundingBox())!;
   expect(box.width).toBeGreaterThanOrEqual(240);
   // Stored avatars are square crops, so an unsquare box means a stretched face.
@@ -23,7 +26,7 @@ test("shows the photo big enough to recognise someone, without clicking", async 
 
   // The photo has its own column: the text sits beside it rather than being
   // pushed a screenful down.
-  const aboutMe = page.getByRole("heading", { name: "About me" });
+  const aboutMe = profile.getByRole("heading", { name: "About me" });
   const aboutMeBox = (await aboutMe.boundingBox())!;
   expect(aboutMeBox.x).toBeGreaterThanOrEqual(box.x + box.width);
 
@@ -50,86 +53,74 @@ test("shows the photo big enough to recognise someone, without clicking", async 
   expect(phoneAboutMeBox.y).toBeLessThan(height);
 });
 
-test("enlarges and dismisses a guest's profile picture on their detail page", async ({
+test("enlarges a guest's photo in place and shrinks it again", async ({
   page,
 }) => {
   await login(page);
   await page.goto("/guests");
   await page.getByRole("link", { name: GUEST }).click();
+  const profile = page.getByRole("dialog");
   await expect(
-    page.getByRole("heading", { level: 1, name: GUEST })
+    profile.getByRole("heading", { level: 1, name: GUEST })
   ).toBeVisible();
   const profileUrl = page.url();
 
-  const trigger = page.getByRole("button", {
+  const photo = profile.getByAltText(`Profile avatar of ${GUEST}`);
+  const enlarge = profile.getByRole("button", {
     name: `Enlarge photo of ${GUEST}`,
   });
-  const enlarged = page.getByAltText(`Enlarged profile picture of ${GUEST}`);
+  const shrink = profile.getByRole("button", {
+    name: `Shrink photo of ${GUEST}`,
+  });
+  const photoWidth = async () => (await photo.boundingBox())!.width;
 
-  // Closed by default.
-  await expect(enlarged).toHaveCount(0);
+  const normal = await photoWidth();
 
-  // Click the photo → the enlarged view opens.
-  await trigger.click();
-  await expect(enlarged).toBeVisible();
-
-  // Escape closes it, and we stay on the same detail page.
-  await page.keyboard.press("Escape");
-  await expect(enlarged).toBeHidden();
+  // Enlarging swaps the photo's size in place — deliberately not a second
+  // modal over the profile, which would mean two Escape keys to unwind.
+  await enlarge.click();
+  await expect(shrink).toBeVisible();
+  expect(await photoWidth()).toBeGreaterThan(normal);
   expect(page.url()).toBe(profileUrl);
 
-  // The visible Close control closes it.
-  await trigger.click();
-  await expect(enlarged).toBeVisible();
-  await page.getByRole("button", { name: "Close" }).click();
-  await expect(enlarged).toBeHidden();
+  // Escape unwinds the enlarged photo first, leaving the profile open.
+  await page.keyboard.press("Escape");
+  await expect(enlarge).toBeVisible();
+  expect(await photoWidth()).toBe(normal);
+  await expect(profile).toBeVisible();
 
-  // Clicking outside the image (top-left corner) closes it.
-  await trigger.click();
-  await expect(enlarged).toBeVisible();
-  await page.mouse.click(5, 5);
-  await expect(enlarged).toBeHidden();
+  // Clicking it again shrinks it back.
+  await enlarge.click();
+  await expect(shrink).toBeVisible();
+  await shrink.click();
+  await expect(enlarge).toBeVisible();
+  expect(await photoWidth()).toBe(normal);
 
-  // The photo is back to normal for a mouse user: closing restores focus to
-  // the trigger, which must not leave a ring drawn around the avatar.
-  // Tailwind draws the ring as a box-shadow, and the restore is async.
-  const ring = () => trigger.evaluate((el) => getComputedStyle(el).boxShadow);
+  // The photo is back to normal for a mouse user: the trigger must not be left
+  // with a ring drawn around it. Tailwind draws the ring as a box-shadow.
+  const ring = () => enlarge.evaluate((el) => getComputedStyle(el).boxShadow);
   await expect.poll(ring).toBe("none");
 
-  // Keyboard: closing put focus back on the trigger, but in mouse modality, so
-  // step off it and back to land there the way a keyboard user would —
-  // tabbing, unlike a programmatic focus(), counts as keyboard interaction.
-  // Now the ring must show: it is the only cue to where focus sits.
-  const isFocused = () =>
-    trigger.evaluate((el) => el === document.activeElement);
-  await expect.poll(isFocused).toBe(true);
+  // Keyboard: the ring is the only cue to where focus sits, so it must show
+  // once the trigger is reached by tabbing.
+  await enlarge.focus();
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Tab");
-  await expect.poll(isFocused).toBe(true);
+  await expect
+    .poll(() => enlarge.evaluate((el) => el === document.activeElement))
+    .toBe(true);
   await expect.poll(ring).not.toBe("none");
   await page.keyboard.press("Enter");
-  await expect(enlarged).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(enlarged).toBeHidden();
+  await expect(shrink).toBeVisible();
 
-  // On a phone the header stacks vertically. The trigger must still hug the
-  // photo: stretched to the row's width it would swallow taps aimed at the
-  // empty space beside the avatar and draw a full-width focus ring.
+  // On a phone the trigger must still hug the photo: stretched to the row's
+  // width it would swallow taps aimed at the space beside it, and the enlarged
+  // photo must stay within the screen.
   const width = 375;
-  const height = 667;
-  await page.setViewportSize({ width, height });
-  const photo = page.getByAltText(`Profile avatar of ${GUEST}`);
-  const photoBox = await photo.boundingBox();
-  const triggerBox = await trigger.boundingBox();
-  expect(triggerBox!.width).toBeLessThanOrEqual(photoBox!.width + 1);
-
-  // The enlarged image stays fully within a phone screen.
-  await trigger.click();
-  await expect(enlarged).toBeVisible();
-  const box = await enlarged.boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.x).toBeGreaterThanOrEqual(0);
-  expect(box!.y).toBeGreaterThanOrEqual(0);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(height + 1);
+  await page.setViewportSize({ width, height: 667 });
+  const phonePhoto = (await photo.boundingBox())!;
+  const phoneTrigger = (await shrink.boundingBox())!;
+  expect(phoneTrigger.width).toBeLessThanOrEqual(phonePhoto.width + 1);
+  expect(phonePhoto.x).toBeGreaterThanOrEqual(0);
+  expect(phonePhoto.x + phonePhoto.width).toBeLessThanOrEqual(width + 1);
 });

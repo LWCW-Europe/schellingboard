@@ -1,35 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
-import type { Attendee } from "@/db/repositories/interfaces";
-import { DataTable, useTableParams } from "@/app/admin/data-table";
+import { DataTable } from "@/app/admin/data-table";
 import { Avatar } from "@/app/(site)/guests/avatar";
 import {
-  ATTENDEE_SORTS,
-  AttendeeSort,
-  DEFAULT_ATTENDEE_SORT,
-  searchAttendees,
-} from "@/utils/attendee-search";
+  AttendeeCard,
+  DirectoryView,
+  PAGE_SIZE,
+} from "@/app/(site)/guests/directory-view";
+import { openProfileLink } from "@/app/(site)/guests/profile-nav";
+import { ATTENDEE_SORTS, DEFAULT_ATTENDEE_SORT } from "@/utils/attendee-search";
 import {
   ATTENDEE_FILTERS,
-  parseAttendeeFilters,
   serializeAttendeeFilters,
 } from "@/utils/attendee-filters";
-import { hasFilledProfile, profileExcerpt } from "@/utils/attendee-profile";
-import { formatRelativeTime } from "@/utils/relative-time";
-
-// Everyone on one page: reading through who is coming is what the directory is
-// for, and at realistic attendee counts (a few hundred) a pager only gets in
-// the way. Above this it falls back to ordinary pagination.
-const PAGE_SIZE = 1000;
-
-/** An attendee plus what the list derives from them once, up front. */
-type AttendeeCard = Attendee & {
-  hasProfile: boolean;
-  excerpt: string | null;
-  profileUpdated: string | null;
-};
 
 function AttendeeRow({
   attendee: {
@@ -42,17 +26,11 @@ function AttendeeRow({
     excerpt,
     profileUpdated,
   },
-  listQueryString,
+  listQuery,
 }: {
   attendee: AttendeeCard;
-  listQueryString: string;
+  listQuery: string;
 }) {
-  const href = listQueryString
-    ? // Carries the list's current page/search/filter so the profile page's
-      // "Back to attendees" link can return to the same view instead of
-      // always resetting to page 1.
-      `/guests/${id}?from=${encodeURIComponent(listQueryString)}`
-    : `/guests/${id}`;
   // Sorting by recency with no visible dates would be opaque. Narrow screens
   // have no room for it beside the name, so it rides along under the name
   // there and only moves out to the right edge from sm up.
@@ -61,7 +39,7 @@ function AttendeeRow({
   );
   return (
     <Link
-      href={href}
+      {...openProfileLink(id, listQuery)}
       className="flex items-start gap-4 hover:bg-surface-sunken rounded-md px-2 py-1"
     >
       <Avatar name={name} size="md" image={avatarUrl ?? undefined} />
@@ -96,76 +74,15 @@ function AttendeeRow({
   );
 }
 
-/**
- * The attendee directory. Holds every attendee and does search, filtering,
- * sorting and paging in the browser: the whole point of the directory is
- * reading through it, and a server round trip per toggle would throw away the
- * reader's place in the list each time.
- *
- * `now` comes from the server so the relative update times match what was
- * server-rendered, and so the dev fake clock applies.
- */
 export function AttendeeList({
-  attendees,
-  now,
+  view,
   canEditProfile,
 }: {
-  attendees: Attendee[];
-  now: Date;
+  view: DirectoryView;
   canEditProfile: boolean;
 }) {
-  const { searchParams, setParams } = useTableParams({ shallow: true });
-
-  const query = (searchParams.get("q") ?? "").trim();
-  const filterParam = searchParams.get("filter") ?? "";
-  const sortParam = searchParams.get("sort");
-  const sort: AttendeeSort =
-    ATTENDEE_SORTS.find((s) => s.value === sortParam)?.value ??
-    DEFAULT_ATTENDEE_SORT;
-  const filters = useMemo(
-    () => parseAttendeeFilters(filterParam),
-    [filterParam]
-  );
-
-  // Fixed for the life of the page: keyed on the attendees so the markdown
-  // parsing behind the excerpt isn't repeated on every filter or sort change.
-  const cards: AttendeeCard[] = useMemo(
-    () =>
-      attendees.map((attendee) => ({
-        ...attendee,
-        hasProfile: hasFilledProfile(attendee),
-        excerpt: profileExcerpt(attendee),
-        profileUpdated: attendee.profileUpdatedAt
-          ? formatRelativeTime(attendee.profileUpdatedAt, now)
-          : null,
-      })),
-    [attendees, now]
-  );
-
-  const matches = useMemo(() => {
-    const scoped = cards.filter(
-      (card) =>
-        (!filters.includes("isHost") || card.isHost) &&
-        (!filters.includes("hasProfile") || card.hasProfile)
-    );
-    return searchAttendees(scoped, query, sort);
-  }, [cards, filters, query, sort]);
-
-  const total = matches.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  // A stale or hand-edited `page` shows the last real page rather than an
-  // empty list; nothing rewrites the URL, since at this page size the param
-  // only ever appears when someone typed it.
-  const requestedPage = Number(searchParams.get("page"));
-  const page = Math.min(
-    Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1,
-    totalPages
-  );
-  const rows = matches.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  // The raw query string (no leading "/guests?"), forwarded as `from` on
-  // each row link so the profile page can rebuild "/guests?<from>".
-  const listQueryString = searchParams.toString();
+  const { query, filters, sort, rows, page, total, listQuery, setParams } =
+    view;
   // A search is ranked by relevance, which an explicit sort would throw away.
   const sortDisabled = query !== "";
   const toolbar = (
@@ -277,9 +194,7 @@ export function AttendeeList({
         emptyMessage={emptyMessage}
         paginationFooter="when-paginated"
         shallow
-        listItem={(u) => (
-          <AttendeeRow attendee={u} listQueryString={listQueryString} />
-        )}
+        listItem={(u) => <AttendeeRow attendee={u} listQuery={listQuery} />}
       />
     </div>
   );

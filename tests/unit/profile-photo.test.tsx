@@ -1,22 +1,36 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-
-// The enlarged view itself is E2E-tested; stubbing it keeps this test off the
-// modals module and the whole client-context tree it imports.
-vi.mock("@/app/(site)/modals", () => ({ Modal: () => null }));
 
 import { ProfilePhoto } from "@/app/(site)/guests/profile-photo";
 
 describe("ProfilePhoto", () => {
   it("makes an uploaded photo clickable", () => {
     const html = renderToStaticMarkup(
-      <ProfilePhoto name="Amara Okafor" image="/media/avatars/amara.webp" />
+      <ProfilePhoto
+        name="Amara Okafor"
+        image="/media/avatars/amara.webp"
+        onToggleZoom={() => {}}
+      />
     );
     expect(html).toContain("Enlarge photo of Amara Okafor");
   });
 
+  it("offers the way back once enlarged", () => {
+    const html = renderToStaticMarkup(
+      <ProfilePhoto
+        name="Amara Okafor"
+        image="/media/avatars/amara.webp"
+        zoomed
+        onToggleZoom={() => {}}
+      />
+    );
+    expect(html).toContain("Shrink photo of Amara Okafor");
+  });
+
   it("leaves an initials placeholder non-interactive", () => {
-    const html = renderToStaticMarkup(<ProfilePhoto name="Amara Okafor" />);
+    const html = renderToStaticMarkup(
+      <ProfilePhoto name="Amara Okafor" onToggleZoom={() => {}} />
+    );
     expect(html).not.toContain("<button");
     expect(html).toContain("AO");
   });

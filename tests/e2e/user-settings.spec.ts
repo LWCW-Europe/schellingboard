@@ -14,9 +14,13 @@ test("header user menu reaches profile, edit profile, and settings; email prefer
   // Once a name is selected, the header chip opens a user menu.
   await page.getByRole("button", { name: /your name/i }).click();
   await page.getByRole("menuitem", { name: /my profile/i }).click();
+  const profile = page.getByRole("dialog");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Amara Okafor" })
+    profile.getByRole("heading", { level: 1, name: "Amara Okafor" })
   ).toBeVisible();
+  // A profile opens over the attendee directory, so the header is behind it
+  // until it is dismissed.
+  await profile.getByRole("button", { name: "Close" }).click();
 
   await page.getByRole("button", { name: /your name/i }).click();
   await page.getByRole("menuitem", { name: /edit profile/i }).click();
