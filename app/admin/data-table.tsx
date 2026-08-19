@@ -25,11 +25,16 @@ export type Selection<T> = {
 
 /**
  * Hook for components that drive a `DataTable` to update the URL search params
- * that back its server-side query. Passing `null` removes a param. Changing the
- * page is the caller's responsibility (pass `page`); any other change should
- * reset to page 1 by passing `page: null`.
+ * that back its query. Passing `null` removes a param. Changing the page is the
+ * caller's responsibility (pass `page`); any other change should reset to page
+ * 1 by passing `page: null`.
+ *
+ * `shallow` is for tables that hold their whole collection and filter it in the
+ * browser: the params stay in the URL (shareable, reload-proof) but are written
+ * with the History API, so no RSC round trip re-renders what is already on
+ * screen. `useSearchParams` picks those writes up either way.
  */
-export function useTableParams() {
+export function useTableParams({ shallow = false } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -42,9 +47,11 @@ export function useTableParams() {
         else next.set(key, value);
       }
       const qs = next.toString();
-      router.push(qs ? `${pathname}?${qs}` : pathname);
+      const url = qs ? `${pathname}?${qs}` : pathname;
+      if (shallow) window.history.pushState(null, "", url);
+      else router.push(url);
     },
-    [router, pathname, searchParams]
+    [router, pathname, searchParams, shallow]
   );
 
   return { searchParams, setParams };
@@ -123,6 +130,8 @@ type TableProps<T> = {
    * attendee directory): a pager that can only ever say "Page 1 of 1" is noise.
    */
   paginationFooter?: "always" | "when-paginated";
+  /** See `useTableParams`. */
+  shallow?: boolean;
 } & (
   | {
       columns: Column<T>[];
@@ -156,8 +165,9 @@ export function DataTable<T>({
   listItem,
   emptyMessage = "Nothing to show.",
   paginationFooter = "always",
+  shallow = false,
 }: TableProps<T>) {
-  const { setParams } = useTableParams();
+  const { setParams } = useTableParams({ shallow });
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const onSearch = (event: React.FormEvent<HTMLFormElement>) => {

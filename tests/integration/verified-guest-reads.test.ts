@@ -134,9 +134,7 @@ describe("server components read the verified guest, not the raw cookie", () => 
       await protectGuest(guest.id);
       cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
-      const html = renderToStaticMarkup(
-        await GuestsPage({ searchParams: Promise.resolve({}) })
-      );
+      const html = renderToStaticMarkup(await GuestsPage());
       expect(html).not.toMatch(/edit profile/i);
     });
 
@@ -146,9 +144,7 @@ describe("server components read the verified guest, not the raw cookie", () => 
       await protectGuest(guest.id);
       cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
-      const html = renderToStaticMarkup(
-        await GuestsPage({ searchParams: Promise.resolve({}) })
-      );
+      const html = renderToStaticMarkup(await GuestsPage());
       expect(html).toMatch(/edit profile/i);
     });
   });

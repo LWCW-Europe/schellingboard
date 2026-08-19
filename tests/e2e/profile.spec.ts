@@ -295,11 +295,12 @@ test.describe("Edit profile", () => {
     const aliceRow = page.getByRole("link", { name: /Alice Test/ });
     await expect(aliceRow).toContainText("Berlin");
 
-    // Contacts belong to the profile page only: the directory response must
-    // not embed them (rows are serialized into the page payload).
+    // The directory ships every attendee's public profile so it can search and
+    // filter without the server; the line it must not cross is the private
+    // login email, which is not part of an attendee at all.
     await page.reload();
     await expect(aliceRow).toBeVisible();
-    expect(await page.content()).not.toContain("@alice.01");
+    expect(await page.content()).not.toContain("alice@test.com");
 
     await page.getByLabel("Search").fill("Italian");
     await page.getByRole("button", { name: "Search", exact: true }).click();
@@ -498,14 +499,61 @@ test("filters the directory to filled-in profiles", async ({ page }) => {
   expect(await shown()).toBeGreaterThan(0);
 });
 
+test("searches, filters and sorts without going back to the server", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/guests");
+
+  const attendees = page
+    .getByRole("list")
+    .filter({ has: page.getByRole("link", { name: "Alice Test" }) })
+    .getByRole("listitem");
+  await expect(attendees.first()).toContainText("Ahmad Karimi");
+
+  // The browser holds the whole directory, so every toggle re-renders the list
+  // in place. Anything asking /guests for a fresh list would re-render the page
+  // and hand it back to the reader at the top.
+  const listRequests: string[] = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    // Only requests for the view being built: the header's "Attendees" link
+    // prefetches the bare list either way, which says nothing about this.
+    const asksForThisView = ["q", "filter", "sort"].some((param) =>
+      url.searchParams.has(param)
+    );
+    if (url.pathname === "/guests" && asksForThisView)
+      listRequests.push(request.url());
+  });
+
+  await page.getByRole("button", { name: /Filter by Has profile/ }).click();
+  await expect(page.getByRole("link", { name: "Amara Okafor" })).toHaveCount(0);
+
+  // Alice is the first guest seeded, so she carries the most recent stamp.
+  await page.getByLabel("Sort by").selectOption("Recently updated");
+  await expect(attendees.first()).toContainText("Alice Test");
+
+  // Only Olga is based there, and no editing test writes that city.
+  await page.getByLabel("Search").fill("Novosibirsk");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Olga Petrova" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Ahmad Karimi" })).toHaveCount(0);
+
+  expect(listRequests).toEqual([]);
+  // Shareable all the same: the view is in the URL though nothing navigated.
+  await expect(page).toHaveURL(/[?&]q=Novosibirsk/);
+  await expect(page).toHaveURL(/[?&]filter=hasProfile/);
+  await expect(page).toHaveURL(/[?&]sort=updated/);
+});
+
 test("Back to attendees preserves the search query", async ({ page }) => {
   await login(page);
   await page.goto("/guests");
 
   await page.getByLabel("Search").fill("Test");
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  // Search is a server round trip. Wait for the query to reach the URL before
-  // going on: the seeded directory lists everyone alphabetically, so the "Test"
+  // Wait for the query to reach the URL before going on: the seeded directory
+  // lists everyone alphabetically, so the "Test"
   // guests are on page 1 unfiltered too — asserting only on them would let the
   // test proceed on the pre-search page and then follow a link that carries no
   // query at all, which is what "Back to attendees" is supposed to restore.

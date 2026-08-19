@@ -1,98 +1,17 @@
 import Link from "next/link";
 import { getRepositories } from "@/db/container";
 import { cookies } from "next/headers";
-import { pageRequestSchema } from "@/model/page";
-import { outOfRangePageRedirect } from "@/utils/pagination";
-import { redirect } from "next/navigation";
 import { AttendeeList } from "@/app/(site)/guests/attendee-list";
-import {
-  ATTENDEE_SORTS,
-  DEFAULT_ATTENDEE_SORT,
-  searchAttendees,
-} from "@/utils/attendee-search";
-import { formatRelativeTime } from "@/utils/relative-time";
 import { serverNow } from "@/utils/dev-clock-server";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
-import {
-  parseAttendeeFilters,
-  serializeAttendeeFilters,
-} from "@/utils/attendee-filters";
-import { hasFilledProfile, profileExcerpt } from "@/utils/attendee-profile";
-import { z } from "zod";
 
-// Everyone on one page: reading through who is coming is what the directory is
-// for, and at realistic attendee counts (a few hundred) a pager only gets in
-// the way. Above this it falls back to ordinary pagination.
-const PAGE_SIZE = 1000;
-
-export default async function GuestsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    q?: string;
-    page?: string;
-    filter?: string;
-    sort?: string;
-  }>;
-}) {
-  const params = await searchParams;
-
-  const paramSchema = pageRequestSchema.extend({
-    sort: z
-      .enum(ATTENDEE_SORTS.map((s) => s.value))
-      .catch(DEFAULT_ATTENDEE_SORT),
-  });
-
-  const { page, query, sort } = paramSchema.parse({
-    page: params.page,
-    query: params.q,
-    sort: params.sort,
-  });
-  const filters = parseAttendeeFilters(params.filter);
-
-  const attendees = await getRepositories().guests.listAttendees({
-    host: filters.includes("isHost"),
-  });
-  const filtered = filters.includes("hasProfile")
-    ? attendees.filter(hasFilledProfile)
-    : attendees;
-  const matches = searchAttendees(filtered, query, sort);
-  const total = matches.length;
+export default async function GuestsPage() {
+  // The whole directory, unfiltered: search, filters, sorting and paging all
+  // happen in the browser (see attendee-list.tsx). `listAttendees` returns
+  // public profile fields only — `Attendee` has no `info`, so no email can
+  // reach the client payload this way.
+  const attendees = await getRepositories().guests.listAttendees();
   const now = await serverNow();
-  const rows = matches
-    .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-    // Strip fields the card doesn't show; TypeScript's structural typing
-    // wouldn't stop a full Attendee from reaching the client payload. The
-    // excerpt and the update time are rendered here rather than shipped raw:
-    // the markdown parser has no business in the browser bundle, and a "now"
-    // from the browser would disagree with the server-rendered markup.
-    .map((attendee) => ({
-      id: attendee.id,
-      name: attendee.name,
-      avatarUrl: attendee.avatarUrl,
-      pronouns: attendee.pronouns,
-      basedIn: attendee.basedIn,
-      isHost: attendee.isHost,
-      excerpt: profileExcerpt(attendee),
-      profileUpdated: attendee.profileUpdatedAt
-        ? formatRelativeTime(attendee.profileUpdatedAt, now)
-        : null,
-    }));
-
-  const redirectTarget = outOfRangePageRedirect({
-    basePath: "/guests",
-    page,
-    total,
-    pageSize: PAGE_SIZE,
-    params: {
-      q: query,
-      filter: serializeAttendeeFilters(filters) ?? "",
-      sort: sort === DEFAULT_ATTENDEE_SORT ? "" : sort,
-    },
-  });
-
-  if (redirectTarget) redirect(redirectTarget);
-
   const cookieStore = await cookies();
   const currentUser = await verifiedCurrentUser(cookieStore);
 
@@ -114,14 +33,9 @@ export default async function GuestsPage({
       </div>
 
       <AttendeeList
-        filters={filters}
+        attendees={attendees}
+        now={now}
         canEditProfile={currentUser !== null}
-        sort={sort}
-        rows={rows}
-        pageSize={PAGE_SIZE}
-        total={total}
-        page={page}
-        searchQuery={query}
       />
     </div>
   );

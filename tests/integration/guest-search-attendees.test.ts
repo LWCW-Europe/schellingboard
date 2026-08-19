@@ -15,24 +15,11 @@ describe("guests.listAttendees", () => {
     await createSession(event.id, { hostIds: [host.id] });
     const repos = getRepositories();
 
-    const rows = await repos.guests.listAttendees({});
+    const rows = await repos.guests.listAttendees();
 
     const byName = Object.fromEntries(rows.map((r) => [r.name, r.isHost]));
     expect(byName["Host Person"]).toBe(true);
     expect(byName["Regular Person"]).toBe(false);
-  });
-
-  it("narrows to hosts only when host filter is set", async () => {
-    const host = await createGuest({ name: "Host Person" });
-    await createGuest({ name: "Regular Person" });
-    const event = await createEvent();
-    await createSession(event.id, { hostIds: [host.id] });
-    const repos = getRepositories();
-
-    const rows = await repos.guests.listAttendees({ host: true });
-
-    expect(rows.map((r) => r.name)).toEqual(["Host Person"]);
-    expect(rows[0].isHost).toBe(true);
   });
 
   it("orders by name and never exposes the private email", async () => {
@@ -41,7 +28,7 @@ describe("guests.listAttendees", () => {
     }
     const repos = getRepositories();
 
-    const rows = await repos.guests.listAttendees({});
+    const rows = await repos.guests.listAttendees();
 
     expect(rows.map((r) => r.name)).toEqual(["A", "B", "C", "D", "E"]);
     for (const row of rows) {
@@ -68,7 +55,7 @@ describe("guests.listAttendees", () => {
       new Date()
     );
 
-    const rows = await repos.guests.listAttendees({});
+    const rows = await repos.guests.listAttendees();
 
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
@@ -99,7 +86,7 @@ describe("guests.listAttendees", () => {
       updatedAt
     );
 
-    const rows = await repos.guests.listAttendees({});
+    const rows = await repos.guests.listAttendees();
 
     const byName = Object.fromEntries(
       rows.map((r) => [r.name, r.profileUpdatedAt])

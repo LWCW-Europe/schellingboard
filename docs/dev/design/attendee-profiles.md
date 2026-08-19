@@ -18,13 +18,14 @@ Assumed scale: 150–400 attendees per event, 30–60% with a filled-in profile,
 
 Keep this list current — it is how the next agent knows where to pick up.
 
-| Slice                                                                          | Issue      | State                                                                                                      |
-| ------------------------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------- |
-| [Sorting](#sorting-712)                                                        | #712       | Done, on today's list: `profileUpdatedAt` column, "Sort by" dropdown, per-row relative update time         |
-| [The photo](#the-photo-806)                                                    | #806       | Done, on today's profile page: `ProfilePhoto` at 256px in a sticky `md`+ column with Languages             |
-| [The list](#the-list) (cards, excerpt, "Has profile")                          | #703, #764 | Done: 64px avatars, server-rendered excerpt, both filters combinable, page size 1000, count in the toolbar |
-| [The profile as a modal](#the-profile) + [Prev/Next](#moving-between-profiles) | #772, #764 | Not started                                                                                                |
-| [Back links](#back-links)                                                      | —          | Not started                                                                                                |
+| Slice                                                                          | Issue      | State                                                                                                       |
+| ------------------------------------------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------- |
+| [Sorting](#sorting-712)                                                        | #712       | Done, on today's list: `profileUpdatedAt` column, "Sort by" dropdown, per-row relative update time          |
+| [The photo](#the-photo-806)                                                    | #806       | Done, on today's profile page: `ProfilePhoto` at 256px in a sticky `md`+ column with Languages              |
+| [The list](#the-list) (cards, excerpt, "Has profile")                          | #703, #764 | Done: 64px avatars, server-rendered excerpt, both filters combinable, page size 1000, count in the toolbar  |
+| [The client-side collection](#implementation-shape)                            | —          | Done: whole public profile in the list payload, search/filter/sort/page in memory, params written shallowly |
+| [The profile as a modal](#the-profile) + [Prev/Next](#moving-between-profiles) | #772, #764 | Not started                                                                                                 |
+| [Back links](#back-links)                                                      | —          | Not started                                                                                                 |
 
 The slices are in dependency order but not in strict sequence: the photo lands
 on today's profile page and is carried over unchanged when that page becomes a
@@ -254,18 +255,15 @@ These follow from the UX decisions and are easy to lose.
 - **Hosting and Proposals load lazily** with a skeleton. They need joins and
   sit below the fold; everything else ships with the list payload.
 - **The list payload grows to the whole public profile**, reversing a
-  deliberate constraint. `app/(site)/guests/page.tsx:42` and
-  `attendee-list.tsx:8` currently strip each row to the six fields it renders,
-  precisely so a full profile never crosses to the client. The excerpt, the
-  prompt fallback and in-memory search (`searchAttendees` reads `aboutMe`,
-  `languages`, `prompts`, `basedIn`) all need more than that. The limit that
-  stays is `sanitizeGuest`'s: `email` must still never cross. Rewrite those two
-  comments in the same change, or they will contradict the code.
-  **Not yet done**: the card slice ships a rendered `excerpt` string per row
-  instead (`utils/attendee-profile.ts`), because search and filtering still run
-  on the server and the markdown parser has no business in the browser bundle.
-  The payload has to grow when the list becomes the client-side collection the
-  modal traverses — and then the excerpt is derived there, not shipped.
+  deliberate constraint: each row used to be stripped to the six fields it
+  renders, precisely so a full profile never crossed to the client. The
+  excerpt, the prompt fallback and in-memory search (`searchAttendees` reads
+  `aboutMe`, `languages`, `prompts`, `basedIn`) all need more than that. The
+  limit that stays is `sanitizeGuest`'s: `email` must still never cross — and
+  it can't, since `Attendee` has no `info`. Done, along with the two comments
+  that asserted the opposite; the E2E assertion that the directory response
+  can't contain a contact handle became one that it can't contain the private
+  login email.
 - **Avatars**: three renditions (64px list, 256px profile, 512px zoom) are three
   different `next/image` URLs, so the thumbnail never satisfies the profile from
   cache. `Avatar` had only `sm` (48px) and `lg` (112px), so the card size went

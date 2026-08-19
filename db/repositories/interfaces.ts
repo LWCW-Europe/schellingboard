@@ -286,12 +286,12 @@ export interface GuestsRepository {
   }): Promise<GuestPage>;
   /**
    * All guests as attendees (public profile fields plus whether they host any
-   * session), ordered by name with id tiebreaker. `host: true` narrows to
-   * session hosts. Search, sorting and pagination happen in memory on top of this
-   * (see utils/attendee-search.ts): attendee counts don't warrant a SQL or
-   * persisted search index.
+   * session), ordered by name with id tiebreaker. Search, filtering, sorting
+   * and pagination all happen in memory on top of this, in the browser (see
+   * app/(site)/guests/attendee-list.tsx): attendee counts don't warrant a SQL
+   * or persisted search index.
    */
-  listAttendees(opts: { host?: boolean }): Promise<Attendee[]>;
+  listAttendees(): Promise<Attendee[]>;
   /**
    * Assigned events for many guests in one query, ordered by event name.
    * Every requested id is present in the result; guests without assignments

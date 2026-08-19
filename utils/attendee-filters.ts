@@ -1,10 +1,6 @@
 /**
  * The attendee directory's filter toggles. The active set lives in one
  * comma-separated `filter` search param, so a filtered view stays shareable.
- *
- * Kept apart from `attendee-profile.ts` (which the filters are defined in terms
- * of) because the toolbar is a client component: this module must stay free of
- * the markdown parser that pulls in.
  */
 export const ATTENDEE_FILTERS = [
   { value: "isHost", label: "Session host" },

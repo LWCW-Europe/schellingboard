@@ -1,28 +1,32 @@
 "use client";
 
-import { Attendee } from "@/db/repositories/interfaces";
-import { DataTable, useTableParams } from "@/app/admin/data-table";
+import { useMemo } from "react";
 import Link from "next/link";
+import type { Attendee } from "@/db/repositories/interfaces";
+import { DataTable, useTableParams } from "@/app/admin/data-table";
 import { Avatar } from "@/app/(site)/guests/avatar";
 import {
   ATTENDEE_SORTS,
   AttendeeSort,
   DEFAULT_ATTENDEE_SORT,
+  searchAttendees,
 } from "@/utils/attendee-search";
 import {
   ATTENDEE_FILTERS,
-  AttendeeFilter,
+  parseAttendeeFilters,
   serializeAttendeeFilters,
 } from "@/utils/attendee-filters";
+import { hasFilledProfile, profileExcerpt } from "@/utils/attendee-profile";
+import { formatRelativeTime } from "@/utils/relative-time";
 
-// Rows are serialized into the page payload, so only the fields the card
-// actually renders may cross the server/client boundary — never the full
-// profile (contacts, prompts, …).
-export type AttendeeRowData = Pick<
-  Attendee,
-  "id" | "name" | "avatarUrl" | "pronouns" | "basedIn" | "isHost"
-> & {
-  // Both already rendered, not raw data: see the note in page.tsx.
+// Everyone on one page: reading through who is coming is what the directory is
+// for, and at realistic attendee counts (a few hundred) a pager only gets in
+// the way. Above this it falls back to ordinary pagination.
+const PAGE_SIZE = 1000;
+
+/** An attendee plus what the list derives from them once, up front. */
+type AttendeeCard = Attendee & {
+  hasProfile: boolean;
   excerpt: string | null;
   profileUpdated: string | null;
 };
@@ -40,7 +44,7 @@ function AttendeeRow({
   },
   listQueryString,
 }: {
-  attendee: AttendeeRowData;
+  attendee: AttendeeCard;
   listQueryString: string;
 }) {
   const href = listQueryString
@@ -92,26 +96,82 @@ function AttendeeRow({
   );
 }
 
-export function AttendeeList(props: {
-  rows: AttendeeRowData[];
-  total: number;
-  page: number;
-  pageSize: number;
-  searchQuery: string;
-  filters: AttendeeFilter[];
+/**
+ * The attendee directory. Holds every attendee and does search, filtering,
+ * sorting and paging in the browser: the whole point of the directory is
+ * reading through it, and a server round trip per toggle would throw away the
+ * reader's place in the list each time.
+ *
+ * `now` comes from the server so the relative update times match what was
+ * server-rendered, and so the dev fake clock applies.
+ */
+export function AttendeeList({
+  attendees,
+  now,
+  canEditProfile,
+}: {
+  attendees: Attendee[];
+  now: Date;
   canEditProfile: boolean;
-  sort: AttendeeSort;
 }) {
-  const { searchParams, setParams } = useTableParams();
+  const { searchParams, setParams } = useTableParams({ shallow: true });
+
+  const query = (searchParams.get("q") ?? "").trim();
+  const filterParam = searchParams.get("filter") ?? "";
+  const sortParam = searchParams.get("sort");
+  const sort: AttendeeSort =
+    ATTENDEE_SORTS.find((s) => s.value === sortParam)?.value ??
+    DEFAULT_ATTENDEE_SORT;
+  const filters = useMemo(
+    () => parseAttendeeFilters(filterParam),
+    [filterParam]
+  );
+
+  // Fixed for the life of the page: keyed on the attendees so the markdown
+  // parsing behind the excerpt isn't repeated on every filter or sort change.
+  const cards: AttendeeCard[] = useMemo(
+    () =>
+      attendees.map((attendee) => ({
+        ...attendee,
+        hasProfile: hasFilledProfile(attendee),
+        excerpt: profileExcerpt(attendee),
+        profileUpdated: attendee.profileUpdatedAt
+          ? formatRelativeTime(attendee.profileUpdatedAt, now)
+          : null,
+      })),
+    [attendees, now]
+  );
+
+  const matches = useMemo(() => {
+    const scoped = cards.filter(
+      (card) =>
+        (!filters.includes("isHost") || card.isHost) &&
+        (!filters.includes("hasProfile") || card.hasProfile)
+    );
+    return searchAttendees(scoped, query, sort);
+  }, [cards, filters, query, sort]);
+
+  const total = matches.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  // A stale or hand-edited `page` shows the last real page rather than an
+  // empty list; nothing rewrites the URL, since at this page size the param
+  // only ever appears when someone typed it.
+  const requestedPage = Number(searchParams.get("page"));
+  const page = Math.min(
+    Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1,
+    totalPages
+  );
+  const rows = matches.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   // The raw query string (no leading "/guests?"), forwarded as `from` on
   // each row link so the profile page can rebuild "/guests?<from>".
   const listQueryString = searchParams.toString();
   // A search is ranked by relevance, which an explicit sort would throw away.
-  const sortDisabled = props.searchQuery !== "";
+  const sortDisabled = query !== "";
   const toolbar = (
     <div className="flex flex-wrap items-center gap-2">
       {ATTENDEE_FILTERS.map((f) => {
-        const active = props.filters.includes(f.value);
+        const active = filters.includes(f.value);
         return (
           <button
             key={f.value}
@@ -120,8 +180,8 @@ export function AttendeeList(props: {
               setParams({
                 filter: serializeAttendeeFilters(
                   active
-                    ? props.filters.filter((v) => v !== f.value)
-                    : [...props.filters, f.value]
+                    ? filters.filter((v) => v !== f.value)
+                    : [...filters, f.value]
                 ),
                 page: null,
               });
@@ -148,7 +208,7 @@ export function AttendeeList(props: {
       >
         Sort by
         <select
-          value={props.sort}
+          value={sort}
           disabled={sortDisabled}
           onChange={(e) => {
             setParams({
@@ -172,9 +232,9 @@ export function AttendeeList(props: {
       </label>
       {/* With everyone on one page there is no pager to say how many there
           are, and a filter that quietly removes people needs a number. */}
-      {props.total > 0 && (
+      {total > 0 && (
         <span className="text-sm text-fg-subtle">
-          {props.total} attendee{props.total === 1 ? "" : "s"}
+          {total} attendee{total === 1 ? "" : "s"}
         </span>
       )}
     </div>
@@ -184,39 +244,39 @@ export function AttendeeList(props: {
   // likelier reason for an empty list — "no host has" is not "nobody has" —
   // and then the plain message is the honest one.
   const onlyHasProfile =
-    props.filters.length === 1 && props.filters[0] === "hasProfile";
-  const emptyMessage =
-    onlyHasProfile && props.searchQuery === "" ? (
-      <>
-        Nobody has filled in a profile yet.
-        {props.canEditProfile && (
-          <>
-            {" "}
-            <Link
-              href="/guests/edit"
-              className="font-semibold text-brand-fg hover:text-brand-fg-hover"
-            >
-              Be the first!
-            </Link>
-          </>
-        )}
-      </>
-    ) : (
-      "No attendees match."
-    );
+    filters.length === 1 && filters[0] === "hasProfile" && query === "";
+  const emptyMessage = onlyHasProfile ? (
+    <>
+      Nobody has filled in a profile yet.
+      {canEditProfile && (
+        <>
+          {" "}
+          <Link
+            href="/guests/edit"
+            className="font-semibold text-brand-fg hover:text-brand-fg-hover"
+          >
+            Be the first!
+          </Link>
+        </>
+      )}
+    </>
+  ) : (
+    "No attendees match."
+  );
   return (
     <div className="pb-8">
       <DataTable
         toolbar={toolbar}
-        rows={props.rows}
+        rows={rows}
         rowKey={(u) => u.id}
-        total={props.total}
-        page={props.page}
-        pageSize={props.pageSize}
-        searchQuery={props.searchQuery}
+        total={total}
+        page={page}
+        pageSize={PAGE_SIZE}
+        searchQuery={query}
         searchPlaceholder="Search names, languages, interests…"
         emptyMessage={emptyMessage}
         paginationFooter="when-paginated"
+        shallow
         listItem={(u) => (
           <AttendeeRow attendee={u} listQueryString={listQueryString} />
         )}

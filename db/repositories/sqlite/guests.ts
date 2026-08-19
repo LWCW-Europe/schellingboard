@@ -177,7 +177,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return { rows, total: totalRow?.count ?? 0 };
   }
 
-  async listAttendees(opts: { host?: boolean }): Promise<Attendee[]> {
+  async listAttendees(): Promise<Attendee[]> {
     const isHostExpr = exists(
       this.db
         .select({ one: sql`1` })
@@ -200,10 +200,9 @@ export class SqliteGuestsRepository implements GuestsRepository {
           profileUpdatedAt: schema.guests.profileUpdatedAt,
           // SQLite has no boolean type; this yields 0/1 at runtime despite the
           // sql<boolean> annotation, so coerce explicitly below.
-          isHost: opts.host ? sql<boolean>`true` : isHostExpr,
+          isHost: isHostExpr,
         })
         .from(schema.guests)
-        .where(opts.host ? isHostExpr : undefined)
         // id as tiebreaker so equal names keep a deterministic order.
         .orderBy(sql`${schema.guests.name} collate nocase`, schema.guests.id)
         .all()
