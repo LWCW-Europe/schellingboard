@@ -65,6 +65,7 @@ export default async function GuestsPage({
         id,
         name,
         avatarUrl,
+        aboutMe,
         pronouns,
         basedIn,
         isHost,
@@ -73,6 +74,13 @@ export default async function GuestsPage({
         id,
         name,
         avatarUrl,
+        // Take only the first 3 lines of the aboutMe.
+        // The first two will be displayed, the third will be truncated
+        // and is used only for ellipsis.
+        aboutMe: aboutMe
+          ?.split("\n")
+          .filter((_, i) => i < 3)
+          .join("\n"),
         pronouns,
         basedIn,
         isHost,

@@ -9,20 +9,30 @@ import {
   AttendeeSort,
   DEFAULT_ATTENDEE_SORT,
 } from "@/utils/attendee-search";
+import { Markdown } from "@/app/(site)/markdown";
 
 // Rows are serialized into the page payload, so only the fields the row
 // actually renders may cross the server/client boundary — never the full
 // profile (contacts, prompts, …).
 export type AttendeeRowData = Pick<
   Attendee,
-  "id" | "name" | "avatarUrl" | "pronouns" | "basedIn" | "isHost"
+  "id" | "name" | "avatarUrl" | "pronouns" | "basedIn" | "isHost" | "aboutMe"
 > & {
   // Already rendered ("3 days ago"), not a date: see the note in page.tsx.
   profileUpdated: string | null;
 };
 
 function AttendeeRow({
-  attendee: { id, avatarUrl, name, pronouns, basedIn, isHost, profileUpdated },
+  attendee: {
+    id,
+    avatarUrl,
+    name,
+    aboutMe,
+    pronouns,
+    basedIn,
+    isHost,
+    profileUpdated,
+  },
   listQueryString,
 }: {
   attendee: AttendeeRowData;
@@ -45,7 +55,7 @@ function AttendeeRow({
   return (
     <Link
       href={href}
-      className="flex items-center gap-4 hover:bg-surface-sunken rounded-md px-2"
+      className="flex items-center gap-4 hover:bg-surface-sunken rounded-xl border border-line p-4"
     >
       <Avatar name={name} size="sm" image={avatarUrl ?? undefined} />
       <div className="flex flex-col gap-1 min-w-0 flex-1">
@@ -59,7 +69,7 @@ function AttendeeRow({
           )}
         </span>
         {(pronouns || basedIn || updated) && (
-          <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="flex flex-wrap text-sm items-baseline gap-x-2 gap-y-1">
             {(pronouns || basedIn) && (
               <span className="text-sm text-fg-subtle line-clamp-1">
                 {[pronouns, basedIn].filter(Boolean).join(" · ")}
@@ -67,6 +77,11 @@ function AttendeeRow({
             )}
             <span className="sm:hidden">{updated}</span>
           </span>
+        )}
+        {aboutMe && (
+          <div className="text-fg text-sm line-clamp-2">
+            <Markdown>{aboutMe}</Markdown>
+          </div>
         )}
       </div>
       {updated && (
@@ -169,6 +184,7 @@ export function AttendeeList(props: {
         listItem={(u) => (
           <AttendeeRow attendee={u} listQueryString={listQueryString} />
         )}
+        style={{ separator: false }}
       />
     </div>
   );

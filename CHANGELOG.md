@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **The attendee directory is wider on a large screen**: the list used the same narrow column as a form, which left the update times crowded against the names. On a phone the update time now sits under the name instead of beside it, and a "Session host" badge no longer squeezes the name into two lines
 - **Attendee search now looks at the whole profile**: searching the attendee directory also matches the contact details attendees chose to publish (handles, usernames, websites, and the service they belong to) and the prompt questions themselves, not only their answers — so knowing someone's handle is enough to find them. Private email addresses are never searched; they are not part of a profile
+- **Attendee list now displays "About Me"**: the attendee directory now shows the answers to the about me section as
+  per [Attendee profiles: browsing and navigation](https://github.com/LWCW-Europe/schellingboard/blob/main/docs/dev/design/attendee-profiles.md)
 
 ### Internal
 

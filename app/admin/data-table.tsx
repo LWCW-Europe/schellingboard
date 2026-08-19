@@ -2,6 +2,7 @@
 
 import { type ReactNode, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import clsx from "clsx";
 
 export type Column<T> = {
   header: ReactNode;
@@ -106,6 +107,10 @@ export function BulkActionsBar({
   );
 }
 
+type TableStyle = {
+  separator?: boolean;
+};
+
 type TableProps<T> = {
   rows: T[];
   rowKey: (row: T) => string;
@@ -117,6 +122,7 @@ type TableProps<T> = {
   toolbar?: ReactNode;
   bulkBar?: ReactNode;
   emptyMessage?: string;
+  style?: TableStyle;
 } & (
   | {
       columns: Column<T>[];
@@ -149,6 +155,7 @@ export function DataTable<T>({
   mobileCard,
   listItem,
   emptyMessage = "Nothing to show.",
+  style: { separator = true } = {},
 }: TableProps<T>) {
   const { setParams } = useTableParams();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -205,9 +212,17 @@ export function DataTable<T>({
       {rows.length === 0 ? (
         <p className="text-sm text-fg-subtle">{emptyMessage}</p>
       ) : listItem ? (
-        <ul className="divide-y divide-line-subtle border-t border-b border-line-subtle">
+        <ul
+          className={clsx(
+            separator &&
+              "divide-y divide-line-subtle border-t border-b border-line-subtle"
+          )}
+        >
           {rows.map((row) => (
-            <li key={rowKey(row)} className="py-3">
+            <li
+              key={rowKey(row)}
+              className={clsx(separator ? "py-3" : "py-1.5")}
+            >
               {listItem(row)}
             </li>
           ))}
