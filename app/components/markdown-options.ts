@@ -31,6 +31,7 @@ type Split = {
   before: string;
   selectedText: string;
   after: string;
+  typeOver?: boolean;
 };
 
 /** Tagged template: tpl`${before}**${selectedText}**${after}` */
@@ -42,6 +43,13 @@ function tpl(
 ): Split {
   return { infixes, before, selectedText, after };
 }
+
+/**
+ * Select the text the template wrote even though the user selected none: a
+ * placeholder like the "url" of a fresh link is there to be typed over, and
+ * hunting for it by hand is the whole cost it was meant to save.
+ */
+const typeOver = (split: Split): Split => ({ ...split, typeOver: true });
 
 type Template = (before: string, selectedText: string, after: string) => Split;
 
@@ -81,7 +89,8 @@ export function applyTemplate(
     selectionStart: caret,
     // With a selection, keep the (re)wrapped text selected; without one, put
     // the caret between the markers that were just inserted.
-    selectionEnd: selected ? caret + split.selectedText.length : caret,
+    selectionEnd:
+      selected || split.typeOver ? caret + split.selectedText.length : caret,
   };
 }
 
@@ -189,26 +198,48 @@ const around =
     const split = template(before, selectedText, after);
     const [, prefix = "", postfix = ""] = split.infixes;
 
+    const outside = {
+      prefix: carriesMarker(before, prefix, "end"),
+      postfix: carriesMarker(after, postfix, "start"),
+    };
+    const inside = {
+      prefix: carriesMarker(selectedText, prefix, "start"),
+      postfix: carriesMarker(selectedText, postfix, "end"),
+    };
+
     // Markers aren't there yet - apply them
     if (!(
-      (carriesMarker(before, prefix, "end") ||
-        carriesMarker(selectedText, prefix, "start")) &&
-      (carriesMarker(after, postfix, "start") ||
-        carriesMarker(selectedText, postfix, "end"))
+      (outside.prefix || inside.prefix) &&
+      (outside.postfix || inside.postfix)
     )) {
       return split;
     }
 
-    // Markers are already there - undo them
+    // Markers are already there - undo them, each on the side that carries it.
+    // Taking a marker off both the selection and its surroundings would eat a
+    // character the user still needs: unwrapping "[" + "[a](b)" + "](url)"
+    // twice over leaves the malformed "a](b)".
     const escaped = {
       prefix: prefix.replaceAll(...escape),
       postfix: postfix.replaceAll(...escape),
     };
-    const newBefore = before.replace(new RegExp(`${escaped.prefix}$`), "");
-    const newSelectedText = selectedText
-      .replace(new RegExp(`^${escaped.prefix}`), "")
-      .replace(new RegExp(`${escaped.postfix}$`), "");
-    const newAfter = after.replace(new RegExp(`^${escaped.postfix}`), "");
+    const strip = (text: string, marker: string, edge: "start" | "end") =>
+      text.replace(
+        new RegExp(edge === "start" ? `^${marker}` : `${marker}$`),
+        ""
+      );
+    const newBefore = outside.prefix
+      ? strip(before, escaped.prefix, "end")
+      : before;
+    const newAfter = outside.postfix
+      ? strip(after, escaped.postfix, "start")
+      : after;
+    const unprefixed = outside.prefix
+      ? selectedText
+      : strip(selectedText, escaped.prefix, "start");
+    const newSelectedText = outside.postfix
+      ? unprefixed
+      : strip(unprefixed, escaped.postfix, "end");
     return tpl`${newBefore}${newSelectedText}${newAfter}`;
   };
 
@@ -304,9 +335,21 @@ export const options: Option[] = [
   {
     icon: LinkIcon,
     label: "Insert link (Ctrl+K)",
-    template: around(
-      (before, selectedText, after) => tpl`${before}[](${selectedText})${after}`
-    ),
+    template: around((before, selectedText, after) => {
+      // Nothing selected: no label to write, so the "url" placeholder is left
+      // selected for the address to be typed straight over it, as on GitHub.
+      if (!selectedText) return typeOver(tpl`${before}[](${"url"})${after}`);
+      // Text that is already an address is the link's target — that is how a
+      // pasted URL is turned into a link; any other text is the label GitHub
+      // makes it. Text that already is a "[](…)", or already sits in one's
+      // target, keeps that shape so that pressing Ctrl+K on it unwraps the
+      // link instead of nesting a second one around it.
+      return /^https?:\/\//i.test(selectedText) ||
+        /^\[\]\([^()]*\)$/.test(selectedText) ||
+        (before.endsWith("[](") && after.startsWith(")"))
+        ? tpl`${before}[](${selectedText})${after}`
+        : tpl`${before}[${selectedText}](url)${after}`;
+    }),
     key: ctrl("K"),
   },
 ];
