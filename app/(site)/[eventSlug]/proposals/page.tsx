@@ -4,6 +4,7 @@ import { getRepositories } from "@/db/container";
 import { ProposalActionBar } from "./proposal-action-bar";
 import { ProposalTable } from "./proposal-table";
 import { ProposalModal } from "./proposal-modal";
+import { eventInterestSummary } from "@/utils/proposal-vote-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,7 @@ export default async function ProposalsPage({
           comments={comments}
           eventSlug={eventSlug}
           event={event}
+          eventInterest={eventInterestSummary(proposals)}
         />
       )}
     </div>

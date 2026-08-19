@@ -608,6 +608,7 @@ export type SessionProposal = {
   votesCount: number;
   interestedVotesCount: number;
   maybeVotesCount: number;
+  skipVotesCount: number;
   sessionIds: string[];
 };
 

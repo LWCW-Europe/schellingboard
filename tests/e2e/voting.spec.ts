@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { loginAndGoto, login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
@@ -211,4 +212,82 @@ test("should show voting disabled state when not logged in as a user", async ({
   if (await quickVotingLink.isVisible()) {
     await expect(quickVotingLink).toHaveClass(/opacity-50|cursor-not-allowed/);
   }
+});
+
+// Conference Gamma is in the scheduling phase, where the vote breakdown is
+// shown. Hana Kobayashi hosts the first proposal; nobody hosts the second.
+const HOSTED_PROPOSAL = "Writing Documentation People Actually Read";
+const HOSTLESS_PROPOSAL = "Ask Me Anything: Migrating a Legacy Monolith";
+
+async function openGammaProposal(page: Page, title: string) {
+  await page.goto("/Conference-Gamma/proposals");
+  await page.getByPlaceholder("Search proposals").fill(title);
+  await page.getByRole("link", { name: title }).click();
+  const modal = page.getByRole("dialog", { name: "Proposal details" });
+  await expect(modal).toBeVisible();
+  return modal;
+}
+
+test("a host sees the vote breakdown of their own proposal", async ({
+  page,
+}) => {
+  await loginAndGoto(page, "/Conference-Gamma/proposals");
+  await selectUser(page, /Hana Kobayashi/i);
+
+  const modal = await openGammaProposal(page, HOSTED_PROPOSAL);
+  const breakdown = modal.getByRole("region", { name: "Vote breakdown" });
+
+  await expect(breakdown.getByText(/of \d+ attendees/)).toBeVisible();
+  await expect(breakdown.getByText(/Did not vote/)).toBeVisible();
+  await expect(breakdown.getByText(/Interested/)).toBeVisible();
+  await expect(breakdown.getByText(/Maybe/)).toBeVisible();
+  await expect(breakdown.getByText(/Skip/)).toBeVisible();
+  await expect(
+    breakdown.getByText(/If you decide to host this as a session, expect \d/)
+  ).toBeVisible();
+});
+
+test("someone else's proposal keeps its vote breakdown private", async ({
+  page,
+}) => {
+  await loginAndGoto(page, "/Conference-Gamma/proposals");
+  await selectUser(page, /Alice Test/i);
+
+  const modal = await openGammaProposal(page, HOSTED_PROPOSAL);
+
+  await expect(
+    modal.getByRole("region", { name: "Vote breakdown" })
+  ).toHaveCount(0);
+});
+
+test("a proposal nobody hosts shows its vote breakdown to everyone", async ({
+  page,
+}) => {
+  await loginAndGoto(page, "/Conference-Gamma/proposals");
+  await selectUser(page, /Alice Test/i);
+
+  const modal = await openGammaProposal(page, HOSTLESS_PROPOSAL);
+
+  await expect(
+    modal.getByRole("region", { name: "Vote breakdown" })
+  ).toBeVisible();
+});
+
+// Seeded with a host (Charlie Test) but no votes at all — below the turnout
+// the estimate needs.
+const UNVOTED_PROPOSAL = "Conference Gamma Lightning Talks: Community Showcase";
+
+test("a proposal hardly anyone voted on gets no attendance guess", async ({
+  page,
+}) => {
+  await loginAndGoto(page, "/Conference-Gamma/proposals");
+  await selectUser(page, /Charlie Test/i);
+
+  const modal = await openGammaProposal(page, UNVOTED_PROPOSAL);
+  const breakdown = modal.getByRole("region", { name: "Vote breakdown" });
+
+  await expect(breakdown.getByText(/Too few attendees voted/)).toBeVisible();
+  await expect(
+    breakdown.getByText(/If you decide to host this as a session/)
+  ).toHaveCount(0);
 });

@@ -11,6 +11,7 @@ import type {
 } from "@/db/repositories/interfaces";
 import { dismissViewProposal } from "../modal-nav";
 import { ViewProposal } from "./view-proposal";
+import type { EventInterestSummary } from "@/utils/proposal-vote-stats";
 
 export function ProposalModal({
   proposal,
@@ -18,12 +19,14 @@ export function ProposalModal({
   comments,
   eventSlug,
   event,
+  eventInterest,
 }: {
   proposal?: SessionProposal;
   sessions: Session[];
   comments: Comment[];
   eventSlug: string;
   event: Event;
+  eventInterest: EventInterestSummary;
 }) {
   const router = useRouter();
   const onDismiss = useCallback(() => {
@@ -82,6 +85,7 @@ export function ProposalModal({
             comments={comments}
             eventSlug={eventSlug}
             event={event}
+            eventInterest={eventInterest}
             isInModal={true}
           />
         )}

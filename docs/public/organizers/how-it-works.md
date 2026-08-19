@@ -77,6 +77,19 @@ Rules:
 - A proposal's host can click "Schedule" (scheduling phase only) to place it
   on the grid as a real session. The same proposal can be scheduled more
   than once.
+- During scheduling, a host opening their own proposal sees a vote breakdown:
+  turnout among the event's attendees, the split across the three choices, and
+  a predicted range of attendees (withheld below 10% turnout, or with no ❤️
+  votes). Proposals with no host show the breakdown to everybody, since anyone
+  may still take them on.
+- **Treat that prediction as a very rough guess**, and say so if attendees ask.
+  It rests on one event where thirteen hosts recalled roughly how many people
+  came, and it can be well out either way. The formula will be reworked as
+  more events are recorded, and its assumptions — today a fixed nine sessions
+  running at once, and an attendee list that has to be set up for the
+  prediction to appear at all — are meant to become per-event settings. Don't
+  tell attendees that ⭐ Maybe votes are worthless: today's formula doesn't use
+  them, but that rests on the same thirteen sessions and is far from settled.
 - Attendees can also book a blank slot directly in a "bookable" location
   during that day's booking window, without going through a proposal.
 - RSVPs are only possible during the scheduling phase, only for guests

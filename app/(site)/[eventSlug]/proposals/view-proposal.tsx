@@ -22,6 +22,8 @@ import type {
 import { ProposalComments } from "./proposal-comments";
 import { VotingButtons } from "@/app/(site)/[eventSlug]/proposals/voting-buttons";
 import { VoteChoice } from "@/app/(site)/votes";
+import { VoteBreakdown } from "./vote-breakdown";
+import type { EventInterestSummary } from "@/utils/proposal-vote-stats";
 import { DateTime } from "luxon";
 import { useLocalZone } from "@/utils/hooks";
 import { TIME_FORMAT } from "@/utils/utils";
@@ -33,12 +35,14 @@ export function ViewProposal(props: {
   comments: Comment[];
   eventSlug: string;
   event: Event;
+  eventInterest: EventInterestSummary;
   isInModal?: boolean;
 }) {
   const {
     proposal,
     eventSlug,
     event,
+    eventInterest,
     sessions: allSessions,
     comments,
     isInModal = false,
@@ -62,6 +66,10 @@ export function ViewProposal(props: {
   const isHost = () => {
     return currentUserId && proposal.hosts.some((h) => h.id === currentUserId);
   };
+
+  // How a proposal fared is the hosts' business; a proposal nobody has taken
+  // on is everyone's, since anyone may still pick it up.
+  const canSeeVoteBreakdown = canEdit();
 
   const handleScheduleClick = () => {
     router.push(`/${eventSlug}/add-session?proposalID=${proposal.id}`);
@@ -164,23 +172,27 @@ export function ViewProposal(props: {
               </span>
             </div>
           )}
-          <div className="text-sm text-fg-muted">
-            Total votes:
-            <span className="ml-2 inline-flex items-center gap-3">
-              <span
-                title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
-                className="inline-flex items-center gap-1 text-sm text-fg-subtle"
-              >
-                ❤️&nbsp;{proposal.interestedVotesCount}
+          {canSeeVoteBreakdown ? (
+            <VoteBreakdown proposal={proposal} eventInterest={eventInterest} />
+          ) : (
+            <div className="text-sm text-fg-muted">
+              Total votes:
+              <span className="ml-2 inline-flex items-center gap-3">
+                <span
+                  title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
+                  className="inline-flex items-center gap-1 text-sm text-fg-subtle"
+                >
+                  ❤️&nbsp;{proposal.interestedVotesCount}
+                </span>
+                <span
+                  title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
+                  className="inline-flex items-center gap-1 text-sm text-fg-subtle"
+                >
+                  ⭐&nbsp;{proposal.maybeVotesCount}
+                </span>
               </span>
-              <span
-                title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
-                className="inline-flex items-center gap-1 text-sm text-fg-subtle"
-              >
-                ⭐&nbsp;{proposal.maybeVotesCount}
-              </span>
-            </span>
-          </div>
+            </div>
+          )}
         </div>
       )}
       {schedEnabled && (

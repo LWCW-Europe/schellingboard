@@ -57,6 +57,7 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
         total: count(),
         interested: sql<number>`sum(case when ${schema.votes.choice} = 'interested' then 1 else 0 end)`,
         maybe: sql<number>`sum(case when ${schema.votes.choice} = 'maybe' then 1 else 0 end)`,
+        skip: sql<number>`sum(case when ${schema.votes.choice} = 'skip' then 1 else 0 end)`,
       })
       .from(schema.votes)
       .where(inArray(schema.votes.proposalId, ids))
@@ -86,13 +87,14 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
 
     const voteCountsByProposal = new Map<
       string,
-      { total: number; interested: number; maybe: number }
+      { total: number; interested: number; maybe: number; skip: number }
     >();
     for (const r of voteRows) {
       voteCountsByProposal.set(r.proposalId, {
         total: r.total,
         interested: r.interested,
         maybe: r.maybe,
+        skip: r.skip,
       });
     }
 
@@ -108,6 +110,7 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
         total: 0,
         interested: 0,
         maybe: 0,
+        skip: 0,
       };
       return {
         id: row.id,
@@ -120,6 +123,7 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
         votesCount: votes.total,
         interestedVotesCount: votes.interested,
         maybeVotesCount: votes.maybe,
+        skipVotesCount: votes.skip,
         sessionIds: sessionIdsByProposal.get(row.id) ?? [],
       };
     });

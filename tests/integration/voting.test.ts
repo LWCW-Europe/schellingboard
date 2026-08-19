@@ -299,6 +299,7 @@ describe("voting API", () => {
     expect(tallied.votesCount).toBe(4);
     expect(tallied.interestedVotesCount).toBe(2);
     expect(tallied.maybeVotesCount).toBe(1);
+    expect(tallied.skipVotesCount).toBe(1);
 
     const untouched = proposals.find((p) => p.id === other.id)!;
     expect(untouched.votesCount).toBe(0);

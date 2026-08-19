@@ -115,6 +115,8 @@ starts.
 **Only the counts are ever shown — never who voted which way.** Your own votes
 are visible to you alone; a host sees how many people were interested in their
 proposal, not their names, and neither does anyone else, organizers included.
+Hosts get the fuller picture of their own proposal — see
+[How many people to expect](#how-many-people-to-expect).
 
 ## The schedule
 
@@ -151,9 +153,30 @@ Vote counts become visible when scheduling opens. They tell you roughly how
 much interest there is — not how many people will walk in, since voters didn't
 know what would end up running against your session.
 
-A rough, **unvalidated** rule of thumb: divide the ❤️ count by 2 and the ⭐
-count by 5, and add them up. Treat it as a hint for choosing a room size, not
-a forecast.
+Open your own proposal during scheduling and it shows a **vote breakdown**:
+how many attendees voted and how many didn't, how the votes split between
+❤️, ⭐ and 👋🏽, and how many people to expect if you host it.
+
+The expectation is a **range**, not a number — "expect 8–17 people" — and even
+that is **a very rough guess**. Where it comes from: at one event, thirteen
+hosts were asked afterwards roughly how many people had come to their session,
+and those recollections were compared against the votes. The formula that came
+out of it takes a proposal's ❤️ count relative to the other proposals at the
+event and scales it by the number of attendees.
+
+That is hardly any data to build on, so the range can be well out in either
+direction — use it to pick a room, nothing more. Expect it to change: the
+formula will be reworked as more events are recorded, and the assumptions
+behind it (currently a fixed guess at how many sessions run at the same time)
+will become settings an organizer can adjust per event. If fewer than 10% of
+attendees voted on the proposal, or nobody voted ❤️, no figure is given at all.
+
+**Keep voting ⭐ Maybe.** Today's formula happens not to use ⭐ votes — at that
+one event they didn't visibly improve the guess — but thirteen sessions prove
+very little, and hosts read your ⭐ as real interest regardless.
+
+The breakdown is for the hosts: on a proposal nobody hosts yet, anyone can see
+it, since anyone may still take it on.
 
 ![Proposals list in the scheduling phase, with a Your vote column and heart and star vote counts per proposal](../screenshots/proposals-results.webp)
 
