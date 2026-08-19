@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { DragEventHandler, MouseEventHandler } from "react";
 import Image from "next/image";
 
-function initials(name: string): string {
+export function initials(name: string): string {
   return name
     .trim()
     .split(/\s+/)

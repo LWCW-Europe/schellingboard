@@ -21,7 +21,7 @@ Keep this list current — it is how the next agent knows where to pick up.
 | Slice                                                                          | Issue      | State                                                                                              |
 | ------------------------------------------------------------------------------ | ---------- | -------------------------------------------------------------------------------------------------- |
 | [Sorting](#sorting-712)                                                        | #712       | Done, on today's list: `profileUpdatedAt` column, "Sort by" dropdown, per-row relative update time |
-| [The photo](#the-photo-806)                                                    | #806       | Not started                                                                                        |
+| [The photo](#the-photo-806)                                                    | #806       | Done, on today's profile page: `ProfilePhoto` at 256px in a sticky `md`+ column with Languages     |
 | [The list](#the-list) (cards, excerpt, "Has profile")                          | #703, #764 | Not started                                                                                        |
 | [The profile as a modal](#the-profile) + [Prev/Next](#moving-between-profiles) | #772, #764 | Not started                                                                                        |
 | [Back links](#back-links)                                                      | —          | Not started                                                                                        |
@@ -92,7 +92,7 @@ Chosen over lightbox-style edge arrows because it needs no width fallback, and
 because `×` must stay permanently on screen — see "browser history" below.
 
 Body, in the existing order: photo, name, pronouns, host badge, based in,
-About me, prompts, Languages, Contacts, then Hosting and Proposals. On mobile
+Languages, About me, prompts, Contacts, then Hosting and Proposals. On mobile
 the modal is a **full-screen sheet**, not a centred dialog.
 
 Avatar zoom becomes an **in-place size swap**. It must not be a second modal
@@ -107,11 +107,24 @@ visible without clicking. Its mockup is two columns: a large portrait on the
 left with the name under it, About me and prompts on the right.
 
 - **256px, and no click required.** On desktop the photo takes a left column
-  (`w-64`) with the name, pronouns, host badge and based-in stacked beneath it;
-  the text sections run alongside. On mobile it is centred above the name, at
-  the same 256px cap rather than full-bleed — a 375px-wide photo plus the name
+  (`w-64`) with the name, pronouns, host badge, based-in and Languages stacked
+  beneath it; the prose sections run alongside. Languages sits in the column
+  because it is the same kind of at-a-glance fact as pronouns and based-in, and
+  four chips still wrap inside 256px. Contacts deliberately stays in the main
+  column: it is the longest of the short sections, and on a phone the column
+  stacks _above_ About me, so anything added to it is bought with bio that
+  drops below the fold. On mobile the photo is centred above the name, at the
+  same 256px cap rather than full-bleed — a 375px-wide photo plus the name
   pushes the first line of About me off a phone screen, which trades one of
   #764's wins for #806's.
+- **Two columns from `md`, not `sm`.** The column costs a fixed 256px plus a
+  32px gap, so at 640px the prose gets 352px — less than the stacked phone
+  layout gives it, with a page-tall empty gutter beside it. Below 768px the
+  page stays stacked.
+- **The column is sticky** (`md:sticky md:top-20 md:self-start`). A filled-in
+  profile runs for several screens while the column ends after ~450px, so
+  without it the photo scrolls away and leaves dead space. `self-start` is
+  load-bearing: a stretched flex item is as tall as the row and never sticks.
 - **Rounded square, not a circle.** Stored avatars are already a centred square
   crop, and a circle discards ~21% of it; at 48px that is invisible, at 256px it
   eats hair and shoulders. The list keeps round thumbnails: round reads as an

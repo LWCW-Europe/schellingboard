@@ -5,6 +5,51 @@ import { login } from "./helpers/auth";
 // profile, so this never races profile.spec.ts, which resets Alice's avatar.
 const GUEST = "Charlie Test";
 
+test("shows the photo big enough to recognise someone, without clicking", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/guests");
+  await page.getByRole("link", { name: GUEST }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: GUEST })
+  ).toBeVisible();
+
+  const photo = page.getByAltText(`Profile avatar of ${GUEST}`);
+  const box = (await photo.boundingBox())!;
+  expect(box.width).toBeGreaterThanOrEqual(240);
+  // Stored avatars are square crops, so an unsquare box means a stretched face.
+  expect(Math.abs(box.width - box.height)).toBeLessThanOrEqual(1);
+
+  // The photo has its own column: the text sits beside it rather than being
+  // pushed a screenful down.
+  const aboutMe = page.getByRole("heading", { name: "About me" });
+  const aboutMeBox = (await aboutMe.boundingBox())!;
+  expect(aboutMeBox.x).toBeGreaterThanOrEqual(box.x + box.width);
+
+  // A narrow laptop or tablet stacks instead: two columns here would leave the
+  // prose ~350px to wrap in, narrower than the phone layout gets.
+  await page.setViewportSize({ width: 700, height: 800 });
+  const tabletPhotoBox = (await photo.boundingBox())!;
+  const tabletAboutMeBox = (await aboutMe.boundingBox())!;
+  expect(tabletAboutMeBox.y).toBeGreaterThan(
+    tabletPhotoBox.y + tabletPhotoBox.height
+  );
+
+  // On a phone the columns stack, and the photo must neither overflow the
+  // screen nor push About me off the first one.
+  const width = 375;
+  const height = 667;
+  await page.setViewportSize({ width, height });
+  const phoneBox = (await photo.boundingBox())!;
+  expect(phoneBox.width).toBeGreaterThanOrEqual(200);
+  expect(phoneBox.x).toBeGreaterThanOrEqual(0);
+  expect(phoneBox.x + phoneBox.width).toBeLessThanOrEqual(width);
+  const phoneAboutMeBox = (await aboutMe.boundingBox())!;
+  expect(phoneAboutMeBox.y).toBeGreaterThan(phoneBox.y);
+  expect(phoneAboutMeBox.y).toBeLessThan(height);
+});
+
 test("enlarges and dismisses a guest's profile picture on their detail page", async ({
   page,
 }) => {
