@@ -97,6 +97,7 @@ changes materially. Check off `[ ]` as you go.
 - [ ] `proposals-vote.webp` — Proposal list with Interested / Maybe / Skip voting
 - [ ] `quick-voting.webp` — Quick Voting mode, one proposal at a time
 - [ ] `proposals-results.webp` — Proposal list in the **scheduling** phase: "Your vote" column and ❤️/⭐ vote counts (only visible once voting is over)
+- [ ] `proposal-vote-breakdown.webp` — A proposal's popup in the **scheduling** phase, showing the vote breakdown and the "expect N–M people" prediction. Open it as the host (Hana Kobayashi) of a proposal with enough votes, or the box is withheld
 - [ ] `schedule-grid.webp` — Simple scheduling grid with room photos (also used as the site hero; also regenerates `www/og-image.jpg`, see above)
 - [ ] `session-details.webp` — Session detail popup (host, location, time, attendees, description)
 - [ ] `add-session.webp` — Form for adding a session directly to the schedule

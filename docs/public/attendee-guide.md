@@ -136,6 +136,8 @@ Open your own proposal during scheduling to see a **vote breakdown**: how many
 attendees voted and how many didn't, how the votes split across ❤️ ⭐ 👋, and
 how many people to expect if you host it — a range, like "expect 8–17 people".
 
+![Proposal popup in the scheduling phase, showing a vote breakdown with turnout, the split across Interested, Maybe and Skip, and a range of how many people to expect](../screenshots/proposal-vote-breakdown.webp)
+
 :::warning "The range is a very rough guess"
 It comes from a single event where thirteen hosts recalled roughly how many
 people came to their session, so it can be well out in either direction. Use
@@ -223,7 +225,7 @@ login instead, open **Settings → Account security** and click **Enable
 protection**. You'll be emailed an 8-character code, valid for 10 minutes;
 type it in to confirm. You can set a password at the same time.
 
-![Settings page with email notification checkboxes and an Enable protection button](../screenshots/user-settings.webp)
+![Settings page in dark mode, one of the supported themes, with email notification checkboxes and an Enable protection button](../screenshots/user-settings.webp)
 
 Once protected, picking your name asks for that password or a fresh emailed
 code. The login lasts a week, or until you switch to a different name, and
