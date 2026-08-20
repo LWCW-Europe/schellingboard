@@ -1,11 +1,11 @@
 "use client";
 
 import {
+  type TouchEvent as ReactTouchEvent,
   useCallback,
   useEffect,
   useRef,
   useState,
-  type TouchEvent as ReactTouchEvent,
 } from "react";
 import {
   ChevronLeftIcon,
@@ -24,11 +24,11 @@ import {
 } from "@/app/(site)/guests/profile-activity";
 import {
   startSwipe,
+  type Swipe,
   swipeCommit,
+  type SwipeEnds,
   swipeOffset,
   trackSwipe,
-  type Swipe,
-  type SwipeEnds,
 } from "@/app/(site)/guests/swipe";
 
 /** How long the profile takes to finish a swipe the finger has let go of. */
@@ -157,6 +157,37 @@ export function ProfileModal({
     return () => clearTimeout(timer);
   }, [drag, goTo, collection, index]);
 
+  const goToAnimated = useCallback(
+    (offset: 1 | -1) => {
+      // Arrows reach the ends even though the buttons there are disabled.
+      if (!collection[index + offset]) return;
+
+      const width = viewport.current?.clientWidth ?? 0;
+      // The neighbour mounts in one frame and the slide starts in the next: a
+      // settle in the same breath as the mount transitions from the pre-mount
+      // transform, so every press slides the same way. Two rAFs, not
+      // one: a single one can still beat the mounting frame's style pass.
+      setDrag({
+        guestId,
+        phase: "tracking",
+        swipe: { startX: 0, startY: 0, axis: "x", dx: 0 },
+        width,
+      });
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          setDrag({
+            guestId,
+            phase: "settling",
+            offset: -offset * width,
+            commit: offset,
+            width,
+          });
+        })
+      );
+    },
+    [collection, index, guestId]
+  );
+
   useEffect(() => {
     // Duplication, anchor: waggHhba
     document.documentElement.style.overflow = "hidden";
@@ -177,14 +208,14 @@ export function ProfileModal({
       // photo — moving on from there would be a jarring double jump.
       if (zoomed || isTextEntry(e.target)) return;
       e.preventDefault();
-      goTo(e.key === "ArrowRight" ? 1 : -1);
+      goToAnimated(e.key === "ArrowRight" ? 1 : -1);
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.documentElement.style.overflow = "";
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [close, goTo, zoomed]);
+  }, [close, goToAnimated, zoomed]);
 
   // The neighbours exist only for the length of a drag: mounting them for every
   // reader would render three profiles where one is being read, and rendering
@@ -231,7 +262,7 @@ export function ProfileModal({
           <NavButton
             label="Previous attendee"
             disabled={index <= 0}
-            onClick={() => goTo(-1)}
+            onClick={() => goToAnimated(-1)}
           >
             <ChevronLeftIcon className="h-5 w-5 stroke-2" aria-hidden="true" />
             <span className="hidden sm:inline">Prev</span>
@@ -250,7 +281,7 @@ export function ProfileModal({
           <NavButton
             label="Next attendee"
             disabled={index < 0 || index >= collection.length - 1}
-            onClick={() => goTo(1)}
+            onClick={() => goToAnimated(1)}
           >
             <span className="hidden sm:inline">Next</span>
             <ChevronRightIcon className="h-5 w-5 stroke-2" aria-hidden="true" />
