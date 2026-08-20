@@ -26,7 +26,7 @@ Keep this list current — it is how the next agent knows where to pick up.
 | [The client-side collection](#implementation-shape)                            | —          | Done: whole public profile in the list payload, search/filter/sort/page in memory, params written shallowly |
 | [The profile as a modal](#the-profile) + [Prev/Next](#moving-between-profiles) | #772, #764 | Done, except swipe: sticky header, ←/→, in-place zoom, lazy Hosting/Proposals                               |
 | [Swipe between profiles](#moving-between-profiles)                             | #764       | Not started                                                                                                 |
-| [Back links](#back-links)                                                      | —          | Not started                                                                                                 |
+| [Back links](#back-links)                                                      | —          | Done: `BackLink` on `/guests/edit` and `/settings`                                                          |
 
 The slices are in dependency order but not in strict sequence: the photo lands
 on today's profile page and is carried over unchanged when that page becomes a

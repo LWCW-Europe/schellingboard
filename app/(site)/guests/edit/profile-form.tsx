@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { BackLink } from "@/app/components/back-link";
 import { Input } from "@/app/input";
 import { updateProfileAction } from "@/app/actions/profile";
 import { Avatar } from "../avatar";
@@ -223,12 +224,7 @@ export function ProfileForm({ guest }: { guest: Guest }) {
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
-      <Link
-        href="/guests"
-        className="bg-brand text-on-brand font-semibold py-2 rounded shadow hover:bg-brand-hover active:bg-brand-hover w-fit px-12"
-      >
-        Back to attendees
-      </Link>
+      <BackLink href="/guests">Attendees</BackLink>
       <h1 className="text-2xl font-bold">Edit profile</h1>
       <p className="text-sm text-fg-subtle">
         Everything here is shown on your public profile. Email notifications and
