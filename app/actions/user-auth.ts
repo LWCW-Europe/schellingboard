@@ -7,27 +7,27 @@ import type { AuthCode, AuthCodePurpose } from "@/db/repositories/interfaces";
 import {
   createGuestCookie,
   createGuestLogoutCookie,
-  readGuestCookie,
   GUEST_COOKIE_NAME,
+  readGuestCookie,
 } from "@/utils/auth";
 import {
   AUTH_CODE_VALID_MINUTES,
-  MAX_CODE_ATTEMPTS,
-  RESET_TOKEN_VALID_MINUTES,
   generateAuthCode,
   generateAuthCodeSalt,
   generateResetToken,
   hashAuthCode,
-  isAuthCodeShaped,
-  normalizeAuthCode,
   hashUserPassword,
+  isAuthCodeShaped,
+  MAX_CODE_ATTEMPTS,
+  normalizeAuthCode,
+  RESET_TOKEN_VALID_MINUTES,
   verifyUserPassword,
 } from "@/utils/user-credentials";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 import {
-  TOO_MANY_ATTEMPTS_ERROR,
   isLoginBlocked,
   recordLoginFailure,
+  TOO_MANY_ATTEMPTS_ERROR,
 } from "@/utils/login-rate-limit";
 import { isMailerConfigured, sendMail } from "@/utils/mailer";
 import { siteUrl } from "@/utils/site-url";
@@ -427,6 +427,15 @@ export async function disableProtectionAction(
   cookieStore.set(await createGuestCookie(guestId, "open"));
   await notifySecurityChange(guestId, "disabled");
   return { ok: true };
+}
+
+/**
+ * Returns the ID of the current authenticated user, or null if no user is
+ * selected or the session is not verified. Used by client components to check
+ * whether a protected guest is currently logged in with valid credentials.
+ */
+export async function verifyGuestAction() {
+  return await verifiedCurrentUser(await cookies());
 }
 
 /**

@@ -1,27 +1,29 @@
 "use client";
 import {
   createContext,
-  useState,
-  useEffect,
   ReactNode,
   useContext,
+  useEffect,
+  useState,
 } from "react";
 import type {
-  Event,
   Day,
-  Session,
-  Location,
+  Event,
   Guest,
+  Location,
   Rsvp,
+  Session,
 } from "@/db/repositories/interfaces";
 import { Vote, voteChoiceToEmoji } from "@/app/(site)/votes";
 import {
   selectUserAction,
   type SelectUserResult,
+  verifyGuestAction,
 } from "@/app/actions/user-auth";
 import { DEFAULT_BREAK_MINUTES, votesApiUrl } from "@/utils/utils";
 import { DEFAULT_SLOT_INCREMENT_MINUTES } from "@/utils/slots";
-import { startNowTicker, NOW_REFRESH_INTERVAL_MS } from "@/utils/now-ticker";
+import { NOW_REFRESH_INTERVAL_MS, startNowTicker } from "@/utils/now-ticker";
+import { usePathname } from "next/navigation";
 
 export type DayWithSessions = Day & { sessions: Session[] };
 
@@ -135,6 +137,7 @@ export function UserProvider({
   initialUser: string | null;
 }) {
   const [user, setUser] = useState<string | null>(initialUser);
+  const path = usePathname();
 
   const switchUser = async (
     guestId: string | null
@@ -145,6 +148,24 @@ export function UserProvider({
     }
     return result;
   };
+
+  // Check if auth cookie is valid every time the user navigates
+  useEffect(() => {
+    async function checkValidity() {
+      try {
+        if (!(await verifyGuestAction())) {
+          await switchUser(null);
+        }
+      } catch {
+        // Session check failed — leave the current state as-is;
+        // the next navigation will retry.
+      }
+    }
+
+    if (user) {
+      void checkValidity();
+    }
+  }, [user, path]);
 
   return (
     <UserContext.Provider value={{ user, switchUser, applyUser: setUser }}>
