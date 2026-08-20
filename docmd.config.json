@@ -95,6 +95,9 @@
     }
   ],
   "plugins": {
+    "ai": {
+      "enabled": false
+    },
     "git": {
       "commitHistory": true,
       "maxCommits": 5
