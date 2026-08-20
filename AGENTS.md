@@ -18,6 +18,11 @@ Next.js scheduling app for managing conference/event sessions with three phases:
 
 Update `CHANGELOG.md` under `[Unreleased]` for any user-facing change — audience is event organizers, so keep it non-technical. Dev-only changes go under `Internal`. See [CONTRIBUTING.md § Changelog](CONTRIBUTING.md#changelog) for section types and conventions.
 
+**Be brief**: a bold lead phrase plus one to three sentences. Say what changed and,
+where it isn't obvious, what was wrong before. Leave out rationale, edge cases,
+future plans and implementation detail — those belong in the docs, an ADR or the
+commit message.
+
 ## Documentation
 
 - **Attendee/organizer docs**: `docs/public/` — one copy, documenting the _next_
