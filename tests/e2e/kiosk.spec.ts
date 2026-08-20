@@ -6,7 +6,7 @@ import { DateTime } from "luxon";
 // Kiosk mode (?kiosk=1) is meant for large screens at the venue: it draws a
 // red line across the grid at the current time and keeps it scrolled into
 // view. The seeded events lie ~2 weeks in the future (see
-// scripts/seed-database.ts: Conference Gamma's first day is today+14, running
+// scripts/seed/seed-database.ts: Conference Gamma's first day is today+14, running
 // 09:00–18:00 Europe/Berlin), so the tests time-travel to a moment within that
 // first day to make the now line appear.
 //

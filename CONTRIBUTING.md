@@ -67,6 +67,11 @@ This file covers what you need day to day. Longer chapters live under
    make dev-db-seed
    ```
 
+   This seeds the `large` profile: the hand-curated fixtures the E2E suite
+   uses plus a few hundred generated guests, proposals and sessions for
+   realistic manual testing. `SEED_PROFILE=small make dev-db-seed` seeds only
+   the curated fixtures (what the E2E suite always runs against).
+
 4. Start the dev server:
 
    ```bash

@@ -1,6 +1,6 @@
 # Seed avatars
 
-Profile pictures used by `scripts/seed-database.ts` for dev/test seed data.
+Profile pictures used by `scripts/seed/seed-database.ts` for dev/test seed data.
 
 Generated with the [DiceBear](https://www.dicebear.com) HTTP API using the
 "Lorelei" style by Lisa Wischofsky, licensed under

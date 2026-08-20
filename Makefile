@@ -30,7 +30,7 @@ help:
 	@printf "  %-28s %s\n" "make dev-migrate-up"     "Run migrations"
 	@printf "  %-28s %s\n" "make dev-migrate-status" "Check migration status"
 	@printf "  %-28s %s\n" "make dev-migrate-create" "Generate new migration"
-	@printf "  %-28s %s\n" "make dev-db-seed"        "Reset dev database and seed dummy data"
+	@printf "  %-28s %s\n" "make dev-db-seed"        "Reset dev database and seed dummy data (SEED_PROFILE=small|large)"
 	@printf "\nDocumentation site:\n"
 	@printf "  %-28s %s\n" "make docs"               "Preview the docs in docs/public"
 	@printf "  %-28s %s\n" "make docs-build"         "Build the public docs site into site/"
@@ -136,7 +136,7 @@ dev-migrate-create: install
 	bun set-env.ts dev bun x drizzle-kit generate $(if $(NAME),--name $(NAME),)
 
 dev-db-seed: install
-	bun set-env.ts dev bun x tsx scripts/seed-database.ts
+	bun set-env.ts dev bun x tsx scripts/seed/seed-database.ts
 
 # docs/public is the only copy of the documentation; released versions are
 # rebuilt from git tags (see scripts/build-docs.sh), so these two targets see
