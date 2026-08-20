@@ -22,6 +22,23 @@ more than the last few % of image quality.
 
 ## Taking screenshots
 
+Start the app with a full database and a presentable version string:
+
+```sh
+SEED_PROFILE=large make dev-db-seed
+APP_VERSION=v3.2.0 make dev
+```
+
+- Use the **large** seed profile (the dev default, but pass it explicitly): the
+  small profile is the E2E fixture set, and its ~10-proposal lists and
+  half-empty grids make the app look like a toy. Large gives 400 guests and
+  hundreds of proposals, so lists scroll, filters have something to filter and
+  the schedule looks like a real event.
+- Set `APP_VERSION` to the release the shots are for. Every page's footer shows
+  it, and without the variable it comes from the working tree — so the shots
+  would otherwise carry `a1b2c3d4-dirty` across both sites. `next dev` reads it
+  at startup, so set it on the command that starts the server.
+
 General setup:
 
 - Firefox
@@ -31,6 +48,9 @@ General setup:
 - Hide the Next.js developer tools overlay before capturing
 - Select the attendee **Hana Kobayashi** before capturing, so the "logged in
   as" state is consistent across all screenshots
+- Light theme for everything except the one dark shot flagged in the checklist
+  below. The theme switch is in the footer on every page; switch it back
+  afterwards.
 
 Firefox saves captures as PNG. Convert before committing — never commit a
 `.png` here:
@@ -83,10 +103,10 @@ changes materially. Check off `[ ]` as you go.
 - [ ] `attendees.webp` — Searchable attendee directory with avatars and host badges
 - [ ] `participant-profile.webp` — Participant profile page (bio, proposals, sessions they're hosting)
 - [ ] `edit-profile.webp` — Edit profile form (name, pronouns, avatar, Markdown bio)
+- [ ] `user-settings.webp` — Settings page (email notification preferences, account protection) — **capture this one in dark theme**, so both sites show that the app has one; it is the natural page for it, since the theme switch sits under Appearance right there
+- [ ] `kiosk-mode.webp` — Schedule grid in kiosk mode, with the red current-time line visible
 - [ ] `admin-events.webp` — Admin panel listing all events with a Manage button
 - [ ] `admin-event-settings.webp` — Admin event configuration form (name, dates, timezone, rules)
-- [ ] `user-settings.webp` — Settings page (email notification preferences, account protection)
-- [ ] `kiosk-mode.webp` — Schedule grid in kiosk mode, with the red current-time line visible
 
 ### Mobile (Galaxy Note 9)
 
