@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
@@ -136,6 +136,126 @@ test("escape closes the profile, and back retraces the ones read", async ({
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page).toHaveURL(/\/guests\?q=Test/);
+});
+
+test.describe("on a touchscreen", () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+
+  /**
+   * A finger, in the only terms Playwright leaves for one: touch events on the
+   * element under it. Dispatched one round trip at a time so the browser lays
+   * out and paints between them, the way it would under a real thumb.
+   */
+  async function swipe(
+    target: Locator,
+    { by, down = 0, startX }: { by: number; down?: number; startX?: number }
+  ) {
+    const box = (await target.boundingBox())!;
+    const x0 = startX ?? box.x + box.width / 2;
+    const y0 = box.y + box.height / 2;
+    const steps = 6;
+    for (let i = 0; i <= steps; i++) {
+      const type =
+        i === 0 ? "touchstart" : i === steps ? "touchend" : "touchmove";
+      await target.page().evaluate(
+        ({ type, x, y, x0, y0 }) => {
+          // Whatever is under the finger, as a real touchscreen would have it:
+          // the gesture is handled somewhere up the tree from there, and the
+          // whole sequence goes to the element the finger landed on.
+          const node = document.elementFromPoint(x0, y0);
+          if (!node) throw new Error("nothing under the finger");
+          const point = new Touch({
+            identifier: 1,
+            target: node,
+            clientX: x,
+            clientY: y,
+          });
+          const held = type === "touchend" ? [] : [point];
+          node.dispatchEvent(
+            new TouchEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              touches: held,
+              targetTouches: held,
+              changedTouches: [point],
+            })
+          );
+        },
+        { type, x: x0 + (by * i) / steps, y: y0 + (down * i) / steps, x0, y0 }
+      );
+    }
+  }
+
+  test("reads on with a swipe, and stops at the end of the collection", async ({
+    page,
+  }) => {
+    await login(page);
+    await page.goto("/guests");
+    await searchForTestGuests(page);
+
+    await page.getByRole("link", { name: "Alice Test" }).click();
+    const profile = page.getByRole("dialog");
+    const heading = profile.getByRole("heading", { level: 1 });
+    await expect(heading).toHaveText("Alice Test");
+
+    await swipe(profile, { by: -220 });
+    await expect(heading).toHaveText("Bob Test");
+
+    await swipe(profile, { by: 220 });
+    await expect(heading).toHaveText("Alice Test");
+
+    // Nothing to drag in before the first profile, so it comes back.
+    await swipe(profile, { by: 220 });
+    await page.waitForTimeout(500);
+    await expect(heading).toHaveText("Alice Test");
+    await expect(
+      profile.getByText(/^Alice Test, 1 of \d+ attendees$/)
+    ).toBeVisible();
+  });
+
+  test("a swipe is spent where it lands, and does not fire again", async ({
+    page,
+  }) => {
+    await login(page);
+    await page.goto("/guests");
+    await searchForTestGuests(page);
+
+    await page.getByRole("link", { name: "Alice Test" }).click();
+    const profile = page.getByRole("dialog");
+    const heading = profile.getByRole("heading", { level: 1 });
+    await expect(heading).toHaveText("Alice Test");
+
+    await swipe(profile, { by: -220 });
+    await expect(heading).toHaveText("Bob Test");
+
+    // Going back the other way by any other means must stay gone back.
+    await profile.getByRole("button", { name: "Previous attendee" }).click();
+    await page.waitForTimeout(500);
+    await expect(heading).toHaveText("Alice Test");
+  });
+
+  test("leaves scrolling and the browser's own edge gesture alone", async ({
+    page,
+  }) => {
+    await login(page);
+    await page.goto("/guests");
+    await searchForTestGuests(page);
+
+    await page.getByRole("link", { name: "Alice Test" }).click();
+    const profile = page.getByRole("dialog");
+    const heading = profile.getByRole("heading", { level: 1 });
+    await expect(heading).toHaveText("Alice Test");
+
+    // A scroll that drifts sideways is still a scroll.
+    await swipe(profile, { by: -220, down: -300 });
+    await page.waitForTimeout(500);
+    await expect(heading).toHaveText("Alice Test");
+
+    // From the left edge, the swipe belongs to the browser's back gesture.
+    await swipe(profile, { by: 220, startX: 5 });
+    await page.waitForTimeout(500);
+    await expect(heading).toHaveText("Alice Test");
+  });
 });
 
 test("a profile opened from outside the directory can still be read through", async ({

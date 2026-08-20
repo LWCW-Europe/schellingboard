@@ -1,18 +1,43 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import type { DirectoryView } from "@/app/(site)/guests/directory-view";
+import type {
+  AttendeeCard,
+  DirectoryView,
+} from "@/app/(site)/guests/directory-view";
 import { ProfileBody } from "@/app/(site)/guests/profile-body";
 import { listHref, profileHref } from "@/app/(site)/guests/profile-nav";
 import {
   listProfileActivity,
   type ProfileActivity,
 } from "@/app/(site)/guests/profile-activity";
+import {
+  startSwipe,
+  swipeCommit,
+  swipeOffset,
+  trackSwipe,
+  type Swipe,
+  type SwipeEnds,
+} from "@/app/(site)/guests/swipe";
+
+/** How long the profile takes to finish a swipe the finger has let go of. */
+const SETTLE_MS = 200;
+
+type Drag = { guestId: string; width: number } & (
+  | { phase: "tracking"; swipe: Swipe }
+  | { phase: "settling"; offset: number; commit: -1 | 0 | 1 }
+);
 
 /**
  * A guest's profile, read over the list it was opened from. Always a modal:
@@ -44,6 +69,11 @@ export function ProfileModal({
   const zoomed = zoomedFor === guestId;
   const activity = useProfileActivity(guestId);
 
+  const ends: SwipeEnds = {
+    canPrev: index > 0,
+    canNext: index >= 0 && index < collection.length - 1,
+  };
+
   const goTo = useCallback(
     (offset: number) => {
       const next = collection[index + offset];
@@ -67,6 +97,65 @@ export function ProfileModal({
   useEffect(() => {
     body.current?.scrollTo({ top: 0 });
   }, [guestId]);
+
+  const viewport = useRef<HTMLDivElement>(null);
+  const [dragged, setDrag] = useState<Drag | null>(null);
+  // A drag belongs to the profile it started on, and a finished one is left
+  // standing until the URL it asked for arrives: dropping it on the timer
+  // instead would snap back to the profile just swiped away for however many
+  // frames the router takes to catch up.
+  const drag = dragged?.guestId === guestId ? dragged : null;
+  // …and dropped in the same breath as it does: a swipe left lying on the
+  // profile it came from settles and navigates all over again the moment
+  // anything — Prev, Back — comes back to that profile.
+  if (dragged !== null && dragged.guestId !== guestId) setDrag(null);
+
+  const onTouchStart = (e: ReactTouchEvent) => {
+    // A second finger is a pinch, the enlarged photo owns the gesture, and a
+    // profile outside the collection has nowhere to go.
+    if (zoomed || index < 0 || e.touches.length !== 1) return;
+    const swipe = startSwipe(e.touches[0]);
+    if (!swipe) return;
+    setDrag({
+      guestId,
+      phase: "tracking",
+      swipe,
+      width: viewport.current?.clientWidth ?? 0,
+    });
+  };
+
+  const onTouchMove = (e: ReactTouchEvent) => {
+    // Read off the event now: the updater below can run after React has moved
+    // on from it, and a touch list is only good for the event it came with.
+    const point =
+      e.touches.length === 1
+        ? { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }
+        : null;
+    setDrag((prev) => {
+      if (prev?.guestId !== guestId || prev.phase !== "tracking") return prev;
+      if (!point) return null;
+      return { ...prev, swipe: trackSwipe(prev.swipe, point) };
+    });
+  };
+
+  const endTouch = () =>
+    setDrag((prev) => {
+      if (prev?.guestId !== guestId || prev.phase !== "tracking") return prev;
+      const commit = swipeCommit(prev.swipe, prev.width, ends);
+      const offset = -commit * prev.width;
+      // Nothing left to animate, and no transition to wait for.
+      if (swipeOffset(prev.swipe, ends) === offset) return null;
+      return { guestId, width: prev.width, phase: "settling", offset, commit };
+    });
+
+  useEffect(() => {
+    if (drag?.phase !== "settling") return;
+    const timer = setTimeout(() => {
+      if (drag.commit && collection[index + drag.commit]) goTo(drag.commit);
+      else setDrag(null);
+    }, SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [drag, goTo, collection, index]);
 
   useEffect(() => {
     // Duplication, anchor: waggHhba
@@ -96,6 +185,22 @@ export function ProfileModal({
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [close, goTo, zoomed]);
+
+  // The neighbours exist only for the length of a drag: mounting them for every
+  // reader would render three profiles where one is being read, and rendering
+  // them at the threshold instead would mean the swipe jumps rather than
+  // follows the finger.
+  const sliding =
+    drag !== null && (drag.phase === "settling" || drag.swipe.axis === "x");
+  const before = sliding && ends.canPrev ? collection[index - 1] : null;
+  const after = sliding && ends.canNext ? collection[index + 1] : null;
+  const width = drag?.width ?? 0;
+  const offset =
+    drag === null
+      ? 0
+      : drag.phase === "settling"
+        ? drag.offset
+        : swipeOffset(drag.swipe, ends);
 
   const position =
     index >= 0
@@ -160,22 +265,63 @@ export function ProfileModal({
           </button>
         </div>
 
+        {/* touch-pan-y hands vertical scrolling to the browser and keeps
+            horizontal panning — the back gesture included — for this handler.
+            It has to be CSS: React listens for touchmove passively, so
+            preventDefault is not available to decide it per gesture. */}
         <div
-          ref={body}
-          className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6"
+          ref={viewport}
+          className="min-h-0 flex-1 overflow-hidden touch-pan-y"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={endTouch}
+          onTouchCancel={endTouch}
         >
           {guest ? (
-            <ProfileBody
-              guest={guest}
-              isOwnProfile={currentUserId === guest.id}
-              activity={activity}
-              zoomed={zoomed}
-              onToggleZoom={() => setZoomedFor(zoomed ? null : guestId)}
-            />
+            <div
+              className="flex h-full"
+              style={{
+                transform: `translateX(${(before ? -width : 0) + offset}px)`,
+                transition:
+                  drag?.phase === "settling"
+                    ? `transform ${SETTLE_MS}ms ease-out`
+                    : undefined,
+              }}
+            >
+              {[before, guest, after]
+                .filter((a): a is AttendeeCard => a !== null)
+                .map((attendee) => {
+                  const current = attendee.id === guestId;
+                  return (
+                    <div
+                      key={attendee.id}
+                      ref={current ? body : undefined}
+                      // The neighbours are on screen only as the profile the
+                      // finger is reaching for: not part of the page for a
+                      // screen reader, and their links not tabbable.
+                      aria-hidden={!current}
+                      inert={!current}
+                      className="h-full w-full shrink-0 overflow-y-auto px-4 py-6 sm:px-6"
+                    >
+                      <ProfileBody
+                        guest={attendee}
+                        isOwnProfile={currentUserId === attendee.id}
+                        activity={current ? activity : null}
+                        zoomed={current && zoomed}
+                        onToggleZoom={() =>
+                          setZoomedFor(zoomed ? null : guestId)
+                        }
+                      />
+                    </div>
+                  );
+                })}
+            </div>
           ) : (
             // Not a 404: this is where a stale link from an old session or
             // comment lands, and the list behind is more use than an error.
-            <p className="text-fg-muted">This person is no longer listed.</p>
+            <div className="h-full overflow-y-auto px-4 py-6 sm:px-6">
+              <p className="text-fg-muted">This person is no longer listed.</p>
+            </div>
           )}
         </div>
       </div>

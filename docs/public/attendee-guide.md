@@ -202,7 +202,8 @@ they're hosting — click any name wherever it appears to see it. It opens over
 the attendee directory rather than replacing it, so from the directory,
 closing a profile puts you back exactly where you were, search and filters
 intact. **Prev** and **Next** at the top move through the attendees one after
-another without going back to the list in between — the arrow keys do the same.
+another without going back to the list in between — the arrow keys do the same,
+and on a phone you can swipe sideways from one profile to the next.
 They follow whatever the list is showing, so a search or a filter narrows what
 you read through, and the count at the top says where you are. Escape closes
 the profile. The photo is shown large, since that is how you recognise

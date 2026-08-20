@@ -24,15 +24,16 @@ Keep this list current — it is how the next agent knows where to pick up.
 | [The photo](#the-photo-806)                                                    | #806       | Done, on today's profile page: `ProfilePhoto` at 256px in a sticky `md`+ column with Languages              |
 | [The list](#the-list) (cards, excerpt, "Has profile")                          | #703, #764 | Done: 64px avatars, server-rendered excerpt, both filters combinable, page size 1000, count in the toolbar  |
 | [The client-side collection](#implementation-shape)                            | —          | Done: whole public profile in the list payload, search/filter/sort/page in memory, params written shallowly |
-| [The profile as a modal](#the-profile) + [Prev/Next](#moving-between-profiles) | #772, #764 | Done, except swipe: sticky header, ←/→, in-place zoom, lazy Hosting/Proposals                               |
-| [Swipe between profiles](#moving-between-profiles)                             | #764       | Not started                                                                                                 |
+| [The profile as a modal](#the-profile) + [Prev/Next](#moving-between-profiles) | #772, #764 | Done: sticky header, ←/→, in-place zoom, lazy Hosting/Proposals                                             |
+| [Swipe between profiles](#moving-between-profiles)                             | #764       | Done: `swipe.ts` decides the gesture, the modal renders the neighbours for the length of a drag             |
 | [Back links](#back-links)                                                      | —          | Done: `BackLink` on `/guests/edit` and `/settings`                                                          |
 
 The slices are in dependency order but not in strict sequence: the photo lands
 on today's profile page and is carried over unchanged when that page becomes a
 modal.
 
-Two things landed differently from what is written below, both simplifications:
+Three things landed differently from what is written below, all
+simplifications:
 
 - **No context.** The layout renders the list and the modal itself, reading the
   open profile off `usePathname()`, so it hands the shared view down as a prop.
@@ -40,6 +41,13 @@ Two things landed differently from what is written below, both simplifications:
   the URL is real and reloadable, not to render anything.
 - **`/guests/edit` is not in the group.** `(directory)` exists precisely so the
   edit form doesn't get the list behind it.
+- **The neighbouring profiles are mounted for the length of a drag**, rather
+  than kept rendered offscreen with their photos prefetched. Two extra profiles
+  mounted for every reader — most of whom are at a desk and will never swipe —
+  cost more than they buy. They mount when the gesture locks horizontal, which
+  is before anything has moved on screen and while their data is already in the
+  list payload, so the swipe still follows the finger rather than jumping at a
+  threshold.
 
 ## Core user flow
 
