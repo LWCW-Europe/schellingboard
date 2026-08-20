@@ -6,17 +6,16 @@ type: guide
 
 # Admin UI guide
 
-The admin UI lives at `/admin`, gated by `ADMIN_PASSWORD`. It is completely
-independent from `SITE_PASSWORD` — the admin password doesn't grant access to
-the attendee site and vice versa. Without `ADMIN_PASSWORD` set, `/admin`
-returns a 404 rather than a login prompt. There's a single shared admin
-password, not per-admin accounts.
+The admin UI lives at `/admin`, gated by a single shared `ADMIN_PASSWORD` (no
+per-admin accounts). It is completely independent from `SITE_PASSWORD` —
+neither password grants access to the other side. Unset, `/admin` returns a
+404 rather than a login prompt.
 
-Both gates also need `AUTH_SECRET` — it signs the login cookies. Changing
-`AUTH_SECRET` logs everyone out (attendees included); changing
-`SITE_PASSWORD` or `ADMIN_PASSWORD` does **not** — existing sessions stay
-valid for up to a week. If you need to revoke access immediately, rotate
-`AUTH_SECRET` as well.
+:::warning "Changing a password does not log anyone out"
+Both gates sign their cookies with `AUTH_SECRET`, and existing sessions stay
+valid for up to a week. To revoke access immediately, rotate `AUTH_SECRET`
+too — which logs out everyone, attendees included.
+:::
 
 ## Site settings
 
@@ -88,15 +87,15 @@ assignment on the event's "Guests" tab.
 ### Attendees who protect their name
 
 Any attendee can opt into
-[name protection](how-it-works.md#attendee-identity) from their own settings,
-turning the name picker into a real login for them. There is no admin control
-over this: you can't require it, and you can't turn it off for someone.
+[name protection](how-it-works.md#attendee-identity) from their own settings.
+There is no admin control over this: you can't require it, and you can't turn
+it off for someone.
 
 The one thing you _can_ do is fix a lockout. Protection is anchored to the
-guest's email address, so an attendee who's lost both their password and
-their mailbox is stuck until you **change their email address here** — codes
-then go to the new address and they can unlock themselves. Verify who you're
-talking to first; this is effectively a password reset.
+guest's email address, so an attendee who's lost both their password and their
+mailbox is stuck until you **change their email address here** — codes then go
+to the new address and they can unlock themselves. **Verify who you're talking
+to first; this is effectively a password reset.**
 
 Deleting and recreating the guest also clears protection, but discards their
 votes, RSVPs, and profile — prefer changing the email.

@@ -10,9 +10,11 @@ Everything SchellingBoard stores lives in one Docker volume, mounted at
 `/data`: the database (`/data/data.db`) and any files uploaded through the
 admin UI, such as guest avatars and the venue map (`/data/uploads`).
 
-Your `.env` is **not** in that volume. Back it up separately — it holds
-`AUTH_SECRET`, `SITE_PASSWORD`, `ADMIN_PASSWORD` and your SMTP credentials,
-and restoring the data without the same `AUTH_SECRET` logs everyone out.
+:::warning "Back up your `.env` separately"
+It is **not** in that volume, and it holds `AUTH_SECRET`, `SITE_PASSWORD`,
+`ADMIN_PASSWORD` and your SMTP credentials. Restoring the data without the
+same `AUTH_SECRET` logs everyone out.
+:::
 
 ## Find the volume
 
@@ -27,10 +29,13 @@ VOL=schellingboard_data
 
 ## Back up without stopping the site
 
-Don't copy `data.db` with `cp` or `tar` while the site is running — a write in
-progress leaves you with a truncated file that looks fine until you try to
-restore it. Use SQLite's own backup command, which takes a consistent snapshot
-of a database that is being written to:
+:::warning "Never `cp` or `tar` a live `data.db`"
+A write in progress leaves you with a truncated file that looks fine until you
+try to restore it.
+:::
+
+Use SQLite's own backup command instead, which takes a consistent snapshot of
+a database that is being written to:
 
 ```bash
 mkdir -p ./backups
@@ -80,14 +85,12 @@ docker run --rm -v "$VOL:/data" -v "$PWD/backups:/backup" alpine sh -c "
 docker compose start app
 ```
 
-The `chown` matters: SchellingBoard runs as user `1001` inside the container,
-but the helper above writes as `root`, so without it the app cannot open its
-own database.
-
-Restoring into a **newer** version of SchellingBoard works — it migrates the
-database on startup. Restoring into an **older** one does not, so pin
-`SCHELLINGBOARD_VERSION` to the version the backup came from if you are
-rolling back.
-
-Check the restore afterwards by opening the site: the events, proposals and
-sessions should be there, and the venue map and guest avatars should load.
+- **The `chown` matters.** SchellingBoard runs as user `1001` inside the
+  container but the helper above writes as `root`, so without it the app
+  cannot open its own database.
+- **Restoring into a newer version works** — it migrates the database on
+  startup. Restoring into an **older** one does not, so pin
+  `SCHELLINGBOARD_VERSION` to the version the backup came from if you are
+  rolling back.
+- **Check afterwards** by opening the site: events, proposals and sessions
+  should be there, and the venue map and guest avatars should load.

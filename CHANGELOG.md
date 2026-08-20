@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Searching and filtering the attendee directory is instant**: it no longer reloads the list from the server and drops you at the top. The address bar still carries what you are looking at, so a filtered or searched list can be bookmarked and shared as before
 - **The attendee directory is wider on a large screen**: update times no longer crowd the names. On a phone the update time sits under the name, and a "Session host" badge no longer squeezes the name into two lines
 - **"Back to attendees" is now a small link, not a big red button**: on the edit-profile and settings pages it is a quiet "← Attendees" link in the corner, the same as everywhere else
+- **The documentation is shorter and easier to skim**: walls of prose became bullet lists, the important warnings — an RSVP is a commitment, the name picker is not a login, don't copy a live database — are now highlighted boxes, and the background on how the attendance prediction was fitted is down to a sentence. The attendee guide is a fifth shorter without losing anything you need to use the app. See [the documentation](https://docs.schellingboard.org/)
 - **Attendee search now looks at the whole profile**: it also matches the contact details attendees chose to publish (handles, usernames, websites, and the service they belong to) and the prompt questions themselves, not only their answers. Private email addresses are never searched
 
 ### Internal
