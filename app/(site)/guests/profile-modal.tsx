@@ -271,15 +271,19 @@ export function ProfileModal({
             preventDefault is not available to decide it per gesture. */}
         <div
           ref={viewport}
-          className="min-h-0 flex-1 overflow-hidden touch-pan-y"
+          className="flex min-h-0 flex-1 flex-col overflow-hidden touch-pan-y"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={endTouch}
           onTouchCancel={endTouch}
         >
           {guest ? (
+            // Sized by flex, never `h-full`: from sm up the panel is
+            // content-height capped by max-height, so a percentage height in
+            // here resolves to auto and the profile is clipped instead of
+            // scrolled.
             <div
-              className="flex h-full"
+              className="flex min-h-0 flex-1"
               style={{
                 transform: `translateX(${(before ? -width : 0) + offset}px)`,
                 transition:
@@ -301,7 +305,7 @@ export function ProfileModal({
                       // screen reader, and their links not tabbable.
                       aria-hidden={!current}
                       inert={!current}
-                      className="h-full w-full shrink-0 overflow-y-auto px-4 py-6 sm:px-6"
+                      className="w-full shrink-0 overflow-y-auto px-4 py-6 sm:px-6"
                     >
                       <ProfileBody
                         guest={attendee}
@@ -319,7 +323,7 @@ export function ProfileModal({
           ) : (
             // Not a 404: this is where a stale link from an old session or
             // comment lands, and the list behind is more use than an error.
-            <div className="h-full overflow-y-auto px-4 py-6 sm:px-6">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
               <p className="text-fg-muted">This person is no longer listed.</p>
             </div>
           )}

@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-08-21
+
+### Fixed
+
+- **Long profiles scroll again**: a profile with more in it than fits the window was cut off at the bottom with no way to reach the rest. Only a phone held upright was unaffected
+
 ## [3.4.0] - 2026-08-21
 
 ### Added
@@ -304,7 +310,8 @@ This version corresponds to commit [9aa2a273](https://github.com/LWCW-Europe/sch
 
 The version number 1.0.0 is a retroactive label assigned here purely as a reference point to mark the upstream baseline — it was never designated as such. This is the upstream codebase at the point the fork was created, taken from commit [babcd627](https://github.com/rachelweinberg12/scheduling-app/commit/babcd6275a853f1911cd48bbdaf4f2b1725c3d47) of [rachelweinberg12/scheduling-app](https://github.com/rachelweinberg12/scheduling-app) ([full log](https://github.com/rachelweinberg12/scheduling-app/commits/babcd6275a853f1911cd48bbdaf4f2b1725c3d47/)). It was never properly released since it was deployed directly from the Git repository.
 
-[Unreleased]: https://github.com/LWCW-Europe/schellingboard/compare/v3.4.0...HEAD
+[Unreleased]: https://github.com/LWCW-Europe/schellingboard/compare/v3.4.1...HEAD
+[3.4.1]: https://github.com/LWCW-Europe/schellingboard/compare/v3.4.0...v3.4.1
 [3.4.0]: https://github.com/LWCW-Europe/schellingboard/compare/v3.3.1...v3.4.0
 [3.3.1]: https://github.com/LWCW-Europe/schellingboard/compare/v3.3.0...v3.3.1
 [3.3.0]: https://github.com/LWCW-Europe/schellingboard/compare/v3.2.0...v3.3.0
