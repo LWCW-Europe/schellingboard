@@ -116,6 +116,31 @@ test("starts each profile at its own top", async ({ page }) => {
   await expect(heading).toBeInViewport();
 });
 
+test("a profile taller than the window scrolls", async ({ page }) => {
+  await login(page);
+  // Wide enough for the dialog layout rather than the phone sheet, short
+  // enough that a filled-in profile runs past the bottom of it.
+  await page.setViewportSize({ width: 1024, height: 400 });
+  await page.goto("/guests");
+  await searchForTestGuests(page);
+
+  await page.getByRole("link", { name: "Alice Test" }).click();
+  const profile = page.getByRole("dialog");
+  await expect(
+    profile.getByRole("heading", { level: 1, name: "Alice Test" })
+  ).toBeVisible();
+
+  // Standing in for the bottom of the profile: Hosting and Proposals arrive
+  // later and only if there are any, so Contact is the last section that is
+  // reliably there.
+  const contact = profile.getByRole("heading", { name: "Contact" });
+  await expect(contact).not.toBeInViewport();
+
+  await page.mouse.move(512, 250);
+  await page.mouse.wheel(0, 2000);
+  await expect(contact).toBeInViewport();
+});
+
 test("escape closes the profile, and back retraces the ones read", async ({
   page,
 }) => {
