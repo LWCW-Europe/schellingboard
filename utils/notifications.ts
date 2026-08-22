@@ -5,7 +5,7 @@ import type {
   EmailSettings,
   Session,
 } from "@/db/repositories/interfaces";
-import { sendMail, type EmailMessage } from "@/utils/mailer";
+import { type EmailMessage, sendMail } from "@/utils/mailer";
 import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
 import { sessionDeletedEmail } from "@/emails/session-deleted";
@@ -316,7 +316,7 @@ async function notifyProposalCommentedUnsafe({
   proposalId: string;
   comment: Comment;
 }): Promise<void> {
-  const { comments, events, sessionProposals } = getRepositories();
+  const { proposalComments, events, sessionProposals } = getRepositories();
   const proposal = await sessionProposals.findById(proposalId);
   if (!proposal) {
     return;
@@ -352,7 +352,7 @@ async function notifyProposalCommentedUnsafe({
     );
   }
 
-  for (const earlier of await comments.listByProposal(proposalId)) {
+  for (const earlier of await proposalComments.listByProposal(proposalId)) {
     const author = earlier.author;
     if (!author || done.has(author.id)) {
       continue;

@@ -4,7 +4,11 @@ import path from "path";
 import * as schema from "./schema";
 import { resolveDbPath, runMigrations } from "./migrate";
 import { SqliteAuthCodesRepository } from "./repositories/sqlite/auth-codes";
-import { SqliteCommentsRepository } from "./repositories/sqlite/comments";
+import {
+  SqliteCommentsRepository,
+  SqliteProposalCommentsRepository,
+  SqliteSessionCommentsRepository,
+} from "./repositories/sqlite/comments";
 import { SqliteDaysRepository } from "./repositories/sqlite/days";
 import { SqliteEventsRepository } from "./repositories/sqlite/events";
 import { SqliteGuestsRepository } from "./repositories/sqlite/guests";
@@ -21,16 +25,21 @@ import type {
   EventsRepository,
   GuestsRepository,
   LocationsRepository,
+  ProposalCommentsRepository,
   RsvpsRepository,
-  SettingsRepository,
+  SessionCommentsRepository,
   SessionProposalsRepository,
   SessionsRepository,
+  SettingsRepository,
   VotesRepository,
 } from "./repositories/interfaces";
 
 export type Repositories = {
   authCodes: AuthCodesRepository;
+  /** Scope-agnostic comment operations (find, edit, like, delete). */
   comments: CommentsRepository;
+  proposalComments: ProposalCommentsRepository;
+  sessionComments: SessionCommentsRepository;
   days: DaysRepository;
   events: EventsRepository;
   guests: GuestsRepository;
@@ -50,6 +59,8 @@ function buildRepositories(sqlite: Database.Database): Repositories {
   return {
     authCodes: new SqliteAuthCodesRepository(db),
     comments: new SqliteCommentsRepository(db),
+    proposalComments: new SqliteProposalCommentsRepository(db),
+    sessionComments: new SqliteSessionCommentsRepository(db),
     days: new SqliteDaysRepository(db),
     events: new SqliteEventsRepository(db),
     guests: new SqliteGuestsRepository(db),
