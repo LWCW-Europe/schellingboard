@@ -1,4 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetTestDb, setupTestDb } from "../helpers/db";
+import { createEvent, createGuest, createProposal } from "../helpers/factories";
+import { getRepositories } from "@/db/container";
+import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
+import {
+  createProposalComment as createComment,
+  deleteComment,
+  toggleCommentLike,
+} from "@/app/(site)/[eventSlug]/comment-actions";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
