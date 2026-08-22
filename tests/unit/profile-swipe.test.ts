@@ -1,11 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
+  catchSwipe,
+  pressSlide,
   startSwipe,
+  type Swipe,
   swipeCommit,
   swipeOffset,
   trackSwipe,
-  type Swipe,
 } from "@/app/(site)/guests/swipe";
 
 const BOTH_WAYS = { canPrev: true, canNext: true };
@@ -67,5 +69,52 @@ describe("profile swipe", () => {
     expect(swipeCommit(past, WIDTH, ends)).toBe(0);
     // The other direction is unaffected: only the missing end resists.
     expect(swipeOffset(past, BOTH_WAYS)).toBe(-300);
+  });
+
+  const settlingNext = {
+    phase: "settling",
+    offset: -WIDTH,
+    commit: 1,
+  } as const;
+
+  it("lets a card already headed to the next profile arrive", () => {
+    expect(pressSlide(settlingNext, 1, WIDTH)).toEqual({ kind: "arrived" });
+  });
+
+  it("reverses from wherever the card is instead of starting over", () => {
+    expect(pressSlide(settlingNext, -1, WIDTH)).toEqual({
+      kind: "slide",
+      offset: WIDTH,
+      commit: -1,
+    });
+  });
+
+  it("takes over from a finger still holding the card", () => {
+    const held = drag([200, 300], [150, 300]);
+    expect(pressSlide({ phase: "tracking", swipe: held }, 1, WIDTH)).toEqual({
+      kind: "slide",
+      offset: -WIDTH,
+      commit: 1,
+    });
+  });
+
+  it("mounts the neighbours first when starting from rest", () => {
+    expect(pressSlide(null, 1, WIDTH)).toEqual({ kind: "arm" });
+  });
+
+  it("catches a settling card where it visibly is, not back at rest", () => {
+    const point = { clientX: 210, clientY: 300 };
+    const caught = catchSwipe(point, -160);
+    expect(swipeOffset(caught, BOTH_WAYS)).toBe(-160);
+
+    // And follows on from there, rather than restarting the travel.
+    const moved = trackSwipe(caught, { clientX: 180, clientY: 302 });
+    expect(swipeOffset(moved, BOTH_WAYS)).toBe(-190);
+  });
+
+  it("judges a catch by the travel it inherited", () => {
+    // Already most of the way to the next profile: letting go lands it.
+    const caught = catchSwipe({ clientX: 200, clientY: 300 }, -160);
+    expect(swipeCommit(caught, WIDTH, BOTH_WAYS)).toBe(1);
   });
 });
