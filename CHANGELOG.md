@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Moving between attendee profiles slides instead of jumping**: Prev, Next and the arrow keys now slide one profile
+  out as the next slides in, the way a swipe already moves between them
+
+### Fixed
+
+- **Interrupting a profile slide no longer restarts it**: pressing Next or Prev (or swiping again) while a profile was
+  still sliding into place used to snap the card back to the start and replay the whole slide, putting off the arrival a
+  little more with every press. Repeated presses in the same direction now let the first slide simply finish, a press
+  the other way turns the card around smoothly from wherever it is, and catching a sliding card with a finger picks it
+  up where it is instead of teleporting it
+
 ## [3.4.1] - 2026-08-21
 
 ### Fixed

@@ -23,8 +23,10 @@ import {
   type ProfileActivity,
 } from "@/app/(site)/guests/profile-activity";
 import {
+  catchSwipe,
+  pressSlide,
+  type Slide,
   startSwipe,
-  type Swipe,
   swipeCommit,
   type SwipeEnds,
   swipeOffset,
@@ -34,10 +36,7 @@ import {
 /** How long the profile takes to finish a swipe the finger has let go of. */
 const SETTLE_MS = 200;
 
-type Drag = { guestId: string; width: number } & (
-  | { phase: "tracking"; swipe: Swipe }
-  | { phase: "settling"; offset: number; commit: -1 | 0 | 1 }
-);
+type Drag = { guestId: string; width: number } & Slide;
 
 /**
  * A guest's profile, read over the list it was opened from. Always a modal:
@@ -99,6 +98,7 @@ export function ProfileModal({
   }, [guestId]);
 
   const viewport = useRef<HTMLDivElement>(null);
+  const row = useRef<HTMLDivElement>(null);
   const [dragged, setDrag] = useState<Drag | null>(null);
   // A drag belongs to the profile it started on, and a finished one is left
   // standing until the URL it asked for arrives: dropping it on the timer
@@ -114,7 +114,16 @@ export function ProfileModal({
     // A second finger is a pinch, the enlarged photo owns the gesture, and a
     // profile outside the collection has nowhere to go.
     if (zoomed || index < 0 || e.touches.length !== 1) return;
-    const swipe = startSwipe(e.touches[0]);
+    const point = e.touches[0];
+    // A finger landing mid-settle picks the card up where it visibly is;
+    // starting the gesture from rest would teleport it under the finger.
+    const settling =
+      dragged?.guestId === guestId && dragged.phase === "settling"
+        ? dragged
+        : null;
+    const swipe = settling
+      ? catchSwipe(point, rowOffset(settling))
+      : startSwipe(point);
     if (!swipe) return;
     setDrag({
       guestId,
@@ -122,6 +131,18 @@ export function ProfileModal({
       swipe,
       width: viewport.current?.clientWidth ?? 0,
     });
+  };
+
+  // How far the settling card actually is, in px past the profile on screen:
+  // the style declares where it is going, the computed matrix holds where the
+  // frame has got to. The row also carries the mounted before-panel, which is
+  // layout, not travel.
+  const rowOffset = (settling: Extract<Drag, { phase: "settling" }>) => {
+    const el = row.current;
+    if (!el) return 0;
+    const matrix = getComputedStyle(el).transform;
+    const tx = matrix === "none" ? 0 : new DOMMatrixReadOnly(matrix).e;
+    return tx + (ends.canPrev ? settling.width : 0);
   };
 
   const onTouchMove = (e: ReactTouchEvent) => {
@@ -163,29 +184,59 @@ export function ProfileModal({
       if (!collection[index + offset]) return;
 
       const width = viewport.current?.clientWidth ?? 0;
-      // The neighbour mounts in one frame and the slide starts in the next: a
-      // settle in the same breath as the mount transitions from the pre-mount
-      // transform, so every press slides the same way. Two rAFs, not
-      // one: a single one can still beat the mounting frame's style pass.
+      const press = pressSlide(
+        dragged?.guestId === guestId ? dragged : null,
+        offset,
+        width
+      );
+      // Already sliding there: restarting would only snap the card backwards
+      // and put off the arrival it is most of the way through.
+      if (press.kind === "arrived") return;
+      // Mid-slide the neighbours are on screen, so the transition retargets
+      // from wherever the card is right now.
+      if (press.kind === "slide") {
+        setDrag({
+          guestId,
+          width,
+          phase: "settling",
+          offset: press.offset,
+          commit: press.commit,
+        });
+        return;
+      }
+
+      // From rest they have to be mounted first: the neighbour mounts in one
+      // frame and the slide starts in the next — a settle in the same breath
+      // as the mount transitions from the pre-mount transform, so every press
+      // slides the same way. Two rAFs, not one: a single one can still beat
+      // the mounting frame's style pass. The guard keeps a stale callback from
+      // clobbering whatever — a caught card, a retarget — happened meanwhile.
       setDrag({
         guestId,
         phase: "tracking",
+        arming: true,
         swipe: { startX: 0, startY: 0, axis: "x", dx: 0 },
         width,
       });
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
-          setDrag({
-            guestId,
-            phase: "settling",
-            offset: -offset * width,
-            commit: offset,
-            width,
-          });
+          setDrag((prev) =>
+            prev?.guestId === guestId &&
+            prev.phase === "tracking" &&
+            prev.arming
+              ? {
+                  guestId,
+                  width,
+                  phase: "settling",
+                  offset: -offset * width,
+                  commit: offset,
+                }
+              : prev
+          );
         })
       );
     },
-    [collection, index, guestId]
+    [collection, index, guestId, dragged]
   );
 
   useEffect(() => {
@@ -314,6 +365,7 @@ export function ProfileModal({
             // here resolves to auto and the profile is clipped instead of
             // scrolled.
             <div
+              ref={row}
               className="flex min-h-0 flex-1"
               style={{
                 transform: `translateX(${(before ? -width : 0) + offset}px)`,
