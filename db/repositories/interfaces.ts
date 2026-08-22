@@ -671,17 +671,15 @@ export type Comment = {
   likes: CommentLiker[];
 };
 
+/**
+ * Scope-agnostic comment operations. A comment is attached to exactly one
+ * subject — a session proposal or a scheduled session — but finding,
+ * editing, liking and deleting work identically for both, so they live here.
+ * Attaching comments to a subject is that subject's own repository:
+ * ProposalCommentsRepository and SessionCommentsRepository.
+ */
 export interface CommentsRepository {
-  listByProposal(proposalId: string): Promise<Comment[]>;
-  findById(id: string): Promise<Comment | undefined>;
-  findProposalId(commentId: string): Promise<string | undefined>;
-  createForProposal(data: {
-    proposalId: string;
-    authorId: string;
-    parentId?: string;
-    body: string;
-    createdTime: Date;
-  }): Promise<Comment>;
+  findById(commentId: string): Promise<Comment | undefined>;
   update(id: string, data: { body: string; editedTime: Date }): Promise<void>;
   toggleLike(data: {
     commentId: string;
@@ -694,6 +692,42 @@ export interface CommentsRepository {
    * along with any tombstone ancestors it was the last reply to.
    */
   delete(id: string): Promise<void>;
+}
+
+/** Comments attached to session proposals. */
+export interface ProposalCommentsRepository {
+  /** All comments on the proposal, oldest first, likes included. */
+  listByProposal(proposalId: string): Promise<Comment[]>;
+  /**
+   * The proposal a comment is attached to, or undefined when the comment
+   * doesn't exist or belongs to another subject.
+   */
+  findProposalId(commentId: string): Promise<string | undefined>;
+  createForProposal(data: {
+    proposalId: string;
+    authorId: string;
+    parentId?: string;
+    body: string;
+    createdTime: Date;
+  }): Promise<Comment>;
+}
+
+/** Comments attached to scheduled sessions. */
+export interface SessionCommentsRepository {
+  /** All comments on the session, oldest first, likes included. */
+  listBySession(sessionId: string): Promise<Comment[]>;
+  /**
+   * The session a comment is attached to, or undefined when the comment
+   * doesn't exist or belongs to another subject.
+   */
+  findSessionId(commentId: string): Promise<string | undefined>;
+  createForSession(data: {
+    sessionId: string;
+    authorId: string;
+    parentId?: string;
+    body: string;
+    createdTime: Date;
+  }): Promise<Comment>;
 }
 
 // ── Votes ─────────────────────────────────────────────────────────────────────

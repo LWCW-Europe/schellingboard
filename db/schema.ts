@@ -1,12 +1,12 @@
 import { sql } from "drizzle-orm";
 import {
-  sqliteTable,
-  text,
+  type AnySQLiteColumn,
+  index,
   integer,
   primaryKey,
+  sqliteTable,
+  text,
   uniqueIndex,
-  index,
-  type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
 import type { ProfileContact, ProfilePrompt } from "./repositories/interfaces";
 
@@ -318,6 +318,22 @@ export const proposalComments = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.commentId] }),
     index("proposal_comments_proposal_idx").on(t.proposalId),
+  ]
+);
+
+export const sessionComments = sqliteTable(
+  "session_comments",
+  {
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => sessions.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.commentId] }),
+    index("session_comments_session_idx").on(t.sessionId),
   ]
 );
 
