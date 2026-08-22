@@ -17,6 +17,13 @@ export const proposalCommentSchema = z.object({
   body,
 });
 
+export const sessionCommentSchema = z.object({
+  sessionId: z.string().min(1),
+  eventSlug: z.string().min(1),
+  parentId: z.string().min(1).optional(),
+  body,
+});
+
 export const commentUpdateSchema = z.object({
   commentId: z.string().min(1),
   eventSlug: z.string().min(1),

@@ -5,16 +5,17 @@ import { DateTime } from "luxon";
 import { useContext, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PencilIcon } from "@heroicons/react/24/outline";
-import { CheckCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
+import { AcademicCapIcon, CheckCircleIcon } from "@heroicons/react/24/solid";
 
-import type { Event, Guest, Session, Rsvp } from "@/db/repositories/interfaces";
+import type { Event, Guest, Rsvp, Session } from "@/db/repositories/interfaces";
 import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
-import { UserContext, EventContext } from "../../context";
-import { CurrentUserModal, ConfirmationModal } from "../../modals";
+import { EventContext, UserContext } from "../../context";
+import { ConfirmationModal, CurrentUserModal } from "../../modals";
 import { sessionsOverlap } from "../../session_utils";
 import { LockIcon } from "../../lock-icon";
 import { LocationTag } from "../session-text";
 import { viewProposalLinkFromElsewhere } from "../modal-nav";
+import { SessionComments } from "../session-comments";
 import { Markdown } from "@/app/(site)/markdown";
 
 export function ViewSession(props: {
@@ -328,6 +329,11 @@ export function ViewSession(props: {
         <h3 className="font-semibold mb-2">Description</h3>
         <Markdown>{session.description}</Markdown>
       </div>
+      <SessionComments
+        sessionId={session.id}
+        eventSlug={eventSlug}
+        timezone={event.timezone}
+      />
       {session.proposalId && (
         <p className="text-sm text-fg-muted">
           This session was scheduled from a proposal. See it{" "}

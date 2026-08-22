@@ -1,15 +1,26 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
-  describe,
-  it,
-  expect,
+  afterEach,
   beforeAll,
   beforeEach,
-  afterEach,
+  describe,
+  expect,
+  it,
   vi,
 } from "vitest";
 import { NextRequest } from "next/server";
+import { resetTestDb, setupTestDb } from "../helpers/db";
+import {
+  createDay,
+  createEvent,
+  createGuest,
+  createLocation,
+  createProposal,
+  createSession,
+} from "../helpers/factories";
+import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
+import { getRepositories } from "@/db/container";
 
 // Guards the invariant in CONTRIBUTING.md § Authorization: every mutating
 // handler must resolve the acting guest and refuse to act as a protected
@@ -86,7 +97,7 @@ const OUT_OF_SCOPE_PREFIXES = ["admin/", "auth/"];
 const OUT_OF_SCOPE_EXACT = new Set(["health"]);
 
 // Read-only surfaces are exempt from the invariant per CONTRIBUTING.md.
-const READ_ONLY = new Set(["rsvps", "votes"]);
+const READ_ONLY = new Set(["rsvps", "votes", "comments"]);
 
 type Verifier = () => Promise<void>;
 

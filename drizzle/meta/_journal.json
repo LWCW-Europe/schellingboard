@@ -183,6 +183,13 @@
       "when": 1786525223340,
       "tag": "0025_guest_profile_updated_at",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1787430579703,
+      "tag": "0026_session_comments",
+      "breakpoints": true
     }
   ]
 }

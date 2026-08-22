@@ -1,19 +1,14 @@
 import {
-  describe,
-  it,
-  expect,
+  afterEach,
   beforeAll,
   beforeEach,
-  afterEach,
+  describe,
+  expect,
+  it,
   vi,
 } from "vitest";
 import type { ReactElement } from "react";
-
-vi.mock("@/utils/mailer", () => ({
-  sendMail: vi.fn(),
-}));
-
-import { setupTestDb, resetTestDb } from "../helpers/db";
+import { resetTestDb, setupTestDb } from "../helpers/db";
 import {
   createEvent,
   createGuest,
@@ -32,6 +27,10 @@ import {
   notifySessionChanged,
   notifySessionDeleted,
 } from "@/utils/notifications";
+
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
 
 const MESSAGE = {
   subject: "Session moved",
@@ -588,7 +587,7 @@ describe("notifyProposalCommented", () => {
     authorId: string,
     body: string
   ) {
-    return getRepositories().comments.createForProposal({
+    return getRepositories().proposalComments.createForProposal({
       proposalId,
       authorId,
       body,

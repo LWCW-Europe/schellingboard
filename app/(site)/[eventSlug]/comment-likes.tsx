@@ -16,9 +16,13 @@ const TOOLTIP_NAMES = 3;
 export function CommentLikes({
   comment,
   eventSlug,
+  onChanged,
 }: {
   comment: Pick<Comment, "id" | "likes">;
   eventSlug: string;
+  // Session comments are fetched client-side rather than arriving as server
+  // props, so their section hands in its own reload instead of the default.
+  onChanged?: () => void;
 }) {
   const { user: currentUserId } = useContext(UserContext);
   const router = useRouter();
@@ -51,7 +55,7 @@ export function CommentLikes({
         );
         return;
       }
-      startRefresh(() => router.refresh());
+      startRefresh(() => (onChanged ? onChanged() : router.refresh()));
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred");
