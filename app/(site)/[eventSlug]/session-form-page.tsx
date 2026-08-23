@@ -21,11 +21,9 @@ export async function renderSessionForm(props: {
     repos.days.listByEvent(event.id),
     repos.sessions.listByEvent(event.id),
     repos.guests.list(),
-    repos.locations.listBookable(),
+    repos.locations.listBookableByEvent(event.id),
     repos.sessionProposals.listByEvent(event.id),
   ]);
-
-  const filteredLocations = locations;
 
   const currentUserProposals = allProposals.filter(
     (p) => currentUser && p.hosts.some((h) => h.id === currentUser)
@@ -38,7 +36,7 @@ export async function renderSessionForm(props: {
         <SessionForm
           event={event}
           days={days}
-          locations={filteredLocations}
+          locations={locations}
           sessions={sessions}
           guests={guests}
           proposals={proposals}

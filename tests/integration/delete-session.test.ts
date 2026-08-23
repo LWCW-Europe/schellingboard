@@ -111,7 +111,7 @@ describe("POST /api/delete-session", () => {
   it("deleted session is absent from listByEvent", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest({ eventId: event.id });
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
 
     const id = await createScheduledSession(event.id, guest, location, day);
@@ -126,7 +126,7 @@ describe("POST /api/delete-session", () => {
   it("rejects delete outside the scheduling phase", async () => {
     const event = await createEvent({ phase: "voting" });
     const guest = await createGuest({ eventId: event.id });
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
 
     // Create an editable (attendee-scheduled, non-blocker) session directly,
     // bypassing add-session's phase gate.
@@ -157,7 +157,7 @@ describe("POST /api/delete-session", () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ name: "Host", eventId: event.id });
     const attendee = await createGuest({ name: "Attendee" });
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
 
     const sessionId = await createScheduledSession(
@@ -197,7 +197,7 @@ describe("POST /api/delete-session", () => {
       name: "Attendee",
       email: "attendee@test.example",
     });
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const sessionId = await createScheduledSession(
       event.id,
@@ -236,7 +236,7 @@ describe("POST /api/delete-session", () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
     const nonHost = await createGuest({ eventId: event.id });
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const id = await createScheduledSession(event.id, host, location, day);
 
@@ -250,7 +250,7 @@ describe("POST /api/delete-session", () => {
   it("rejects deleting with no acting guest at all", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const id = await createScheduledSession(event.id, host, location, day);
 
@@ -265,7 +265,7 @@ describe("POST /api/delete-session", () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
     await protectGuest(host.id);
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const id = await createScheduledSession(event.id, host, location, day);
 
@@ -280,7 +280,7 @@ describe("POST /api/delete-session", () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
     await protectGuest(host.id);
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const id = await createScheduledSession(event.id, host, location, day);
 
