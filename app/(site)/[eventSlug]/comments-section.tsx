@@ -61,7 +61,7 @@ export function CommentsSection({
 }: {
   eventSlug: string;
   timezone: string;
-  comments: Comment[];
+  comments?: Comment[] | null;
   // Scope-specific: proposals and sessions differ in the action called and in
   // where a permalink points. Everything else about commenting is shared.
   create: (input: CommentCreateInput) => Promise<CommentActionResult>;
@@ -69,8 +69,14 @@ export function CommentsSection({
   changed: () => void;
 }) {
   const { user: currentUserId } = useContext(UserContext);
-  const roots = useMemo(() => buildTree(comments), [comments]);
-  const total = comments.filter((c) => !c.deleted).length;
+  const roots = useMemo(
+    () => (comments ? buildTree(comments) : []),
+    [comments]
+  );
+  const total = useMemo(
+    () => comments?.filter((c) => !c.deleted)?.length,
+    [comments]
+  );
   const localZone = useLocalZone();
   const [highlightedId, highlight] = useHighlightedComment();
 
@@ -83,6 +89,18 @@ export function CommentsSection({
       .getElementById(`comment-${highlightedId}`)
       ?.scrollIntoView({ block: "center" });
   }, [highlightedId, comments]);
+
+  if (!comments) {
+    return (
+      <section className="mt-8 border-t border-line-subtle pt-6">
+        <h2 className="text-lg font-semibold mb-4">Loading comments...</h2>
+        <div aria-hidden="true" className="flex flex-col gap-2 animate-pulse">
+          <div className="h-4 w-28 rounded bg-surface-muted" />
+          <div className="h-4 w-56 rounded bg-surface-muted" />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-8 border-t border-line-subtle pt-6">

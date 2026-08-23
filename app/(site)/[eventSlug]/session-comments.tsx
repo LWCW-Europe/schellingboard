@@ -66,10 +66,6 @@ export function SessionComments({
   const comments =
     loaded && loaded.sessionId === sessionId ? loaded.comments : null;
 
-  if (comments === null) {
-    return null;
-  }
-
   return (
     <CommentsSection
       eventSlug={eventSlug}
