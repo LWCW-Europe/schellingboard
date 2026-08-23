@@ -25,16 +25,6 @@ vi.mock("next/headers", () => ({
     }),
 }));
 
-import { resetTestDb, setupTestDb } from "../helpers/db";
-import { createEvent, createGuest, createProposal } from "../helpers/factories";
-import { getRepositories } from "@/db/container";
-import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
-import {
-  createProposalComment as createComment,
-  deleteComment,
-  toggleCommentLike,
-} from "@/app/(site)/[eventSlug]/comment-actions";
-
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
 function act(guestId: string): void {

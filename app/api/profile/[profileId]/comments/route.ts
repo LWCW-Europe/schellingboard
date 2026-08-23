@@ -7,21 +7,17 @@ export const dynamic = "force-dynamic";
 // and show stale comments after a reload.
 const NO_STORE = { headers: { "cache-control": "no-store" } };
 
-// Comments are displayed to everyone in the session details, so like
-// per-session RSVPs they stay openly readable.
-export async function GET(request: NextRequest) {
-  const sessionId = request.nextUrl.searchParams.get("session");
-
-  if (!sessionId) {
-    return NextResponse.json(
-      { error: "session parameter is required" },
-      { ...NO_STORE, status: 400 }
-    );
-  }
+// Comments are displayed to everyone in the profile details,
+// similarly to sessions
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ profileId: string }> }
+) {
+  const { profileId } = await params;
 
   try {
     const comments =
-      await getRepositories().sessionComments.listBySession(sessionId);
+      await getRepositories().profileComments.listByProfile(profileId);
     return NextResponse.json(comments, NO_STORE);
   } catch (error) {
     console.error("Error fetching comments:", error);

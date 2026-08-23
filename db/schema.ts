@@ -337,6 +337,22 @@ export const sessionComments = sqliteTable(
   ]
 );
 
+export const profileComments = sqliteTable(
+  "profile_comments",
+  {
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.commentId] }),
+    index("profile_comments_session_idx").on(t.profileId),
+  ]
+);
+
 export const votes = sqliteTable(
   "votes",
   {

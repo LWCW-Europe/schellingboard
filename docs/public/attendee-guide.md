@@ -216,6 +216,10 @@ search and filters intact.
   for larger still. On a wide window it stays beside you as you scroll,
   together with name, pronouns, location and languages.
 
+A profile ends with the same comment section proposals and sessions have — a good place to say hi, find someone to share
+a ride with, or ask something before the event. Everything works as described under
+[Discuss a proposal](#discuss-a-proposal): threaded replies, likes, editing and deleting your own comments.
+
 ## Your profile
 
 After picking your name, open **"Edit profile"** to set your About me,

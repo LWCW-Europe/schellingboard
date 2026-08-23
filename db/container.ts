@@ -6,6 +6,7 @@ import { resolveDbPath, runMigrations } from "./migrate";
 import { SqliteAuthCodesRepository } from "./repositories/sqlite/auth-codes";
 import {
   SqliteCommentsRepository,
+  SqliteProfileCommentsRepository,
   SqliteProposalCommentsRepository,
   SqliteSessionCommentsRepository,
 } from "./repositories/sqlite/comments";
@@ -25,6 +26,7 @@ import type {
   EventsRepository,
   GuestsRepository,
   LocationsRepository,
+  ProfileCommentsRepository,
   ProposalCommentsRepository,
   RsvpsRepository,
   SessionCommentsRepository,
@@ -40,6 +42,7 @@ export type Repositories = {
   comments: CommentsRepository;
   proposalComments: ProposalCommentsRepository;
   sessionComments: SessionCommentsRepository;
+  profileComments: ProfileCommentsRepository;
   days: DaysRepository;
   events: EventsRepository;
   guests: GuestsRepository;
@@ -61,6 +64,7 @@ function buildRepositories(sqlite: Database.Database): Repositories {
     comments: new SqliteCommentsRepository(db),
     proposalComments: new SqliteProposalCommentsRepository(db),
     sessionComments: new SqliteSessionCommentsRepository(db),
+    profileComments: new SqliteProfileCommentsRepository(db),
     days: new SqliteDaysRepository(db),
     events: new SqliteEventsRepository(db),
     guests: new SqliteGuestsRepository(db),

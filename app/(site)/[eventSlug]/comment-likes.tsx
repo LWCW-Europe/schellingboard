@@ -19,6 +19,8 @@ export function CommentLikes({
   onChanged,
 }: {
   comment: Pick<Comment, "id" | "likes">;
+  // Only the cache invalidation target for pages that server-render their
+  // comments; client-fetched ones (sessions, profiles) omit it.
   eventSlug?: string;
   // Session comments are fetched client-side rather than arriving as server
   // props, so their section hands in its own reload instead of the default.

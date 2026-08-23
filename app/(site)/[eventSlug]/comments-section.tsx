@@ -59,11 +59,14 @@ export function CommentsSection({
   permalinkFor,
   changed,
 }: {
+  // Only the cache invalidation target for pages that server-render their
+  // comments; client-fetched ones (sessions, profiles) omit it.
   eventSlug?: string;
   timezone: string;
   comments?: Comment[] | null;
-  // Scope-specific: proposals and sessions differ in the action called and in
-  // where a permalink points. Everything else about commenting is shared.
+  // Scope-specific: proposals, sessions and profiles differ in the action
+  // called and in where a permalink points. Everything else about commenting
+  // is shared.
   create: (input: CommentCreateInput) => Promise<CommentActionResult>;
   permalinkFor: (commentId: string) => string;
   changed: () => void;

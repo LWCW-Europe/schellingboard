@@ -677,10 +677,11 @@ export type Comment = {
 
 /**
  * Scope-agnostic comment operations. A comment is attached to exactly one
- * subject — a session proposal or a scheduled session — but finding,
- * editing, liking and deleting work identically for both, so they live here.
- * Attaching comments to a subject is that subject's own repository:
- * ProposalCommentsRepository and SessionCommentsRepository.
+ * subject — a session proposal, a scheduled session or a guest's profile —
+ * but finding, editing, liking and deleting work identically for all, so they
+ * live here. Attaching comments to a subject is that subject's own repository:
+ * ProposalCommentsRepository, SessionCommentsRepository and
+ * ProfileCommentsRepository.
  */
 export interface CommentsRepository {
   findById(commentId: string): Promise<Comment | undefined>;
@@ -727,6 +728,24 @@ export interface SessionCommentsRepository {
   findSessionId(commentId: string): Promise<string | undefined>;
   createForSession(data: {
     sessionId: string;
+    authorId: string;
+    parentId?: string;
+    body: string;
+    createdTime: Date;
+  }): Promise<Comment>;
+}
+
+/** Comments attached to a guest's profile. */
+export interface ProfileCommentsRepository {
+  /** All comments on the profile, oldest first, likes included. */
+  listByProfile(profileId: string): Promise<Comment[]>;
+  /**
+   * The profile a comment is attached to, or undefined when the comment
+   * doesn't exist or belongs to another subject.
+   */
+  findProfileId(commentId: string): Promise<string | undefined>;
+  createForProfile(data: {
+    profileId: string;
     authorId: string;
     parentId?: string;
     body: string;

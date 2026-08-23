@@ -23,6 +23,15 @@ export const sessionCommentSchema = z.object({
   body,
 });
 
+export const profileCommentSchema = z.object({
+  profileId: z.string().min(1),
+  parentId: z.string().min(1).optional(),
+  body,
+});
+
+// eventSlug is only the cache invalidation target for pages that
+// server-render their comments; client-fetched ones (sessions, profiles)
+// omit it.
 export const commentUpdateSchema = z.object({
   commentId: z.string().min(1),
   eventSlug: z.string().min(1).optional(),

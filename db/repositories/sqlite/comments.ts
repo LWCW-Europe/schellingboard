@@ -7,6 +7,7 @@ import type {
   Comment,
   CommentLiker,
   CommentsRepository,
+  ProfileCommentsRepository,
   ProposalCommentsRepository,
   SessionCommentsRepository,
 } from "../interfaces";
@@ -330,6 +331,53 @@ export class SqliteSessionCommentsRepository implements SessionCommentsRepositor
       insertComment(tx, id, data);
       tx.insert(schema.sessionComments)
         .values({ commentId: id, sessionId: data.sessionId })
+        .run();
+    });
+    return createdComment(this.db, id, data);
+  }
+}
+
+export class SqliteProfileCommentsRepository implements ProfileCommentsRepository {
+  constructor(private readonly db: DB) {}
+
+  async listByProfile(profileId: string): Promise<Comment[]> {
+    const rows = this.db
+      .select(commentColumns)
+      .from(schema.profileComments)
+      .innerJoin(
+        schema.comments,
+        eq(schema.profileComments.commentId, schema.comments.id)
+      )
+      .leftJoin(schema.guests, eq(schema.comments.authorId, schema.guests.id))
+      .where(eq(schema.profileComments.profileId, profileId))
+      .orderBy(
+        asc(schema.comments.createdTime),
+        asc(insertionOrder(schema.comments))
+      )
+      .all();
+    return listComments(rows, this.db);
+  }
+
+  async findProfileId(commentId: string): Promise<string | undefined> {
+    return this.db
+      .select({ profileId: schema.profileComments.profileId })
+      .from(schema.profileComments)
+      .where(eq(schema.profileComments.commentId, commentId))
+      .get()?.profileId;
+  }
+
+  async createForProfile(data: {
+    profileId: string;
+    authorId: string;
+    parentId?: string;
+    body: string;
+    createdTime: Date;
+  }): Promise<Comment> {
+    const id = nanoid();
+    this.db.transaction((tx) => {
+      insertComment(tx, id, data);
+      tx.insert(schema.profileComments)
+        .values({ commentId: id, profileId: data.profileId })
         .run();
     });
     return createdComment(this.db, id, data);
