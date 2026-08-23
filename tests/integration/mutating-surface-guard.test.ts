@@ -97,7 +97,7 @@ const OUT_OF_SCOPE_PREFIXES = ["admin/", "auth/"];
 const OUT_OF_SCOPE_EXACT = new Set(["health"]);
 
 // Read-only surfaces are exempt from the invariant per CONTRIBUTING.md.
-const READ_ONLY = new Set(["rsvps", "votes", "comments"]);
+const READ_ONLY = new Set(["rsvps", "votes", "session/[sessionId]/comments"]);
 
 type Verifier = () => Promise<void>;
 

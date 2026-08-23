@@ -9,15 +9,11 @@ const NO_STORE = { headers: { "cache-control": "no-store" } };
 
 // Comments are displayed to everyone in the session details, so like
 // per-session RSVPs they stay openly readable.
-export async function GET(request: NextRequest) {
-  const sessionId = request.nextUrl.searchParams.get("session");
-
-  if (!sessionId) {
-    return NextResponse.json(
-      { error: "session parameter is required" },
-      { ...NO_STORE, status: 400 }
-    );
-  }
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ sessionId: string }> }
+) {
+  const { sessionId } = await params;
 
   try {
     const comments =

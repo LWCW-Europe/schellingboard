@@ -41,7 +41,7 @@ export function SessionComments({
 
   useEffect(() => {
     let cancelled = false;
-    void fetch(`/api/comments?session=${sessionId}`)
+    void fetch(`/api/session/${sessionId}/comments?reload=${reloadKey}`)
       .then((res) =>
         res.ok ? (res.json() as Promise<SerializedComment[]>) : []
       )
@@ -50,11 +50,11 @@ export function SessionComments({
           setLoaded({ sessionId, comments: data.map(withDates) });
         }
       })
-      .catch(() => {
-        // A failed reload keeps what is already shown rather than wiping the
-        // thread; the next mutation or modal open retries. With nothing
-        // loaded yet, the section stays hidden instead of claiming "0
-        // comments".
+      .catch((e) => {
+        console.error("Error fetching session comments", e);
+        if (!cancelled) {
+          setLoaded({ sessionId, comments: [] });
+        }
       });
     return () => {
       cancelled = true;
