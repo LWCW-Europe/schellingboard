@@ -67,7 +67,7 @@ async function voteOnProposalIn(phase: "proposal" | "voting" | "scheduling") {
 async function addSessionIn(phase: "proposal" | "voting" | "scheduling") {
   const event = await createEvent({ phase });
   const guest = await createGuest({ eventId: event.id });
-  const location = await createLocation();
+  const location = await createLocation({ eventId: event.id });
   const day = await createDay(event.id);
 
   const payload: SessionParams = {

@@ -54,6 +54,21 @@ export async function POST(req: NextRequest) {
       { status: 403 }
     );
   }
+  // Exactly the set the session form offers: assigned to the event, not
+  // hidden, and open to self-booking.
+  const bookable = new Map(
+    (await repos.locations.listBookableByEvent(event.id)).map((l) => [l.id, l])
+  );
+  const chosen = input.locationIds.flatMap((id) => bookable.get(id) ?? []);
+  if (chosen.length !== input.locationIds.length || chosen.length === 0) {
+    return Response.json(
+      { error: "A location cannot be booked for this event" },
+      { status: 403 }
+    );
+  }
+  // The payload carries the client's copy of the location; capacity gates the
+  // RSVP hard limit, so take it from the stored row instead.
+  input.capacity = chosen[0].capacity;
   const existingSessions = allSessions.filter((ses) => ses.id !== params.id);
   const sessionValid = validateSession(input, existingSessions);
   if (sessionValid) {

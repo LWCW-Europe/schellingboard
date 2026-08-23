@@ -57,13 +57,19 @@ assigned to multiple events. The event's "Locations" tab only
 assigns/unassigns from this pool; it doesn't create new ones.
 
 - **Name, Capacity, Description, Area description, Color** (schedule grid).
-- **Bookable** — whether attendees can self-book blank slots here.
-- **Hidden** — excludes it from the visible grid without deleting it.
+- **Bookable** — whether attendees can self-book blank slots here. A location
+  that isn't bookable still shows on the grid and you can schedule sessions
+  into it yourself; attendees just can't pick it.
+- **Hidden** — excludes it from the visible grid without deleting it, and from
+  everything attendees can book.
 - **Image** — JPEG/PNG/WebP, max 5 MB, min 400px wide, **must be 4:3**
   (±2% tolerance).
 - **Sort order** — controls column order in the grid.
 - **Deleting a location** requires typing the name to confirm; the dialog
   shows how many sessions/events reference it before it cascades.
+
+Attendees are only ever offered the locations assigned to the event they are
+in, that are bookable and not hidden — everything else is refused.
 
 ## Guests / Users
 

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- **Only the event's own rooms can be booked**: the location list when adding or editing a session offered every bookable room in the system, so a session scheduled from the proposal list could end up in a room belonging to another event — and then never appear on the schedule. Attendees are now offered exactly the rooms assigned to that event, that are bookable and not hidden, and a session saved in any other room is refused
+- **The session form says why it was refused**: adding or editing a session that the site turned down showed only "Failed to update session". It now shows the actual reason, such as the name protection or room message
+
+### Security
+
+- **A session's capacity always comes from its room**: the session form sent the room's capacity along with the session, so a hand-crafted request could claim any capacity and get past a hard RSVP limit. Capacity is now read from the room itself
+
 ## [3.4.1] - 2026-08-21
 
 ### Fixed

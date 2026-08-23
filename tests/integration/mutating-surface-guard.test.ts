@@ -95,7 +95,7 @@ const VERIFIERS: Record<string, Verifier> = {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest({ eventId: event.id });
     await protectGuest(guest.id);
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const res = await POST(
       new NextRequest("http://test/api/add-session", {
@@ -121,7 +121,7 @@ const VERIFIERS: Record<string, Verifier> = {
     const { POST } = await import("@/app/api/update-session/route");
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const session = await createSession(event.id, {
       hostIds: [host.id],
@@ -155,7 +155,7 @@ const VERIFIERS: Record<string, Verifier> = {
     const { POST } = await import("@/app/api/delete-session/route");
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
-    const location = await createLocation();
+    const location = await createLocation({ eventId: event.id });
     const session = await createSession(event.id, {
       hostIds: [host.id],
       locationIds: [location.id],

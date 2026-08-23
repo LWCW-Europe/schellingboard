@@ -127,19 +127,24 @@ export class SqliteLocationsRepository implements LocationsRepository {
       .map((row) => rowToLocation(row.locations));
   }
 
-  async listBookable(): Promise<Location[]> {
+  async listBookableByEvent(eventId: string): Promise<Location[]> {
     return this.db
       .select()
       .from(schema.locations)
+      .innerJoin(
+        schema.eventLocations,
+        eq(schema.locations.id, schema.eventLocations.locationId)
+      )
       .where(
         and(
+          eq(schema.eventLocations.eventId, eventId),
           eq(schema.locations.hidden, false),
           eq(schema.locations.bookable, true)
         )
       )
-      .orderBy(schema.locations.sortIndex)
+      .orderBy(schema.locations.sortIndex, schema.locations.id)
       .all()
-      .map(rowToLocation);
+      .map((row) => rowToLocation(row.locations));
   }
 
   async findById(id: string): Promise<Location | undefined> {
