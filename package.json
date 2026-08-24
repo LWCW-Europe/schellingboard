@@ -7,7 +7,7 @@
     "@floating-ui/react": "^0.27.20",
     "@headlessui/react": "^2.2.10",
     "@heroicons/react": "^2.2.0",
-    "@hookform/resolvers": "^5.8.0",
+    "@hookform/resolvers": "^5.9.0",
     "@react-email/render": "^2.1.0",
     "@tailwindcss/forms": "^0.5.11",
     "better-sqlite3": "^13.0.3",
