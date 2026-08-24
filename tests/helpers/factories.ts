@@ -122,9 +122,11 @@ export async function createLocation(opts?: {
   bookable?: boolean;
   hidden?: boolean;
   sortIndex?: number;
+  /** When set, the location is also assigned to this event. */
+  eventId?: string;
 }): Promise<Location> {
   const { locations } = getRepositories();
-  return locations.create({
+  const location = await locations.create({
     name: opts?.name ?? `Test Room ${Date.now()}`,
     imageUrl: "",
     description: "",
@@ -134,6 +136,10 @@ export async function createLocation(opts?: {
     bookable: opts?.bookable ?? true,
     sortIndex: opts?.sortIndex ?? 0,
   });
+  if (opts?.eventId) {
+    await locations.assignToEvent(opts.eventId, [location.id]);
+  }
+  return location;
 }
 
 export async function createDay(

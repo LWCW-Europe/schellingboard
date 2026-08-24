@@ -428,7 +428,11 @@ export interface LocationsRepository {
   ): Promise<EventLocationPage>;
   /** Visible locations assigned to the given event, ordered by sortIndex. */
   listVisibleByEvent(eventId: string): Promise<Location[]>;
-  listBookable(): Promise<Location[]>;
+  /**
+   * Visible, bookable locations assigned to the given event, ordered by
+   * sortIndex — what attendees may pick when scheduling a session.
+   */
+  listBookableByEvent(eventId: string): Promise<Location[]>;
   findById(id: string): Promise<Location | undefined>;
   create(data: Omit<Location, "id">): Promise<Location>;
   update(id: string, data: Omit<Location, "id">): Promise<Location | undefined>;

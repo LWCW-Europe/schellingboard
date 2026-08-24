@@ -19,6 +19,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   the other way turns the card around smoothly from wherever it is, and catching a sliding card with a finger picks it
   up where it is instead of teleporting it
 
+## [3.4.2] - 2026-08-24
+
+### Fixed
+
+- **Only the event's own rooms can be booked**: the location list when adding or editing a session offered every bookable room in the system, so a session scheduled from the proposal list could end up in a room belonging to another event — and then never appear on the schedule. Attendees are now offered exactly the rooms assigned to that event, that are bookable and not hidden, and a session saved in any other room is refused
+- **The session form says why it was refused**: adding or editing a session that the site turned down showed only "Failed to update session". It now shows the actual reason, such as the name protection or room message
+
+### Security
+
+- **A session's capacity always comes from its room**: the session form sent the room's capacity along with the session, so a hand-crafted request could claim any capacity and get past a hard RSVP limit. Capacity is now read from the room itself
+
 ## [3.4.1] - 2026-08-21
 
 ### Fixed
@@ -323,7 +334,8 @@ This version corresponds to commit [9aa2a273](https://github.com/LWCW-Europe/sch
 
 The version number 1.0.0 is a retroactive label assigned here purely as a reference point to mark the upstream baseline — it was never designated as such. This is the upstream codebase at the point the fork was created, taken from commit [babcd627](https://github.com/rachelweinberg12/scheduling-app/commit/babcd6275a853f1911cd48bbdaf4f2b1725c3d47) of [rachelweinberg12/scheduling-app](https://github.com/rachelweinberg12/scheduling-app) ([full log](https://github.com/rachelweinberg12/scheduling-app/commits/babcd6275a853f1911cd48bbdaf4f2b1725c3d47/)). It was never properly released since it was deployed directly from the Git repository.
 
-[Unreleased]: https://github.com/LWCW-Europe/schellingboard/compare/v3.4.1...HEAD
+[Unreleased]: https://github.com/LWCW-Europe/schellingboard/compare/v3.4.2...HEAD
+[3.4.2]: https://github.com/LWCW-Europe/schellingboard/compare/v3.4.1...v3.4.2
 [3.4.1]: https://github.com/LWCW-Europe/schellingboard/compare/v3.4.0...v3.4.1
 [3.4.0]: https://github.com/LWCW-Europe/schellingboard/compare/v3.3.1...v3.4.0
 [3.3.1]: https://github.com/LWCW-Europe/schellingboard/compare/v3.3.0...v3.3.1

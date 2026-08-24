@@ -36,7 +36,7 @@ import { MarkdownHint } from "@/app/(site)/markdown";
 import { MarkdownTextarea } from "@/app/components/markdown-textarea";
 
 interface ErrorResponse {
-  message: string;
+  error?: string;
 }
 
 export function SessionForm(props: {
@@ -113,9 +113,11 @@ export function SessionForm(props: {
   );
   const [closed, setClosed] = useState(session.closed);
   const [day, setDay] = useState(initDay ?? days[0]);
+  // Only preselect a location the picker offers: an existing session may sit in
+  // one that has since been unassigned, hidden or closed to self-booking.
   const [locationId, setLocationId] = useState<string | undefined>(
     locations.find((l) => l.name === initLocation)?.id ??
-      session.locations[0]?.id
+      locations.find((l) => l.id === session.locations[0]?.id)?.id
   );
   const startTimes = getAvailableStartTimes(
     day,
@@ -291,7 +293,7 @@ export function SessionForm(props: {
       let errorMessage = "Failed to update session";
       try {
         const errorData = (await res.json()) as ErrorResponse;
-        errorMessage = errorData.message || errorMessage;
+        errorMessage = errorData.error || errorMessage;
       } catch {
         errorMessage = res.statusText || `Server error (${res.status})`;
       }
@@ -324,7 +326,7 @@ export function SessionForm(props: {
       let errorMessage = "Failed to delete session";
       try {
         const errorData = (await res.json()) as ErrorResponse;
-        errorMessage = errorData.message || errorMessage;
+        errorMessage = errorData.error || errorMessage;
       } catch {
         errorMessage = res.statusText || `Server error (${res.status})`;
       }
