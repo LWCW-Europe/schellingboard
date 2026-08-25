@@ -209,6 +209,31 @@ describe("POST /api/add-session", () => {
     expect(sessions).toHaveLength(0);
   });
 
+  it("rejects a session longer than the event allows", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+
+    // Three hours, where the event's maximum is two.
+    const res = await POST(
+      makeReq(
+        buildPayload(guest, location, day, {
+          startTime: slotStart(day, 60),
+          duration: 180,
+        })
+      )
+    );
+    expect(res.status).toBe(400);
+    // Named, so the rejection can't be mistaken for the booking-window rule.
+    expect(await res.json()).toEqual({
+      error: "Sessions can last at most 120 minutes",
+    });
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(0);
+  });
+
   it("rejects times that miss the day's slot grid", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest({ eventId: event.id });

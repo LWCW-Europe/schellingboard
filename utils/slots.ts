@@ -70,6 +70,28 @@ export function slotDurationOptions(
 }
 
 /**
+ * Why a self-booked session is too long, or null. The form only offers the
+ * durations above, so anything longer is a hand-crafted payload claiming more
+ * of a room than the event allows.
+ *
+ * An interval of invalid dates compares false here and passes, so callers must
+ * have rejected those already — `sessionBookingWindowError` runs first and does.
+ */
+export function sessionDurationError(
+  start: Date,
+  end: Date,
+  incrementMinutes: number,
+  maxSessionDuration: number
+): string | null {
+  const options = slotDurationOptions(incrementMinutes, maxSessionDuration);
+  const longest = options[options.length - 1];
+  const minutes = (end.getTime() - start.getTime()) / MS_PER_MINUTE;
+  return minutes > longest
+    ? `Sessions can last at most ${longest} minutes`
+    : null;
+}
+
+/**
  * Snap a free-form duration (e.g. from a proposal) to the nearest selectable
  * option. Ties round up so the session gets at least the proposed time.
  */

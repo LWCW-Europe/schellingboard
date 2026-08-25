@@ -6,6 +6,7 @@ import {
   getNumSlots,
   getNowOffsetPx,
   isSlotAligned,
+  sessionDurationError,
   slotDurationOptions,
   snapDurationToSlots,
 } from "@/utils/slots";
@@ -117,6 +118,29 @@ describe("slotDurationOptions", () => {
 
   it("max below the increment still offers one slot", () => {
     expect(slotDurationOptions(45, 30)).toEqual([45]);
+  });
+});
+
+// ── sessionDurationError ─────────────────────────────────────────────────────
+
+describe("sessionDurationError", () => {
+  const at = (h: number, m = 0) => new Date(Date.UTC(2026, 8, 1, h, m));
+
+  it("accepts a duration the form offers", () => {
+    expect(sessionDurationError(at(9), at(11), 30, 120)).toBeNull();
+  });
+
+  it("rejects one longer than the event allows", () => {
+    expect(sessionDurationError(at(9), at(11, 30), 30, 120)).toMatch(/120/);
+  });
+
+  it("allows only whole slots: 45-min slots cap 120 at 90", () => {
+    expect(sessionDurationError(at(9), at(10, 30), 45, 120)).toBeNull();
+    expect(sessionDurationError(at(9), at(11), 45, 120)).toMatch(/90/);
+  });
+
+  it("a maximum below the increment still allows one slot", () => {
+    expect(sessionDurationError(at(9), at(9, 45), 45, 30)).toBeNull();
   });
 });
 

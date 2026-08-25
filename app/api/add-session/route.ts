@@ -9,6 +9,7 @@ import {
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
 import { sessionBookingWindowError } from "@/utils/day-window";
+import { sessionDurationError } from "@/utils/slots";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
@@ -43,6 +44,15 @@ export async function POST(req: NextRequest) {
   );
   if (windowError) {
     return Response.json({ error: windowError }, { status: 400 });
+  }
+  const durationError = sessionDurationError(
+    input.startTime!,
+    input.endTime!,
+    event.slotIncrementMinutes,
+    event.maxSessionDuration
+  );
+  if (durationError) {
+    return Response.json({ error: durationError }, { status: 400 });
   }
   const eventGuestIds = new Set(
     (await repos.guests.listByEvent(event.id)).map((g) => g.id)

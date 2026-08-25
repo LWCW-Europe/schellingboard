@@ -355,6 +355,37 @@ describe("POST /api/update-session", () => {
     expect(unchanged.startTime!.toISOString()).toBe(slotStart(day, 60));
   });
 
+  it("rejects stretching a session beyond the event's maximum duration", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day, {
+      startTime: slotStart(day, 60),
+    });
+
+    const res = await POST(
+      makeUpdateReq(
+        {
+          // Three hours, where the event's maximum is two.
+          ...basePayload(host, location, day, { duration: 180 }),
+          id,
+        },
+        { editorGuestId: host.id }
+      )
+    );
+    expect(res.status).toBe(400);
+    // Named, so the rejection can't be mistaken for the booking-window rule.
+    expect(await res.json()).toEqual({
+      error: "Sessions can last at most 120 minutes",
+    });
+
+    const unchanged = (await getRepositories().sessions.findById(id))!;
+    expect(unchanged.endTime!.getTime() - unchanged.startTime!.getTime()).toBe(
+      60 * 60 * 1000
+    );
+  });
+
   it("rejects a host who is not part of the event", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest({ eventId: event.id });

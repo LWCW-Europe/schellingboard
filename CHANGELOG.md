@@ -34,6 +34,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   closed, running on into the hours you kept for yourself, or off the schedule grid. The day is now looked up in the
   site's own records and the session required to start and finish inside its booking window. Organizers are
   unaffected: the admin pages place sessions as before
+- **A booked session can't outlast the event's maximum**: the length also came from the form and was never rechecked,
+  so a hand-crafted request could hold a room for the whole booking window. Hosts booking for themselves are now held
+  to the longest duration the form offers
 
 ### Internal
 
