@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **The session form shows which day owns the small hours**: a day that runs past midnight is now labelled with the
+  hour it ends ("Friday, June 13 (until 03:00 Sat)"), and its start times after midnight carry their weekday ("Sat
+  01:10"), so it's clear that the late slots belong to the evening's day. Day names also follow the event's timezone
+  instead of the reader's, which could show the day before or after near midnight
 - **Sessions after midnight are scheduled on the right date**: on a day that runs past midnight (say Friday 09:00 to
   Saturday 03:00), booking a session at 01:00 saved it on the Friday morning instead — almost a day early — where it
   vanished from the schedule entirely. Late-night times now land on the following calendar date, including on the last
@@ -35,6 +39,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   copied five, three and two times. Copies had already drifted: the "Host(s)" header was the only one not left-aligned,
   only "My proposals" announced itself as pressed to a screen reader, and the "No proposals found" row stopped one
   column short of the table during the scheduling phase
+- `date-fns` is gone from the dependencies. The day picker held its last import; every other date is formatted with
+  luxon, which is what the timezone-aware formatting needs anyway
 - The admin cookie check for server actions and server components is one `isAdminRequest` in
   `utils/acting-admin.ts`, the counterpart to `utils/acting-guest.ts`, instead of the same private
   helper copied into all eleven admin action modules, the admin layout and `require-admin.ts`

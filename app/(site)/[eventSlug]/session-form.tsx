@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, useContext } from "react";
-import { format } from "date-fns";
 import { DateTime } from "luxon";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -10,7 +9,9 @@ import { SelectHosts } from "@/app/select-hosts";
 import {
   convertParamDateTime,
   dateOnDay,
+  formatDayLabel,
   formatDuration,
+  formatSlotLabel,
   durationMinusBreak,
   TIME_FORMAT,
 } from "@/utils/utils";
@@ -453,7 +454,7 @@ export function SessionForm(props: {
           Day
           <RequiredStar />
         </label>
-        <SelectDay days={days} day={day} setDay={setDay} />
+        <SelectDay days={days} day={day} setDay={setDay} timezone={timezone} />
       </div>
       <div className="flex flex-col gap-1 w-72">
         <label className="font-medium">
@@ -582,13 +583,14 @@ function getAvailableStartTimes(
     t < day.endBookings.getTime();
     t += slotIncrementMinutes * 60 * 1000
   ) {
-    const dt = DateTime.fromMillis(t).setZone(timezone);
     // The break sits at the start of each slot, so the displayed start is
     // pushed back by breakMinutes (e.g. a 9:00 slot shows as 9:10). The slot
     // itself stays on the round boundary.
-    const formattedTime = dt
-      .plus({ minutes: breakMinutes })
-      .toFormat(TIME_FORMAT);
+    const formattedTime = formatSlotLabel(
+      new Date(t + breakMinutes * 60 * 1000),
+      day.start,
+      timezone
+    );
     if (locationSelected) {
       const sessionNow = sortedSessions.find(
         (session) =>
@@ -674,13 +676,14 @@ function SelectDay(props: {
   days: Day[];
   day: Day;
   setDay: (day: Day) => void;
+  timezone: string;
 }) {
-  const { days, day, setDay } = props;
+  const { days, day, setDay, timezone } = props;
   return (
     <fieldset>
       <div className="space-y-4">
         {days.map((d) => {
-          const formattedDay = format(d.start, "EEEE, MMMM d");
+          const formattedDay = formatDayLabel(d, timezone);
           return (
             <div key={d.id} className="flex items-center">
               <input

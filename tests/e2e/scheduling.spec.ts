@@ -142,6 +142,36 @@ test("a session booked after midnight lands on the next calendar date", async ({
   ).toBeVisible();
 });
 
+test("a day running past midnight says so, and its late slots name the day", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Gamma");
+  await page.getByRole("link", { name: "Add session" }).first().click();
+  await expect(
+    page.getByRole("heading", { name: /Add a session/i })
+  ).toBeVisible();
+
+  // Gamma's last day runs 09:00 → 03:00; the earlier ones end at 18:00.
+  await expect(dayRadios(page).first()).toHaveAccessibleName(
+    /^[A-Z][a-z]+, [A-Z][a-z]+ \d+$/
+  );
+  await expect(dayRadios(page).last()).toHaveAccessibleName(
+    /\(until 03:00 [A-Z][a-z]{2}\)$/
+  );
+
+  await dayRadios(page).last().check();
+  await listboxButton(page, /^Start Time/).click();
+  // Times before midnight stand alone; the ones after it carry their weekday,
+  // so "01:10" can't be read as an hour earlier in the day than "23:10".
+  await expect(
+    page.getByRole("option", { name: "23:10", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("option", { name: /^[A-Z][a-z]{2} 01:10$/ })
+  ).toBeVisible();
+});
+
 test("occupied start times are not offered in the same location but are in others", async ({
   page,
 }) => {

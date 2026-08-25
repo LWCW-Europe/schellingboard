@@ -5,6 +5,8 @@ import {
   eventNameToSlug,
   normalizeWebsiteUrl,
   dateOnDay,
+  formatDayLabel,
+  formatSlotLabel,
   getPercentThroughDay,
   getStartTimePlusBreak,
   votesApiUrl,
@@ -152,6 +154,83 @@ describe("dateOnDay", () => {
 
   it("returns false when date is after the day", () =>
     expect(dateOnDay(new Date("2025-06-15T18:00:01Z"), DAY)).toBe(false));
+});
+
+// ── formatDayLabel ───────────────────────────────────────────────────────────
+
+describe("formatDayLabel", () => {
+  const dayIn = (start: string, end: string): Day => ({
+    ...DAY,
+    start: new Date(start),
+    end: new Date(end),
+  });
+
+  // Asserted under two zones because the test runner's own zone is not pinned:
+  // reading the same instant in Berlin and in New York lands on either side of
+  // midnight, so a label built from the ambient zone fails one of the two
+  // wherever the suite runs.
+  it("names the weekday and date in the event's zone, not the runner's", () => {
+    const day = dayIn("2025-06-15T23:30:00Z", "2025-06-16T15:00:00Z");
+    expect(formatDayLabel(day, "Europe/Berlin")).toBe("Monday, June 16");
+    expect(formatDayLabel(day, "America/New_York")).toBe(
+      "Sunday, June 15 (until 11:00 Mon)"
+    );
+  });
+
+  it("adds no suffix for a day that ends on its own date", () =>
+    expect(
+      formatDayLabel(
+        dayIn("2025-06-15T07:00:00Z", "2025-06-15T16:00:00Z"),
+        "Europe/Berlin"
+      )
+    ).toBe("Sunday, June 15"));
+
+  it("says where a day ends when it runs past midnight", () =>
+    expect(
+      formatDayLabel(
+        dayIn("2025-06-13T07:00:00Z", "2025-06-14T01:00:00Z"),
+        "Europe/Berlin"
+      )
+    ).toBe("Friday, June 13 (until 03:00 Sat)"));
+
+  it("treats a day ending exactly at midnight as not spilling over", () =>
+    expect(
+      formatDayLabel(
+        dayIn("2025-06-13T07:00:00Z", "2025-06-13T22:00:00Z"),
+        "Europe/Berlin"
+      )
+    ).toBe("Friday, June 13"));
+});
+
+// ── formatSlotLabel ──────────────────────────────────────────────────────────
+
+describe("formatSlotLabel", () => {
+  const dayStart = new Date("2025-06-13T07:00:00Z"); // 09:00 Berlin
+
+  it("shows the time alone for a slot on the day's own date", () =>
+    expect(
+      formatSlotLabel(
+        new Date("2025-06-13T21:10:00Z"),
+        dayStart,
+        "Europe/Berlin"
+      )
+    ).toBe("23:10"));
+
+  it("decides the date in the event's zone, not the runner's", () => {
+    const slot = new Date("2025-06-13T23:10:00Z");
+    expect(formatSlotLabel(slot, dayStart, "Europe/Berlin")).toBe("Sat 01:10");
+    // Still the 13th in New York, where the day started at 03:00.
+    expect(formatSlotLabel(slot, dayStart, "America/New_York")).toBe("19:10");
+  });
+
+  it("prefixes the weekday once the slot falls on the next date", () =>
+    expect(
+      formatSlotLabel(
+        new Date("2025-06-13T23:10:00Z"),
+        dayStart,
+        "Europe/Berlin"
+      )
+    ).toBe("Sat 01:10"));
 });
 
 // ── getPercentThroughDay ─────────────────────────────────────────────────────

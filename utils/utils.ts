@@ -33,6 +33,40 @@ export const convertParamDateTime = (
   return DateTime.fromISO(`${date}T${time}:00`, { zone: timezone }).toJSDate();
 };
 
+/**
+ * How a day is named where one has to be picked: "Friday, June 13", and for a
+ * day whose window runs past midnight the hour it ends — "Friday, June 13
+ * (until 03:00 Sat)". Without that suffix nothing tells a host which of two
+ * adjacent days owns 01:00.
+ */
+export function formatDayLabel(day: Day, timezone: string): string {
+  const start = DateTime.fromJSDate(day.start).setZone(timezone);
+  const end = DateTime.fromJSDate(day.end).setZone(timezone);
+  const label = start.toFormat("EEEE, MMMM d");
+  // Strictly past midnight, not merely a different date: a day ending at
+  // exactly 00:00 has no hours on the next date to explain.
+  const spillsOver = end > start.startOf("day").plus({ days: 1 });
+  return spillsOver
+    ? `${label} (until ${end.toFormat(TIME_FORMAT)} ${end.toFormat("EEE")})`
+    : label;
+}
+
+/**
+ * How a start time is offered: the clock time alone, or "Sat 01:10" once the
+ * slot has crossed into the next date — on a day running past midnight the
+ * times restart from 00:00, which otherwise reads as an earlier slot.
+ */
+export function formatSlotLabel(
+  slot: Date,
+  dayStart: Date,
+  timezone: string
+): string {
+  const dt = DateTime.fromJSDate(slot).setZone(timezone);
+  const start = DateTime.fromJSDate(dayStart).setZone(timezone);
+  const time = dt.toFormat(TIME_FORMAT);
+  return dt.hasSame(start, "day") ? time : `${dt.toFormat("EEE")} ${time}`;
+}
+
 export const dateOnDay = (date: Date, day: Day) => {
   return (
     date.getTime() >= day.start.getTime() && date.getTime() <= day.end.getTime()
