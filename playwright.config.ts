@@ -69,8 +69,9 @@ const baseURL = `http://localhost:${port}`;
 
 // Emails link back to the site via SITE_URL. Point it at this run's server —
 // the web server command inherits this process's environment, and real
-// environment variables beat the .env.test value in set-env.ts — so
-// emails.spec.ts can follow the links it finds in sent emails.
+// environment variables beat the .env.test value in set-env.ts — so the specs
+// that follow links out of sent mail reach this run rather than whatever port
+// .env.test names.
 process.env.SITE_URL = baseURL;
 
 /**
