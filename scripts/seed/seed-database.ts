@@ -164,7 +164,10 @@ function generateEventDates() {
   e3PropStart.setDate(e3VoteStart.getDate() - phaseDuration);
   const e3PropEnd = new Date(e3VoteStart);
   const e3Start = berlinTime(e3SchedStart, schedulingLeadTime, 9, 0);
-  const e3End = berlinTime(e3Start, 2, 18, 0);
+  // Gamma's last day runs into the small hours (see the day seeding below), so
+  // the event — and with it the scheduling phase — ends at 03:00 the morning
+  // after day 2, not at 18:00.
+  const e3End = berlinTime(e3Start, 3, 3, 0);
   const e3SchedEnd = new Date(e3End);
 
   return [
@@ -389,18 +392,34 @@ async function seedTestData(profile: SeedProfile) {
   );
   db.insert(schema.eventLocations).values(eventLocationRows).run();
 
-  // Days (3 per event, 09:00–18:00 Berlin, bookable 09:00–17:30 Berlin)
+  // Days (3 per event, 09:00–18:00 Berlin, bookable 09:00–17:30 Berlin).
+  // Exception: Conference Gamma's last day is a party night that runs to 03:00
+  // the next morning, bookable until 02:30 — the fixture for scheduling
+  // sessions after midnight, on the night with no following day entry.
   console.log("  📅 Creating test days...");
   const dayRows = eventRows.flatMap((ev, eventIndex) => {
     const config = eventConfigs[eventIndex];
-    return [0, 1, 2].map((dayIndex) => ({
-      id: nanoid(),
-      start: berlinTime(config.start, dayIndex, 9, 0).toISOString(),
-      end: berlinTime(config.start, dayIndex, 18, 0).toISOString(),
-      startBookings: berlinTime(config.start, dayIndex, 9, 0).toISOString(),
-      endBookings: berlinTime(config.start, dayIndex, 17, 30).toISOString(),
-      eventId: ev.id,
-    }));
+    return [0, 1, 2].map((dayIndex) => {
+      const lateNight = ev.name === "Conference Gamma" && dayIndex === 2;
+      return {
+        id: nanoid(),
+        start: berlinTime(config.start, dayIndex, 9, 0).toISOString(),
+        end: berlinTime(
+          config.start,
+          lateNight ? dayIndex + 1 : dayIndex,
+          lateNight ? 3 : 18,
+          0
+        ).toISOString(),
+        startBookings: berlinTime(config.start, dayIndex, 9, 0).toISOString(),
+        endBookings: berlinTime(
+          config.start,
+          lateNight ? dayIndex + 1 : dayIndex,
+          lateNight ? 2 : 17,
+          30
+        ).toISOString(),
+        eventId: ev.id,
+      };
+    });
   });
   db.insert(schema.days).values(dayRows).run();
   console.log(

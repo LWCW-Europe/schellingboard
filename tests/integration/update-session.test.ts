@@ -21,6 +21,7 @@ import {
   createGuest,
   createLocation,
   createDay,
+  slotStart,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import {
@@ -89,9 +90,8 @@ function basePayload(
     hosts: [host],
     location,
     day,
-    startTimeMinutes: 10 * 60,
+    startTime: slotStart(day, 60),
     duration: 60,
-    timezone: "UTC",
     ...overrides,
   };
 }
@@ -132,7 +132,7 @@ describe("POST /api/update-session", () => {
     const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const id = await createScheduledSession(event.id, host, location, day, {
-      startTimeMinutes: 10 * 60,
+      startTime: slotStart(day, 60),
     });
     await getRepositories().rsvps.create({
       sessionId: id,
@@ -144,7 +144,9 @@ describe("POST /api/update-session", () => {
     const res = await POST(
       makeUpdateReq(
         {
-          ...basePayload(host, location, day, { startTimeMinutes: 12 * 60 }),
+          ...basePayload(host, location, day, {
+            startTime: slotStart(day, 180),
+          }),
           id,
         },
         // The host makes the change, so only the RSVP'd guest is emailed.
@@ -166,7 +168,7 @@ describe("POST /api/update-session", () => {
     const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const id = await createScheduledSession(event.id, host, location, day, {
-      startTimeMinutes: 10 * 60,
+      startTime: slotStart(day, 60),
     });
     await getRepositories().rsvps.create({
       sessionId: id,
@@ -179,7 +181,7 @@ describe("POST /api/update-session", () => {
       makeUpdateReq(
         {
           ...basePayload(host, location, day, {
-            startTimeMinutes: 12 * 60,
+            startTime: slotStart(day, 180),
             hosts: [host, rsvper],
           }),
           id,
@@ -205,14 +207,16 @@ describe("POST /api/update-session", () => {
     const day = await createDay(event.id);
 
     const id = await createScheduledSession(event.id, guest, location, day, {
-      startTimeMinutes: 10 * 60,
+      startTime: slotStart(day, 60),
     });
     const before = (await getRepositories().sessions.findById(id))!;
 
     const res = await POST(
       makeUpdateReq(
         {
-          ...basePayload(guest, location, day, { startTimeMinutes: 12 * 60 }),
+          ...basePayload(guest, location, day, {
+            startTime: slotStart(day, 180),
+          }),
           id,
         },
         { editorGuestId: guest.id }
@@ -234,7 +238,7 @@ describe("POST /api/update-session", () => {
 
     await createScheduledSession(event.id, guest, location, day, {
       title: "Anchor",
-      startTimeMinutes: 10 * 60,
+      startTime: slotStart(day, 60),
     });
     const movingId = await createScheduledSession(
       event.id,
@@ -243,7 +247,7 @@ describe("POST /api/update-session", () => {
       day,
       {
         title: "Moving",
-        startTimeMinutes: 12 * 60,
+        startTime: slotStart(day, 180),
       }
     );
     const originalTime = (await getRepositories().sessions.findById(movingId))!
@@ -254,7 +258,7 @@ describe("POST /api/update-session", () => {
         {
           ...basePayload(guest, location, day, {
             title: "Moving",
-            startTimeMinutes: 10 * 60 + 30,
+            startTime: slotStart(day, 90),
           }),
           id: movingId,
         },
@@ -311,7 +315,7 @@ describe("POST /api/update-session", () => {
         {
           ...basePayload(guest, location, day, {
             title: "Renamed",
-            startTimeMinutes: 14 * 60,
+            startTime: slotStart(day, 300),
           }),
           id: created.id,
         },

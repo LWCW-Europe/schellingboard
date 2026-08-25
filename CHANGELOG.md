@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Sessions after midnight are scheduled on the right date**: on a day that runs past midnight (say Friday 09:00 to
+  Saturday 03:00), booking a session at 01:00 saved it on the Friday morning instead — almost a day early — where it
+  vanished from the schedule entirely. Late-night times now land on the following calendar date, including on the last
+  night of an event
 - **Interrupting a profile slide no longer restarts it**: pressing Next or Prev (or swiping again) while a profile was
   still sliding into place used to snap the card back to the start and replay the whole slide, putting off the arrival a
   little more with every press. Repeated presses in the same direction now let the first slide simply finish, a press

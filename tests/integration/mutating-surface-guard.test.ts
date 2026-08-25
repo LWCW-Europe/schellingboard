@@ -48,6 +48,7 @@ import {
   createGuest,
   createLocation,
   createDay,
+  slotStart,
   createProposal,
   createSession,
 } from "../helpers/factories";
@@ -107,9 +108,8 @@ const VERIFIERS: Record<string, Verifier> = {
           hosts: [guest],
           location,
           day,
-          startTimeMinutes: 600,
+          startTime: slotStart(day, 60),
           duration: 60,
-          timezone: "UTC",
         }),
         headers: { cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(guest.id)}` },
       })
@@ -141,9 +141,8 @@ const VERIFIERS: Record<string, Verifier> = {
           hosts: [host],
           location,
           day,
-          startTimeMinutes: 600,
+          startTime: slotStart(day, 60),
           duration: 60,
-          timezone: "UTC",
         }),
         headers: { cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(host.id)}` },
       })

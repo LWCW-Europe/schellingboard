@@ -163,6 +163,17 @@ export async function createDay(
   return days.create({ start: base, end, startBookings, endBookings, eventId });
 }
 
+/**
+ * ISO instant of the slot `minutesIn` after the day's first bookable one — the
+ * `startTime` the session form posts. Derived from the day rather than written
+ * as a wall-clock time so it stays inside the booking window in any zone.
+ */
+export function slotStart(day: Day, minutesIn: number): string {
+  return new Date(
+    day.startBookings.getTime() + minutesIn * 60 * 1000
+  ).toISOString();
+}
+
 export async function createProposal(
   eventId: string,
   hostIds: string[],

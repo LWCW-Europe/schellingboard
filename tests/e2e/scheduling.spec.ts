@@ -1,4 +1,5 @@
 import { Page } from "@playwright/test";
+import { DateTime } from "luxon";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
@@ -117,6 +118,28 @@ test("a host can delete a session and it disappears from the grid", async ({
   // Still gone after a full reload
   await page.reload();
   await expect(page.getByRole("link", { name: title })).toHaveCount(0);
+});
+
+test("a session booked after midnight lands on the next calendar date", async ({
+  page,
+}) => {
+  await login(page);
+  const title = `E2E Late Night Session ${Date.now()}`;
+
+  // Gamma's last day runs 09:00 → 03:00 the next morning (see the seed), so
+  // 01:10 is bookable under that day and belongs to the following date.
+  await createSessionViaForm(page, title, /Main Hall/, "01:10");
+
+  // The text view labels a session with the weekday of its actual start.
+  // Gamma runs today+14 … today+16, so the last night's 01:10 is today+17.
+  const afterMidnight = DateTime.now()
+    .setZone("Europe/Berlin")
+    .plus({ days: 17 });
+  await page.getByRole("button", { name: "Text" }).click();
+  await page.getByPlaceholder("Search sessions").fill(title);
+  await expect(
+    page.getByText(`${afterMidnight.toFormat("EEEE")}, 01:10`)
+  ).toBeVisible();
 });
 
 test("occupied start times are not offered in the same location but are in others", async ({

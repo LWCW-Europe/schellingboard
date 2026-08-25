@@ -1,10 +1,11 @@
 // Conference Gamma (scheduling phase) gets a realistic, mostly filled grid:
 // most sessions are scheduled from its seeded proposals (matched by title),
 // plus organizer/attendee extras. Times are Berlin clock times on event day
-// 0-2. Keep the slots that tests/e2e/scheduling.spec.ts relies on free:
+// 0-2, day 2 running past midnight (09:00 → 03:00). Keep the slots that
+// tests/e2e/scheduling.spec.ts relies on free:
 //   day 0: Main Hall 16:00 and Garden Terrace 09:00 (asserted free),
-//   day 2: Workshop Room from 15:00 and Garden Terrace from 16:00
-//          (used by tests to create sessions).
+//   day 2: Workshop Room from 15:00, Garden Terrace from 16:00 and Main Hall
+//          01:00 the following morning (used by tests to create sessions).
 // rsvp.spec.ts RSVPs Bob Test to the Opening Keynote, so nothing may run in
 // parallel to it and Bob gets no seeded RSVP there (see RSVP seeding).
 export interface GammaSessionConfig {

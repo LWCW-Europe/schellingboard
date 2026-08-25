@@ -10,9 +10,10 @@ export const dynamic = "force-dynamic";
 // header this route re-checks so it fails closed if the proxy didn't run.
 //
 // Unlike /api/add-session this returns the created id (which the RSVP step
-// needs), takes absolute ISO times instead of the SessionParams shape, and —
-// like the other admin seeding routes — has no scheduling-phase or
-// future-time gate: an importer routinely seeds past/fixed dates.
+// needs), takes an explicit end time instead of a duration and the day and
+// location objects of the SessionParams shape, and — like the other admin
+// seeding routes — has no scheduling-phase or future-time gate: an importer
+// routinely seeds past/fixed dates.
 //
 // Always creates a new session, same as adminCreateSessionAction: sessions
 // aren't deduplicated, so a repeated request is a location conflict (409),

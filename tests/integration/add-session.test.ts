@@ -20,6 +20,7 @@ import {
   createGuest,
   createLocation,
   createDay,
+  slotStart,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { POST } from "@/app/api/add-session/route";
@@ -81,9 +82,8 @@ function buildPayload(
     hosts: [host],
     location,
     day,
-    startTimeMinutes: 10 * 60,
+    startTime: slotStart(day, 60),
     duration: 60,
-    timezone: "UTC",
     ...overrides,
   };
 }
@@ -142,6 +142,33 @@ describe("POST /api/add-session", () => {
     );
   });
 
+  it("keeps a post-midnight slot on its own calendar date", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    // A party night: the day runs 09:00 → 03:00 the next morning, so its late
+    // slots belong to the following date rather than the day's own.
+    const dayStart = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    dayStart.setHours(9, 0, 0, 0);
+    const dayEnd = new Date(dayStart.getTime() + 18 * 60 * 60 * 1000);
+    const day = await createDay(event.id, {
+      start: dayStart,
+      end: dayEnd,
+      startBookings: dayStart,
+      endBookings: new Date(dayEnd.getTime() - 30 * 60 * 1000),
+    });
+
+    const oneAM = slotStart(day, 16 * 60);
+    const res = await POST(
+      makeReq(buildPayload(guest, location, day, { startTime: oneAM }))
+    );
+    expect(res.ok).toBe(true);
+
+    const [session] = await getRepositories().sessions.listByEvent(event.id);
+    expect(session.startTime!.toISOString()).toBe(oneAM);
+    expect(session.startTime!.getDate()).not.toBe(dayStart.getDate());
+  });
+
   it("rejects overlap in same location; only the pre-existing session remains", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest({ eventId: event.id });
@@ -158,7 +185,7 @@ describe("POST /api/add-session", () => {
       makeReq(
         buildPayload(guest, location, day, {
           title: "Overlap",
-          startTimeMinutes: 10 * 60 + 30,
+          startTime: slotStart(day, 90),
         })
       )
     );

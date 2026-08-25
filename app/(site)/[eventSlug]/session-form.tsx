@@ -77,11 +77,7 @@ export function SessionForm(props: {
   const initDay = initDateTime
     ? days.find((d) => dateOnDay(initDateTime, d))
     : undefined;
-  let initMinutes: number | undefined;
-  if (initDateTime) {
-    const dt = DateTime.fromJSDate(initDateTime).setZone(timezone);
-    initMinutes = dt.hour * 60 + dt.minute;
-  }
+  const initSlot = initDateTime?.getTime();
 
   // Compute default hosts for new sessions (no initial proposal, no sessionID).
   // Also used as the "reset" target when the user un-selects a proposal.
@@ -129,23 +125,21 @@ export function SessionForm(props: {
     timezone,
     locationId
   );
-  const initTimeValid = startTimes.some(
-    (st) => st.minutesFromMidnight === initMinutes
-  );
+  const initTimeValid = startTimes.some((st) => st.time === initSlot);
   const [startTime, setStartTime] = useState<number | undefined>(
-    initTimeValid ? initMinutes : undefined
+    initTimeValid ? initSlot : undefined
   );
   // Derived: the currently-selected startTime if it is still available under
   // the current location/day, otherwise undefined. Avoids a setState-in-effect
   // reset by not storing invalid values downstream.
   const effectiveStartTime = startTimes.some(
-    (st) => st.minutesFromMidnight === startTime && st.available
+    (st) => st.time === startTime && st.available
   )
     ? startTime
     : undefined;
   const maxDuration =
-    startTimes.find((st) => st.minutesFromMidnight === effectiveStartTime)
-      ?.maxDuration ?? maxSessionDuration;
+    startTimes.find((st) => st.time === effectiveStartTime)?.maxDuration ??
+    maxSessionDuration;
   // Proposal durations are free-form, so they get snapped to the nearest
   // selectable slot multiple; an existing session's duration already sits on
   // the grid and passes through unchanged.
@@ -190,10 +184,8 @@ export function SessionForm(props: {
   let dummySession = newEmptySession(event.id);
   if (effectiveStartTime !== undefined && day) {
     const { start, end } = buildSessionInterval(
-      day,
-      effectiveStartTime,
-      effectiveDuration,
-      timezone
+      new Date(effectiveStartTime),
+      effectiveDuration
     );
     dummySession = {
       ...newEmptySession(event.id),
@@ -276,11 +268,10 @@ export function SessionForm(props: {
         closed,
         day,
         location,
-        startTimeMinutes: effectiveStartTime,
+        startTime: new Date(effectiveStartTime).toISOString(),
         duration: effectiveDuration,
         hosts,
         proposal: proposal?.id ?? session.proposalId,
-        timezone,
       }),
     });
     if (res.ok) {
@@ -477,7 +468,7 @@ export function SessionForm(props: {
           }
           setCurrValue={(v) => setStartTime(parseInt(v, 10))}
           options={startTimes.map((st) => ({
-            value: String(st.minutesFromMidnight),
+            value: String(st.time),
             display: st.formattedTime,
             available: st.available,
           }))}
@@ -557,7 +548,7 @@ const RequiredStar = () => <span className="text-brand-fg mx-1">*</span>;
 
 type StartTime = {
   formattedTime: string;
-  minutesFromMidnight: number;
+  /** The slot's absolute start, as epoch milliseconds. */
   time: number;
   maxDuration: number;
   available: boolean;
@@ -593,12 +584,11 @@ function getAvailableStartTimes(
   ) {
     const dt = DateTime.fromMillis(t).setZone(timezone);
     // The break sits at the start of each slot, so the displayed start is
-    // pushed back by breakMinutes (e.g. a 9:00 slot shows as 9:10). The stored
-    // value (minutesFromMidnight) stays on the round slot boundary.
+    // pushed back by breakMinutes (e.g. a 9:00 slot shows as 9:10). The slot
+    // itself stays on the round boundary.
     const formattedTime = dt
       .plus({ minutes: breakMinutes })
       .toFormat(TIME_FORMAT);
-    const minutesFromMidnight = dt.hour * 60 + dt.minute;
     if (locationSelected) {
       const sessionNow = sortedSessions.find(
         (session) =>
@@ -608,7 +598,6 @@ function getAvailableStartTimes(
       if (sessionNow) {
         startTimes.push({
           formattedTime,
-          minutesFromMidnight,
           time: t,
           maxDuration: 0,
           available: false,
@@ -622,7 +611,6 @@ function getAvailableStartTimes(
           : day.endBookings.getTime();
         startTimes.push({
           formattedTime,
-          minutesFromMidnight,
           time: t,
           maxDuration: Math.min(
             (latestEndTime - t) / 1000 / 60,
@@ -634,7 +622,6 @@ function getAvailableStartTimes(
     } else {
       startTimes.push({
         formattedTime,
-        minutesFromMidnight,
         time: t,
         maxDuration: maxSessionDuration,
         available: true,

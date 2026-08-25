@@ -19,6 +19,7 @@ import {
   createGuest,
   createLocation,
   createDay,
+  slotStart,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import {
@@ -88,9 +89,8 @@ async function createScheduledSession(
     hosts: [host],
     location,
     day,
-    startTimeMinutes: 10 * 60,
+    startTime: slotStart(day, 60),
     duration: 60,
-    timezone: "UTC",
     ...overrides,
   };
   const res = await addPOST(makeAddReq(payload));

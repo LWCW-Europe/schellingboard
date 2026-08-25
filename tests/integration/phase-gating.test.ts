@@ -22,6 +22,7 @@ import {
   createGuest,
   createLocation,
   createDay,
+  slotStart,
   createProposal as createProposalFixture,
   createSession,
 } from "../helpers/factories";
@@ -77,9 +78,8 @@ async function addSessionIn(phase: "proposal" | "voting" | "scheduling") {
     hosts: [guest],
     location,
     day,
-    startTimeMinutes: 10 * 60,
+    startTime: slotStart(day, 60),
     duration: 60,
-    timezone: "UTC",
   };
   const res = await addSession(makeReq("http://test/api/add-session", payload));
   const sessions = await getRepositories().sessions.listByEvent(event.id);

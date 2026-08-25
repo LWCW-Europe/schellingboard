@@ -5,7 +5,6 @@ import type {
   Session,
   SessionCreateInput,
 } from "@/db/repositories/interfaces";
-import { DateTime } from "luxon";
 
 export type SessionParams = {
   id?: string;
@@ -15,10 +14,13 @@ export type SessionParams = {
   hosts: Guest[];
   location: Location;
   day: Day;
-  startTimeMinutes: number;
+  /**
+   * The chosen slot as an ISO instant, not a time of day: a day window may run
+   * past midnight, so a wall-clock time alone doesn't say which date it means.
+   */
+  startTime: string;
   duration: number;
   proposal?: string;
-  timezone: string;
 };
 
 export type SessionInterval = {
@@ -27,44 +29,20 @@ export type SessionInterval = {
 };
 
 export function buildSessionInterval(
-  day: Day,
-  startTimeMinutes: number,
-  durationMinutes: number,
-  timezone: string
+  startTime: Date,
+  durationMinutes: number
 ): SessionInterval {
-  const dayStart = DateTime.fromJSDate(new Date(day.start)).setZone(timezone);
-  const startDT = DateTime.fromObject(
-    {
-      year: dayStart.year,
-      month: dayStart.month,
-      day: dayStart.day,
-      hour: Math.floor(startTimeMinutes / 60),
-      minute: startTimeMinutes % 60,
-    },
-    { zone: timezone }
-  );
   return {
-    start: startDT.toJSDate(),
-    end: startDT.plus({ minutes: durationMinutes }).toJSDate(),
+    start: startTime,
+    end: new Date(startTime.getTime() + durationMinutes * 60 * 1000),
   };
 }
 
 export function prepareToInsert(params: SessionParams): SessionCreateInput {
-  const {
-    title,
-    description,
-    closed,
-    hosts,
-    location,
-    day,
-    startTimeMinutes,
-    duration,
-  } = params;
+  const { title, description, closed, hosts, location, day, duration } = params;
   const { start, end } = buildSessionInterval(
-    day,
-    startTimeMinutes,
-    duration,
-    params.timezone
+    new Date(params.startTime),
+    duration
   );
   return {
     title,
