@@ -386,6 +386,32 @@ describe("POST /api/update-session", () => {
     );
   });
 
+  it("turns a non-host away before judging the times they sent", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const stranger = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(
+      makeUpdateReq(
+        {
+          ...basePayload(host, location, day, {
+            startTime: slotStart(day, 12 * 60),
+          }),
+          id,
+        },
+        { editorGuestId: stranger.id }
+      )
+    );
+    expect(res.status).toBe(403);
+    // Named, so it can't pass on one of the handler's other 403s.
+    expect(await res.json()).toEqual({
+      error: "Only a host may edit this session",
+    });
+  });
+
   it("rejects a host who is not part of the event", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest({ eventId: event.id });

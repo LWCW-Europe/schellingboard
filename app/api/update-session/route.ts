@@ -47,6 +47,13 @@ export async function POST(req: NextRequest) {
   if (prevSession.adminManaged || prevSession.blocker) {
     return new Response("Cannot edit via web app", { status: 400 });
   }
+  const actor = await verifiedCurrentUser(req.cookies);
+  if (!actor || !prevSession.hosts.some((h) => h.id === actor)) {
+    return Response.json(
+      { error: "Only a host may edit this session" },
+      { status: 403 }
+    );
+  }
   const windowError = sessionBookingWindowError(
     day,
     input.startTime!,
@@ -64,13 +71,6 @@ export async function POST(req: NextRequest) {
   );
   if (durationError) {
     return Response.json({ error: durationError }, { status: 400 });
-  }
-  const actor = await verifiedCurrentUser(req.cookies);
-  if (!actor || !prevSession.hosts.some((h) => h.id === actor)) {
-    return Response.json(
-      { error: "Only a host may edit this session" },
-      { status: 403 }
-    );
   }
   const eventGuestIds = new Set(
     (await repos.guests.listByEvent(event.id)).map((g) => g.id)

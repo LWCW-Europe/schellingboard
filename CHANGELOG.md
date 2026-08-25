@@ -55,6 +55,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The admin cookie check for server actions and server components is one `isAdminRequest` in
   `utils/acting-admin.ts`, the counterpart to `utils/acting-guest.ts`, instead of the same private
   helper copied into all eleven admin action modules, the admin layout and `require-admin.ts`
+- `update-session` establishes that the caller hosts the session before it judges the times sent
+  with the request, so a stranger gets `403 Only a host may edit this session` rather than a
+  complaint about the booking window
 
 ## [3.4.2] - 2026-08-24
 
