@@ -31,6 +31,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   copied five, three and two times. Copies had already drifted: the "Host(s)" header was the only one not left-aligned,
   only "My proposals" announced itself as pressed to a screen reader, and the "No proposals found" row stopped one
   column short of the table during the scheduling phase
+- The admin cookie check for server actions and server components is one `isAdminRequest` in
+  `utils/acting-admin.ts`, the counterpart to `utils/acting-guest.ts`, instead of the same private
+  helper copied into all eleven admin action modules, the admin layout and `require-admin.ts`
 
 ## [3.4.2] - 2026-08-24
 

@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import { isAdminRequest } from "@/utils/acting-admin";
 import { sendMail } from "@/utils/mailer";
 import { testEmail } from "@/emails/test-email";
 import { z } from "zod";
@@ -12,11 +11,6 @@ import { createGuestSchema, updateGuestSchema } from "@/model/guest";
 export type AdminFormActionResult =
   { ok: true } | { ok: false; error: string | z.core.$ZodIssue[] };
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
-
-async function isAdminRequest(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
-}
 
 const EMAIL_UNIQUENESS_ERROR: z.core.$ZodIssue = {
   code: "custom",

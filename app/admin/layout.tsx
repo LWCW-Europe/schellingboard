@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
 import Footer from "../footer";
 import { getRepositories } from "@/db/container";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import { isAdminRequest } from "@/utils/acting-admin";
 import { AdminHeader } from "./admin-header";
 
 export default async function AdminLayout({
@@ -9,10 +8,7 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const isAdmin = await isAdminCookieValid(
-    cookieStore.get(ADMIN_COOKIE_NAME)?.value
-  );
+  const isAdmin = await isAdminRequest();
   const { title } = await getRepositories().settings.get();
 
   return (

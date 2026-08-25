@@ -1,20 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import { isAdminRequest } from "@/utils/acting-admin";
 import {
   dayAlignmentError,
   daysOverlap,
   sessionContainedInWindow,
 } from "@/utils/day-window";
 import type { AdminActionResult } from "./admin-guests";
-
-async function isAdminRequest(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
-}
 
 export type DayInput = {
   eventId: string;

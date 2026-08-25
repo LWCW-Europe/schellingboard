@@ -1,14 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import {
   eventNameToSlug,
   normalizeWebsiteUrl,
   RESERVED_EVENT_SLUGS,
 } from "@/utils/utils";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import { isAdminRequest } from "@/utils/acting-admin";
 import type { Event } from "@/db/repositories/interfaces";
 import type { AdminActionResult } from "./admin-guests";
 import { isEventIconName } from "@/app/event-icons";
@@ -18,11 +17,6 @@ import {
   isSlotAligned,
 } from "@/utils/slots";
 import { sessionOverlapsWindow } from "@/utils/day-window";
-
-async function isAdminRequest(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
-}
 
 export type EventInput = {
   name: string;

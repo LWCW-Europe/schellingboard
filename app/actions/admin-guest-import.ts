@@ -1,19 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { ADMIN_COOKIE_NAME, isAdminCookieValid } from "@/utils/auth";
+import { isAdminRequest } from "@/utils/acting-admin";
 import { parseUserImportCsv } from "@/utils/user-import";
 
 export type ImportGuestsResult =
   | { ok: true; created: number; existing: number }
   | { ok: false; error: string; lineErrors?: string[] };
-
-async function isAdminRequest(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return isAdminCookieValid(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
-}
 
 /**
  * Imports users from CSV (header: name,email) and assigns them to the given
