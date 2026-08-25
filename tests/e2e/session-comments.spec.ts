@@ -82,7 +82,7 @@ test("posts a comment on a session and renders it as markdown", async ({
 
   const body = "bringing my laptop — **very** ready";
   await modal.getByPlaceholder("Add a comment").fill(body);
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
 
   await expect(modal.getByRole("heading", { name: "1 comment" })).toBeVisible();
   await expect(modal.getByText("very")).toHaveCSS("font-weight", "700");
@@ -109,7 +109,7 @@ test("edits a comment, showing when it was edited, then deletes it", async ({
 
   const modal = await openSession(page, EDIT_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("first thoughts");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("first thoughts")).toBeVisible();
   await expect(modal.getByText("(edited)")).toHaveCount(0);
 
@@ -141,7 +141,7 @@ test("replies to a comment, collapses the thread, and permalinks to a reply", as
 
   const modal = await openSession(page, THREAD_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("the opening question");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("the opening question")).toBeVisible();
 
   await openReplyForm(modal);
@@ -199,7 +199,7 @@ test("keeps replies readable when their parent is deleted", async ({
 
   const modal = await openSession(page, TOMBSTONE_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("a doomed parent");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("a doomed parent")).toBeVisible();
 
   // Someone else replies, so deleting the parent can't simply remove it. A
@@ -237,7 +237,7 @@ test("likes a comment and shows who liked it", async ({ page, browser }) => {
 
   const modal = await openSession(page, LIKE_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("a likeable comment");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("a likeable comment")).toBeVisible();
 
   const like = modal.getByRole("button", { name: "Like", exact: true });
@@ -308,7 +308,7 @@ test("nests sibling replies under the comment they answer", async ({
 
   const modal = await openSession(page, SIBLINGS_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("Who else is coming?");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(postedComment(modal, "Who else is coming?")).toBeVisible();
 
   // Posting closes the reply form (onDone), so each reply waits for the

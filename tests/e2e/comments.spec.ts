@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { test, expect } from "./helpers/fixtures";
+import { expect, test } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
 
@@ -76,7 +76,7 @@ test("posts a comment on a proposal and renders it as markdown", async ({
 
   const body = "Count me in — **very** keen";
   await modal.getByPlaceholder("Add a comment").fill(body);
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
 
   await expect(modal.getByRole("heading", { name: "1 comment" })).toBeVisible();
   await expect(modal.getByText("very")).toHaveCSS("font-weight", "700");
@@ -99,7 +99,7 @@ test("edits a comment, showing when it was edited, then deletes it", async ({
 
   const modal = await openProposal(page, EDIT_PROPOSAL);
   await modal.getByPlaceholder("Add a comment").fill("first thoughts");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("first thoughts")).toBeVisible();
   await expect(modal.getByText("(edited)")).toHaveCount(0);
 
@@ -131,7 +131,7 @@ test("replies to a comment, collapses the thread, and permalinks to a reply", as
 
   const modal = await openProposal(page, THREAD_PROPOSAL);
   await modal.getByPlaceholder("Add a comment").fill("the opening question");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("the opening question")).toBeVisible();
 
   await openReplyForm(modal);
@@ -189,7 +189,7 @@ test("keeps replies readable when their parent is deleted", async ({
 
   const modal = await openProposal(page, TOMBSTONE_PROPOSAL);
   await modal.getByPlaceholder("Add a comment").fill("a doomed parent");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("a doomed parent")).toBeVisible();
 
   // Someone else replies, so deleting the parent can't simply remove it. A
@@ -221,7 +221,7 @@ test("likes a comment and shows who liked it", async ({ page, browser }) => {
 
   const modal = await openProposal(page, LIKE_PROPOSAL);
   await modal.getByPlaceholder("Add a comment").fill("a likeable comment");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("a likeable comment")).toBeVisible();
 
   const like = modal.getByRole("button", { name: "Like", exact: true });
