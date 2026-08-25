@@ -386,6 +386,27 @@ describe("POST /api/update-session", () => {
     );
   });
 
+  it("rejects a day id that is not one", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(
+      makeUpdateReq(
+        {
+          ...basePayload(host, location, day, {
+            dayId: {} as unknown as string,
+          }),
+          id,
+        },
+        { editorGuestId: host.id }
+      )
+    );
+    expect(res.status).toBe(400);
+  });
+
   it("turns a non-host away before judging the times they sent", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });

@@ -251,6 +251,32 @@ describe("POST /api/add-session", () => {
     expect(sessions).toHaveLength(0);
   });
 
+  // The driver refuses to bind an object, an array or a boolean, so these used
+  // to reach it and crash the route instead of being turned away; a number or
+  // null binds fine and simply finds no day. Each case is wrapped because
+  // `it.each` spreads a bare array over the arguments.
+  it.each([[{}], [[]], [true]])(
+    "rejects a day id that is not one: %o",
+    async (id) => {
+      const event = await createEvent({ phase: "scheduling" });
+      const guest = await createGuest({ eventId: event.id });
+      const location = await createLocation({ eventId: event.id });
+      const day = await createDay(event.id);
+
+      const res = await POST(
+        makeReq(
+          buildPayload(guest, location, day, {
+            dayId: id as unknown as string,
+          })
+        )
+      );
+      expect(res.status).toBe(400);
+
+      const sessions = await getRepositories().sessions.listByEvent(event.id);
+      expect(sessions).toHaveLength(0);
+    }
+  );
+
   it("rejects a day that does not exist", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest({ eventId: event.id });

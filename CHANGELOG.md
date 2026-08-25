@@ -58,6 +58,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `update-session` establishes that the caller hosts the session before it judges the times sent
   with the request, so a stranger gets `403 Only a host may edit this session` rather than a
   complaint about the booking window
+- The session routes check that the day id they were sent is a string before looking it up: any
+  other JSON value reached the query as an unbindable parameter and failed the request as a server
+  error
 
 ## [3.4.2] - 2026-08-24
 

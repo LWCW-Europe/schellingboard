@@ -21,7 +21,12 @@ export async function POST(req: NextRequest) {
   }
   const params = (await req.json()) as SessionParams;
   const repos = getRepositories();
-  const day = await repos.days.findById(params.dayId);
+  // Anything but a string reaches the query as an unbindable parameter, which
+  // fails as a server error rather than a rejected request.
+  const day =
+    typeof params.dayId === "string"
+      ? await repos.days.findById(params.dayId)
+      : undefined;
   if (!day) {
     return Response.json(
       { error: "That day is no longer part of this event" },
