@@ -8,6 +8,7 @@ import {
   guestProtectionError,
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
+import { sessionBookingWindowError } from "@/utils/day-window";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
@@ -19,13 +20,29 @@ export async function POST(req: NextRequest) {
   }
   const params = (await req.json()) as SessionParams;
   const repos = getRepositories();
-  const input = prepareToInsert(params);
+  const day = await repos.days.findById(params.dayId);
+  if (!day) {
+    return Response.json(
+      { error: "That day is no longer part of this event" },
+      { status: 400 }
+    );
+  }
+  const input = prepareToInsert(params, day);
   const event = await repos.events.findById(input.eventId);
   if (!event || !inSchedPhase(event, requestNow(req))) {
     return Response.json(
       { error: "Sessions can only be created during the scheduling phase" },
       { status: 403 }
     );
+  }
+  const windowError = sessionBookingWindowError(
+    day,
+    input.startTime!,
+    input.endTime!,
+    event.slotIncrementMinutes
+  );
+  if (windowError) {
+    return Response.json({ error: windowError }, { status: 400 });
   }
   const eventGuestIds = new Set(
     (await repos.guests.listByEvent(event.id)).map((g) => g.id)

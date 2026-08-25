@@ -7,6 +7,7 @@ import {
   notifySessionChanged,
 } from "@/utils/notifications";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import { sessionBookingWindowError } from "@/utils/day-window";
 import { prepareToInsert, validateSession } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
@@ -19,7 +20,14 @@ export async function POST(req: NextRequest) {
     return new Response("Session ID is required", { status: 400 });
   }
   const repos = getRepositories();
-  const input = prepareToInsert(params);
+  const day = await repos.days.findById(params.dayId);
+  if (!day) {
+    return Response.json(
+      { error: "That day is no longer part of this event" },
+      { status: 400 }
+    );
+  }
+  const input = prepareToInsert(params, day);
   const allSessions = (await repos.sessions.listScheduled()).filter(
     (s) => s.eventId === input.eventId
   );
@@ -37,6 +45,15 @@ export async function POST(req: NextRequest) {
   }
   if (prevSession.adminManaged || prevSession.blocker) {
     return new Response("Cannot edit via web app", { status: 400 });
+  }
+  const windowError = sessionBookingWindowError(
+    day,
+    input.startTime!,
+    input.endTime!,
+    event.slotIncrementMinutes
+  );
+  if (windowError) {
+    return Response.json({ error: windowError }, { status: 400 });
   }
   const actor = await verifiedCurrentUser(req.cookies);
   if (!actor || !prevSession.hosts.some((h) => h.id === actor)) {

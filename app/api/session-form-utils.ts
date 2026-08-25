@@ -13,7 +13,8 @@ export type SessionParams = {
   closed: boolean;
   hosts: Guest[];
   location: Location;
-  day: Day;
+  /** The day is resolved from the store: its window bounds what may be booked. */
+  dayId: string;
   /**
    * The chosen slot as an ISO instant, not a time of day: a day window may run
    * past midnight, so a wall-clock time alone doesn't say which date it means.
@@ -38,8 +39,11 @@ export function buildSessionInterval(
   };
 }
 
-export function prepareToInsert(params: SessionParams): SessionCreateInput {
-  const { title, description, closed, hosts, location, day, duration } = params;
+export function prepareToInsert(
+  params: SessionParams,
+  day: Day
+): SessionCreateInput {
+  const { title, description, closed, hosts, location, duration } = params;
   const { start, end } = buildSessionInterval(
     new Date(params.startTime),
     duration

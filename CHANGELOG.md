@@ -27,6 +27,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   the other way turns the card around smoothly from wherever it is, and catching a sliding card with a finger picks it
   up where it is instead of teleporting it
 
+### Security
+
+- **Sessions can only be booked in the hours their day allows**: a session's times were taken on trust from the form,
+  so a hand-crafted request could place one at any hour of the day it named — before bookings opened, after they
+  closed, running on into the hours you kept for yourself, or off the schedule grid. The day is now looked up in the
+  site's own records and the session required to start and finish inside its booking window. Organizers are
+  unaffected: the admin pages place sessions as before
+
 ### Internal
 
 - The emoji, label and display order of a vote live only in `app/(site)/votes.ts`, and `VotesContext` exposes

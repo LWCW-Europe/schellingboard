@@ -267,7 +267,7 @@ export function SessionForm(props: {
         title,
         description,
         closed,
-        day,
+        dayId: day.id,
         location,
         startTime: new Date(effectiveStartTime).toISOString(),
         duration: effectiveDuration,

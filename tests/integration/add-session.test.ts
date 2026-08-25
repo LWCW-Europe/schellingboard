@@ -81,7 +81,7 @@ function buildPayload(
     closed: false,
     hosts: [host],
     location,
-    day,
+    dayId: day.id,
     startTime: slotStart(day, 60),
     duration: 60,
     ...overrides,
@@ -167,6 +167,78 @@ describe("POST /api/add-session", () => {
     const [session] = await getRepositories().sessions.listByEvent(event.id);
     expect(session.startTime!.toISOString()).toBe(oneAM);
     expect(session.startTime!.getDate()).not.toBe(dayStart.getDate());
+  });
+
+  it("rejects a start time outside the day's booking window", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+
+    // An hour before bookings open — the form never offers it.
+    const res = await POST(
+      makeReq(
+        buildPayload(guest, location, day, { startTime: slotStart(day, -60) })
+      )
+    );
+    expect(res.status).toBe(400);
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(0);
+  });
+
+  it("rejects a session that runs on after bookings close", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+
+    // Starts in the last bookable hour but runs into the day's closing hour,
+    // which is the organizers' to fill.
+    const res = await POST(
+      makeReq(
+        buildPayload(guest, location, day, {
+          startTime: slotStart(day, 7 * 60),
+          duration: 120,
+        })
+      )
+    );
+    expect(res.status).toBe(400);
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(0);
+  });
+
+  it("rejects times that miss the day's slot grid", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+
+    const res = await POST(
+      makeReq(
+        buildPayload(guest, location, day, { startTime: slotStart(day, 65) })
+      )
+    );
+    expect(res.status).toBe(400);
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(0);
+  });
+
+  it("rejects a day that does not exist", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+
+    const res = await POST(
+      makeReq(buildPayload(guest, location, day, { dayId: "no-such-day" }))
+    );
+    expect(res.status).toBe(400);
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(0);
   });
 
   it("rejects overlap in same location; only the pre-existing session remains", async () => {

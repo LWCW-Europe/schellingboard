@@ -41,6 +41,41 @@ export function daysOverlap(
   return aStart < bEnd && aEnd > bStart;
 }
 
+/**
+ * Why a self-booked session doesn't fit the day it was booked on, or null.
+ * The session form offers nothing but slots inside the bookings window and on
+ * the day's grid, and caps the duration at the window's end, so anything else
+ * is a hand-crafted payload — or a form loaded before an organizer moved the
+ * window.
+ *
+ * The session must both start and finish inside the bookings window: the tail
+ * between it and the day's end is what organizers keep for the sessions they
+ * place themselves.
+ */
+export function sessionBookingWindowError(
+  day: Day,
+  start: Date,
+  end: Date,
+  incrementMinutes: number
+): string | null {
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return "Session times are not valid dates";
+  }
+  if (start < day.startBookings || start >= day.endBookings) {
+    return "That start time is outside the day's booking window";
+  }
+  if (end > day.endBookings) {
+    return "The session would run past the end of the day's booking window";
+  }
+  if (
+    !isSlotAligned(start, day.start, incrementMinutes) ||
+    !isSlotAligned(end, day.start, incrementMinutes)
+  ) {
+    return `Session times must align to the event's ${incrementMinutes}-minute slots`;
+  }
+  return null;
+}
+
 type DayWindow = {
   start: Date;
   end: Date;

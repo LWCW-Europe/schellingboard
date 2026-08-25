@@ -89,7 +89,7 @@ function basePayload(
     closed: false,
     hosts: [host],
     location,
-    day,
+    dayId: day.id,
     startTime: slotStart(day, 60),
     duration: 60,
     ...overrides,
@@ -326,6 +326,33 @@ describe("POST /api/update-session", () => {
 
     const unchanged = (await getRepositories().sessions.findById(created.id))!;
     expect(unchanged.title).toBe("Existing");
+  });
+
+  it("rejects moving a session outside the day's booking window", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day, {
+      startTime: slotStart(day, 60),
+    });
+
+    const res = await POST(
+      makeUpdateReq(
+        {
+          ...basePayload(host, location, day, {
+            // Long past the last bookable slot.
+            startTime: slotStart(day, 12 * 60),
+          }),
+          id,
+        },
+        { editorGuestId: host.id }
+      )
+    );
+    expect(res.status).toBe(400);
+
+    const unchanged = (await getRepositories().sessions.findById(id))!;
+    expect(unchanged.startTime!.toISOString()).toBe(slotStart(day, 60));
   });
 
   it("rejects a host who is not part of the event", async () => {

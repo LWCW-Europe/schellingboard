@@ -77,7 +77,7 @@ async function addSessionIn(phase: "proposal" | "voting" | "scheduling") {
     closed: false,
     hosts: [guest],
     location,
-    day,
+    dayId: day.id,
     startTime: slotStart(day, 60),
     duration: 60,
   };

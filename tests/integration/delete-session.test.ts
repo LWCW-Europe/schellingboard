@@ -88,7 +88,7 @@ async function createScheduledSession(
     closed: false,
     hosts: [host],
     location,
-    day,
+    dayId: day.id,
     startTime: slotStart(day, 60),
     duration: 60,
     ...overrides,
