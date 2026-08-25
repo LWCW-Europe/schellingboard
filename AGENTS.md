@@ -46,6 +46,8 @@ graphql` commands (neither field is settable via plain `gh issue create`/`edit`)
 
 - Use `jj` (jujutsu) if available, otherwise `git`
 - Pre-commit: run `make precommit` to format, lint, type check, and run tests
+- Work on a GitHub issue ends with a footer naming it: `fixes #123` when the commit fully resolves
+  the issue (GitHub then closes it), `issue #123` when it is only part of the work
 - See [docs/dev/migrations.md](docs/dev/migrations.md) for resolving `drizzle` migration conflicts
 
 ### jj paths with special characters
