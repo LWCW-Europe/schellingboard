@@ -21,7 +21,6 @@ import type {
 } from "@/db/repositories/interfaces";
 import { ProposalComments } from "./proposal-comments";
 import { VotingButtons } from "@/app/(site)/[eventSlug]/proposals/voting-buttons";
-import { VoteChoice } from "@/app/(site)/votes";
 import { VoteBreakdown } from "./vote-breakdown";
 import type { EventInterestSummary } from "@/utils/proposal-vote-stats";
 import { DateTime } from "luxon";
@@ -48,7 +47,7 @@ export function ViewProposal(props: {
     isInModal = false,
   } = props;
   const { user: currentUserId } = useContext(UserContext);
-  const { proposalVoteEmoji, votes } = useContext(VotesContext);
+  const { proposalVoteEmoji, proposalVoteLabel } = useContext(VotesContext);
   const { now } = useContext(EventContext);
   const localZone = useLocalZone();
   const router = useRouter();
@@ -147,27 +146,7 @@ export function ViewProposal(props: {
           {!isHost() && (
             <div className="text-sm text-fg-muted">
               Your vote:
-              <span
-                title={(() => {
-                  const vote = votes.find(
-                    (v) =>
-                      v.proposalId === proposal.id &&
-                      v.guestId === currentUserId
-                  );
-                  if (!vote) return "No vote";
-                  switch (vote.choice) {
-                    case VoteChoice.interested:
-                      return "Interested";
-                    case VoteChoice.maybe:
-                      return "Maybe";
-                    case VoteChoice.skip:
-                      return "Skip";
-                    default:
-                      return "No vote";
-                  }
-                })()}
-                className="ml-1"
-              >
+              <span title={proposalVoteLabel(proposal.id)} className="ml-1">
                 {proposalVoteEmoji(proposal.id)}
               </span>
             </div>

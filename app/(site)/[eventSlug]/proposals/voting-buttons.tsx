@@ -1,6 +1,12 @@
 import { useContext } from "react";
 import clsx from "clsx";
-import { VoteChoice, type Vote } from "@/app/(site)/votes";
+import {
+  VoteChoice,
+  VOTE_CHOICES,
+  voteChoiceToEmoji,
+  voteChoiceToLabel,
+  type Vote,
+} from "@/app/(site)/votes";
 import HoverTooltip from "@/app/(site)/hover-tooltip";
 import { UserContext, VotesContext } from "@/app/(site)/context";
 
@@ -155,11 +161,11 @@ export function VotingButtons({
   );
 }
 
-const VOTE_OPTIONS = [
-  { choice: VoteChoice.interested, emoji: "❤️", label: "Interested" },
-  { choice: VoteChoice.maybe, emoji: "⭐", label: "Maybe" },
-  { choice: VoteChoice.skip, emoji: "👋🏽", label: "Skip" },
-] as const;
+const VOTE_OPTIONS = VOTE_CHOICES.map((choice) => ({
+  choice,
+  emoji: voteChoiceToEmoji(choice),
+  label: voteChoiceToLabel(choice),
+}));
 
 // The chosen vote must stay recognisable without perceiving hue: a light tint
 // against white collapsed into "no visible difference" under the Dark Reader

@@ -27,7 +27,7 @@ import { useLocalZone } from "@/utils/hooks";
 import { formatDuration, durationMinusBreak } from "@/utils/utils";
 
 import { VotingButtons } from "./voting-buttons";
-import { VoteChoice } from "@/app/(site)/votes";
+import { voteChoiceRank } from "@/app/(site)/votes";
 import { viewProposalLinkFromOwner } from "../modal-nav";
 import { stripMarkdown } from "@/utils/markdown";
 
@@ -80,7 +80,8 @@ export function ProposalTable({
         }
   );
   const { user: currentUserId } = useContext(UserContext);
-  const { votes, proposalVoteEmoji } = useContext(VotesContext);
+  const { votes, proposalVoteEmoji, proposalVoteLabel } =
+    useContext(VotesContext);
   const localZone = useLocalZone();
   const router = useRouter();
   // Derived: filter only applies when a user is selected. Hidden from data
@@ -201,24 +202,15 @@ export function ProposalTable({
       } else if (key === "votesCount") {
         cmp = (a[key] || 0) - (b[key] || 0);
       } else if (key === "userVote") {
-        const getVoteOrder = (proposalId: string) => {
-          if (!currentUserId) return 3;
-          const userVote = votes.find(
-            (v) => v.proposalId === proposalId && v.guestId === currentUserId
+        // Not VotesContext.getVote: that closes over the provider's state and
+        // would be an unstable dependency of this memo.
+        const rank = (proposalId: string) =>
+          voteChoiceRank(
+            votes.find(
+              (v) => v.proposalId === proposalId && v.guestId === currentUserId
+            )?.choice
           );
-          if (!userVote) return 3; // no vote
-          switch (userVote.choice) {
-            case VoteChoice.interested:
-              return 0;
-            case VoteChoice.maybe:
-              return 1;
-            case VoteChoice.skip:
-              return 2;
-            default:
-              return 3; // no vote
-          }
-        };
-        cmp = getVoteOrder(a.id) - getVoteOrder(b.id);
+        cmp = rank(a.id) - rank(b.id);
       } else if (key === "votes") {
         const voteNum = (p: SessionProposal) =>
           p.interestedVotesCount * 4 + p.maybeVotesCount;
@@ -605,26 +597,7 @@ export function ProposalTable({
                   {schedEnabled && (
                     <>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                        <span
-                          title={(() => {
-                            const vote = votes.find(
-                              (v) =>
-                                v.proposalId === proposal.id &&
-                                v.guestId === currentUserId
-                            );
-                            if (!vote) return "No vote";
-                            switch (vote.choice) {
-                              case VoteChoice.interested:
-                                return "Interested";
-                              case VoteChoice.maybe:
-                                return "Maybe";
-                              case VoteChoice.skip:
-                                return "Skip";
-                              default:
-                                return "No vote";
-                            }
-                          })()}
-                        >
+                        <span title={proposalVoteLabel(proposal.id)}>
                           {proposalVoteEmoji(proposal.id)}
                         </span>
                       </td>
@@ -775,24 +748,7 @@ export function ProposalTable({
                         <div>
                           Your vote:
                           <span
-                            title={(() => {
-                              const vote = votes.find(
-                                (v) =>
-                                  v.proposalId === proposal.id &&
-                                  v.guestId === currentUserId
-                              );
-                              if (!vote) return "No vote";
-                              switch (vote.choice) {
-                                case VoteChoice.interested:
-                                  return "Interested";
-                                case VoteChoice.maybe:
-                                  return "Maybe";
-                                case VoteChoice.skip:
-                                  return "Skip";
-                                default:
-                                  return "No vote";
-                              }
-                            })()}
+                            title={proposalVoteLabel(proposal.id)}
                             className="ml-1"
                           >
                             {proposalVoteEmoji(proposal.id)}

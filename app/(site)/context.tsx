@@ -14,7 +14,12 @@ import type {
   Guest,
   Rsvp,
 } from "@/db/repositories/interfaces";
-import { Vote, voteChoiceToEmoji } from "@/app/(site)/votes";
+import {
+  Vote,
+  voteChoiceToEmoji,
+  voteChoiceToLabel,
+  NO_VOTE_LABEL,
+} from "@/app/(site)/votes";
 import {
   selectUserAction,
   type SelectUserResult,
@@ -112,6 +117,7 @@ export interface VotesContextType {
   hasVoted: (proposalId: string) => boolean;
   getVote: (proposalId: string) => Vote | undefined;
   proposalVoteEmoji: (proposalId: string) => string;
+  proposalVoteLabel: (proposalId: string) => string;
   isLoading: boolean;
 }
 
@@ -124,6 +130,7 @@ export const VotesContext = createContext<VotesContextType>({
   hasVoted: () => false,
   getVote: () => undefined,
   proposalVoteEmoji: () => "",
+  proposalVoteLabel: () => NO_VOTE_LABEL,
   isLoading: false,
 });
 
@@ -449,6 +456,11 @@ export function VotesProvider({
     return choice ? voteChoiceToEmoji(choice) : "-";
   };
 
+  const proposalVoteLabel = (proposalId: string) => {
+    const choice = getVote(proposalId)?.choice;
+    return choice ? voteChoiceToLabel(choice) : NO_VOTE_LABEL;
+  };
+
   const contextValue: VotesContextType = {
     votes,
     setVotes,
@@ -458,6 +470,7 @@ export function VotesProvider({
     hasVoted,
     getVote,
     proposalVoteEmoji,
+    proposalVoteLabel,
     isLoading,
   };
 

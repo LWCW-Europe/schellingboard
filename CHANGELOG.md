@@ -19,6 +19,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   the other way turns the card around smoothly from wherever it is, and catching a sliding card with a finger picks it
   up where it is instead of teleporting it
 
+### Internal
+
+- The emoji, label and display order of a vote live only in `app/(site)/votes.ts`, and `VotesContext` exposes
+  `proposalVoteLabel` beside `proposalVoteEmoji`. The choice→label mapping had been copied into three components, each
+  free to drift from the emoji next to it
+
 ## [3.4.2] - 2026-08-24
 
 ### Fixed

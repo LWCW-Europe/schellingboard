@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { voteChoiceToEmoji, VoteChoice } from "@/app/(site)/votes";
+import {
+  voteChoiceToEmoji,
+  voteChoiceToLabel,
+  voteChoiceRank,
+  VOTE_CHOICES,
+  VoteChoice,
+} from "@/app/(site)/votes";
 
 describe("voteChoiceToEmoji", () => {
   it("interested → ❤️", () =>
@@ -9,4 +15,30 @@ describe("voteChoiceToEmoji", () => {
     expect(voteChoiceToEmoji(VoteChoice.maybe)).toBe("⭐"));
 
   it("skip → 👋🏽", () => expect(voteChoiceToEmoji(VoteChoice.skip)).toBe("👋🏽"));
+});
+
+describe("voteChoiceToLabel", () => {
+  it("interested → Interested", () =>
+    expect(voteChoiceToLabel(VoteChoice.interested)).toBe("Interested"));
+
+  it("maybe → Maybe", () =>
+    expect(voteChoiceToLabel(VoteChoice.maybe)).toBe("Maybe"));
+
+  it("skip → Skip", () =>
+    expect(voteChoiceToLabel(VoteChoice.skip)).toBe("Skip"));
+});
+
+describe("VOTE_CHOICES", () => {
+  // A choice missing here would silently lose its vote button and its place in
+  // the "Your vote" sort order.
+  it("covers every VoteChoice", () =>
+    expect([...VOTE_CHOICES].sort()).toEqual(Object.values(VoteChoice).sort()));
+});
+
+describe("voteChoiceRank", () => {
+  it("ranks the choices in VOTE_CHOICES order", () =>
+    expect(VOTE_CHOICES.map(voteChoiceRank)).toEqual([0, 1, 2]));
+
+  it("ranks no vote after every choice", () =>
+    expect(voteChoiceRank(undefined)).toBe(VOTE_CHOICES.length));
 });
