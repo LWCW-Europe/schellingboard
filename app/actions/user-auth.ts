@@ -323,6 +323,11 @@ export async function loginAsGuestAction(
  * session: the guest logs in with the new password afterwards. Consumes the
  * token so the link works once. If the guest was already protected this is a
  * password reset, which sends a best-effort heads-up to the address on file.
+ *
+ * A browser that had this guest selected is logged out (#805): its cookie —
+ * an open selection, or a session proof that predates the new password —
+ * stops being honoured the moment protection is on, and leaving it in place
+ * leaves a name selected that every page then refuses to act as.
  */
 export async function setPasswordWithTokenAction(
   guestId: string,
@@ -345,6 +350,13 @@ export async function setPasswordWithTokenAction(
     passwordHash: await hashUserPassword(parsed.data),
   });
   await authCodes.consume(matched.id);
+  const cookieStore = await cookies();
+  const selected = await readGuestCookie(
+    cookieStore.get(GUEST_COOKIE_NAME)?.value
+  );
+  if (selected?.guestId === guestId) {
+    cookieStore.set(createGuestLogoutCookie());
+  }
   if (wasProtected) {
     await notifySecurityChange(guestId, "password-changed");
   }
@@ -427,6 +439,16 @@ export async function disableProtectionAction(
   cookieStore.set(await createGuestCookie(guestId, "open"));
   await notifySecurityChange(guestId, "disabled");
   return { ok: true };
+}
+
+/**
+ * The guest the server currently acts as, or null if no name is selected or
+ * the selected one is protected without a verified session. Read-only: it
+ * exists so long-lived client state can re-check an identity the server may
+ * have stopped honouring since the page was rendered (see UserProvider).
+ */
+export async function currentVerifiedUserAction(): Promise<string | null> {
+  return verifiedCurrentUser(await cookies());
 }
 
 /**

@@ -4,7 +4,7 @@ import { getRepositories } from "@/db/container";
 import { SessionProposalForm } from "@/app/(site)/[eventSlug]/session-proposal-form";
 import {
   verifiedCurrentUser,
-  currentGuestSelection,
+  unverifiedUserMessage,
 } from "@/utils/acting-guest";
 import { notFound } from "next/navigation";
 
@@ -49,15 +49,9 @@ export default async function EditProposalPage({
     const cookieStore = await cookies();
     const currentUser = await verifiedCurrentUser(cookieStore);
     if (!currentUser) {
-      // verifiedCurrentUser is null both when no name is selected and when the
-      // selected name is protected but unverified — distinguish so a protected
-      // host is told to authenticate, not to pick a name they already picked.
-      const nameSelected = Boolean(await currentGuestSelection(cookieStore));
       return (
         <CantEdit eventSlug={eventSlug}>
-          {nameSelected
-            ? "This name is protected. Switch to it with your password or emailed code — via the name chip in the header — before editing this proposal."
-            : "You need to select who you are before editing this proposal. Pick your name via the “Select your name” chip in the header at the top of the page."}
+          {await unverifiedUserMessage(cookieStore, "editing this proposal")}
         </CantEdit>
       );
     }

@@ -26,6 +26,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   little more with every press. Repeated presses in the same direction now let the first slide simply finish, a press
   the other way turns the card around smoothly from wherever it is, and catching a sliding card with a finger picks it
   up where it is instead of teleporting it
+- **Setting a password no longer leaves your name stuck in the header**: after protecting your name from the same browser
+  you had already picked it in, the header kept showing your name while the site had stopped recognising it — so "Edit
+  profile" and "Settings" both answered that no name was selected, and the chip for picking one again was nowhere to be
+  found. Setting a password now signs that browser out on the spot, so the header offers "Select your name" straight
+  away and you pick your name again with the password you just set. A password reset signs you out the same way
+- **A protected name is asked to log in, not to pick a name it already picked**: if you protected your name from your
+  phone while your laptop still had that name selected, Settings and Edit profile on the laptop told you to select who
+  you are — advice that could not help, since your name was selected. Both pages now say the name is protected and point
+  you at the header chip to switch to it with your password or emailed code
 
 ### Security
 

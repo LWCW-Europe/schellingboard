@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import Link from "next/link";
 import { setPasswordWithTokenAction } from "@/app/actions/user-auth";
+import { UserContext } from "@/app/(site)/context";
 import { PasswordManagerHint } from "@/app/password-manager-hint";
 
 // Sets a new password from a reset link. Grants no session, so on success it
@@ -19,6 +20,7 @@ export function ResetPasswordForm({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { user, applyUser } = useContext(UserContext);
 
   const submit = async () => {
     setBusy(true);
@@ -30,6 +32,10 @@ export function ResetPasswordForm({
         newPassword
       );
       if (result.ok) {
+        // The action logged this browser out (the name is protected now, and
+        // the cookie it held isn't a proof), so the header must stop offering
+        // the name straight away rather than at the next navigation.
+        if (user === guestId) applyUser?.(null);
         setDone(true);
       } else {
         setError(result.error);

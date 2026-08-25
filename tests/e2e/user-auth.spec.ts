@@ -19,6 +19,14 @@ const AHMAD_EMAIL = "ahmad.karimi@example.com";
 const AHMAD_PASSWORD = "ahmad-e2e-password";
 const AHMAD_NEW_PASSWORD = "ahmad-e2e-password-2";
 
+// Thabo Ndlovu is used by no other spec, likewise, and is seeded unprotected.
+const THABO_EMAIL = "thabo.ndlovu@example.com";
+const THABO_PASSWORD = "thabo-e2e-password";
+
+// Nadia Haddad, likewise: protected from a second browser, never from hers.
+const NADIA_EMAIL = "nadia.haddad@example.com";
+const NADIA_PASSWORD = "nadia-e2e-password";
+
 const LOGIN_SUBJECT = "Your temporary login code";
 const RESET_SUBJECT = "Set your password";
 
@@ -264,4 +272,104 @@ test("forgot password: reset it via an emailed link", async ({ page }) => {
   await ahmadOption.click();
   await logInAs(page, AHMAD_NEW_PASSWORD);
   await expect(headerChip(page, "Ahmad Karimi")).toBeVisible();
+});
+
+// Regression test for #805. The header chip is client state, seeded once when
+// the layout mounts and kept across client-side navigations — so the browser
+// that enables protection on its own selected name (its "open" cookie stops
+// being honoured the moment the password is set) used to go on showing that
+// name, offering a menu whose "Edit profile" and "Settings" then insisted no
+// name was selected, with no picker in sight to fix it.
+test("setting a password drops the selection the same browser was holding", async ({
+  page,
+}) => {
+  test.skip(
+    skipWithoutMailpit(),
+    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see docs/dev/testing.md § Running tests)"
+  );
+  test.slow();
+
+  await login(page);
+  await page.goto("/");
+  await pickName(page, "Thabo Ndlovu");
+  await expect(headerChip(page, "Thabo Ndlovu")).toBeVisible();
+
+  await page.getByRole("button", { name: /your name/i }).click();
+  await page.getByRole("menuitem", { name: /settings/i }).click();
+  const resetBefore = await emailCount(RESET_SUBJECT, THABO_EMAIL);
+  await page.getByRole("button", { name: "Enable protection" }).click();
+  await expect(page.getByText(/check your email/i)).toBeVisible();
+  const resetLink = await newestResetLink(THABO_EMAIL, resetBefore + 1);
+
+  // Unlike the test above, the link is opened in the browser that still holds
+  // the selection — the case the bug was reported for.
+  await page.goto(resetLink);
+  await page.getByLabel(/new password/i).fill(THABO_PASSWORD);
+  await page.getByRole("button", { name: "Set password" }).click();
+  await expect(page.getByText(/password set/i)).toBeVisible();
+
+  // Setting the password logs this browser out, and the header says so right
+  // away — no navigation and no reload in between.
+  await expect(
+    page.getByRole("button", { name: "Your name", exact: true })
+  ).toBeVisible();
+
+  await page.getByRole("link", { name: /go to sign in/i }).click();
+  await expect(
+    page.getByRole("button", { name: "Your name", exact: true })
+  ).toBeVisible();
+
+  // And the name is reachable again, now behind the password just set.
+  await openFilteredNameSwitcher(page, "Thabo");
+  await page.getByRole("option", { name: /Thabo Ndlovu/i }).click();
+  await logInAs(page, THABO_PASSWORD);
+  await expect(headerChip(page, "Thabo Ndlovu")).toBeVisible();
+});
+
+// The cross-device sibling of #805: this browser's own selection is dropped
+// when it sets the password, but a browser that was holding the name while
+// another device protected it keeps an "open" cookie the server has stopped
+// honouring. Nothing links to Settings without a selected name, so the page
+// is reached the way a real attendee reaches it — a bookmark or the back
+// button — and must then say what is actually wrong.
+test("a name protected from another device asks this browser to log in, not to pick a name", async ({
+  page,
+  browser,
+}) => {
+  test.skip(
+    skipWithoutMailpit(),
+    "mail env vars unset — start Mailpit (make mailpit) and set them in .env.test.local to run this test (see docs/dev/testing.md § Running tests)"
+  );
+  test.slow();
+
+  await login(page);
+  await page.goto("/");
+  await pickName(page, "Nadia Haddad");
+  await expect(headerChip(page, "Nadia Haddad")).toBeVisible();
+
+  // Her phone protects the name. A second context, not a second page: pages
+  // share the identity cookie.
+  const phoneContext = await browser.newContext();
+  const phone = await phoneContext.newPage();
+  await login(phone);
+  await phone.goto("/");
+  await pickName(phone, "Nadia Haddad");
+  await phone.getByRole("button", { name: /your name/i }).click();
+  await phone.getByRole("menuitem", { name: /settings/i }).click();
+  const resetBefore = await emailCount(RESET_SUBJECT, NADIA_EMAIL);
+  await phone.getByRole("button", { name: "Enable protection" }).click();
+  await expect(phone.getByText(/check your email/i)).toBeVisible();
+  await phone.goto(await newestResetLink(NADIA_EMAIL, resetBefore + 1));
+  await phone.getByLabel(/new password/i).fill(NADIA_PASSWORD);
+  await phone.getByRole("button", { name: "Set password" }).click();
+  await expect(phone.getByText(/password set/i)).toBeVisible();
+  await phoneContext.close();
+
+  await page.goto("/settings");
+  await expect(page.getByText(/this name is protected/i)).toBeVisible();
+  await expect(page.getByText(/select who you are/i)).toHaveCount(0);
+
+  await page.goto("/guests/edit");
+  await expect(page.getByText(/this name is protected/i)).toBeVisible();
+  await expect(page.getByText(/select who you are/i)).toHaveCount(0);
 });
