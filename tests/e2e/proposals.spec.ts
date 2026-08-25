@@ -286,6 +286,43 @@ test("filters the proposal list by search, matching whole descriptions as plain 
   await expect(designSystems).toBeVisible();
 });
 
+test("filters the proposal list down to your own proposals", async ({
+  page,
+}) => {
+  // Conference Gamma, so the throwaway proposals the tests above create and
+  // delete in Conference Alpha can't shift the count this one reads. Hana
+  // Kobayashi hosts the first of these; nobody hosts the second.
+  await loginAndGoto(page, "/Conference-Gamma/proposals");
+  await selectUser(page, /Hana Kobayashi/i);
+
+  const hers = page.getByRole("row", {
+    name: /Writing Documentation People Actually Read/,
+  });
+  const hostless = page.getByRole("row", {
+    name: /Ask Me Anything: Migrating a Legacy Monolith/,
+  });
+  await expect(hers).toBeVisible();
+  await expect(hostless).toBeVisible();
+
+  const mine = page.getByRole("button", { name: /your proposals/i });
+  await expect(mine).toHaveAttribute("aria-pressed", "false");
+  await mine.click();
+
+  await expect(mine).toHaveAttribute("aria-pressed", "true");
+  await expect(hers).toBeVisible();
+  await expect(hostless).toHaveCount(0);
+
+  // The badge on the button counts what the filter left, the same number the
+  // list heads itself with.
+  const results = page.getByText(/^\(\d+ results?\)$/);
+  const count = (await results.innerText()).match(/\d+/)![0];
+  await expect(mine).toHaveText(new RegExp(`My proposals\\s*${count}$`));
+
+  await page.getByRole("button", { name: /Clear all active filters/i }).click();
+  await expect(mine).toHaveAttribute("aria-pressed", "false");
+  await expect(hostless).toBeVisible();
+});
+
 test("sorts proposals by title in both directions", async ({ page }) => {
   await loginAndGoto(page, "/Conference-Alpha/proposals");
 

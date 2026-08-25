@@ -27,6 +27,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The ❤️/⭐ tally against a proposal is one `VoteTally` component instead of three hand-written copies, and the vote
   breakdown lists its rows from `VOTE_CHOICES`. Both had the emoji spelled out inline, so a change in `votes.ts` would
   have left them behind
+- The proposal table's sortable column headers, filter buttons and Edit/Schedule pair are each written once rather than
+  copied five, three and two times. Copies had already drifted: the "Host(s)" header was the only one not left-aligned,
+  only "My proposals" announced itself as pressed to a screen reader, and the "No proposals found" row stopped one
+  column short of the table during the scheduling phase
 
 ## [3.4.2] - 2026-08-24
 

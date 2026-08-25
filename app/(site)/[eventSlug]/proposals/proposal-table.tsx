@@ -3,6 +3,7 @@
 import { useState, useContext, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import clsx from "clsx";
 import Fuse from "fuse.js";
 import {
   PencilIcon,
@@ -84,7 +85,6 @@ export function ProposalTable({
   const { votes, proposalVoteEmoji, proposalVoteLabel } =
     useContext(VotesContext);
   const localZone = useLocalZone();
-  const router = useRouter();
   // Derived: filter only applies when a user is selected. Hidden from data
   // and UI when logged out, without discarding the selection.
   const effectiveFilter: Filter = currentUserId ? resultFilter : undefined;
@@ -283,6 +283,12 @@ export function ProposalTable({
     setSortConfig({ key, direction });
   };
 
+  const sortHeader = {
+    sortConfig,
+    sorting: !isSearching,
+    onSort: handleSort,
+  };
+
   return (
     <div className="space-y-6">
       {/* Search & Filter Section */}
@@ -299,82 +305,41 @@ export function ProposalTable({
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <HoverTooltip
-                text="Select a user first"
-                visible={!currentUserId}
-                unavailable
-              >
-                <button
-                  className={`aria-disabled:opacity-50 aria-disabled:cursor-not-allowed text-sm px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
-                    effectiveFilter === "mine"
-                      ? "bg-info text-on-info hover:bg-info-hover"
-                      : currentUserId
-                        ? "bg-surface-muted text-fg-muted hover:bg-surface-hover"
-                        : "bg-surface-muted text-fg-muted"
-                  }`}
-                  onClick={() => updateResultFilter("mine")}
-                  aria-pressed={effectiveFilter === "mine"}
-                  aria-label={`Filter to show only your proposals${effectiveFilter === "mine" ? " (active)" : ""}`}
-                >
-                  <UserIcon className="h-4 w-4" />
-                  My proposals
-                  {effectiveFilter === "mine" && (
-                    <span className="bg-info-hover text-on-info text-xs px-1.5 py-0.5 rounded-full">
-                      {filteredProposals.length}
-                    </span>
-                  )}
-                </button>
-              </HoverTooltip>
-              <HoverTooltip
-                text={votingDisabledText}
-                visible={!votingEnabled}
-                unavailable
-              >
-                <button
-                  className={`aria-disabled:opacity-50 aria-disabled:cursor-not-allowed text-sm px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
-                    effectiveFilter === "unvoted"
-                      ? "bg-info text-on-info hover:bg-info-hover"
-                      : currentUserId
-                        ? "bg-surface-muted text-fg-muted hover:bg-surface-hover"
-                        : "bg-surface-muted text-fg-muted"
-                  }`}
-                  aria-label="Filter to show only unvoted proposals"
-                  onClick={() => updateResultFilter("unvoted")}
-                >
-                  <EyeSlashIcon className="h-4 w-4" />
-                  Only unvoted
-                  {effectiveFilter === "unvoted" && (
-                    <span className="bg-info-hover text-on-info text-xs px-1.5 py-0.5 rounded-full">
-                      {filteredProposals.length}
-                    </span>
-                  )}
-                </button>
-              </HoverTooltip>
-              <HoverTooltip
-                text={votingDisabledText}
-                visible={!votingEnabled}
-                unavailable
-              >
-                <button
-                  className={`aria-disabled:opacity-50 aria-disabled:cursor-not-allowed text-sm px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2 ${
-                    effectiveFilter === "voted"
-                      ? "bg-info text-on-info hover:bg-info-hover"
-                      : currentUserId
-                        ? "bg-surface-muted text-fg-muted hover:bg-surface-hover"
-                        : "bg-surface-muted text-fg-muted"
-                  }`}
-                  aria-label="Filter to show only voted proposals"
-                  onClick={() => updateResultFilter("voted")}
-                >
-                  <CheckCircleIcon className="h-4 w-4" />
-                  Only voted
-                  {effectiveFilter === "voted" && (
-                    <span className="bg-info-hover text-on-info text-xs px-1.5 py-0.5 rounded-full">
-                      {filteredProposals.length}
-                    </span>
-                  )}
-                </button>
-              </HoverTooltip>
+              <FilterButton
+                filter="mine"
+                label="My proposals"
+                describes="your proposals"
+                icon={UserIcon}
+                // Picking out your own proposals doesn't depend on the phase,
+                // only on there being a "you".
+                available={!!currentUserId}
+                unavailableText="Select a user first"
+                active={effectiveFilter === "mine"}
+                count={filteredProposals.length}
+                onClick={updateResultFilter}
+              />
+              <FilterButton
+                filter="unvoted"
+                label="Only unvoted"
+                describes="unvoted proposals"
+                icon={EyeSlashIcon}
+                available={votingEnabled}
+                unavailableText={votingDisabledText}
+                active={effectiveFilter === "unvoted"}
+                count={filteredProposals.length}
+                onClick={updateResultFilter}
+              />
+              <FilterButton
+                filter="voted"
+                label="Only voted"
+                describes="voted proposals"
+                icon={CheckCircleIcon}
+                available={votingEnabled}
+                unavailableText={votingDisabledText}
+                active={effectiveFilter === "voted"}
+                count={filteredProposals.length}
+                onClick={updateResultFilter}
+              />
               {effectiveFilter && (
                 <button
                   onClick={() => updateResultFilter(undefined)}
@@ -437,90 +402,43 @@ export function ProposalTable({
         <table className="table-fixed w-full divide-y divide-line-subtle min-w-0">
           <thead className="bg-surface-sunken">
             <tr>
-              <th
-                onClick={() => handleSort("title")}
-                scope="col"
-                className={`${schedEnabled ? "w-[18%]" : "w-[20%]"} text-left px-4 lg:px-6 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                  ${sortConfig.key === "title" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
-              >
-                Title
-                {!isSearching &&
-                  (sortConfig.key === "title"
-                    ? sortConfig.direction === "asc"
-                      ? " ↓"
-                      : " ↑"
-                    : " ↑↓")}
-              </th>
-              <th
-                onClick={() => handleSort("hosts")}
-                scope="col"
-                className={`w-[15%] px-4 lg:px-6 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                  ${sortConfig.key === "hosts" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
-              >
-                Host(s)
-                {!isSearching &&
-                  (sortConfig.key === "hosts"
-                    ? sortConfig.direction === "asc"
-                      ? " ↓"
-                      : " ↑"
-                    : " ↑↓")}
-              </th>
-              <th
-                scope="col"
-                className={`${schedEnabled ? "w-[20%]" : "w-[25%]"} px-4 lg:px-6 py-3 text-left text-xs font-medium text-fg-subtle uppercase tracking-wider`}
-              >
-                Description
-              </th>
-              <th
-                onClick={() => handleSort("durationMinutes")}
-                scope="col"
-                className={`w-[10%] px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                  ${sortConfig.key === "durationMinutes" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
-              >
-                Duration
-                {!isSearching &&
-                  (sortConfig.key === "durationMinutes"
-                    ? sortConfig.direction === "asc"
-                      ? " ↓"
-                      : " ↑"
-                    : " ↑↓")}
-              </th>
-              <th
-                onClick={() => handleSort("userVote")}
-                scope="col"
-                className={`${schedEnabled ? "w-[7%]" : "w-[10%]"} px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                  ${sortConfig.key === "userVote" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
-              >
-                Your vote
-                {!isSearching &&
-                  (sortConfig.key === "userVote"
-                    ? sortConfig.direction === "asc"
-                      ? " ↓"
-                      : " ↑"
-                    : " ↑↓")}
-              </th>
+              <SortableHeader
+                column="title"
+                label="Title"
+                width={schedEnabled ? "w-[18%]" : "w-[20%]"}
+                {...sortHeader}
+              />
+              <SortableHeader
+                column="hosts"
+                label="Host(s)"
+                width="w-[15%]"
+                {...sortHeader}
+              />
+              <PlainHeader
+                label="Description"
+                width={schedEnabled ? "w-[20%]" : "w-[25%]"}
+              />
+              <SortableHeader
+                column="durationMinutes"
+                label="Duration"
+                width="w-[10%]"
+                {...sortHeader}
+              />
+              <SortableHeader
+                column="userVote"
+                label="Your vote"
+                width={schedEnabled ? "w-[7%]" : "w-[10%]"}
+                {...sortHeader}
+              />
               {schedEnabled && (
-                <th
-                  onClick={() => handleSort("votes")}
-                  scope="col"
-                  className={`w-[10%] px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-hover
-                    ${sortConfig.key === "votes" && !isSearching ? "text-fg font-semibold" : "text-fg-subtle"}`}
-                >
-                  Votes
-                  {!isSearching &&
-                    (sortConfig.key === "votes"
-                      ? sortConfig.direction === "asc"
-                        ? " ↓"
-                        : " ↑"
-                      : " ↑↓")}
-                </th>
+                <SortableHeader
+                  column="votes"
+                  label="Votes"
+                  width="w-[10%]"
+                  {...sortHeader}
+                />
               )}
-              <th
-                scope="col"
-                className={`w-[20%] px-4 lg:px-6 py-3 text-left text-xs font-medium text-fg-subtle uppercase tracking-wider`}
-              >
-                Actions
-              </th>
+              <PlainHeader label="Actions" width="w-[20%]" />
             </tr>
           </thead>
           <tbody className="bg-surface-raised divide-y divide-line-subtle">
@@ -608,45 +526,15 @@ export function ProposalTable({
                     </>
                   )}
                   <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-1 flex-col sm:flex-row">
+                    <div className="flex gap-1">
                       {canEdit(proposal.hosts) && (
-                        <div className="relative inline-block group">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(
-                                `/${eventSlug}/proposals/${proposal.id}/edit`
-                              );
-                            }}
-                            className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-brand-accent text-brand-fg hover:bg-brand-tint focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition-colors"
-                          >
-                            <PencilIcon className="h-3 w-3 mr-1" />
-                            Edit
-                          </button>
-                        </div>
-                      )}
-                      {canEdit(proposal.hosts) && (
-                        <HoverTooltip
-                          text={schedDisabledText}
-                          visible={!schedEnabled}
-                          unavailable
-                        >
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/${eventSlug}/add-session?proposalID=${proposal.id}`
-                              )
-                            }
-                            className={`inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md border border-brand-accent text-brand-fg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent hover:bg-brand-tint transition-colors ${
-                              schedEnabled
-                                ? ""
-                                : "opacity-50 cursor-not-allowed"
-                            }`}
-                          >
-                            <CalendarIcon className="h-3 w-3 mr-1" />
-                            Schedule
-                          </button>
-                        </HoverTooltip>
+                        <ProposalActions
+                          eventSlug={eventSlug}
+                          proposalId={proposal.id}
+                          schedEnabled={schedEnabled}
+                          schedDisabledText={schedDisabledText}
+                          compact
+                        />
                       )}
                     </div>
                   </td>
@@ -656,7 +544,7 @@ export function ProposalTable({
             {searchResults.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={schedEnabled ? 7 : 6}
                   className="px-4 lg:px-6 py-4 text-center text-sm text-fg-subtle"
                 >
                   No proposals found
@@ -750,44 +638,16 @@ export function ProposalTable({
                     </>
                   )}
 
+                  {/* Above the card-wide link the title stretches over, so
+                      these stay clickable in their own right. */}
                   <div className="flex gap-2 relative z-10">
                     {canEdit(proposal.hosts) && (
-                      <div className="relative inline-block group">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(
-                              `/${eventSlug}/proposals/${proposal.id}/edit`
-                            );
-                          }}
-                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-brand-accent text-brand-fg hover:bg-brand-tint focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition-colors"
-                        >
-                          <PencilIcon className="h-4 w-4 mr-1" />
-                          Edit
-                        </button>
-                      </div>
-                    )}
-                    {canEdit(proposal.hosts) && (
-                      <HoverTooltip
-                        text={schedDisabledText}
-                        visible={!schedEnabled}
-                        unavailable
-                      >
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(
-                              `/${eventSlug}/add-session?proposalID=${proposal.id}`
-                            );
-                          }}
-                          className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-brand-accent text-brand-fg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent hover:bg-brand-tint transition-colors ${
-                            schedEnabled ? "" : "opacity-50 cursor-not-allowed"
-                          }`}
-                        >
-                          <CalendarIcon className="h-4 w-4 mr-1" />
-                          Schedule
-                        </button>
-                      </HoverTooltip>
+                      <ProposalActions
+                        eventSlug={eventSlug}
+                        proposalId={proposal.id}
+                        schedEnabled={schedEnabled}
+                        schedDisabledText={schedDisabledText}
+                      />
                     )}
                   </div>
                 </div>
@@ -818,5 +678,158 @@ export function ProposalTable({
         </div>
       )}
     </div>
+  );
+}
+
+const HEADER_CSS =
+  "px-4 lg:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider";
+
+function PlainHeader({ label, width }: { label: string; width: string }) {
+  return (
+    <th scope="col" className={clsx(width, HEADER_CSS, "text-fg-subtle")}>
+      {label}
+    </th>
+  );
+}
+
+function SortableHeader({
+  column,
+  label,
+  width,
+  sortConfig,
+  // False while a search is running: the results are ordered by relevance, so
+  // there is no sort to indicate and no column to highlight.
+  sorting,
+  onSort,
+}: {
+  column: SortColumn;
+  label: string;
+  width: string;
+  sortConfig: SortConfig;
+  sorting: boolean;
+  onSort: (column: SortColumn) => void;
+}) {
+  const active = sorting && sortConfig.key === column;
+  let indicator = "";
+  if (sorting) {
+    indicator = active ? (sortConfig.direction === "asc" ? " ↓" : " ↑") : " ↑↓";
+  }
+
+  return (
+    <th
+      scope="col"
+      onClick={() => onSort(column)}
+      className={clsx(
+        width,
+        HEADER_CSS,
+        "cursor-pointer hover:bg-surface-hover",
+        active ? "text-fg font-semibold" : "text-fg-subtle"
+      )}
+    >
+      {label}
+      {indicator}
+    </th>
+  );
+}
+
+function FilterButton({
+  filter,
+  label,
+  describes,
+  icon: Icon,
+  available,
+  unavailableText,
+  active,
+  count,
+  onClick,
+}: {
+  filter: NonNullable<Filter>;
+  label: string;
+  /** Completes "Filter to show only …" for screen readers. */
+  describes: string;
+  icon: React.ComponentType<{ className?: string }>;
+  available: boolean;
+  unavailableText: string;
+  active: boolean;
+  count: number;
+  onClick: (filter: Filter) => void;
+}) {
+  return (
+    <HoverTooltip text={unavailableText} visible={!available} unavailable>
+      <button
+        className={clsx(
+          "aria-disabled:opacity-50 aria-disabled:cursor-not-allowed text-sm px-3 py-2 rounded-md transition-colors inline-flex items-center gap-2",
+          active
+            ? "bg-info text-on-info hover:bg-info-hover"
+            : "bg-surface-muted text-fg-muted",
+          !active && available && "hover:bg-surface-hover"
+        )}
+        onClick={() => onClick(filter)}
+        aria-pressed={active}
+        aria-label={`Filter to show only ${describes}`}
+      >
+        <Icon className="h-4 w-4" />
+        {label}
+        {active && (
+          <span className="bg-info-hover text-on-info text-xs px-1.5 py-0.5 rounded-full">
+            {count}
+          </span>
+        )}
+      </button>
+    </HoverTooltip>
+  );
+}
+
+function ProposalActions({
+  eventSlug,
+  proposalId,
+  schedEnabled,
+  schedDisabledText,
+  compact = false,
+}: {
+  eventSlug: string;
+  proposalId: string;
+  schedEnabled: boolean;
+  schedDisabledText: string;
+  /** The denser pair the table rows use; the cards want tappable ones. */
+  compact?: boolean;
+}) {
+  const router = useRouter();
+  const buttonCss = clsx(
+    "inline-flex items-center justify-center font-medium rounded-md border border-brand-accent text-brand-fg hover:bg-brand-tint focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent transition-colors",
+    compact ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm"
+  );
+  const iconCss = clsx(compact ? "h-3 w-3" : "h-4 w-4", "mr-1");
+  const go = (href: string) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(href);
+  };
+
+  return (
+    <>
+      <button
+        onClick={go(`/${eventSlug}/proposals/${proposalId}/edit`)}
+        className={buttonCss}
+      >
+        <PencilIcon className={iconCss} />
+        Edit
+      </button>
+      <HoverTooltip
+        text={schedDisabledText}
+        visible={!schedEnabled}
+        unavailable
+      >
+        <button
+          onClick={go(`/${eventSlug}/add-session?proposalID=${proposalId}`)}
+          className={clsx(
+            buttonCss,
+            !schedEnabled && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <CalendarIcon className={iconCss} />
+          Schedule
+        </button>
+      </HoverTooltip>
+    </>
   );
 }
