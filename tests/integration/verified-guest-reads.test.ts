@@ -77,7 +77,9 @@ describe("server components read the verified guest, not the raw cookie", () => 
       cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
 
       const html = renderToStaticMarkup(await EditProfilePage());
-      expect(html).toMatch(/select who you are/i);
+      expect(html).not.toMatch(/PROFILE_FORM_STUB/);
+      // Told to log in, not to pick a name they have already picked.
+      expect(html).toMatch(/this name is protected/i);
     });
 
     it("renders the edit form for a verified protected guest", async () => {
@@ -88,7 +90,7 @@ describe("server components read the verified guest, not the raw cookie", () => 
       cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
 
       const html = renderToStaticMarkup(await EditProfilePage());
-      expect(html).not.toMatch(/select who you are/i);
+      expect(html).toMatch(/PROFILE_FORM_STUB/);
     });
   });
 

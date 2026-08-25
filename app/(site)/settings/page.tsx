@@ -1,7 +1,10 @@
 import { cookies } from "next/headers";
 import { BackLink } from "@/app/components/back-link";
 import { getRepositories } from "@/db/container";
-import { verifiedCurrentUser } from "@/utils/acting-guest";
+import {
+  unverifiedUserMessage,
+  verifiedCurrentUser,
+} from "@/utils/acting-guest";
 import { SettingsForm } from "./settings-form";
 import { AccountSecurity } from "./account-security";
 import { AppearanceSettings } from "./appearance";
@@ -20,9 +23,7 @@ export default async function SettingsPage() {
         <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
           <BackLink href="/guests">Attendees</BackLink>
           <p className="text-fg-muted">
-            You need to select who you are before changing your settings. Pick
-            your name via the &ldquo;Select your name&rdquo; chip in the header
-            at the top of the page.
+            {await unverifiedUserMessage(cookieStore, "changing your settings")}
           </p>
         </div>
         <AppearanceSettings />

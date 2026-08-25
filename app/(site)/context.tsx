@@ -1,29 +1,30 @@
 "use client";
 import {
   createContext,
+  useState,
+  useEffect,
+  useRef,
   ReactNode,
   useContext,
-  useEffect,
-  useState,
 } from "react";
+import { usePathname } from "next/navigation";
 import type {
-  Day,
   Event,
-  Guest,
-  Location,
-  Rsvp,
+  Day,
   Session,
+  Location,
+  Guest,
+  Rsvp,
 } from "@/db/repositories/interfaces";
 import { Vote, voteChoiceToEmoji } from "@/app/(site)/votes";
 import {
+  currentVerifiedUserAction,
   selectUserAction,
   type SelectUserResult,
-  verifyGuestAction,
 } from "@/app/actions/user-auth";
 import { DEFAULT_BREAK_MINUTES, votesApiUrl } from "@/utils/utils";
 import { DEFAULT_SLOT_INCREMENT_MINUTES } from "@/utils/slots";
-import { NOW_REFRESH_INTERVAL_MS, startNowTicker } from "@/utils/now-ticker";
-import { usePathname } from "next/navigation";
+import { startNowTicker, NOW_REFRESH_INTERVAL_MS } from "@/utils/now-ticker";
 
 export type DayWithSessions = Day & { sessions: Session[] };
 
@@ -149,12 +150,38 @@ export function UserProvider({
     return result;
   };
 
-  // Check if auth cookie is valid every time the user navigates
+  // `initialUser` is read once, when the (site) layout mounts, and that layout
+  // then survives every client-side navigation — so a selection the server has
+  // meanwhile stopped honouring (protection enabled from this browser or from
+  // another device, #805) would go on rendering as if it still held, offering
+  // a menu whose pages all insist no name is selected. Re-ask the server on
+  // each navigation instead. The first run is skipped: the render that mounted
+  // this provider already carries the server's answer, and this provider sits
+  // above every Suspense boundary, where an update landing during hydration
+  // can be built and never committed (see the VotesProvider comment in
+  // app/(site)/[eventSlug]/layout.tsx).
+  const checkedOnce = useRef(false);
   useEffect(() => {
-    async function checkValidity() {
+    if (!checkedOnce.current) {
+      checkedOnce.current = true;
+      return;
+    }
+    if (!user) return;
+    let superseded = false;
+    async function check() {
       try {
-        if (!(await verifyGuestAction())) {
+        const verified = await currentVerifiedUserAction();
+        // A reply overtaken by a later switch must not undo it.
+        if (superseded || verified === user) return;
+        if (verified === null) {
+          // Clear the cookie too, not just the client state: this browser is
+          // logged out, and a selection the server won't act as would go on
+          // telling the pages that read it raw (settings, edit profile) that a
+          // name is picked.
           await switchUser(null);
+        } else {
+          // Another tab switched names; the cookie is shared, so it wins.
+          setUser(verified);
         }
       } catch {
         // Session check failed — leave the current state as-is;
@@ -162,9 +189,10 @@ export function UserProvider({
       }
     }
 
-    if (user) {
-      void checkValidity();
-    }
+    void check();
+    return () => {
+      superseded = true;
+    };
   }, [user, path]);
 
   return (

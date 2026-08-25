@@ -97,6 +97,25 @@ export async function currentGuestSelection(
 }
 
 /**
+ * What to tell a visitor that {@link verifiedCurrentUser} refused. It returns
+ * null both when no name is selected and when the selected name is protected
+ * without a verified session (protection enabled from another device), and the
+ * two need different advice: being told to pick a name you have already picked
+ * helps nobody. Kept here, like NAME_PROTECTED_ERROR, so the copy can't drift
+ * across the pages that make this check. `task` completes "before …", e.g.
+ * "changing your settings".
+ */
+export async function unverifiedUserMessage(
+  cookieStore: ReadonlyCookies,
+  task: string
+): Promise<string> {
+  if (await currentGuestSelection(cookieStore)) {
+    return `This name is protected. Switch to it with your password or emailed code — via the name chip in the header — before ${task}.`;
+  }
+  return `You need to select who you are before ${task}. Pick your name via the “Select your name” chip in the header at the top of the page.`;
+}
+
+/**
  * True unless the guest cookie claims a protected guest without a verified
  * proof. Unlike verifiedCurrentUser, an absent cookie doesn't fail this
  * check — there's no protected identity being claimed, so there's nothing to

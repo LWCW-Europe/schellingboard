@@ -2,7 +2,10 @@ import { cookies } from "next/headers";
 import { BackLink } from "@/app/components/back-link";
 import { getRepositories } from "@/db/container";
 import { sanitizeGuest } from "@/utils/guests";
-import { verifiedCurrentUser } from "@/utils/acting-guest";
+import {
+  unverifiedUserMessage,
+  verifiedCurrentUser,
+} from "@/utils/acting-guest";
 import { ProfileForm } from "./profile-form";
 
 export default async function EditProfilePage() {
@@ -14,9 +17,7 @@ export default async function EditProfilePage() {
       <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
         <BackLink href="/guests">Attendees</BackLink>
         <p className="text-fg-muted">
-          You need to select who you are before editing your profile. Pick your
-          name via the &ldquo;Select your name&rdquo; chip in the header at the
-          top of the page.
+          {await unverifiedUserMessage(cookieStore, "editing your profile")}
         </p>
       </div>
     );

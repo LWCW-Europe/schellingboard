@@ -484,6 +484,42 @@ describe("user auth actions", () => {
       ).toBe(true);
     });
 
+    it("logs out the browser that was holding this name", async () => {
+      // #805: the open cookie stops being honoured the moment protection is
+      // turned on, so leaving it in place keeps a selection the server no
+      // longer accepts — every page then insists no name is selected.
+      const { guest, token } = await guestWithResetToken();
+      await selectUserAction(guest.id);
+      expect(await currentUserId()).toBe(guest.id);
+      expect(
+        (await setPasswordWithTokenAction(guest.id, token, "correct horse")).ok
+      ).toBe(true);
+      expect(await currentUserId()).toBeNull();
+    });
+
+    it("ends the verified session of a guest resetting their password", async () => {
+      const { guest, token } = await guestWithResetToken();
+      await setPasswordWithTokenAction(guest.id, token, "correct horse");
+      await loginAsGuestAction(guest.id, "correct horse");
+      expect(await userAuthCookieValidFor(guest.id)).toBe(true);
+
+      await requestPasswordLinkAction(guest.id);
+      await setPasswordWithTokenAction(
+        guest.id,
+        await lastResetToken(),
+        "battery staple horse"
+      );
+      expect(await currentUserId()).toBeNull();
+    });
+
+    it("leaves another guest's selection alone", async () => {
+      const { guest, token } = await guestWithResetToken();
+      const other = await createGuest();
+      await selectUserAction(other.id);
+      await setPasswordWithTokenAction(guest.id, token, "correct horse");
+      expect(await currentUserId()).toBe(other.id);
+    });
+
     it("is single-use: the same token cannot set a password twice", async () => {
       const { guest, token } = await guestWithResetToken();
       expect(

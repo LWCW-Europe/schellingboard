@@ -7,27 +7,27 @@ import type { AuthCode, AuthCodePurpose } from "@/db/repositories/interfaces";
 import {
   createGuestCookie,
   createGuestLogoutCookie,
-  GUEST_COOKIE_NAME,
   readGuestCookie,
+  GUEST_COOKIE_NAME,
 } from "@/utils/auth";
 import {
   AUTH_CODE_VALID_MINUTES,
+  MAX_CODE_ATTEMPTS,
+  RESET_TOKEN_VALID_MINUTES,
   generateAuthCode,
   generateAuthCodeSalt,
   generateResetToken,
   hashAuthCode,
-  hashUserPassword,
   isAuthCodeShaped,
-  MAX_CODE_ATTEMPTS,
   normalizeAuthCode,
-  RESET_TOKEN_VALID_MINUTES,
+  hashUserPassword,
   verifyUserPassword,
 } from "@/utils/user-credentials";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 import {
+  TOO_MANY_ATTEMPTS_ERROR,
   isLoginBlocked,
   recordLoginFailure,
-  TOO_MANY_ATTEMPTS_ERROR,
 } from "@/utils/login-rate-limit";
 import { isMailerConfigured, sendMail } from "@/utils/mailer";
 import { siteUrl } from "@/utils/site-url";
@@ -323,6 +323,11 @@ export async function loginAsGuestAction(
  * session: the guest logs in with the new password afterwards. Consumes the
  * token so the link works once. If the guest was already protected this is a
  * password reset, which sends a best-effort heads-up to the address on file.
+ *
+ * A browser that had this guest selected is logged out (#805): its cookie —
+ * an open selection, or a session proof that predates the new password —
+ * stops being honoured the moment protection is on, and leaving it in place
+ * leaves a name selected that every page then refuses to act as.
  */
 export async function setPasswordWithTokenAction(
   guestId: string,
@@ -345,6 +350,13 @@ export async function setPasswordWithTokenAction(
     passwordHash: await hashUserPassword(parsed.data),
   });
   await authCodes.consume(matched.id);
+  const cookieStore = await cookies();
+  const selected = await readGuestCookie(
+    cookieStore.get(GUEST_COOKIE_NAME)?.value
+  );
+  if (selected?.guestId === guestId) {
+    cookieStore.set(createGuestLogoutCookie());
+  }
   if (wasProtected) {
     await notifySecurityChange(guestId, "password-changed");
   }
@@ -430,12 +442,13 @@ export async function disableProtectionAction(
 }
 
 /**
- * Returns the ID of the current authenticated user, or null if no user is
- * selected or the session is not verified. Used by client components to check
- * whether a protected guest is currently logged in with valid credentials.
+ * The guest the server currently acts as, or null if no name is selected or
+ * the selected one is protected without a verified session. Read-only: it
+ * exists so long-lived client state can re-check an identity the server may
+ * have stopped honouring since the page was rendered (see UserProvider).
  */
-export async function verifyGuestAction() {
-  return await verifiedCurrentUser(await cookies());
+export async function currentVerifiedUserAction(): Promise<string | null> {
+  return verifiedCurrentUser(await cookies());
 }
 
 /**
