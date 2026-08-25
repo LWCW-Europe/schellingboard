@@ -27,6 +27,7 @@ import { useLocalZone } from "@/utils/hooks";
 import { formatDuration, durationMinusBreak } from "@/utils/utils";
 
 import { VotingButtons } from "./voting-buttons";
+import { VoteTally } from "./vote-tally";
 import { voteChoiceRank } from "@/app/(site)/votes";
 import { viewProposalLinkFromOwner } from "../modal-nav";
 import { stripMarkdown } from "@/utils/markdown";
@@ -602,20 +603,7 @@ export function ProposalTable({
                         </span>
                       </td>
                       <td className="px-4 lg:px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span
-                            title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
-                            className="flex items-center gap-1 text-sm text-fg-subtle"
-                          >
-                            ❤️&nbsp;{proposal.interestedVotesCount}
-                          </span>
-                          <span
-                            title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
-                            className="flex items-center gap-1 text-sm text-fg-subtle"
-                          >
-                            ⭐&nbsp;{proposal.maybeVotesCount}
-                          </span>
-                        </div>
+                        <VoteTally proposal={proposal} />
                       </td>
                     </>
                   )}
@@ -757,18 +745,7 @@ export function ProposalTable({
                       )}
                       <div className="flex items-center gap-2">
                         Total votes:
-                        <span
-                          title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
-                          className="flex items-center gap-1 text-sm text-fg-subtle"
-                        >
-                          ❤️&nbsp;{proposal.interestedVotesCount}
-                        </span>
-                        <span
-                          title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
-                          className="flex items-center gap-1 text-sm text-fg-subtle"
-                        >
-                          ⭐&nbsp;{proposal.maybeVotesCount}
-                        </span>
+                        <VoteTally proposal={proposal} />
                       </div>
                     </>
                   )}

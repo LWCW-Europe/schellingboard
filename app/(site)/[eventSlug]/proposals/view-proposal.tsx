@@ -22,6 +22,7 @@ import type {
 import { ProposalComments } from "./proposal-comments";
 import { VotingButtons } from "@/app/(site)/[eventSlug]/proposals/voting-buttons";
 import { VoteBreakdown } from "./vote-breakdown";
+import { VoteTally } from "./vote-tally";
 import type { EventInterestSummary } from "@/utils/proposal-vote-stats";
 import { DateTime } from "luxon";
 import { useLocalZone } from "@/utils/hooks";
@@ -156,20 +157,7 @@ export function ViewProposal(props: {
           ) : (
             <div className="text-sm text-fg-muted">
               Total votes:
-              <span className="ml-2 inline-flex items-center gap-3">
-                <span
-                  title={`${proposal.interestedVotesCount} interested vote${proposal.interestedVotesCount !== 1 ? "s" : ""}`}
-                  className="inline-flex items-center gap-1 text-sm text-fg-subtle"
-                >
-                  ❤️&nbsp;{proposal.interestedVotesCount}
-                </span>
-                <span
-                  title={`${proposal.maybeVotesCount} maybe vote${proposal.maybeVotesCount !== 1 ? "s" : ""}`}
-                  className="inline-flex items-center gap-1 text-sm text-fg-subtle"
-                >
-                  ⭐&nbsp;{proposal.maybeVotesCount}
-                </span>
-              </span>
+              <VoteTally proposal={proposal} className="ml-2" />
             </div>
           )}
         </div>

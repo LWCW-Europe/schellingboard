@@ -2,6 +2,7 @@ export { VoteChoice } from "@/db/repositories/interfaces";
 export type { Vote } from "@/db/repositories/interfaces";
 
 import { VoteChoice } from "@/db/repositories/interfaces";
+import type { SessionProposal } from "@/db/repositories/interfaces";
 
 // Strongest interest first: this is both the order the vote buttons appear in
 // and the order the proposal list sorts by "Your vote".
@@ -39,4 +40,22 @@ export function voteChoiceToLabel(choice: VoteChoice): string {
 export function voteChoiceRank(choice: VoteChoice | undefined): number {
   const index = choice ? VOTE_CHOICES.indexOf(choice) : -1;
   return index < 0 ? VOTE_CHOICES.length : index;
+}
+
+export type ProposalVoteCounts = Pick<
+  SessionProposal,
+  "interestedVotesCount" | "maybeVotesCount" | "skipVotesCount"
+>;
+
+const COUNT_FIELD: Record<VoteChoice, keyof ProposalVoteCounts> = {
+  [VoteChoice.interested]: "interestedVotesCount",
+  [VoteChoice.maybe]: "maybeVotesCount",
+  [VoteChoice.skip]: "skipVotesCount",
+};
+
+export function voteCount(
+  counts: ProposalVoteCounts,
+  choice: VoteChoice
+): number {
+  return counts[COUNT_FIELD[choice]];
 }

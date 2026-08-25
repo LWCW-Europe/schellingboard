@@ -3,6 +3,7 @@ import {
   voteChoiceToEmoji,
   voteChoiceToLabel,
   voteChoiceRank,
+  voteCount,
   VOTE_CHOICES,
   VoteChoice,
 } from "@/app/(site)/votes";
@@ -33,6 +34,21 @@ describe("VOTE_CHOICES", () => {
   // the "Your vote" sort order.
   it("covers every VoteChoice", () =>
     expect([...VOTE_CHOICES].sort()).toEqual(Object.values(VoteChoice).sort()));
+});
+
+describe("voteCount", () => {
+  const counts = {
+    interestedVotesCount: 3,
+    maybeVotesCount: 2,
+    skipVotesCount: 1,
+  };
+
+  // Reading the wrong field would show a plausible number, so nothing else
+  // would notice.
+  it("reads each choice's own count", () =>
+    expect(VOTE_CHOICES.map((choice) => voteCount(counts, choice))).toEqual([
+      3, 2, 1,
+    ]));
 });
 
 describe("voteChoiceRank", () => {

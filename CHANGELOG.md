@@ -24,6 +24,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The emoji, label and display order of a vote live only in `app/(site)/votes.ts`, and `VotesContext` exposes
   `proposalVoteLabel` beside `proposalVoteEmoji`. The choice→label mapping had been copied into three components, each
   free to drift from the emoji next to it
+- The ❤️/⭐ tally against a proposal is one `VoteTally` component instead of three hand-written copies, and the vote
+  breakdown lists its rows from `VOTE_CHOICES`. Both had the emoji spelled out inline, so a change in `votes.ts` would
+  have left them behind
 
 ## [3.4.2] - 2026-08-24
 

@@ -3,6 +3,12 @@
 import { useContext, useId } from "react";
 
 import { EventContext } from "@/app/(site)/context";
+import {
+  VOTE_CHOICES,
+  VoteChoice,
+  voteChoiceToEmoji,
+  voteChoiceToLabel,
+} from "@/app/(site)/votes";
 import type { SessionProposal } from "@/db/repositories/interfaces";
 import {
   MIN_TURNOUT_PCT_FOR_ESTIMATE,
@@ -58,6 +64,24 @@ export function VoteBreakdown({
     skip: proposal.skipVotesCount,
   });
 
+  const perChoice: Record<
+    VoteChoice,
+    { count: number; pctOfVotes: number | null }
+  > = {
+    [VoteChoice.interested]: {
+      count: stats.interested,
+      pctOfVotes: stats.interestedPctOfVotes,
+    },
+    [VoteChoice.maybe]: {
+      count: stats.maybe,
+      pctOfVotes: stats.maybePctOfVotes,
+    },
+    [VoteChoice.skip]: {
+      count: stats.skip,
+      pctOfVotes: stats.skipPctOfVotes,
+    },
+  };
+
   return (
     <section
       aria-labelledby={headingId}
@@ -75,18 +99,13 @@ export function VoteBreakdown({
           Did not vote: {stats.nonVoters} attendees
           {pct(stats.nonVotersPctOfAttendees)}
         </li>
-        <li>
-          ❤️ Interested: {stats.interested}
-          {pctOfVotes(stats.interestedPctOfVotes)}
-        </li>
-        <li>
-          ⭐ Maybe: {stats.maybe}
-          {pctOfVotes(stats.maybePctOfVotes)}
-        </li>
-        <li>
-          👋🏽 Skip: {stats.skip}
-          {pctOfVotes(stats.skipPctOfVotes)}
-        </li>
+        {VOTE_CHOICES.map((choice) => (
+          <li key={choice}>
+            {voteChoiceToEmoji(choice)} {voteChoiceToLabel(choice)}:{" "}
+            {perChoice[choice].count}
+            {pctOfVotes(perChoice[choice].pctOfVotes)}
+          </li>
+        ))}
       </ul>
       {stats.estimatedAttendance && (
         <Estimate range={stats.estimatedAttendance} />
@@ -100,14 +119,16 @@ export function VoteBreakdown({
       )}
       {stats.noEstimateReason === "no-interest" && (
         <p className="mt-2 text-fg-subtle">
-          Nobody voted ❤️ Interested, and that is the only signal there is to
-          guess attendance from.
+          Nobody voted {voteChoiceToEmoji(VoteChoice.interested)}{" "}
+          {voteChoiceToLabel(VoteChoice.interested)}, and that is the only
+          signal there is to guess attendance from.
         </p>
       )}
       {stats.noEstimateReason === "unknown-event" && (
         <p className="mt-2 text-fg-subtle">
           There is nothing to measure this against yet — guessing at attendance
-          needs the event&apos;s attendee list and ❤️ votes on its other
+          needs the event&apos;s attendee list and{" "}
+          {voteChoiceToEmoji(VoteChoice.interested)} votes on its other
           proposals.
         </p>
       )}
