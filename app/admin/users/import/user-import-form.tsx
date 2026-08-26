@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { SelectHosts } from "@/app/select-hosts";
 import {
   importGuestsAction,
   type ImportGuestsResult,
 } from "@/app/actions/admin-guest-import";
-import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "../../buttons";
+import { PRIMARY_BUTTON } from "../../buttons";
 
 type EventOption = { id: string; name: string };
 
@@ -87,18 +86,13 @@ export function UserImportForm({ events }: { events: EventOption[] }) {
         </p>
       )}
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={isPending || !file}
-          className={PRIMARY_BUTTON}
-        >
-          {isPending ? "Importing..." : "Import"}
-        </button>
-        <Link href="/admin/users" className={SECONDARY_BUTTON}>
-          Back to users
-        </Link>
-      </div>
+      <button
+        type="submit"
+        disabled={isPending || !file}
+        className={PRIMARY_BUTTON}
+      >
+        {isPending ? "Importing..." : "Import"}
+      </button>
     </form>
   );
 }

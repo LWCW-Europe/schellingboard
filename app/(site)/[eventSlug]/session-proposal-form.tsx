@@ -1,7 +1,6 @@
 "use client";
 
 import { useContext, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Input } from "@/app/input";
@@ -21,6 +20,7 @@ import { useController, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { sessionProposalSchema } from "@/model/session";
 import { z } from "zod";
+import { BackLink } from "@/app/components/back-link";
 import { MarkdownTextarea } from "@/app/components/markdown-textarea";
 import { FormErrorSummary } from "@/app/components/form-error-summary";
 import { setActionErrors } from "@/utils/forms";
@@ -120,12 +120,7 @@ export function SessionProposalForm(props: {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link
-        className="bg-brand text-on-brand font-semibold py-2 px-4 rounded shadow hover:bg-brand-hover active:bg-brand-hover w-fit px-12"
-        href={`/${eventSlug}/proposals`}
-      >
-        Back to Proposals
-      </Link>
+      <BackLink href={`/${eventSlug}/proposals`}>Proposals</BackLink>
       <div>
         <h2 className="text-2xl font-bold">
           {proposal ? "Edit" : "Add"} Session Proposal

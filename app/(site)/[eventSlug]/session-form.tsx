@@ -34,6 +34,7 @@ import { buildSessionInterval } from "@/app/api/session-form-utils";
 import { revalidateEvent } from "./session-actions";
 import { detectHostClashes, type HostClash } from "./clash-actions";
 import { MarkdownHint } from "@/app/(site)/markdown";
+import { BackLink } from "@/app/components/back-link";
 import { MarkdownTextarea } from "@/app/components/markdown-textarea";
 
 interface ErrorResponse {
@@ -348,12 +349,7 @@ export function SessionForm(props: {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link
-        className="bg-brand text-on-brand font-semibold py-2 px-4 rounded shadow hover:bg-brand-hover active:bg-brand-hover w-fit px-12"
-        href={`/${event.slug}`}
-      >
-        Back to schedule
-      </Link>
+      <BackLink href={`/${event.slug}`}>Schedule</BackLink>
       <div>
         <h2 className="text-2xl font-bold">
           {eventName}: {sessionID ? "Edit" : "Add a"} session

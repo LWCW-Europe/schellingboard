@@ -148,7 +148,7 @@ test("a non-host cannot edit or delete another guest's proposal", async ({
   await expect(
     page.getByRole("button", { name: "Your name: Bob Test" })
   ).toBeVisible();
-  await page.getByRole("link", { name: /Back to Proposals/i }).click();
+  await page.getByRole("link", { name: /← Proposals/i }).click();
   await page.waitForURL(/\/Conference-Alpha\/proposals$/);
   await expect(
     page.getByRole("row", { name: new RegExp(proposalTitle) })
