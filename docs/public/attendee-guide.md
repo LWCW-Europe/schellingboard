@@ -109,6 +109,9 @@ Proposing and voting close.
 
 ![Simple scheduling grid with rooms as columns and time slots as rows](../screenshots/schedule-grid.webp)
 
+A room name with an **ⓘ** next to it has more to say — tap it (or hover it)
+to read what the room offers: projector, whiteboard, the kind of seating.
+
 ### Put a proposal on the schedule
 
 Two ways, whichever you find first:

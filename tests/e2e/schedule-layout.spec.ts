@@ -159,6 +159,72 @@ test("the footer follows short content in the RSVP'd view on a phone", async ({
   expect(box.y + box.height).toBeLessThan(viewportHeight - 40);
 });
 
+// What a room offers (projector, whiteboard, …) lives in its description. The
+// room name in the grid header is the way in: a button, so it is reachable by
+// tap and by keyboard, not just by hovering a mouse.
+const MAIN_HALL_DETAIL = "projector and sound system";
+
+// Session blocks have tooltips of their own, and one of them can already be
+// open (the browser reports the cursor over a block as soon as the page
+// loads), so pick out the room's panel by its text.
+const roomDetails = (page: import("@playwright/test").Page) =>
+  page.getByRole("tooltip").filter({ hasText: MAIN_HALL_DETAIL });
+
+// Narrower than the 500px the rest of this file uses, because that is wide
+// enough for the panel's full 480px: only on a real phone does the width have
+// to give way, so only here does the fix show.
+test.describe("on a phone", () => {
+  test.use({ viewport: { width: 375, height: 800 } });
+
+  test("a room's details open on tap and stay on screen", async ({ page }) => {
+    const details = roomDetails(page);
+    await expect(details).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Main Hall" }).first().click();
+    await expect(details).toContainText(MAIN_HALL_DETAIL);
+
+    // The whole panel fits the phone screen — the point of the exercise, since
+    // a fixed-width one gets cut off at the edges.
+    const box = (await details.boundingBox())!;
+    const viewportWidth = page.viewportSize()!.width;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(viewportWidth);
+
+    // Tapping the next room hands the panel over instead of leaving both open.
+    await page.getByRole("button", { name: "Workshop Room" }).first().click();
+    await expect(details).toHaveCount(0);
+    await expect(
+      page.getByRole("tooltip").filter({ hasText: "whiteboards" })
+    ).toBeVisible();
+  });
+
+  test("a room's details open from the keyboard and close on Escape", async ({
+    page,
+  }) => {
+    const details = roomDetails(page);
+    const roomName = page.getByRole("button", { name: "Main Hall" }).first();
+
+    await roomName.press("Enter");
+    await expect(details).toContainText(MAIN_HALL_DETAIL);
+
+    await roomName.press("Escape");
+    await expect(details).toHaveCount(0);
+  });
+});
+
+test.describe("on a wide screen", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test("hovering a room name shows its details", async ({ page }) => {
+    const details = roomDetails(page);
+    await page.getByRole("button", { name: "Main Hall" }).first().hover();
+    await expect(details).toContainText(MAIN_HALL_DETAIL);
+
+    await page.mouse.move(0, 400);
+    await expect(details).toHaveCount(0);
+  });
+});
+
 test("dragging the schedule pans it sideways", async ({ page }) => {
   // The last location's header starts beyond the right edge of the viewport.
   // (Each day repeats the header row — the first one is the visible one.)

@@ -61,7 +61,9 @@ Locations are a **global pool**, not per-event — one location can be
 assigned to multiple events. The event's "Locations" tab only
 assigns/unassigns from this pool; it doesn't create new ones.
 
-- **Name, Capacity, Description, Area description, Color** (schedule grid).
+- **Name, Capacity, Description, Area description, Color** (schedule grid). The
+  description is what a room offers (projector, whiteboard, seating); attendees
+  open it from the ⓘ next to the room name.
 - **Bookable** — whether attendees can self-book blank slots here. A location
   that isn't bookable still shows on the grid and you can schedule sessions
   into it yourself; attendees just can't pick it.
