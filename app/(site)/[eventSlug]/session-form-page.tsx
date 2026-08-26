@@ -32,7 +32,7 @@ export async function renderSessionForm(props: {
   const proposals = currentUserProposals.concat(hostlessProposals);
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <div className="max-w-2xl mx-2 sm:mx-auto mt-20 mb-6 sm:mb-24">
+      <div className="max-w-2xl mx-auto px-4 sm:px-0 mb-6 sm:mb-24">
         <SessionForm
           event={event}
           days={days}

@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **"Back to ..." links look the same everywhere**: on the session form, the proposal form and the user import page
   they were red buttons or gray buttons that competed with the page's real action. All of them are now the same quiet
   "← Proposals" style already used elsewhere
+- **The session form starts where every other form does**: the add and edit session pages left an empty band above the
+  form that no other page has
 
 ### Fixed
 
