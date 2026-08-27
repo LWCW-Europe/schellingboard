@@ -1,19 +1,4 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { resetTestDb, setupTestDb } from "../helpers/db";
-import { createEvent, createGuest, createProposal } from "../helpers/factories";
-import { getRepositories } from "@/db/container";
-import {
-  GUEST_COOKIE_NAME,
-  openGuestValue,
-  verifiedGuestValue,
-} from "../helpers/guest-cookie";
-import {
-  createProposalComment as createComment,
-  deleteComment,
-  updateComment,
-} from "@/app/(site)/[eventSlug]/comment-actions";
-import { sendMail } from "@/utils/mailer";
-
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
@@ -47,6 +32,21 @@ vi.mock("next/headers", () => ({
       },
     }),
 }));
+
+import { resetTestDb, setupTestDb } from "../helpers/db";
+import { createEvent, createGuest, createProposal } from "../helpers/factories";
+import { getRepositories } from "@/db/container";
+import {
+  GUEST_COOKIE_NAME,
+  openGuestValue,
+  verifiedGuestValue,
+} from "../helpers/guest-cookie";
+import {
+  createProposalComment as createComment,
+  deleteComment,
+  updateComment,
+} from "@/app/(site)/[eventSlug]/comment-actions";
+import { sendMail } from "@/utils/mailer";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 

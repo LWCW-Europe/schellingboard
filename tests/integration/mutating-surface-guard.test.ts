@@ -10,18 +10,6 @@ import {
   vi,
 } from "vitest";
 import { NextRequest } from "next/server";
-import { resetTestDb, setupTestDb } from "../helpers/db";
-import {
-  createDay,
-  createEvent,
-  createGuest,
-  createLocation,
-  createProposal,
-  createSession,
-  slotStart,
-} from "../helpers/factories";
-import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
-import { getRepositories } from "@/db/container";
 
 // Guards the invariant in CONTRIBUTING.md § Authorization: every mutating
 // handler must resolve the acting guest and refuse to act as a protected
@@ -55,6 +43,19 @@ vi.mock("next/cache", () => ({
 }));
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
+
+import { resetTestDb, setupTestDb } from "../helpers/db";
+import {
+  createDay,
+  createEvent,
+  createGuest,
+  createLocation,
+  createProposal,
+  createSession,
+  slotStart,
+} from "../helpers/factories";
+import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
+import { getRepositories } from "@/db/container";
 
 async function protectGuest(guestId: string): Promise<void> {
   await getRepositories().guests.setAuthProtection(guestId, {

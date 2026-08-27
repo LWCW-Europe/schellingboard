@@ -8,6 +8,11 @@ import {
   vi,
 } from "vitest";
 import type { ReactElement } from "react";
+
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
+
 import { resetTestDb, setupTestDb } from "../helpers/db";
 import {
   createEvent,
@@ -27,10 +32,6 @@ import {
   notifySessionChanged,
   notifySessionDeleted,
 } from "@/utils/notifications";
-
-vi.mock("@/utils/mailer", () => ({
-  sendMail: vi.fn(),
-}));
 
 const MESSAGE = {
   subject: "Session moved",
