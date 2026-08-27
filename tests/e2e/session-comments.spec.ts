@@ -45,11 +45,16 @@ async function openReplyForm(modal: Locator) {
 // Scoped to the open form: once a reply exists, its own "Reply" action button
 // also matches, and it sits after the form in the DOM.
 async function submitReply(modal: Locator, text: string) {
-  const form = modal.locator("form", {
-    has: modal.page().getByPlaceholder("Write a reply"),
-  });
+  const form = modal
+    .locator("form", { has: modal.page().getByPlaceholder("Write a reply") })
+    .first();
   await form.getByPlaceholder("Write a reply").fill(text);
-  await form.getByRole("button", { name: "Reply", exact: true }).click();
+  // Posting unmounts the form, so a click landing mid-swap is lost; retry
+  // until it's gone. The draft survives, so fill before retrying.
+  await toggleUntil(
+    form.getByRole("button", { name: "Reply", exact: true }),
+    () => form.isHidden()
+  );
 }
 
 // getByText also matches a filled-in textarea's value, so a just-submitted
@@ -85,7 +90,9 @@ test("posts a comment on a session and renders it as markdown", async ({
   await modal.getByRole("button", { name: "Comment", exact: true }).click();
 
   await expect(modal.getByRole("heading", { name: "1 comment" })).toBeVisible();
-  await expect(modal.getByText("very")).toHaveCSS("font-weight", "700");
+  await expect(
+    modal.locator("section p strong", { hasText: "very" })
+  ).toHaveCSS("font-weight", "700");
   await expect(modal.getByRole("link", { name: "Bob Test" })).toBeVisible();
   await expect(modal.getByPlaceholder("Add a comment")).toHaveValue("");
 
@@ -97,7 +104,7 @@ test("posts a comment on a session and renders it as markdown", async ({
   await expect(
     reopened.getByRole("heading", { name: "1 comment" })
   ).toBeVisible();
-  await expect(reopened.getByText("bringing my laptop")).toBeVisible();
+  await expect(reopened.getByText("bringing my laptop").first()).toBeVisible();
 });
 
 test("edits a comment, showing when it was edited, then deletes it", async ({
@@ -110,7 +117,7 @@ test("edits a comment, showing when it was edited, then deletes it", async ({
   const modal = await openSession(page, EDIT_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("first thoughts");
   await modal.getByRole("button", { name: "Comment", exact: true }).click();
-  await expect(modal.getByText("first thoughts")).toBeVisible();
+  await expect(postedComment(modal, "first thoughts").first()).toBeVisible();
   await expect(modal.getByText("(edited)")).toHaveCount(0);
 
   await modal.getByRole("button", { name: "Edit" }).click();
@@ -142,24 +149,26 @@ test("replies to a comment, collapses the thread, and permalinks to a reply", as
   const modal = await openSession(page, THREAD_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("the opening question");
   await modal.getByRole("button", { name: "Comment", exact: true }).click();
-  await expect(modal.getByText("the opening question")).toBeVisible();
+  const parent = postedComment(modal, "the opening question").first();
+  await expect(parent).toBeVisible();
 
   await openReplyForm(modal);
   await submitReply(modal, "the threaded answer");
-  await expect(postedComment(modal, "the threaded answer")).toBeVisible();
+  const reply = postedComment(modal, "the threaded answer").first();
+  await expect(reply).toBeVisible();
 
   await toggleUntil(
     modal.getByRole("button", { name: "Collapse comment" }).first(),
-    () => modal.getByText("the opening question").isHidden()
+    () => parent.isHidden()
   );
-  await expect(modal.getByText("the threaded answer")).toBeHidden();
+  await expect(reply).toBeHidden();
   await expect(
     modal.getByRole("link", { name: "Alice Test" }).first()
   ).toBeVisible();
 
   await toggleUntil(
     modal.getByRole("button", { name: "Expand comment" }).first(),
-    () => modal.getByText("the opening question").isVisible()
+    () => parent.isVisible()
   );
 
   // Each comment's timestamp links to that comment alone, parent and reply
@@ -186,6 +195,7 @@ test("replies to a comment, collapses the thread, and permalinks to a reply", as
     page
       .getByRole("dialog", { name: "Session details" })
       .getByText("the threaded answer")
+      .first()
   ).toBeVisible();
 });
 
@@ -200,7 +210,7 @@ test("keeps replies readable when their parent is deleted", async ({
   const modal = await openSession(page, TOMBSTONE_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("a doomed parent");
   await modal.getByRole("button", { name: "Comment", exact: true }).click();
-  await expect(modal.getByText("a doomed parent")).toBeVisible();
+  await expect(postedComment(modal, "a doomed parent").first()).toBeVisible();
 
   // Someone else replies, so deleting the parent can't simply remove it. A
   // second context, not a second page: pages share the identity cookie.
@@ -212,15 +222,17 @@ test("keeps replies readable when their parent is deleted", async ({
   const bobModal = await openSession(bob, TOMBSTONE_SESSION);
   await openReplyForm(bobModal);
   await submitReply(bobModal, "a surviving reply");
-  await expect(postedComment(bobModal, "a surviving reply")).toBeVisible();
+  await expect(
+    postedComment(bobModal, "a surviving reply").first()
+  ).toBeVisible();
   await bobContext.close();
 
   // Her open modal fetched its comments before Bob replied; reloading shows
   // his reply arrived through the endpoint before she deletes the parent.
   await page.reload();
   const reopened = page.getByRole("dialog", { name: "Session details" });
-  await expect(reopened.getByText("a doomed parent")).toBeVisible();
-  await expect(reopened.getByText("a surviving reply")).toBeVisible();
+  await expect(reopened.getByText("a doomed parent").first()).toBeVisible();
+  await expect(reopened.getByText("a surviving reply").first()).toBeVisible();
 
   await reopened.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("button", { name: "Yes" }).click();
@@ -238,7 +250,9 @@ test("likes a comment and shows who liked it", async ({ page, browser }) => {
   const modal = await openSession(page, LIKE_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("a likeable comment");
   await modal.getByRole("button", { name: "Comment", exact: true }).click();
-  await expect(modal.getByText("a likeable comment")).toBeVisible();
+  await expect(
+    postedComment(modal, "a likeable comment").first()
+  ).toBeVisible();
 
   const like = modal.getByRole("button", { name: "Like", exact: true });
   const liked = modal.getByRole("button", { name: "Liked", exact: true });
@@ -309,16 +323,18 @@ test("nests sibling replies under the comment they answer", async ({
   const modal = await openSession(page, SIBLINGS_SESSION);
   await modal.getByPlaceholder("Add a comment").fill("Who else is coming?");
   await modal.getByRole("button", { name: "Comment", exact: true }).click();
-  await expect(postedComment(modal, "Who else is coming?")).toBeVisible();
+  await expect(
+    postedComment(modal, "Who else is coming?").first()
+  ).toBeVisible();
 
   // Posting closes the reply form (onDone), so each reply waits for the
   // previous one to actually render before reopening the form.
   await openReplyForm(modal);
   await submitReply(modal, "I'd like to join.");
-  await expect(postedComment(modal, "I'd like to join.")).toBeVisible();
+  await expect(postedComment(modal, "I'd like to join.").first()).toBeVisible();
   await openReplyForm(modal);
   await submitReply(modal, "So would I.");
-  await expect(postedComment(modal, "So would I.")).toBeVisible();
+  await expect(postedComment(modal, "So would I.").first()).toBeVisible();
 
   // Both hang off the same parent, so collapsing it takes them together.
   await toggleUntil(

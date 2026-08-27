@@ -18,6 +18,7 @@ import {
   createLocation,
   createProposal,
   createSession,
+  slotStart,
 } from "../helpers/factories";
 import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
@@ -52,19 +53,6 @@ vi.mock("next/headers", () => ({
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
-
-import { setupTestDb, resetTestDb } from "../helpers/db";
-import {
-  createEvent,
-  createGuest,
-  createLocation,
-  createDay,
-  slotStart,
-  createProposal,
-  createSession,
-} from "../helpers/factories";
-import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
-import { getRepositories } from "@/db/container";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
