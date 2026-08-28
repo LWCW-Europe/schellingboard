@@ -121,7 +121,9 @@ clean:
 	rm -f data.db data.test.db
 	rm -rf playwright-report test-results .e2e-docker
 	rm -f tsconfig.tsbuildinfo
-	rm -rf site
+	rm -rf www-site
+	rm -rf uploads uploads-test
+	rm -rf coverage
 
 clean-all: clean
 	rm -rf node_modules
