@@ -14,7 +14,11 @@ import {
   proposalCommentSchema,
   sessionCommentSchema,
 } from "@/model/comment";
-import { notifyProposalCommented } from "@/utils/notifications";
+import {
+  notifyProfileCommented,
+  notifyProposalCommented,
+  notifySessionCommented,
+} from "@/utils/notifications";
 import { serverNow } from "@/utils/dev-clock-server";
 import {
   NAME_PROTECTED_ERROR,
@@ -151,13 +155,14 @@ export async function createSessionComment(
       }
     }
 
-    await getRepositories().sessionComments.create({
+    const comment = await getRepositories().sessionComments.create({
       subjectId: sessionId,
       authorId: guest,
       parentId,
       body,
       createdTime: await serverNow(),
     });
+    after(() => notifySessionCommented({ sessionId, comment }));
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to post comment");
@@ -189,13 +194,14 @@ export async function createProfileComment(
       }
     }
 
-    await getRepositories().profileComments.create({
+    const comment = await getRepositories().profileComments.create({
       subjectId: profileId,
       authorId: guest,
       parentId,
       body,
       createdTime: await serverNow(),
     });
+    after(() => notifyProfileCommented({ profileId, comment }));
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to post comment");

@@ -18,6 +18,8 @@ export const emailSettingsSchema = z.object({
   hostChange: z.boolean(),
   cohostAdd: z.boolean(),
   proposalComment: z.boolean(),
+  sessionComment: z.boolean(),
+  profileComment: z.boolean(),
   commentThread: z.boolean(),
 });
 

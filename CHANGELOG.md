@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Comments on sessions**: a session's details now have the same comment section proposals already had — threaded
   replies, likes, editing and deleting your own comments. Open any session in the schedule to discuss times, rooms or
   last-minute changes
+- **Emails for session and profile comments**: hosts hear when someone comments on a session they're hosting, and you
+  hear when someone writes on your profile — the way proposal hosts already did. Both are on by default and can be
+  turned off in Settings. "Someone comments on a thread I've commented on" now covers sessions and profiles too, and
+  stays off by default
 - **Moving between attendee profiles slides instead of jumping**: Prev, Next and the arrow keys now slide one profile
   out as the next slides in, the way a swipe already moves between them
 

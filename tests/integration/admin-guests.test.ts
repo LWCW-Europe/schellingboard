@@ -256,6 +256,8 @@ describe("admin guest actions", () => {
         hostChange: true,
         cohostAdd: true,
         proposalComment: true,
+        sessionComment: true,
+        profileComment: true,
         commentThread: false,
       });
     });

@@ -49,6 +49,16 @@ export const guests = sqliteTable(
     })
       .notNull()
       .default(true),
+    emailOnSessionComment: integer("email_on_session_comment", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(true),
+    emailOnProfileComment: integer("email_on_profile_comment", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(true),
     emailOnCommentThread: integer("email_on_comment_thread", {
       mode: "boolean",
     })
