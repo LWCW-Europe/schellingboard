@@ -64,6 +64,10 @@ data.*.db-journal
 # `make test-e2e-docker` (see docs/dev/testing.md § Testing the Docker image)
 /.e2e-docker
 
+# Results and traces of scripts/e2e-flake-hunt.sh
+# (see docs/dev/testing.md § Flake hunting)
+/.flake-hunt
+
 # Nix
 flake.nix
 flake.lock

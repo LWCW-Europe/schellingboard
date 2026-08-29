@@ -125,7 +125,10 @@ clean:
 	rm -rf uploads uploads-test
 	rm -rf coverage
 
+# Not in `clean`: a flake hunt is hours of machine time, and its results are
+# read days later when comparing a hunt from before a fix with one from after.
 clean-all: clean
+	rm -rf .flake-hunt
 	rm -rf node_modules
 
 dev-migrate-up: install

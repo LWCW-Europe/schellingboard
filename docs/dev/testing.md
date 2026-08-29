@@ -168,6 +168,61 @@ component that formats a date in the ambient zone renders identically on both
 sides and its hydration mismatch stays invisible. In the image it does not.
 Dates must be formatted in an explicit zone — the event's — never the process's.
 
+## Flake hunting
+
+A test that fails once in twenty runs is invisible to a normal `make test-e2e`.
+`scripts/e2e-flake-hunt.sh` runs the suite repeatedly and keeps the evidence, so
+flakes can be ranked by failure rate instead of by whoever noticed one last:
+
+```bash
+scripts/e2e-flake-hunt.sh                      # 20 runs of the whole suite
+scripts/e2e-flake-hunt.sh 5 -- tests/e2e/voting.spec.ts --repeat-each=3
+nohup scripts/e2e-flake-hunt.sh 20 > flake-hunt.log 2>&1 &   # overnight
+```
+
+Everything lands in `.flake-hunt/<UTC timestamp>/` (gitignored): `meta.json`
+(commit, worker count, machine), then one `run-NNN/` per iteration holding that
+run's `results.json` (the Playwright JSON report), its console log, and traces
+of whatever failed. Traces are recorded with `--trace=retain-on-failure`, so a
+failure comes with network log, console and per-action DOM snapshots — open one
+with `bun x playwright show-trace <path>`.
+
+The app is built and started **once** for the whole hunt, not per run: a
+`next build` per iteration would dominate the runtime, while the part that has
+to repeat — reseeding the database in `globalSetup` — still happens once per
+run. Retries are forced to 0: the hunt wants raw failure rates, not
+Playwright's own flake classification.
+
+Two knobs, both environment variables:
+
+- `E2E_WORKERS=N` — passed on as `--workers`. Setting it at or above the core
+  count overloads the CPU deliberately, which makes timing-dependent flakes
+  surface in far fewer runs.
+- `HUNT_KEEP_PASSING=0` — shrink green runs' `results.json` to their stats
+  block. Only worth it for very long hunts: the report still counts those runs
+  as passes, but their per-test durations are gone, so the duration-outlier
+  section is left looking at the red runs alone.
+
+The hunt ends by aggregating itself. To re-aggregate, or to compare a hunt from
+before a fix with one from after:
+
+```bash
+bun scripts/e2e-flake-report.ts .flake-hunt/<ts>
+bun scripts/e2e-flake-report.ts .flake-hunt/<before> .flake-hunt/<after>
+```
+
+The report — printed and written to `report.md` in the last directory given —
+lists flaky tests (failed in some runs, passed in others) with their failure
+rate, normalized error signature and the runs whose traces to open; persistent
+failures separately, since failing every time is a breakage rather than a
+flake; tests whose p95 duration is within striking distance of their timeout;
+and failures grouped by signature, which is what reveals that several tests
+share one root cause.
+
+If the mail variables are set in `.env.test.local`, start mailpit (`make
+mailpit`) before a hunt — otherwise the email specs fail identically in every
+run and clutter the report as persistent failures.
+
 ## E2E conventions
 
 - Imitate human behavior — click visible elements, navigate naturally

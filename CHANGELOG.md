@@ -63,6 +63,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- `scripts/e2e-flake-hunt.sh` runs the E2E suite N times against one build and keeps every run's JSON
+  report plus traces of what failed; `scripts/e2e-flake-report.ts` aggregates those into a report
+  ranking flaky tests by failure rate and grouping them by error signature. See
+  [docs/dev/testing.md § Flake hunting](docs/dev/testing.md#flake-hunting)
 - Throwaway names in E2E tests carry the worker's process id and a counter, not just `Date.now()`:
   two parallel workers can land in the same millisecond, and the duplicate name would surface as an
   unreproducible locator failure somewhere else entirely
