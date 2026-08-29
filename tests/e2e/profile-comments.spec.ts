@@ -92,6 +92,52 @@ test("posts a comment on a profile and shows it when the profile reopens", async
   await expect(reopened.getByText("see you at the venue")).toBeVisible();
 });
 
+test("shows an error instead of a permanent skeleton when comments fail to load", async ({
+  page,
+}) => {
+  await login(page);
+
+  // Fail the comments request outright: the section must own up to it rather
+  // than leave its "Loading comments…" skeleton up forever.
+  await page.route(/\/api\/profile\/[^/]+\/comments/, (route) => route.abort());
+
+  const profile = await openProfile(page, "Alice Test");
+
+  await expect(profile.getByRole("alert")).toHaveText(
+    "Couldn't load comments."
+  );
+  await expect(
+    profile.getByRole("heading", { name: "Loading comments..." })
+  ).toHaveCount(0);
+});
+
+test("keeps the thread already shown when a reload fails", async ({ page }) => {
+  await login(page);
+  await actAs(page, /Alice Test/i);
+
+  const profile = await openProfile(page, "Mateo Quispe");
+  await expect(
+    profile.getByRole("heading", { name: "0 comments" })
+  ).toBeVisible();
+
+  // Fail every comments request from here on, so the reload that posting
+  // triggers dies. The thread already on screen has to survive it intact.
+  await page.route(/\/api\/profile\/[^/]+\/comments/, (route) => route.abort());
+
+  await profile
+    .getByPlaceholder("Add a comment")
+    .fill("posted with its reload cut off");
+  await profile.getByRole("button", { name: "Comment" }).click();
+
+  await expect(
+    profile.getByRole("heading", { name: "0 comments" })
+  ).toBeVisible();
+  await expect(profile.getByRole("alert")).toHaveCount(0);
+  await expect(
+    profile.getByRole("heading", { name: "Loading comments..." })
+  ).toHaveCount(0);
+});
+
 test("edits a comment, showing when it was edited, then deletes it", async ({
   page,
 }) => {

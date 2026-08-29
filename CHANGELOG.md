@@ -32,7 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Split the comments repository into a scope-agnostic core plus separate proposal-comment and session-comment
   repositories
-- Session comments now have integration and end-to-end test coverage mirroring the proposal comment suites
+- Session and profile comments now have integration and end-to-end test coverage mirroring the proposal comment suites
 
 ### Fixed
 
