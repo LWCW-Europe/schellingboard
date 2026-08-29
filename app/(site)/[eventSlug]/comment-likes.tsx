@@ -19,7 +19,7 @@ export function CommentLikes({
 }: {
   comment: Pick<Comment, "id" | "likes">;
   // Only the cache invalidation target for pages that server-render their
-  // comments — proposals. Sessions omit it.
+  // comments — proposals. Sessions and profiles omit it.
   eventSlug?: string;
   onChanged: () => void;
 }) {

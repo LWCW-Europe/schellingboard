@@ -28,6 +28,7 @@ import {
   ProposalLink,
   SessionLink,
 } from "@/app/(site)/guests/profile-link";
+import { ProfileComments } from "@/app/(site)/guests/profile-comments";
 import type { ProfileActivity } from "@/app/(site)/guests/profile-activity";
 
 /**
@@ -38,12 +39,17 @@ import type { ProfileActivity } from "@/app/(site)/guests/profile-activity";
 export function ProfileBody({
   guest,
   isOwnProfile,
+  isActive,
   activity,
   zoomed,
   onToggleZoom,
 }: {
   guest: Attendee;
   isOwnProfile: boolean;
+  // Only the profile being read carries comments: a swipe mounts its
+  // neighbours for a moment, and their sections must not fire requests of
+  // their own.
+  isActive: boolean;
   activity: ProfileActivity | null;
   zoomed: boolean;
   onToggleZoom: () => void;
@@ -187,6 +193,8 @@ export function ProfileBody({
             />
           </>
         )}
+
+        {isActive && <ProfileComments profileId={guest.id} />}
       </div>
     </div>
   );

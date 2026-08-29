@@ -10,6 +10,7 @@ import {
   commentDeleteSchema,
   commentLikeSchema,
   commentUpdateSchema,
+  profileCommentSchema,
   proposalCommentSchema,
   sessionCommentSchema,
 } from "@/model/comment";
@@ -46,8 +47,8 @@ function toResult(
 }
 
 // Only surfaces that server-render their comments need cache invalidation —
-// proposals. Sessions reload through their own endpoint, so they pass no slug
-// and nothing is revalidated for them.
+// proposals. Sessions and profiles reload through their own endpoint, so they
+// pass no slug and nothing is revalidated for them.
 function revalidateEvent(eventSlug: string | undefined): void {
   if (eventSlug) {
     revalidatePath(`/${eventSlug}`, "layout");
@@ -152,6 +153,44 @@ export async function createSessionComment(
 
     await getRepositories().sessionComments.create({
       subjectId: sessionId,
+      authorId: guest,
+      parentId,
+      body,
+      createdTime: await serverNow(),
+    });
+    return { success: true };
+  } catch (error) {
+    return toResult(error, "Failed to post comment");
+  }
+}
+
+export async function createProfileComment(
+  comment: z.input<typeof profileCommentSchema>
+): Promise<CommentActionResult>;
+export async function createProfileComment(
+  input: unknown
+): Promise<CommentActionResult> {
+  try {
+    const guest = await requireGuest();
+    const { profileId, parentId, body } = await requireParsed(
+      profileCommentSchema,
+      input
+    );
+
+    // validation
+    if (!(await getRepositories().guests.findById(profileId))) {
+      return { error: "Profile not found" };
+    }
+    if (parentId) {
+      const parentOf =
+        await getRepositories().profileComments.findSubjectId(parentId);
+      if (!parentOf || parentOf !== profileId) {
+        return { error: "The comment being replied to is invalid" };
+      }
+    }
+
+    await getRepositories().profileComments.create({
+      subjectId: profileId,
       authorId: guest,
       parentId,
       body,

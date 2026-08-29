@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **Comments on attendee profiles**: a profile now ends with the same comment section sessions and proposals already
+  have — threaded replies, likes, editing and deleting your own comments. Open anyone in the directory to say hi or
+  arrange to meet up
 - **Comments on sessions**: a session's details now have the same comment section proposals already had — threaded
   replies, likes, editing and deleting your own comments. Open any session in the schedule to discuss times, rooms or
   last-minute changes
@@ -66,6 +69,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- Comments live behind a scope-agnostic core (find, edit, like, delete) plus one repository per subject, so
+  proposals, sessions and profiles share a single implementation. Adding a fourth thing to comment on is a join
+  table and one line of wiring, not another copy of the same forty lines
 - `scripts/e2e-flake-hunt.sh` runs the E2E suite N times against one build and keeps every run's JSON
   report plus traces of what failed; `scripts/e2e-flake-report.ts` aggregates those into a report
   ranking flaky tests by failure rate and grouping them by error signature. See

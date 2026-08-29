@@ -677,9 +677,9 @@ export type Comment = {
 
 /**
  * Scope-agnostic comment operations. A comment is attached to exactly one
- * subject — a session proposal or a scheduled session — but finding, editing,
- * liking and deleting work identically for all, so they live here. Attaching
- * comments to a subject is a SubjectCommentsRepository.
+ * subject — a session proposal, a scheduled session or a guest's profile —
+ * but finding, editing, liking and deleting work identically for all, so they
+ * live here. Attaching comments to a subject is a SubjectCommentsRepository.
  */
 export interface CommentsRepository {
   findById(commentId: string): Promise<Comment | undefined>;
@@ -699,9 +699,9 @@ export interface CommentsRepository {
 
 /**
  * Comments attached to one kind of subject. Which kind is fixed by the
- * repository itself — `proposalComments` and `sessionComments` on
- * {@link Repositories} — so `subjectId` below is always a proposal or session
- * id respectively.
+ * repository itself — `proposalComments`, `sessionComments` and
+ * `profileComments` on {@link Repositories} — so `subjectId` below is always a
+ * proposal, session or profile id respectively.
  */
 export interface SubjectCommentsRepository {
   /** All comments on the subject, oldest first, likes included. */
