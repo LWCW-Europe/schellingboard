@@ -28,7 +28,9 @@ import { sendMail } from "@/utils/mailer";
 import {
   notifyCohostsAdded,
   notifyGuest,
+  notifyProfileCommented,
   notifyProposalCommented,
+  notifySessionCommented,
   notifySessionChanged,
   notifySessionDeleted,
 } from "@/utils/notifications";
@@ -710,6 +712,230 @@ describe("notifyProposalCommented", () => {
 
     await expect(
       notifyProposalCommented({ proposalId: proposal.id, comment: posted })
+    ).resolves.toBeUndefined();
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+});
+
+describe("notifySessionCommented", () => {
+  beforeAll(() => setupTestDb());
+
+  beforeEach(() => {
+    resetTestDb();
+    vi.mocked(sendMail).mockReset();
+    vi.stubEnv("SITE_URL", "https://site.example");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  // A session hosted by host@test.example, already carrying one comment by
+  // earlier@test.example.
+  async function setup() {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ email: "host@test.example" });
+    const earlier = await createGuest({ email: "earlier@test.example" });
+    const session = await createSession(event.id, {
+      title: "Hallway Track",
+      hostIds: [host.id],
+    });
+    await addComment(session.id, earlier.id, "See you there");
+    return { event, host, earlier, session };
+  }
+
+  async function addComment(sessionId: string, authorId: string, body: string) {
+    return getRepositories().sessionComments.create({
+      subjectId: sessionId,
+      authorId,
+      body,
+      createdTime: new Date("2026-08-01T10:00:00Z"),
+    });
+  }
+
+  it("emails the session's hosts and the opted-in earlier commenters", async () => {
+    const { event, earlier, session } = await setup();
+    await getRepositories().guests.updateEmailSettings(earlier.id, {
+      ...DEFAULT_EMAIL_SETTINGS,
+      commentThread: true,
+    });
+    const commenter = await createGuest({
+      name: "Rosa Diaz",
+      email: "commenter@test.example",
+    });
+    const posted = await addComment(session.id, commenter.id, "A *great* room");
+
+    await notifySessionCommented({ sessionId: session.id, comment: posted });
+
+    expect(sendMail).toHaveBeenCalledTimes(2);
+    const messages = vi.mocked(sendMail).mock.calls.map((call) => call[0]);
+    const hostMessage = messages.find((m) => m.to === "host@test.example");
+    expect(hostMessage?.subject).toBe("New comment on: Hallway Track");
+
+    const hostHtml = await render(hostMessage!.body);
+    expect(hostHtml).toContain("Rosa Diaz");
+    expect(hostHtml).toContain("session you");
+    expect(hostHtml).toContain("A <em>great</em> room");
+    expect(hostHtml).toContain(
+      `href="https://site.example/${event.slug}?viewSession=${session.id}#comment-${posted.id}"`
+    );
+  });
+
+  it("does not email the guest who wrote the comment", async () => {
+    const { host, session } = await setup();
+    const posted = await addComment(session.id, host.id, "My own thoughts");
+
+    await notifySessionCommented({ sessionId: session.id, comment: posted });
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
+    expect(recipients).not.toContain("host@test.example");
+  });
+
+  it("leaves earlier commenters alone by default", async () => {
+    const { session } = await setup();
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(session.id, commenter.id, "Hello");
+
+    await notifySessionCommented({ sessionId: session.id, comment: posted });
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
+    expect(recipients).toEqual(["host@test.example"]);
+  });
+
+  it("skips a host who opted out of session comment emails", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({
+      email: "host-off@test.example",
+      emailSettings: { sessionComment: false },
+    });
+    const session = await createSession(event.id, { hostIds: [host.id] });
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(session.id, commenter.id, "Hello");
+
+    await notifySessionCommented({ sessionId: session.id, comment: posted });
+
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when the session is gone", async () => {
+    const { session } = await setup();
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(session.id, commenter.id, "Hello");
+    await getRepositories().sessions.delete(session.id);
+
+    await expect(
+      notifySessionCommented({ sessionId: session.id, comment: posted })
+    ).resolves.toBeUndefined();
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+});
+
+describe("notifyProfileCommented", () => {
+  beforeAll(() => setupTestDb());
+
+  beforeEach(() => {
+    resetTestDb();
+    vi.mocked(sendMail).mockReset();
+    vi.stubEnv("SITE_URL", "https://site.example");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  // owner@test.example's profile, already carrying one comment by
+  // earlier@test.example.
+  async function setup() {
+    const owner = await createGuest({
+      name: "Amy Santiago",
+      email: "owner@test.example",
+    });
+    const earlier = await createGuest({ email: "earlier@test.example" });
+    await addComment(owner.id, earlier.id, "Nice to meet you");
+    return { owner, earlier };
+  }
+
+  async function addComment(profileId: string, authorId: string, body: string) {
+    return getRepositories().profileComments.create({
+      subjectId: profileId,
+      authorId,
+      body,
+      createdTime: new Date("2026-08-01T10:00:00Z"),
+    });
+  }
+
+  it("emails the profile's owner and the opted-in earlier commenters", async () => {
+    const { owner, earlier } = await setup();
+    await getRepositories().guests.updateEmailSettings(earlier.id, {
+      ...DEFAULT_EMAIL_SETTINGS,
+      commentThread: true,
+    });
+    const commenter = await createGuest({
+      name: "Rosa Diaz",
+      email: "commenter@test.example",
+    });
+    const posted = await addComment(owner.id, commenter.id, "Say *hi*");
+
+    await notifyProfileCommented({ profileId: owner.id, comment: posted });
+
+    expect(sendMail).toHaveBeenCalledTimes(2);
+    const messages = vi.mocked(sendMail).mock.calls.map((call) => call[0]);
+    const ownerMessage = messages.find((m) => m.to === "owner@test.example");
+    expect(ownerMessage?.subject).toBe("New comment on your profile");
+
+    const ownerHtml = await render(ownerMessage!.body);
+    expect(ownerHtml).toContain("Rosa Diaz");
+    expect(ownerHtml).toContain("Say <em>hi</em>");
+    expect(ownerHtml).toContain(
+      `href="https://site.example/guests/${owner.id}#comment-${posted.id}"`
+    );
+
+    const earlierMessage = messages.find(
+      (m) => m.to === "earlier@test.example"
+    );
+    expect(earlierMessage?.subject).toBe(
+      "New comment on: Amy Santiago's profile"
+    );
+  });
+
+  it("does not email the guest who wrote the comment", async () => {
+    const { owner } = await setup();
+    const posted = await addComment(owner.id, owner.id, "A note to myself");
+
+    await notifyProfileCommented({ profileId: owner.id, comment: posted });
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
+    expect(recipients).not.toContain("owner@test.example");
+  });
+
+  it("leaves earlier commenters alone by default", async () => {
+    const { owner } = await setup();
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(owner.id, commenter.id, "Hello");
+
+    await notifyProfileCommented({ profileId: owner.id, comment: posted });
+
+    const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
+    expect(recipients).toEqual(["owner@test.example"]);
+  });
+
+  it("skips an owner who opted out of profile comment emails", async () => {
+    const owner = await createGuest({
+      email: "owner-off@test.example",
+      emailSettings: { profileComment: false },
+    });
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(owner.id, commenter.id, "Hello");
+
+    await notifyProfileCommented({ profileId: owner.id, comment: posted });
+
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when the profile is gone", async () => {
+    const { owner } = await setup();
+    const commenter = await createGuest({ email: "commenter@test.example" });
+    const posted = await addComment(owner.id, commenter.id, "Hello");
+    await getRepositories().guests.delete(owner.id);
+
+    await expect(
+      notifyProfileCommented({ profileId: owner.id, comment: posted })
     ).resolves.toBeUndefined();
     expect(sendMail).not.toHaveBeenCalled();
   });

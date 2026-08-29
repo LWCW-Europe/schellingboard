@@ -43,7 +43,13 @@ test("header user menu reaches profile, edit profile, and settings; email prefer
     page.getByLabel(/comments on a proposal I.m hosting/i)
   ).toBeChecked();
   await expect(
-    page.getByLabel(/comments on a proposal I.ve commented on/i)
+    page.getByLabel(/comments on a session I.m hosting/i)
+  ).toBeChecked();
+  await expect(page.getByLabel(/comments on my profile/i)).toBeChecked();
+  await expect(
+    page.getByLabel(
+      /comments on a proposal, session or profile I.ve commented on/i
+    )
   ).not.toBeChecked();
   await rsvpToggle.uncheck();
   await page.getByRole("button", { name: /^Save$/ }).click();

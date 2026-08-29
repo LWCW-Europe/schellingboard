@@ -4,6 +4,10 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
+
 const { afterTasks } = vi.hoisted(() => ({
   afterTasks: [] as Promise<unknown>[],
 }));
@@ -13,6 +17,10 @@ vi.mock("next/server", () => ({
     afterTasks.push(Promise.resolve(task()));
   },
 }));
+
+async function flushAfter(): Promise<void> {
+  await Promise.all(afterTasks);
+}
 
 const cookieJar = new Map<string, string>();
 
@@ -39,6 +47,7 @@ import {
   deleteComment,
   updateComment,
 } from "@/app/(site)/[eventSlug]/comment-actions";
+import { sendMail } from "@/utils/mailer";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
@@ -59,7 +68,26 @@ describe("profile comments", () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    vi.mocked(sendMail).mockReset();
     afterTasks.length = 0;
+  });
+
+  it("emails the profile's owner about a new comment", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const owner = await createGuest({
+      eventId: event.id,
+      email: "owner@test.example",
+    });
+    const commenter = await createGuest({ eventId: event.id });
+    act(commenter.id);
+    vi.stubEnv("SITE_URL", "https://site.example");
+
+    await createComment({ profileId: owner.id, body: "Great to meet you" });
+    await flushAfter();
+
+    expect(vi.mocked(sendMail).mock.calls.map((c) => c[0].to)).toEqual([
+      "owner@test.example",
+    ]);
   });
 
   it("stores a comment and reads it back with its author and time", async () => {

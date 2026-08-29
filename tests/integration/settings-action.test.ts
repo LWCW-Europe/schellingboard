@@ -35,6 +35,8 @@ describe("updateEmailSettingsAction", () => {
       hostChange: false,
       cohostAdd: true,
       proposalComment: false,
+      sessionComment: false,
+      profileComment: true,
       commentThread: true,
     });
     expect(result).toEqual({ ok: true });
@@ -44,6 +46,8 @@ describe("updateEmailSettingsAction", () => {
       hostChange: false,
       cohostAdd: true,
       proposalComment: false,
+      sessionComment: false,
+      profileComment: true,
       commentThread: true,
     });
   });
@@ -55,6 +59,8 @@ describe("updateEmailSettingsAction", () => {
       hostChange: false,
       cohostAdd: false,
       proposalComment: false,
+      sessionComment: false,
+      profileComment: false,
       commentThread: false,
     });
     expect(result).toEqual({ ok: false, error: "No user is logged in" });

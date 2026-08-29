@@ -111,7 +111,14 @@ export type EmailSettings = {
   cohostAdd: boolean;
   /** Someone commented on a proposal the guest is hosting. */
   proposalComment: boolean;
-  /** Someone commented on a proposal the guest has commented on. */
+  /** Someone commented on a session the guest is hosting. */
+  sessionComment: boolean;
+  /** Someone commented on the guest's own profile. */
+  profileComment: boolean;
+  /**
+   * Someone commented on a proposal, session or profile the guest has
+   * commented on.
+   */
   commentThread: boolean;
 };
 
@@ -120,6 +127,8 @@ export const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   hostChange: true,
   cohostAdd: true,
   proposalComment: true,
+  sessionComment: true,
+  profileComment: true,
   commentThread: false,
 };
 

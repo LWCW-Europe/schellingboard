@@ -260,9 +260,10 @@ you it happened.
 
 - **Email notifications** (if the event has email) — when a session you host
   or RSVP'd to is moved or deleted, when someone adds you as a co-host, and
-  when someone comments on a proposal you host. All on by default, each can be
-  turned off. Emails about every new comment on a proposal _you_ commented on
-  are off by default.
+  when someone comments on a proposal or session you host or on your own
+  profile. All on by default, each can be turned off. Emails about every new
+  comment on a proposal, session or profile _you_ commented on are off by
+  default.
 - **Appearance** — System, Light or Dark, also available at the very bottom of
   every page. **System** follows your phone or laptop, so the site turns dark
   in the evening if your device does. The choice is remembered per device, not
