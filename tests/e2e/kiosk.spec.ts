@@ -106,8 +106,20 @@ test("?kiosk=0 clears the cookie and leaves kiosk mode", async ({ page }) => {
   await page.goto("/Conference-Gamma?kiosk=0");
   await expect(page.getByTestId("now-line")).toHaveCount(0);
 
-  // A plain reload (no parameter at all) should stay out of kiosk mode too,
-  // proving the cookie was actually cleared rather than just overridden.
+  // ?kiosk=0 hides the now line from the server render alone, so the check
+  // above says nothing about hydration — while the cookie is cleared by an
+  // effect that only runs once the page has hydrated. Navigating away before
+  // that lands leaves the cookie behind, and the next page is in kiosk mode
+  // again.
+  await expect
+    .poll(async () =>
+      (await page.context().cookies()).map((cookie) => cookie.name)
+    )
+    .not.toContain("kiosk");
+
+  // A plain reload (no parameter at all) should stay out of kiosk mode too:
+  // the poll above proves the cookie is gone, this that nothing else puts the
+  // display back into kiosk mode once it is.
   await page.goto("/Conference-Gamma");
   await expect(page.getByTestId("now-line")).toHaveCount(0);
 });

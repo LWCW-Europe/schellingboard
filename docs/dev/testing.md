@@ -186,6 +186,12 @@ Dates must be formatted in an explicit zone — the event's — never the proces
 - A cross-test invariant that only a comment states ("no other test votes on this proposal") is
   enforced by nothing. Put it in the seed or the fixture where it can be relied on, or write the
   assertion so it does not need the invariant
+- Nothing a page does in an effect is covered by an assertion the server render already satisfies.
+  `toHaveCount(0)` on something the markup never contained passes instantly, and a click on a
+  server-rendered control satisfies every actionability check a moment before React attaches its
+  handler — so both come up green while hydration is still pending. Where the behavior under test
+  lives in an effect, wait for that effect's own result before acting on it: `kiosk.spec.ts` polls
+  until the `kiosk` cookie is gone before it navigates on, `helpers/user.ts` taps the chip again
 
 ## Test data
 
