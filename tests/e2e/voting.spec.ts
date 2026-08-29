@@ -69,33 +69,27 @@ test("should navigate to quick voting and allow voting on proposals", async ({
   await expect(page).toHaveURL(/\/Conference-Beta\/proposals\/quick-voting$/);
   await expect(page.getByText(/Quick Voting/i)).toBeVisible();
 
-  // Verify voting progress is shown
-  await expect(page.getByText(/You have voted on/)).toBeVisible();
-
-  // Check if there's a proposal to vote on
+  // Bob always has something left to vote on: the three event-specific Beta
+  // proposals are seeded without any votes at all (see
+  // eventSpecificTitlePatterns in scripts/seed/data/templates.ts) and Bob
+  // hosts at most one of them.
+  const progress = page.getByText(/You have voted on \d+ \/ \d+ proposals/);
+  await expect(progress).toBeVisible();
+  const before = Number(/\d+/.exec((await progress.textContent()) ?? "")?.[0]);
   const interestedButton = page.getByRole("button", { name: /❤️ Interested/i });
+  await expect(interestedButton).toBeVisible();
 
-  // If there are proposals to vote on, vote on one
-  if (await interestedButton.isVisible()) {
-    // Vote "Interested" on the current proposal
-    await interestedButton.click();
+  await interestedButton.click();
 
-    // After voting, either a new proposal should appear or we should see completion message
-    const hasMoreProposals = await interestedButton
-      .isVisible({ timeout: 2000 })
-      .catch(() => false);
-    const completionMessage = await page
-      .getByText(/You have voted on all proposals/)
-      .isVisible({ timeout: 2000 })
-      .catch(() => false);
-
-    expect(hasMoreProposals || completionMessage).toBe(true);
-  } else {
-    // If no proposals to vote on, we should see the completion message
-    await expect(
-      page.getByText(/You have voted on all proposals/)
-    ).toBeVisible();
-  }
+  // The counter is this page's own state, updated optimistically — so it
+  // counts up by exactly one even when another worker votes as Bob too.
+  await expect(progress).toHaveText(
+    new RegExp(`You have voted on ${before + 1} / `)
+  );
+  // ...and the page moves on to the next proposal, or to the end of the queue.
+  await expect(
+    interestedButton.or(page.getByText(/You have voted on all proposals/))
+  ).toBeVisible();
 
   // Navigate back to proposals overview
   await page.getByRole("link", { name: /← Proposals/i }).click();
@@ -192,26 +186,24 @@ test("should show voting disabled state when not logged in as a user", async ({
   const firstProposalRow = page.getByRole("row").nth(1);
   await expect(firstProposalRow).toBeVisible();
 
-  // Check that voting buttons are disabled or not present for non-logged in users
-  // The buttons should either be disabled or not visible when no user is selected
-  const interestedButton = firstProposalRow.getByRole("button", { name: "❤️" });
-  const maybeButton = firstProposalRow.getByRole("button", { name: "⭐" });
-  const skipButton = firstProposalRow.getByRole("button", { name: "👋🏽" });
-
-  if (await interestedButton.isVisible()) {
-    // If buttons are visible, they should be disabled
-    await expect(interestedButton).toBeDisabled();
-    await expect(maybeButton).toBeDisabled();
-    await expect(skipButton).toBeDisabled();
-  }
-
-  // Check that the "Go to Quick Voting!" button is disabled
+  // Quick voting is offered but unavailable, and says why on hover.
   const quickVotingLink = page.getByRole("link", {
     name: /Go to Quick Voting!/i,
   });
-  if (await quickVotingLink.isVisible()) {
-    await expect(quickVotingLink).toHaveClass(/opacity-50|cursor-not-allowed/);
-  }
+  await expect(quickVotingLink).toHaveClass(/opacity-50|cursor-not-allowed/);
+  await expect(quickVotingLink).toHaveAttribute("aria-disabled", "true");
+
+  // Without a name selected there is nobody to vote as, so the per-proposal
+  // vote buttons are not rendered at all.
+  await expect(
+    firstProposalRow.getByRole("button", { name: "❤️" })
+  ).toHaveCount(0);
+  await expect(
+    firstProposalRow.getByRole("button", { name: "⭐" })
+  ).toHaveCount(0);
+  await expect(
+    firstProposalRow.getByRole("button", { name: "👋🏽" })
+  ).toHaveCount(0);
 });
 
 // Conference Gamma is in the scheduling phase, where the vote breakdown is

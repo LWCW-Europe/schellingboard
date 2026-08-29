@@ -60,6 +60,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- E2E tests no longer decide what to assert from a single `isVisible()` sample (quick voting, the
+  voting-disabled state, admin login, the RSVP capacity test). Each now waits for the state it
+  expects, and the RSVP capacity test books a slot that overlaps nothing, so whether it has to
+  confirm a clash warning no longer depends on what else is scheduled
 - The emoji, label and display order of a vote live only in `app/(site)/votes.ts`, and `VotesContext` exposes
   `proposalVoteLabel` beside `proposalVoteEmoji`. The choice→label mapping had been copied into three components, each
   free to drift from the emoji next to it

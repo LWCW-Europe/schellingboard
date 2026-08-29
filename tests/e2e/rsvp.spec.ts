@@ -116,11 +116,17 @@ test("a full session blocks further RSVPs when the event enforces capacity", asy
   // Hosts are prefilled with the selected user (Alice). Pick a fixed slot on
   // the last day that no other spec relies on, so parallel tests (e.g.
   // scheduling.spec.ts asserting free slots on day 1) never compete for it.
+  // 20:00–21:00 (offered as "20:10", slot plus break) also overlaps nothing
+  // else in *any* room: the seeded day ends at 17:00 and the other specs all
+  // book earlier. Bob can therefore hold no RSVP clashing with this session,
+  // so the RSVPs below never have to confirm a clash warning — an earlier
+  // slot would, since update-session.spec.ts RSVPs Bob to a 15:00 slot in a
+  // parallel worker.
   await dayRadios(page).last().check();
   await listboxButton(page, /^Location/).click();
   await page.getByRole("option", { name: /Workshop Room/ }).click();
   await listboxButton(page, /^Start Time/).click();
-  await page.getByRole("option", { name: "16:10" }).click();
+  await page.getByRole("option", { name: "20:10" }).click();
   await page.getByRole("button", { name: "Submit" }).click();
   // Let the post-submit navigation to the overview land fully before leaving
   // for /admin: aborting its in-flight RSC fetch logs a console error, which
@@ -193,15 +199,6 @@ test("a full session blocks further RSVPs when the event enforces capacity", asy
   await selectUser(page, /Bob Test/i);
   await openSession();
   await dialog.getByRole("button", { name: "RSVP", exact: true }).click();
-  // Bob may hold a seeded RSVP that overlaps the new session's slot, in
-  // which case a clash warning must be confirmed first.
-  const clashConfirm = page.getByRole("button", { name: "Yes" });
-  await expect(
-    dialog.getByRole("button", { name: "Un-RSVP" }).or(clashConfirm)
-  ).toBeVisible();
-  if (await clashConfirm.isVisible()) {
-    await clashConfirm.click();
-  }
   await expect(dialog.getByRole("button", { name: "Un-RSVP" })).toBeVisible();
   await closeSession();
 
