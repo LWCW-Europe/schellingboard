@@ -89,6 +89,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   voting-disabled state, admin login, the RSVP capacity test). Each now waits for the state it
   expects, and the RSVP capacity test books a slot that overlaps nothing, so whether it has to
   confirm a clash warning no longer depends on what else is scheduled
+- The session modal cancels its RSVP request when it closes and ignores one the browser kills on the
+  way out of the page. The rejection had nowhere to go and surfaced as an uncaught "NetworkError
+  when attempting to fetch resource" — noise in the browser console, and a failed E2E run whenever a
+  reload caught the request in flight
 - The kiosk E2E test waits for the `kiosk` cookie to be gone before it navigates on. `?kiosk=0`
   leaves the now line out of the server render, so the assertion after it could pass before the page
   had hydrated and run the effect that clears the cookie — and the page after that came up in kiosk

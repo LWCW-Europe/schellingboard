@@ -39,15 +39,16 @@ export function SessionModal({
   }, [onDismiss]);
 
   useEffect(() => {
-    let cancelled = false;
-    void fetch(`/api/rsvps?session=${sessionId}`)
+    const controller = new AbortController();
+    void fetch(`/api/rsvps?session=${sessionId}`, { signal: controller.signal })
       .then((res) => (res.ok ? (res.json() as Promise<Rsvp[]>) : []))
-      .then((data) => {
-        if (!cancelled) setLoaded({ id: sessionId, rsvps: data });
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then((data) => setLoaded({ id: sessionId, rsvps: data }))
+      // Closing the modal aborts the request, and leaving the page has the
+      // browser kill it; either way there is nothing left to show and nobody
+      // to tell. Unhandled, that rejection reaches the window as an uncaught
+      // "NetworkError when attempting to fetch resource".
+      .catch(() => undefined);
+    return () => controller.abort();
   }, [sessionId]);
 
   if (!event) return null;
