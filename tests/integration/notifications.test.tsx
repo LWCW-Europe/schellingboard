@@ -142,8 +142,8 @@ describe("notifySessionChanged", () => {
     const html = await renderWithoutComments(message.body);
     expect(html).toContain("Fun Workshop");
     expect(html).toContain("A session you RSVP’d to");
-    // The description is markdown, rendered to html.
-    expect(html).toContain("A <em>hands-on</em> session.");
+    // The description is not re-sent over email; the link is enough.
+    expect(html).not.toContain("hands-on");
     expect(html).toContain("Saturday 1 August, 15:10–16:00");
     expect(html).toContain("(was Saturday 1 August, 10:10–11:00)");
     expect(html).toContain("Room A");
@@ -392,7 +392,7 @@ describe("notifySessionDeleted", () => {
     expect(attendeeHtml).toContain("A session you RSVP");
     expect(hostHtml).toContain("has been deleted");
     expect(attendeeHtml).toContain("has been deleted");
-    expect(hostHtml).toContain("A <em>hands-on</em> session.");
+    expect(hostHtml).not.toContain("hands-on");
     expect(hostHtml).toContain("Saturday 1 August, 10:10");
     expect(hostHtml).toContain("Room A");
     expect(hostHtml).toContain(`href="https://site.example/${event.slug}"`);
@@ -505,7 +505,7 @@ describe("notifyCohostsAdded", () => {
     expect(message.subject).toContain("Fun Workshop");
     const html = await renderWithoutComments(message.body);
     expect(html).toContain("co-host");
-    expect(html).toContain("A <em>hands-on</em> session.");
+    expect(html).not.toContain("hands-on");
     expect(html).toContain("Saturday 1 August, 10:10–11:00");
     expect(html).toContain("Room A");
     expect(html).toContain(
@@ -632,8 +632,8 @@ describe("notifyProposalCommented", () => {
     const hostHtml = await renderWithoutComments(hostMessage!.body);
     expect(hostHtml).toContain("Rosa Diaz");
     expect(hostHtml).toContain("proposal you");
-    // The comment body is markdown, rendered to html.
-    expect(hostHtml).toContain("A <em>great</em> idea");
+    // The comment itself is not re-sent over email; the link is enough.
+    expect(hostHtml).not.toContain("great");
     expect(hostHtml).toContain(
       `href="https://site.example/${event.slug}/proposals?viewProposal=${proposal.id}#comment-${posted.id}"`
     );
@@ -773,7 +773,7 @@ describe("notifySessionCommented", () => {
     const hostHtml = await render(hostMessage!.body);
     expect(hostHtml).toContain("Rosa Diaz");
     expect(hostHtml).toContain("session you");
-    expect(hostHtml).toContain("A <em>great</em> room");
+    expect(hostHtml).not.toContain("great");
     expect(hostHtml).toContain(
       `href="https://site.example/${event.slug}?viewSession=${session.id}#comment-${posted.id}"`
     );
@@ -881,7 +881,7 @@ describe("notifyProfileCommented", () => {
 
     const ownerHtml = await render(ownerMessage!.body);
     expect(ownerHtml).toContain("Rosa Diaz");
-    expect(ownerHtml).toContain("Say <em>hi</em>");
+    expect(ownerHtml).not.toContain("Say");
     expect(ownerHtml).toContain(
       `href="https://site.example/guests/${owner.id}#comment-${posted.id}"`
     );

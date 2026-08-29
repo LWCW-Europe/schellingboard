@@ -1,11 +1,13 @@
 import type { EmailMessage } from "@/utils/mailer";
-import { EmailMarkdown } from "@/emails/markdown";
 
 // Sent to a guest when someone adds them as a co-host of a session (or
 // creates a session listing them). Time and location come preformatted.
+//
+// The session's description is deliberately left out: it is not what the
+// notification is about, and there is no reason to hand it to the recipient's
+// email provider.
 export function cohostAddedEmail(props: {
   title: string;
-  description: string;
   time: string;
   location: string;
   sessionUrl: string;
@@ -22,9 +24,6 @@ export function cohostAddedEmail(props: {
         <p>
           <strong>Location:</strong> {props.location}
         </p>
-        {props.description && (
-          <EmailMarkdown>{props.description}</EmailMarkdown>
-        )}
         <p>
           <a href={props.sessionUrl}>View the session</a>
         </p>
