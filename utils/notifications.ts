@@ -10,7 +10,7 @@ import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
 import { sessionDeletedEmail } from "@/emails/session-deleted";
 import { cohostAddedEmail } from "@/emails/cohost-added";
-import { proposalCommentEmail } from "@/emails/proposal-comment";
+import { type CommentSubject, commentEmail } from "@/emails/comment";
 import { getStartTimePlusBreak } from "@/utils/utils";
 
 // Send `message` to the guest, iff they have opted in to emails for
@@ -290,70 +290,47 @@ async function notifyCohostsAddedUnsafe({
   }
 }
 
-// Email a new comment to the proposal's hosts (who have opted in) and to the
-// authors of its earlier comments (who have opted in — off by default). The
-// comment's own author is never told about their own comment, and nobody is
-// told twice, whichever way they qualify.
-//
-// Never throws: any failure (including a bad SITE_URL, or a lookup error) is
-// logged and must not break the comment it trails, nor the sends to the other
-// guests.
-export async function notifyProposalCommented(args: {
-  proposalId: string;
-  comment: Comment;
-}): Promise<void> {
-  try {
-    await notifyProposalCommentedUnsafe(args);
-  } catch (err) {
-    console.error("Failed to send proposal-comment notifications:", err);
-  }
-}
-
-async function notifyProposalCommentedUnsafe({
-  proposalId,
+// Email a new comment to the guests responsible for what was commented on —
+// a proposal's or session's hosts, a profile's owner — who have opted in, and
+// to the authors of its earlier comments (who have opted in — off by default).
+// The comment's own author is never told about their own comment, and nobody
+// is told twice, whichever way they qualify.
+async function deliverCommentEmails({
+  subject,
+  responsibleIds,
+  responsibleSetting,
+  earlier,
   comment,
+  url,
 }: {
-  proposalId: string;
+  subject: CommentSubject;
+  responsibleIds: string[];
+  responsibleSetting: keyof EmailSettings;
+  earlier: Comment[];
   comment: Comment;
+  url: string;
 }): Promise<void> {
-  const { comments, events, sessionProposals } = getRepositories();
-  const proposal = await sessionProposals.findById(proposalId);
-  if (!proposal) {
-    return;
-  }
-  const event = await events.findById(proposal.eventId);
-  if (!event) {
-    return;
-  }
-
-  const base = siteUrl();
-  if (base === null) {
-    console.warn("SITE_URL is not set - not sending comment notifications");
-    return;
-  }
-
   const messageProps = {
-    proposalTitle: proposal.title,
+    subject,
     commenterName: comment.author?.name ?? "Someone",
     body: comment.body,
-    url: commentUrl(base, event.slug, proposalId, comment.id),
+    url,
   };
 
   const done = new Set(comment.author ? [comment.author.id] : []);
-  for (const host of proposal.hosts) {
-    if (done.has(host.id)) {
+  for (const guestId of responsibleIds) {
+    if (done.has(guestId)) {
       continue;
     }
-    done.add(host.id);
+    done.add(guestId);
     await tryNotifyGuest(
-      host.id,
-      "proposalComment",
-      proposalCommentEmail({ ...messageProps, recipient: "host" })
+      guestId,
+      responsibleSetting,
+      commentEmail({ ...messageProps, recipient: "responsible" })
     );
   }
 
-  for (const earlier of await comments.listByProposal(proposalId)) {
-    const author = earlier.author;
+  for (const { author } of earlier) {
     if (!author || done.has(author.id)) {
       continue;
     }
@@ -361,14 +338,113 @@ async function notifyProposalCommentedUnsafe({
     await tryNotifyGuest(
       author.id,
       "commentThread",
-      proposalCommentEmail({ ...messageProps, recipient: "commenter" })
+      commentEmail({ ...messageProps, recipient: "commenter" })
     );
   }
 }
 
+// Never throws: any failure (including a bad SITE_URL, or a lookup error) is
+// logged and must not break the comment it trails, nor the sends to the other
+// guests.
+async function notifyCommented(
+  kind: CommentSubject["kind"],
+  send: (base: string) => Promise<void>
+): Promise<void> {
+  try {
+    const base = siteUrl();
+    if (base === null) {
+      console.warn("SITE_URL is not set - not sending comment notifications");
+      return;
+    }
+    await send(base);
+  } catch (err) {
+    console.error(`Failed to send ${kind}-comment notifications:`, err);
+  }
+}
+
+export async function notifyProposalCommented({
+  proposalId,
+  comment,
+}: {
+  proposalId: string;
+  comment: Comment;
+}): Promise<void> {
+  await notifyCommented("proposal", async (base) => {
+    const { proposalComments, events, sessionProposals } = getRepositories();
+    const proposal = await sessionProposals.findById(proposalId);
+    if (!proposal) {
+      return;
+    }
+    const event = await events.findById(proposal.eventId);
+    if (!event) {
+      return;
+    }
+    await deliverCommentEmails({
+      subject: { kind: "proposal", title: proposal.title },
+      responsibleIds: proposal.hosts.map((host) => host.id),
+      responsibleSetting: "proposalComment",
+      earlier: await proposalComments.list(proposalId),
+      comment,
+      url: proposalCommentUrl(base, event.slug, proposalId, comment.id),
+    });
+  });
+}
+
+export async function notifySessionCommented({
+  sessionId,
+  comment,
+}: {
+  sessionId: string;
+  comment: Comment;
+}): Promise<void> {
+  await notifyCommented("session", async (base) => {
+    const { sessionComments, events, sessions } = getRepositories();
+    const session = await sessions.findById(sessionId);
+    if (!session) {
+      return;
+    }
+    const event = await events.findById(session.eventId);
+    if (!event) {
+      return;
+    }
+    await deliverCommentEmails({
+      subject: { kind: "session", title: session.title },
+      responsibleIds: session.hosts.map((host) => host.id),
+      responsibleSetting: "sessionComment",
+      earlier: await sessionComments.list(sessionId),
+      comment,
+      url: `${sessionUrl(base, event.slug, sessionId)}#comment-${comment.id}`,
+    });
+  });
+}
+
+export async function notifyProfileCommented({
+  profileId,
+  comment,
+}: {
+  profileId: string;
+  comment: Comment;
+}): Promise<void> {
+  await notifyCommented("profile", async (base) => {
+    const { profileComments, guests } = getRepositories();
+    const owner = await guests.findById(profileId);
+    if (!owner) {
+      return;
+    }
+    await deliverCommentEmails({
+      subject: { kind: "profile", ownerName: owner.name },
+      responsibleIds: [profileId],
+      responsibleSetting: "profileComment",
+      earlier: await profileComments.list(profileId),
+      comment,
+      url: `${base}/guests/${profileId}#comment-${comment.id}`,
+    });
+  });
+}
+
 // Deep link to the comment inside the proposal modal, same shape as
 // modal-nav's viewProposalLinkFromElsewhere plus the comment's anchor.
-function commentUrl(
+function proposalCommentUrl(
   base: string,
   eventSlug: string,
   proposalId: string,

@@ -17,18 +17,33 @@ export const proposalCommentSchema = z.object({
   body,
 });
 
+export const sessionCommentSchema = z.object({
+  sessionId: z.string().min(1),
+  parentId: z.string().min(1).optional(),
+  body,
+});
+
+export const profileCommentSchema = z.object({
+  profileId: z.string().min(1),
+  parentId: z.string().min(1).optional(),
+  body,
+});
+
+// eventSlug is only the cache invalidation target for pages that
+// server-render their comments — proposals. Sessions and profiles fetch
+// theirs client-side and omit it.
 export const commentUpdateSchema = z.object({
   commentId: z.string().min(1),
-  eventSlug: z.string().min(1),
+  eventSlug: z.string().min(1).optional(),
   body,
 });
 
 export const commentDeleteSchema = z.object({
   commentId: z.string().min(1),
-  eventSlug: z.string().min(1),
+  eventSlug: z.string().min(1).optional(),
 });
 
 export const commentLikeSchema = z.object({
   commentId: z.string().min(1),
-  eventSlug: z.string().min(1),
+  eventSlug: z.string().min(1).optional(),
 });

@@ -88,8 +88,17 @@ export function SettingsForm({
             someone comments on a proposal I&rsquo;m hosting
           </label>
           <label className="flex items-center gap-2 text-sm text-fg-muted">
+            <input type="checkbox" {...form.register("sessionComment")} />
+            someone comments on a session I&rsquo;m hosting
+          </label>
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
+            <input type="checkbox" {...form.register("profileComment")} />
+            someone comments on my profile
+          </label>
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("commentThread")} />
-            someone comments on a proposal I&rsquo;ve commented on
+            someone comments on a proposal, session or profile I&rsquo;ve
+            commented on
           </label>
         </fieldset>
 

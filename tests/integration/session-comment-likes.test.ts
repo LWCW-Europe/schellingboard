@@ -1,4 +1,13 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetTestDb, setupTestDb } from "../helpers/db";
+import { createEvent, createGuest, createSession } from "../helpers/factories";
+import { getRepositories } from "@/db/container";
+import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
+import {
+  createSessionComment as createComment,
+  deleteComment,
+  toggleCommentLike,
+} from "@/app/(site)/[eventSlug]/comment-actions";
 
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
@@ -16,16 +25,6 @@ vi.mock("next/headers", () => ({
     }),
 }));
 
-import { setupTestDb, resetTestDb } from "../helpers/db";
-import { createEvent, createGuest, createProposal } from "../helpers/factories";
-import { getRepositories } from "@/db/container";
-import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
-import {
-  createProposalComment as createComment,
-  deleteComment,
-  toggleCommentLike,
-} from "@/app/(site)/[eventSlug]/comment-actions";
-
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
 function act(guestId: string): void {
@@ -33,27 +32,24 @@ function act(guestId: string): void {
 }
 
 async function setup() {
-  const event = await createEvent({ phase: "voting" });
+  const event = await createEvent({ phase: "scheduling" });
   const guest = await createGuest({ eventId: event.id });
-  const proposal = await createProposal(event.id, []);
+  const session = await createSession(event.id);
   act(guest.id);
   await createComment({
-    proposalId: proposal.id,
-    eventSlug: event.slug,
+    sessionId: session.id,
     body: "worth liking",
   });
-  const [comment] = await getRepositories().comments.listByProposal(
-    proposal.id
-  );
-  return { event, guest, proposal, comment };
+  const [comment] = await getRepositories().sessionComments.list(session.id);
+  return { event, guest, session, comment };
 }
 
-async function likesOn(proposalId: string, commentId: string) {
-  const comments = await getRepositories().comments.listByProposal(proposalId);
+async function likesOn(sessionId: string, commentId: string) {
+  const comments = await getRepositories().sessionComments.list(sessionId);
   return comments.find((c) => c.id === commentId)!.likes;
 }
 
-describe("comment likes", () => {
+describe("session comment likes", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => {
     resetTestDb();
@@ -62,27 +58,26 @@ describe("comment likes", () => {
   });
 
   it("starts with no likes", async () => {
-    const { proposal, comment } = await setup();
+    const { session, comment } = await setup();
 
-    expect(await likesOn(proposal.id, comment.id)).toEqual([]);
+    expect(await likesOn(session.id, comment.id)).toEqual([]);
   });
 
   it("records who liked the comment", async () => {
-    const { event, guest, proposal, comment } = await setup();
+    const { guest, session, comment } = await setup();
 
     const result = await toggleCommentLike({
       commentId: comment.id,
-      eventSlug: event.slug,
     });
 
     expect(result).toEqual({ success: true, liked: true });
-    expect(await likesOn(proposal.id, comment.id)).toEqual([
+    expect(await likesOn(session.id, comment.id)).toEqual([
       { id: guest.id, name: guest.name, avatarUrl: null },
     ]);
   });
 
   it("carries each liker's avatar, so it can be shown next to their name", async () => {
-    const { event, guest, proposal, comment } = await setup();
+    const { guest, session, comment } = await setup();
     await getRepositories().guests.updateProfile(
       guest.id,
       {
@@ -98,45 +93,44 @@ describe("comment likes", () => {
       new Date()
     );
 
-    await toggleCommentLike({ commentId: comment.id, eventSlug: event.slug });
+    await toggleCommentLike({ commentId: comment.id });
 
-    expect(await likesOn(proposal.id, comment.id)).toEqual([
+    expect(await likesOn(session.id, comment.id)).toEqual([
       { id: guest.id, name: guest.name, avatarUrl: "/uploads/avatar.webp" },
     ]);
   });
 
   it("takes the like back when pressed again", async () => {
-    const { event, proposal, comment } = await setup();
-    await toggleCommentLike({ commentId: comment.id, eventSlug: event.slug });
+    const { session, comment } = await setup();
+    await toggleCommentLike({ commentId: comment.id });
 
     const result = await toggleCommentLike({
       commentId: comment.id,
-      eventSlug: event.slug,
     });
 
     expect(result).toEqual({ success: true, liked: false });
-    expect(await likesOn(proposal.id, comment.id)).toEqual([]);
+    expect(await likesOn(session.id, comment.id)).toEqual([]);
   });
 
   it("keeps every guest's like, oldest first", async () => {
-    const { event, guest, proposal, comment } = await setup();
+    const { event, guest, session, comment } = await setup();
     const other = await createGuest({ eventId: event.id });
 
-    await toggleCommentLike({ commentId: comment.id, eventSlug: event.slug });
+    await toggleCommentLike({ commentId: comment.id });
     act(other.id);
-    await toggleCommentLike({ commentId: comment.id, eventSlug: event.slug });
+    await toggleCommentLike({ commentId: comment.id });
 
-    expect(await likesOn(proposal.id, comment.id)).toEqual([
+    expect(await likesOn(session.id, comment.id)).toEqual([
       { id: guest.id, name: guest.name, avatarUrl: null },
       { id: other.id, name: other.name, avatarUrl: null },
     ]);
   });
 
   it("keeps the pressing order for likes that land in the same millisecond", async () => {
-    const { event, proposal, comment } = await setup();
+    const { session, comment } = await setup();
     const guests = [
-      await createGuest({ eventId: event.id }),
-      await createGuest({ eventId: event.id }),
+      await createGuest({ eventId: session.eventId }),
+      await createGuest({ eventId: session.eventId }),
     ];
     // Press in descending id order, so a tiebreak on the (random) guest id
     // would hand back the reverse of the order they were pressed in.
@@ -151,7 +145,7 @@ describe("comment likes", () => {
       });
     }
 
-    expect(await likesOn(proposal.id, comment.id)).toEqual(
+    expect(await likesOn(session.id, comment.id)).toEqual(
       likers.map((liker) => ({
         id: liker.id,
         name: liker.name,
@@ -161,20 +155,19 @@ describe("comment likes", () => {
   });
 
   it("refuses to like without a selected name", async () => {
-    const { event, proposal, comment } = await setup();
+    const { session, comment } = await setup();
     cookieJar.clear();
 
     const result = await toggleCommentLike({
       commentId: comment.id,
-      eventSlug: event.slug,
     });
 
     expect(result).toHaveProperty("error");
-    expect(await likesOn(proposal.id, comment.id)).toEqual([]);
+    expect(await likesOn(session.id, comment.id)).toEqual([]);
   });
 
   it("refuses to like as a protected guest without a verified session", async () => {
-    const { event, guest, proposal, comment } = await setup();
+    const { guest, session, comment } = await setup();
     await getRepositories().guests.setAuthProtection(guest.id, {
       authProtected: true,
       passwordHash: null,
@@ -182,72 +175,67 @@ describe("comment likes", () => {
 
     const result = await toggleCommentLike({
       commentId: comment.id,
-      eventSlug: event.slug,
     });
 
     expect(result).toHaveProperty("error");
-    expect(await likesOn(proposal.id, comment.id)).toEqual([]);
+    expect(await likesOn(session.id, comment.id)).toEqual([]);
   });
 
   it("refuses to like a comment that does not exist", async () => {
-    const { event } = await setup();
+    await setup();
 
     const result = await toggleCommentLike({
       commentId: "does-not-exist",
-      eventSlug: event.slug,
     });
 
     expect(result).toHaveProperty("error");
   });
 
   it("refuses to like a deleted comment kept as a tombstone", async () => {
-    const { event, guest, proposal, comment } = await setup();
+    const { event, guest, session, comment } = await setup();
     const other = await createGuest({ eventId: event.id });
     act(other.id);
     await createComment({
-      proposalId: proposal.id,
-      eventSlug: event.slug,
+      sessionId: session.id,
       parentId: comment.id,
       body: "a surviving reply",
     });
     act(guest.id);
-    await deleteComment({ commentId: comment.id, eventSlug: event.slug });
+    await deleteComment({ commentId: comment.id });
 
     const result = await toggleCommentLike({
       commentId: comment.id,
-      eventSlug: event.slug,
     });
 
     expect(result).toHaveProperty("error");
   });
 
   it("discards the likes of a comment deleted into a tombstone", async () => {
-    const { event, guest, proposal, comment } = await setup();
+    const { event, guest, session, comment } = await setup();
     const other = await createGuest({ eventId: event.id });
     act(other.id);
     await createComment({
-      proposalId: proposal.id,
-      eventSlug: event.slug,
+      sessionId: session.id,
       parentId: comment.id,
       body: "a surviving reply",
     });
-    await toggleCommentLike({ commentId: comment.id, eventSlug: event.slug });
-    expect(await likesOn(proposal.id, comment.id)).toHaveLength(1);
+    await toggleCommentLike({ commentId: comment.id });
+    expect(await likesOn(session.id, comment.id)).toHaveLength(1);
 
     act(guest.id);
-    await deleteComment({ commentId: comment.id, eventSlug: event.slug });
+    await deleteComment({ commentId: comment.id });
 
-    expect(await likesOn(proposal.id, comment.id)).toEqual([]);
+    expect(await likesOn(session.id, comment.id)).toEqual([]);
   });
 
   it("discards the likes of a comment removed outright", async () => {
-    const { event, proposal, comment } = await setup();
-    await toggleCommentLike({ commentId: comment.id, eventSlug: event.slug });
+    const { session, comment } = await setup();
+    await toggleCommentLike({ commentId: comment.id });
 
-    await deleteComment({ commentId: comment.id, eventSlug: event.slug });
+    await deleteComment({ commentId: comment.id });
 
-    expect(
-      await getRepositories().comments.listByProposal(proposal.id)
-    ).toEqual([]);
+    expect(await getRepositories().sessionComments.list(session.id)).toEqual(
+      []
+    );
   });
 });

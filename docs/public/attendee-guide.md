@@ -174,6 +174,12 @@ Unlike votes, hosts plan around it. If you change your mind, take it back with
 - A session marked **closed** warns that you can be at most five minutes late,
   but doesn't block your RSVP.
 
+### Discuss a session
+
+Open a session to find the same comment section proposals have — useful for
+"which room did this move to?" and other last-minute coordination. Everything works as described under
+[Discuss a proposal](#discuss-a-proposal): threaded replies, likes, editing and deleting your own comments.
+
 ## Attendee directory & profiles
 
 The directory lists everyone at the event on a single page — photo and the
@@ -209,6 +215,10 @@ search and filters intact.
 - The photo is shown large, since that's how you recognise someone; click it
   for larger still. On a wide window it stays beside you as you scroll,
   together with name, pronouns, location and languages.
+
+A profile ends with the same comment section proposals and sessions have — a good place to say hi, find someone to share
+a ride with, or ask something before the event. Everything works as described under
+[Discuss a proposal](#discuss-a-proposal): threaded replies, likes, editing and deleting your own comments.
 
 ## Your profile
 
@@ -250,9 +260,10 @@ you it happened.
 
 - **Email notifications** (if the event has email) — when a session you host
   or RSVP'd to is moved or deleted, when someone adds you as a co-host, and
-  when someone comments on a proposal you host. All on by default, each can be
-  turned off. Emails about every new comment on a proposal _you_ commented on
-  are off by default.
+  when someone comments on a proposal or session you host or on your own
+  profile. All on by default, each can be turned off. Emails about every new
+  comment on a proposal, session or profile _you_ commented on are off by
+  default.
 - **Appearance** — System, Light or Dark, also available at the very bottom of
   every page. **System** follows your phone or laptop, so the site turns dark
   in the evening if your device does. The choice is remembered per device, not

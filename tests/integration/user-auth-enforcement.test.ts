@@ -277,6 +277,8 @@ describe("write enforcement for protected guests", () => {
         hostChange: false,
         cohostAdd: false,
         proposalComment: false,
+        sessionComment: false,
+        profileComment: false,
         commentThread: false,
       });
       expect(settingsResult.ok).toBe(false);

@@ -393,6 +393,7 @@ export function ProfileModal({
                       <ProfileBody
                         guest={attendee}
                         isOwnProfile={currentUserId === attendee.id}
+                        isActive={current}
                         activity={current ? activity : null}
                         zoomed={current && zoomed}
                         onToggleZoom={() =>

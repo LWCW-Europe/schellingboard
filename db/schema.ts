@@ -49,6 +49,16 @@ export const guests = sqliteTable(
     })
       .notNull()
       .default(true),
+    emailOnSessionComment: integer("email_on_session_comment", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(true),
+    emailOnProfileComment: integer("email_on_profile_comment", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(true),
     emailOnCommentThread: integer("email_on_comment_thread", {
       mode: "boolean",
     })
@@ -318,6 +328,38 @@ export const proposalComments = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.commentId] }),
     index("proposal_comments_proposal_idx").on(t.proposalId),
+  ]
+);
+
+export const sessionComments = sqliteTable(
+  "session_comments",
+  {
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => sessions.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.commentId] }),
+    index("session_comments_session_idx").on(t.sessionId),
+  ]
+);
+
+export const profileComments = sqliteTable(
+  "profile_comments",
+  {
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    profileId: text("profile_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.commentId] }),
+    index("profile_comments_profile_idx").on(t.profileId),
   ]
 );
 

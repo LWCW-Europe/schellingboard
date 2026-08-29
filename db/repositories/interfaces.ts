@@ -111,7 +111,14 @@ export type EmailSettings = {
   cohostAdd: boolean;
   /** Someone commented on a proposal the guest is hosting. */
   proposalComment: boolean;
-  /** Someone commented on a proposal the guest has commented on. */
+  /** Someone commented on a session the guest is hosting. */
+  sessionComment: boolean;
+  /** Someone commented on the guest's own profile. */
+  profileComment: boolean;
+  /**
+   * Someone commented on a proposal, session or profile the guest has
+   * commented on.
+   */
   commentThread: boolean;
 };
 
@@ -120,6 +127,8 @@ export const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   hostChange: true,
   cohostAdd: true,
   proposalComment: true,
+  sessionComment: true,
+  profileComment: true,
   commentThread: false,
 };
 
@@ -675,17 +684,14 @@ export type Comment = {
   likes: CommentLiker[];
 };
 
+/**
+ * Scope-agnostic comment operations. A comment is attached to exactly one
+ * subject — a session proposal, a scheduled session or a guest's profile —
+ * but finding, editing, liking and deleting work identically for all, so they
+ * live here. Attaching comments to a subject is a SubjectCommentsRepository.
+ */
 export interface CommentsRepository {
-  listByProposal(proposalId: string): Promise<Comment[]>;
-  findById(id: string): Promise<Comment | undefined>;
-  findProposalId(commentId: string): Promise<string | undefined>;
-  createForProposal(data: {
-    proposalId: string;
-    authorId: string;
-    parentId?: string;
-    body: string;
-    createdTime: Date;
-  }): Promise<Comment>;
+  findById(commentId: string): Promise<Comment | undefined>;
   update(id: string, data: { body: string; editedTime: Date }): Promise<void>;
   toggleLike(data: {
     commentId: string;
@@ -698,6 +704,29 @@ export interface CommentsRepository {
    * along with any tombstone ancestors it was the last reply to.
    */
   delete(id: string): Promise<void>;
+}
+
+/**
+ * Comments attached to one kind of subject. Which kind is fixed by the
+ * repository itself — `proposalComments`, `sessionComments` and
+ * `profileComments` on {@link Repositories} — so `subjectId` below is always a
+ * proposal, session or profile id respectively.
+ */
+export interface SubjectCommentsRepository {
+  /** All comments on the subject, oldest first, likes included. */
+  list(subjectId: string): Promise<Comment[]>;
+  /**
+   * The subject a comment is attached to, or undefined when the comment
+   * doesn't exist or belongs to a subject of another kind.
+   */
+  findSubjectId(commentId: string): Promise<string | undefined>;
+  create(data: {
+    subjectId: string;
+    authorId: string;
+    parentId?: string;
+    body: string;
+    createdTime: Date;
+  }): Promise<Comment>;
 }
 
 // ── Votes ─────────────────────────────────────────────────────────────────────

@@ -29,7 +29,7 @@ export default async function ProposalsPage({
     repos.sessionProposals.listByEvent(event.id),
     viewProposal ? repos.sessions.listByEvent(event.id) : Promise.resolve([]),
     viewProposal
-      ? repos.comments.listByProposal(viewProposal)
+      ? repos.proposalComments.list(viewProposal)
       : Promise.resolve([]),
   ]);
   const viewedProposal = viewProposal

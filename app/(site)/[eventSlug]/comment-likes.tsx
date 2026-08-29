@@ -2,7 +2,6 @@
 
 import { useContext, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Dialog } from "@headlessui/react";
 
 import { UserContext } from "@/app/(site)/context";
@@ -16,12 +15,15 @@ const TOOLTIP_NAMES = 3;
 export function CommentLikes({
   comment,
   eventSlug,
+  onChanged,
 }: {
   comment: Pick<Comment, "id" | "likes">;
-  eventSlug: string;
+  // Only the cache invalidation target for pages that server-render their
+  // comments — proposals. Sessions and profiles omit it.
+  eventSlug?: string;
+  onChanged: () => void;
 }) {
   const { user: currentUserId } = useContext(UserContext);
-  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [refreshing, startRefresh] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export function CommentLikes({
         );
         return;
       }
-      startRefresh(() => router.refresh());
+      startRefresh(() => onChanged());
     } catch (err) {
       console.error(err);
       setError("An unexpected error occurred");
