@@ -12,6 +12,7 @@ import type { CommentActionResult } from "./comment-actions";
 import { deleteComment, updateComment } from "./comment-actions";
 import { useLocalZone } from "@/utils/hooks";
 import { CommentLikes } from "./comment-likes";
+import type { LoadedComments } from "./use-comments";
 import { formatInLocalZone } from "@/utils/utils";
 
 export type CommentCreateInput = { parentId?: string; body: string };
@@ -59,20 +60,23 @@ export function CommentsSection({
   permalinkFor,
   changed,
 }: {
-  eventSlug: string;
+  // Only the cache invalidation target for pages that server-render their
+  // comments — proposals. Sessions omit it.
+  eventSlug?: string;
   timezone: string;
-  comments: Comment[];
-  // Scope-specific: the action called and where a permalink points differ per
-  // subject. Everything else about commenting is shared.
+  comments?: LoadedComments;
+  // Scope-specific: proposals and sessions differ in the action called and in
+  // where a permalink points. Everything else about commenting is shared.
   create: (input: CommentCreateInput) => Promise<CommentActionResult>;
   permalinkFor: (commentId: string) => string;
   changed: () => void;
 }) {
   const { user: currentUserId } = useContext(UserContext);
-  const roots = useMemo(() => buildTree(comments), [comments]);
+  const loaded = Array.isArray(comments) ? comments : null;
+  const roots = useMemo(() => (loaded ? buildTree(loaded) : []), [loaded]);
   const total = useMemo(
-    () => comments.filter((c) => !c.deleted).length,
-    [comments]
+    () => loaded?.filter((c) => !c.deleted)?.length,
+    [loaded]
   );
   const localZone = useLocalZone();
   const [highlightedId, highlight] = useHighlightedComment();
@@ -85,7 +89,32 @@ export function CommentsSection({
     document
       .getElementById(`comment-${highlightedId}`)
       ?.scrollIntoView({ block: "center" });
-  }, [highlightedId, comments]);
+  }, [highlightedId, loaded]);
+
+  if (comments === "error") {
+    return (
+      <section className="mt-8 border-t border-line-subtle pt-6">
+        <h2 className="text-lg font-semibold mb-4">
+          Comments could not be loaded
+        </h2>
+        <p className="text-sm text-fg-subtle">
+          Reload the page to try again — the comments are still there.
+        </p>
+      </section>
+    );
+  }
+
+  if (!loaded) {
+    return (
+      <section className="mt-8 border-t border-line-subtle pt-6">
+        <h2 className="text-lg font-semibold mb-4">Loading comments...</h2>
+        <div aria-hidden="true" className="flex flex-col gap-2 animate-pulse">
+          <div className="h-4 w-28 rounded bg-surface-muted" />
+          <div className="h-4 w-56 rounded bg-surface-muted" />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-8 border-t border-line-subtle pt-6">
@@ -144,7 +173,7 @@ function CommentThread({
 }: {
   node: CommentNode;
   depth: number;
-  eventSlug: string;
+  eventSlug?: string;
   timezone: string;
   create: (input: CommentCreateInput) => Promise<CommentActionResult>;
   permalinkFor: (commentId: string) => string;

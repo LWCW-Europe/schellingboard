@@ -321,6 +321,22 @@ export const proposalComments = sqliteTable(
   ]
 );
 
+export const sessionComments = sqliteTable(
+  "session_comments",
+  {
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => sessions.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.commentId] }),
+    index("session_comments_session_idx").on(t.sessionId),
+  ]
+);
+
 export const votes = sqliteTable(
   "votes",
   {

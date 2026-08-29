@@ -11,6 +11,7 @@ import {
   commentLikeSchema,
   commentUpdateSchema,
   proposalCommentSchema,
+  sessionCommentSchema,
 } from "@/model/comment";
 import { notifyProposalCommented } from "@/utils/notifications";
 import { serverNow } from "@/utils/dev-clock-server";
@@ -42,6 +43,15 @@ function toResult(
   }
   console.error(failure, error);
   return { error: failure };
+}
+
+// Only surfaces that server-render their comments need cache invalidation —
+// proposals. Sessions reload through their own endpoint, so they pass no slug
+// and nothing is revalidated for them.
+function revalidateEvent(eventSlug: string | undefined): void {
+  if (eventSlug) {
+    revalidatePath(`/${eventSlug}`, "layout");
+  }
 }
 
 async function requireGuest(): Promise<string> {
@@ -107,8 +117,46 @@ export async function createProposalComment(
       body,
       createdTime: await serverNow(),
     });
-    revalidatePath(`/${eventSlug}`, "layout");
+    revalidateEvent(eventSlug);
     after(() => notifyProposalCommented({ proposalId, comment }));
+    return { success: true };
+  } catch (error) {
+    return toResult(error, "Failed to post comment");
+  }
+}
+
+export async function createSessionComment(
+  comment: z.input<typeof sessionCommentSchema>
+): Promise<CommentActionResult>;
+export async function createSessionComment(
+  input: unknown
+): Promise<CommentActionResult> {
+  try {
+    const guest = await requireGuest();
+    const { sessionId, parentId, body } = await requireParsed(
+      sessionCommentSchema,
+      input
+    );
+
+    // validation
+    if (!(await getRepositories().sessions.findById(sessionId))) {
+      return { error: "Session not found" };
+    }
+    if (parentId) {
+      const parentOf =
+        await getRepositories().sessionComments.findSubjectId(parentId);
+      if (!parentOf || parentOf !== sessionId) {
+        return { error: "The comment being replied to is invalid" };
+      }
+    }
+
+    await getRepositories().sessionComments.create({
+      subjectId: sessionId,
+      authorId: guest,
+      parentId,
+      body,
+      createdTime: await serverNow(),
+    });
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to post comment");
@@ -133,7 +181,7 @@ export async function updateComment(
       body,
       editedTime: await serverNow(),
     });
-    revalidatePath(`/${eventSlug}`, "layout");
+    revalidateEvent(eventSlug);
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to update comment");
@@ -163,7 +211,7 @@ export async function toggleCommentLike(
       guestId: guest,
       createdTime: await serverNow(),
     });
-    revalidatePath(`/${eventSlug}`, "layout");
+    revalidateEvent(eventSlug);
     return { success: true, liked };
   } catch (error) {
     return toResult(error, "Failed to like comment");
@@ -185,7 +233,7 @@ export async function deleteComment(
     await requireOwnComment(commentId, guest);
 
     await getRepositories().comments.delete(commentId);
-    revalidatePath(`/${eventSlug}`, "layout");
+    revalidateEvent(eventSlug);
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to delete comment");
