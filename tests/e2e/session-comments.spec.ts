@@ -107,6 +107,24 @@ test("posts a comment on a session and renders it as markdown", async ({
   await expect(reopened.getByText("bringing my laptop").first()).toBeVisible();
 });
 
+test("shows an error instead of a permanent skeleton when comments fail to load", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Gamma");
+
+  // Fail the comments request outright: the section must own up to it rather
+  // than leave its "Loading comments…" skeleton up forever.
+  await page.route(/\/api\/session\/[^/]+\/comments/, (route) => route.abort());
+
+  const modal = await openSession(page, CRDT_SESSION);
+
+  await expect(modal.getByRole("alert")).toHaveText("Couldn't load comments.");
+  await expect(
+    modal.getByRole("heading", { name: "Loading comments..." })
+  ).toHaveCount(0);
+});
+
 test("edits a comment, showing when it was edited, then deletes it", async ({
   page,
 }) => {

@@ -19,6 +19,8 @@ function withDates(comment: SerializedComment): Comment {
   };
 }
 
+const ERROR = Symbol("loading error");
+
 // The session modal opens by pushing the URL locally, without an RSC
 // roundtrip, so its comments can't arrive as server props: they load through
 // /api/comments instead, and every mutation reloads them.
@@ -33,27 +35,39 @@ export function SessionComments({
 }) {
   // Tagged with the session it came from, so a previous modal's comments
   // never show through while the next ones load.
-  const [loaded, setLoaded] = useState<{
-    sessionId: string;
-    comments: Comment[];
-  } | null>(null);
+  const [loaded, setLoaded] = useState<
+    | {
+        sessionId: string;
+        comments: Comment[];
+      }
+    | null
+    | typeof ERROR
+  >(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     void fetch(`/api/session/${sessionId}/comments?reload=${reloadKey}`)
-      .then((res) =>
-        res.ok ? (res.json() as Promise<SerializedComment[]>) : []
-      )
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`comments request failed: ${res.status}`);
+        }
+        return res.json() as Promise<SerializedComment[]>;
+      })
       .then((data) => {
         if (!cancelled) {
           setLoaded({ sessionId, comments: data.map(withDates) });
         }
       })
-      .catch((e) => {
-        console.error("Error fetching session comments", e);
+      .catch(() => {
+        // A failed reload keeps the thread already on screen; only a load
+        // with nothing to fall back on turns into the message below.
         if (!cancelled) {
-          setLoaded({ sessionId, comments: [] });
+          setLoaded((prev) =>
+            prev && prev !== ERROR && prev.sessionId === sessionId
+              ? prev
+              : ERROR
+          );
         }
       });
     return () => {
@@ -62,6 +76,19 @@ export function SessionComments({
   }, [sessionId, reloadKey]);
 
   const changed = useCallback(() => setReloadKey((k) => k + 1), []);
+
+  if (loaded === ERROR) {
+    return (
+      <section className="mt-8 border-t border-line-subtle pt-6">
+        <p
+          role="alert"
+          className="bg-danger-tint border border-danger-border text-danger-fg px-4 py-3 rounded-md"
+        >
+          Couldn&apos;t load comments.
+        </p>
+      </section>
+    );
+  }
 
   const comments =
     loaded && loaded.sessionId === sessionId ? loaded.comments : null;
