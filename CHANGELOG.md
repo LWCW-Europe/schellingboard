@@ -86,6 +86,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   voting-disabled state, admin login, the RSVP capacity test). Each now waits for the state it
   expects, and the RSVP capacity test books a slot that overlaps nothing, so whether it has to
   confirm a clash warning no longer depends on what else is scheduled
+- The E2E name-switcher helper taps the header chip again when neither the menu nor the modal
+  opened. The header comes from the server render, so the chip satisfies every check Playwright
+  makes a moment before React has attached its handler, and a click in that window is dropped — the
+  test then sat out its full 90s waiting for a modal that was never going to open
 - The emoji, label and display order of a vote live only in `app/(site)/votes.ts`, and `VotesContext` exposes
   `proposalVoteLabel` beside `proposalVoteEmoji`. The choice→label mapping had been copied into three components, each
   free to drift from the emoji next to it

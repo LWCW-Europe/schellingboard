@@ -1,6 +1,23 @@
 import { Locator, Page, expect } from "@playwright/test";
 import { login } from "./auth";
 
+// Clicks `trigger` until `opened` shows up. The header is server-rendered, so
+// its buttons are clickable — by every check Playwright makes — a moment
+// before React has attached their handlers, and a click in that window is
+// simply dropped. Waiting for hydration is not observable; clicking again is.
+// Re-checking first keeps a retry from clicking what the previous attempt
+// already opened: that would toggle the menu shut again, and with the modal it
+// would hang outright, since the dialog's backdrop makes the chip unclickable
+// and nothing bounds a click's actionability wait.
+async function tapUntilOpen(trigger: Locator, opened: Locator): Promise<void> {
+  await expect(async () => {
+    if (!(await opened.isVisible())) {
+      await trigger.click();
+    }
+    await expect(opened).toBeVisible({ timeout: 2000 });
+  }).toPass();
+}
+
 // Opens the name-switcher modal via the site header and returns the
 // "My name is:" combobox. The active name lives in a header chip (accessible
 // name starts with "Your name"). With no name set, tapping it opens the
@@ -16,9 +33,8 @@ export async function openNameSwitcher(page: Page): Promise<Locator> {
   // menu and the modal never match at the same time below.
   await expect(nameBox).toBeHidden();
   const chip = page.getByRole("button", { name: /your name/i });
-  await chip.click();
   const logOut = page.getByRole("menuitem", { name: "Log out" });
-  await expect(logOut.or(nameBox)).toBeVisible();
+  await tapUntilOpen(chip, logOut.or(nameBox));
   if (await logOut.isVisible()) {
     await logOut.click();
     // Logging out clears the site login too (see logoutAction), and the
@@ -38,7 +54,7 @@ export async function openNameSwitcher(page: Page): Promise<Locator> {
     await expect(
       page.getByRole("button", { name: "Your name", exact: true })
     ).toBeVisible();
-    await chip.click();
+    await tapUntilOpen(chip, nameBox);
   }
   await nameBox.click();
   return nameBox;
