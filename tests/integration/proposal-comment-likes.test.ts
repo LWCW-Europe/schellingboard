@@ -42,18 +42,16 @@ async function setup() {
     eventSlug: event.slug,
     body: "worth liking",
   });
-  const [comment] = await getRepositories().comments.listByProposal(
-    proposal.id
-  );
+  const [comment] = await getRepositories().proposalComments.list(proposal.id);
   return { event, guest, proposal, comment };
 }
 
 async function likesOn(proposalId: string, commentId: string) {
-  const comments = await getRepositories().comments.listByProposal(proposalId);
+  const comments = await getRepositories().proposalComments.list(proposalId);
   return comments.find((c) => c.id === commentId)!.likes;
 }
 
-describe("comment likes", () => {
+describe("proposal comment likes", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => {
     resetTestDb();
@@ -246,8 +244,8 @@ describe("comment likes", () => {
 
     await deleteComment({ commentId: comment.id, eventSlug: event.slug });
 
-    expect(
-      await getRepositories().comments.listByProposal(proposal.id)
-    ).toEqual([]);
+    expect(await getRepositories().proposalComments.list(proposal.id)).toEqual(
+      []
+    );
   });
 });
