@@ -60,6 +60,11 @@ operators, and `[eventSlug]` is read as a glob character class (matches nothing)
 jj commit -m "message" -- 'file:"app/(site)/[eventSlug]/session-block.tsx"'
 ```
 
+### Squashing
+
+`jj squash` opens an interactive editor when both source and destination have a message, which
+breaks non-interactive shells. Always pass either `-m "message"` or `--use-destination-message`.
+
 ### Splitting commits
 
 Don't use `jj split` (opens an interactive editor, breaks non-interactive shells). Instead:
