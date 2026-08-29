@@ -588,8 +588,8 @@ describe("notifyProposalCommented", () => {
     authorId: string,
     body: string
   ) {
-    return getRepositories().comments.createForProposal({
-      proposalId,
+    return getRepositories().proposalComments.create({
+      subjectId: proposalId,
       authorId,
       body,
       createdTime: new Date("2026-08-01T10:00:00Z"),

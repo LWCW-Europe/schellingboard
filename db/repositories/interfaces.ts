@@ -675,17 +675,14 @@ export type Comment = {
   likes: CommentLiker[];
 };
 
+/**
+ * Scope-agnostic comment operations. A comment is attached to exactly one
+ * subject — so far only a session proposal — but finding, editing, liking and
+ * deleting work identically whatever it hangs off, so they live here.
+ * Attaching comments to a subject is a SubjectCommentsRepository.
+ */
 export interface CommentsRepository {
-  listByProposal(proposalId: string): Promise<Comment[]>;
-  findById(id: string): Promise<Comment | undefined>;
-  findProposalId(commentId: string): Promise<string | undefined>;
-  createForProposal(data: {
-    proposalId: string;
-    authorId: string;
-    parentId?: string;
-    body: string;
-    createdTime: Date;
-  }): Promise<Comment>;
+  findById(commentId: string): Promise<Comment | undefined>;
   update(id: string, data: { body: string; editedTime: Date }): Promise<void>;
   toggleLike(data: {
     commentId: string;
@@ -698,6 +695,28 @@ export interface CommentsRepository {
    * along with any tombstone ancestors it was the last reply to.
    */
   delete(id: string): Promise<void>;
+}
+
+/**
+ * Comments attached to one kind of subject. Which kind is fixed by the
+ * repository itself — `proposalComments` on {@link Repositories} — so
+ * `subjectId` below is always a proposal id.
+ */
+export interface SubjectCommentsRepository {
+  /** All comments on the subject, oldest first, likes included. */
+  list(subjectId: string): Promise<Comment[]>;
+  /**
+   * The subject a comment is attached to, or undefined when the comment
+   * doesn't exist or belongs to a subject of another kind.
+   */
+  findSubjectId(commentId: string): Promise<string | undefined>;
+  create(data: {
+    subjectId: string;
+    authorId: string;
+    parentId?: string;
+    body: string;
+    createdTime: Date;
+  }): Promise<Comment>;
 }
 
 // ── Votes ─────────────────────────────────────────────────────────────────────

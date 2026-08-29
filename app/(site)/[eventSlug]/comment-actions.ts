@@ -94,14 +94,14 @@ export async function createProposalComment(
     }
     if (parentId) {
       const parentOf =
-        await getRepositories().comments.findProposalId(parentId);
+        await getRepositories().proposalComments.findSubjectId(parentId);
       if (!parentOf || parentOf !== proposalId) {
         return { error: "The comment being replied to is invalid" };
       }
     }
 
-    const comment = await getRepositories().comments.createForProposal({
-      proposalId,
+    const comment = await getRepositories().proposalComments.create({
+      subjectId: proposalId,
       authorId: guest,
       parentId,
       body,

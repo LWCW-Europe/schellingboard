@@ -316,7 +316,7 @@ async function notifyProposalCommentedUnsafe({
   proposalId: string;
   comment: Comment;
 }): Promise<void> {
-  const { comments, events, sessionProposals } = getRepositories();
+  const { proposalComments, events, sessionProposals } = getRepositories();
   const proposal = await sessionProposals.findById(proposalId);
   if (!proposal) {
     return;
@@ -352,7 +352,7 @@ async function notifyProposalCommentedUnsafe({
     );
   }
 
-  for (const earlier of await comments.listByProposal(proposalId)) {
+  for (const earlier of await proposalComments.list(proposalId)) {
     const author = earlier.author;
     if (!author || done.has(author.id)) {
       continue;

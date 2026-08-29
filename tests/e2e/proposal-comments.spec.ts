@@ -1,7 +1,8 @@
-import type { Locator, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
+import { openReplyForm, submitReply, toggleUntil } from "./helpers/comments";
 
 // Each test claims its own proposal: the suite runs in parallel against one
 // shared database, so two tests commenting on the same proposal would see
@@ -27,34 +28,6 @@ async function openProposal(page: Page, title: RegExp) {
   return modal;
 }
 
-// A click landing while router.refresh() swaps the DOM is lost, so retry until
-// the UI reflects it. Re-checking first keeps the retry from toggling back.
-async function toggleUntil(button: Locator, settled: () => Promise<boolean>) {
-  await expect(async () => {
-    if (!(await settled())) {
-      await button.click();
-    }
-    expect(await settled()).toBe(true);
-  }).toPass();
-}
-
-async function openReplyForm(modal: Locator) {
-  const form = modal.getByPlaceholder("Write a reply");
-  await toggleUntil(modal.getByRole("button", { name: "Reply" }).first(), () =>
-    form.isVisible()
-  );
-}
-
-// Scoped to the open form: once a reply exists, its own "Reply" action button
-// also matches, and it sits after the form in the DOM.
-async function submitReply(modal: Locator, text: string) {
-  const form = modal.locator("form", {
-    has: modal.page().getByPlaceholder("Write a reply"),
-  });
-  await form.getByPlaceholder("Write a reply").fill(text);
-  await form.getByRole("button", { name: "Reply", exact: true }).click();
-}
-
 // selectUser logs out and back in; navigating before that settles aborts the
 // request and drops the selection.
 async function actAs(page: Page, name: RegExp) {
@@ -76,7 +49,7 @@ test("posts a comment on a proposal and renders it as markdown", async ({
 
   const body = "Count me in — **very** keen";
   await modal.getByPlaceholder("Add a comment").fill(body);
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
 
   await expect(modal.getByRole("heading", { name: "1 comment" })).toBeVisible();
   await expect(modal.getByText("very")).toHaveCSS("font-weight", "700");
@@ -99,7 +72,7 @@ test("edits a comment, showing when it was edited, then deletes it", async ({
 
   const modal = await openProposal(page, EDIT_PROPOSAL);
   await modal.getByPlaceholder("Add a comment").fill("first thoughts");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("first thoughts")).toBeVisible();
   await expect(modal.getByText("(edited)")).toHaveCount(0);
 
@@ -131,7 +104,7 @@ test("replies to a comment, collapses the thread, and permalinks to a reply", as
 
   const modal = await openProposal(page, THREAD_PROPOSAL);
   await modal.getByPlaceholder("Add a comment").fill("the opening question");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("the opening question")).toBeVisible();
 
   await openReplyForm(modal);
@@ -189,7 +162,7 @@ test("keeps replies readable when their parent is deleted", async ({
 
   const modal = await openProposal(page, TOMBSTONE_PROPOSAL);
   await modal.getByPlaceholder("Add a comment").fill("a doomed parent");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("a doomed parent")).toBeVisible();
 
   // Someone else replies, so deleting the parent can't simply remove it. A
@@ -221,7 +194,7 @@ test("likes a comment and shows who liked it", async ({ page, browser }) => {
 
   const modal = await openProposal(page, LIKE_PROPOSAL);
   await modal.getByPlaceholder("Add a comment").fill("a likeable comment");
-  await modal.getByRole("button", { name: "Comment" }).click();
+  await modal.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(modal.getByText("a likeable comment")).toBeVisible();
 
   const like = modal.getByRole("button", { name: "Like", exact: true });

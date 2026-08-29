@@ -62,7 +62,7 @@ function act(guestId: string): void {
   cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guestId));
 }
 
-describe("comments", () => {
+describe("proposal comments", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => {
     resetTestDb();
@@ -107,9 +107,7 @@ describe("comments", () => {
     });
 
     expect(result).toEqual({ success: true });
-    const comments = await getRepositories().comments.listByProposal(
-      proposal.id
-    );
+    const comments = await getRepositories().proposalComments.list(proposal.id);
     expect(comments).toHaveLength(1);
     expect(comments[0].body).toBe("Sounds **great**");
     expect(comments[0].author).toEqual({ id: guest.id, name: guest.name });
@@ -133,21 +131,19 @@ describe("comments", () => {
       body: "second",
     });
 
-    const comments = await getRepositories().comments.listByProposal(
-      proposal.id
-    );
+    const comments = await getRepositories().proposalComments.list(proposal.id);
     expect(comments.map((c) => c.body)).toEqual(["first", "second"]);
   });
 
   it("lists comments posted in the same millisecond in the order they were posted", async () => {
     const { guest, proposal } = await setup();
-    const { comments } = getRepositories();
+    const { proposalComments } = getRepositories();
     const sameMillisecond = new Date();
     const bodies = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th"];
 
     for (const body of bodies) {
-      await comments.createForProposal({
-        proposalId: proposal.id,
+      await proposalComments.create({
+        subjectId: proposal.id,
         authorId: guest.id,
         body,
         createdTime: sameMillisecond,
@@ -156,7 +152,7 @@ describe("comments", () => {
 
     // Comment ids are random, so a tiebreak on the id would shuffle these.
     expect(
-      (await comments.listByProposal(proposal.id)).map((c) => c.body)
+      (await proposalComments.list(proposal.id)).map((c) => c.body)
     ).toEqual(bodies);
   });
 
@@ -172,7 +168,7 @@ describe("comments", () => {
     });
 
     expect(
-      await getRepositories().comments.listByProposal(other.id)
+      await getRepositories().proposalComments.list(other.id)
     ).toHaveLength(0);
   });
 
@@ -187,7 +183,7 @@ describe("comments", () => {
 
     expect(result).toHaveProperty("error");
     expect(
-      await getRepositories().comments.listByProposal(proposal.id)
+      await getRepositories().proposalComments.list(proposal.id)
     ).toHaveLength(0);
   });
 
@@ -207,7 +203,7 @@ describe("comments", () => {
 
     expect(result).toHaveProperty("error");
     expect(
-      await getRepositories().comments.listByProposal(proposal.id)
+      await getRepositories().proposalComments.list(proposal.id)
     ).toHaveLength(0);
   });
 
@@ -227,7 +223,7 @@ describe("comments", () => {
 
     expect(result).toEqual({ success: true });
     expect(
-      await getRepositories().comments.listByProposal(proposal.id)
+      await getRepositories().proposalComments.list(proposal.id)
     ).toHaveLength(1);
   });
 
@@ -243,7 +239,7 @@ describe("comments", () => {
 
     expect(result).toHaveProperty("error");
     expect(
-      await getRepositories().comments.listByProposal(proposal.id)
+      await getRepositories().proposalComments.list(proposal.id)
     ).toHaveLength(0);
   });
 
@@ -271,9 +267,9 @@ describe("comments", () => {
 
     await getRepositories().sessionProposals.delete(proposal.id);
 
-    expect(
-      await getRepositories().comments.listByProposal(proposal.id)
-    ).toEqual([]);
+    expect(await getRepositories().proposalComments.list(proposal.id)).toEqual(
+      []
+    );
     expect(
       await getRepositories().sessionProposals.listByEvent(event.id)
     ).toEqual([]);
@@ -281,12 +277,12 @@ describe("comments", () => {
 });
 
 async function onlyComment(proposalId: string) {
-  const comments = await getRepositories().comments.listByProposal(proposalId);
+  const comments = await getRepositories().proposalComments.list(proposalId);
   expect(comments).toHaveLength(1);
   return comments[0];
 }
 
-describe("editing a comment", () => {
+describe("editing a proposal comment", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => {
     resetTestDb();
@@ -361,7 +357,7 @@ describe("editing a comment", () => {
   });
 });
 
-describe("deleting a comment", () => {
+describe("deleting a proposal comment", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => {
     resetTestDb();
@@ -385,9 +381,9 @@ describe("deleting a comment", () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(
-      await getRepositories().comments.listByProposal(proposal.id)
-    ).toEqual([]);
+    expect(await getRepositories().proposalComments.list(proposal.id)).toEqual(
+      []
+    );
   });
 
   it("leaves a tombstone when the comment has replies", async () => {
@@ -411,9 +407,7 @@ describe("deleting a comment", () => {
     act(guest.id);
     await deleteComment({ commentId: parent.id, eventSlug: event.slug });
 
-    const comments = await getRepositories().comments.listByProposal(
-      proposal.id
-    );
+    const comments = await getRepositories().proposalComments.list(proposal.id);
     expect(comments).toHaveLength(2);
     const tombstone = comments.find((c) => c.id === parent.id)!;
     expect(tombstone.deleted).toBe(true);
@@ -440,15 +434,15 @@ describe("deleting a comment", () => {
       body: "child",
     });
     const child = (
-      await getRepositories().comments.listByProposal(proposal.id)
+      await getRepositories().proposalComments.list(proposal.id)
     ).find((c) => c.id !== parent.id)!;
 
     await deleteComment({ commentId: parent.id, eventSlug: event.slug });
     await deleteComment({ commentId: child.id, eventSlug: event.slug });
 
-    expect(
-      await getRepositories().comments.listByProposal(proposal.id)
-    ).toEqual([]);
+    expect(await getRepositories().proposalComments.list(proposal.id)).toEqual(
+      []
+    );
   });
 
   it("refuses to delete someone else's comment", async () => {
@@ -499,7 +493,7 @@ describe("deleting a comment", () => {
   });
 });
 
-describe("threaded replies", () => {
+describe("threaded proposal replies", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => {
     resetTestDb();
@@ -524,9 +518,7 @@ describe("threaded replies", () => {
       body: "a reply",
     });
 
-    const comments = await getRepositories().comments.listByProposal(
-      proposal.id
-    );
+    const comments = await getRepositories().proposalComments.list(proposal.id);
     expect(comments.map((c) => c.parentId)).toEqual([null, parent.id]);
   });
 
@@ -549,9 +541,9 @@ describe("threaded replies", () => {
     });
 
     expect(result).toHaveProperty("error");
-    expect(
-      await getRepositories().comments.listByProposal(elsewhere.id)
-    ).toEqual([]);
+    expect(await getRepositories().proposalComments.list(elsewhere.id)).toEqual(
+      []
+    );
   });
 
   it("deletes a whole thread with its proposal", async () => {
@@ -572,8 +564,8 @@ describe("threaded replies", () => {
 
     await getRepositories().sessionProposals.delete(proposal.id);
 
-    expect(
-      await getRepositories().comments.listByProposal(proposal.id)
-    ).toEqual([]);
+    expect(await getRepositories().proposalComments.list(proposal.id)).toEqual(
+      []
+    );
   });
 });
