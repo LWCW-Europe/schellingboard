@@ -95,12 +95,9 @@ export function SessionComments({
 
   return (
     <CommentsSection
-      eventSlug={eventSlug}
       timezone={timezone}
       comments={comments}
-      create={(input) =>
-        createSessionComment({ sessionId, eventSlug, ...input })
-      }
+      create={(input) => createSessionComment({ sessionId, ...input })}
       permalinkFor={(commentId) =>
         `/${eventSlug}?viewSession=${sessionId}#comment-${commentId}`
       }

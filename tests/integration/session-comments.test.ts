@@ -57,13 +57,12 @@ describe("session comments", () => {
   });
 
   it("stores a comment and reads it back with its author and time", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
     const before = new Date();
 
     const result = await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "See you there",
     });
 
@@ -80,17 +79,15 @@ describe("session comments", () => {
   });
 
   it("lists comments oldest first", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
 
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "first",
     });
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "second",
     });
 
@@ -128,7 +125,6 @@ describe("session comments", () => {
 
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "on the first",
     });
 
@@ -144,7 +140,6 @@ describe("session comments", () => {
 
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "on the session",
     });
     await createProposalComment({
@@ -166,11 +161,10 @@ describe("session comments", () => {
   });
 
   it("refuses to comment without a selected name", async () => {
-    const { event, session } = await setup();
+    const { session } = await setup();
 
     const result = await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "anonymous",
     });
 
@@ -181,7 +175,7 @@ describe("session comments", () => {
   });
 
   it("refuses to comment as a protected guest without a verified session", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     await getRepositories().guests.setAuthProtection(guest.id, {
       authProtected: true,
       passwordHash: null,
@@ -190,7 +184,6 @@ describe("session comments", () => {
 
     const result = await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "impersonated",
     });
 
@@ -201,7 +194,7 @@ describe("session comments", () => {
   });
 
   it("allows a verified protected guest to comment", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     await getRepositories().guests.setAuthProtection(guest.id, {
       authProtected: true,
       passwordHash: null,
@@ -210,7 +203,6 @@ describe("session comments", () => {
 
     const result = await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "verified",
     });
 
@@ -221,12 +213,11 @@ describe("session comments", () => {
   });
 
   it("rejects an empty comment", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
 
     const result = await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "   ",
     });
 
@@ -237,12 +228,11 @@ describe("session comments", () => {
   });
 
   it("rejects a comment on an unknown session", async () => {
-    const { event, guest } = await setup();
+    const { guest } = await setup();
     act(guest.id);
 
     const result = await createComment({
       sessionId: "does-not-exist",
-      eventSlug: event.slug,
       body: "hello",
     });
 
@@ -250,11 +240,10 @@ describe("session comments", () => {
   });
 
   it("removes a session's comments when the session is deleted", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "doomed",
     });
 
@@ -282,11 +271,10 @@ describe("editing a session comment", () => {
   });
 
   it("replaces the body and records when it was edited", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "original",
     });
     const before = await onlyComment(session.id);
@@ -294,7 +282,6 @@ describe("editing a session comment", () => {
 
     const result = await updateComment({
       commentId: before.id,
-      eventSlug: event.slug,
       body: "revised",
     });
 
@@ -311,7 +298,6 @@ describe("editing a session comment", () => {
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "mine",
     });
     const comment = await onlyComment(session.id);
@@ -319,7 +305,6 @@ describe("editing a session comment", () => {
     act(other.id);
     const result = await updateComment({
       commentId: comment.id,
-      eventSlug: event.slug,
       body: "hijacked",
     });
 
@@ -328,18 +313,16 @@ describe("editing a session comment", () => {
   });
 
   it("rejects an empty edit", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "mine",
     });
     const comment = await onlyComment(session.id);
 
     const result = await updateComment({
       commentId: comment.id,
-      eventSlug: event.slug,
       body: "  ",
     });
 
@@ -357,18 +340,16 @@ describe("deleting a session comment", () => {
   });
 
   it("removes a childless comment outright", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "never mind",
     });
     const comment = await onlyComment(session.id);
 
     const result = await deleteComment({
       commentId: comment.id,
-      eventSlug: event.slug,
     });
 
     expect(result).toEqual({ success: true });
@@ -383,20 +364,18 @@ describe("deleting a session comment", () => {
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "the question",
     });
     const parent = await onlyComment(session.id);
     act(other.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       parentId: parent.id,
       body: "the answer",
     });
 
     act(guest.id);
-    await deleteComment({ commentId: parent.id, eventSlug: event.slug });
+    await deleteComment({ commentId: parent.id });
 
     const comments = await getRepositories().sessionComments.listBySession(
       session.id
@@ -412,17 +391,15 @@ describe("deleting a session comment", () => {
   });
 
   it("clears a tombstone once its last reply goes", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "parent",
     });
     const parent = await onlyComment(session.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       parentId: parent.id,
       body: "child",
     });
@@ -430,8 +407,8 @@ describe("deleting a session comment", () => {
       await getRepositories().sessionComments.listBySession(session.id)
     ).find((c) => c.id !== parent.id)!;
 
-    await deleteComment({ commentId: parent.id, eventSlug: event.slug });
-    await deleteComment({ commentId: child.id, eventSlug: event.slug });
+    await deleteComment({ commentId: parent.id });
+    await deleteComment({ commentId: child.id });
 
     expect(
       await getRepositories().sessionComments.listBySession(session.id)
@@ -444,7 +421,6 @@ describe("deleting a session comment", () => {
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "mine",
     });
     const comment = await onlyComment(session.id);
@@ -452,7 +428,6 @@ describe("deleting a session comment", () => {
     act(other.id);
     const result = await deleteComment({
       commentId: comment.id,
-      eventSlug: event.slug,
     });
 
     expect(result).toHaveProperty("error");
@@ -460,25 +435,22 @@ describe("deleting a session comment", () => {
   });
 
   it("refuses to edit a tombstone", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "parent",
     });
     const parent = await onlyComment(session.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       parentId: parent.id,
       body: "child",
     });
-    await deleteComment({ commentId: parent.id, eventSlug: event.slug });
+    await deleteComment({ commentId: parent.id });
 
     const result = await updateComment({
       commentId: parent.id,
-      eventSlug: event.slug,
       body: "back from the dead",
     });
 
@@ -495,18 +467,16 @@ describe("threaded session replies", () => {
   });
 
   it("records the parent of a reply", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "top level",
     });
     const parent = await onlyComment(session.id);
 
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       parentId: parent.id,
       body: "a reply",
     });
@@ -523,14 +493,12 @@ describe("threaded session replies", () => {
     act(guest.id);
     await createComment({
       sessionId: elsewhere.id,
-      eventSlug: event.slug,
       body: "top level elsewhere",
     });
     const parent = await onlyComment(elsewhere.id);
 
     const result = await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       parentId: parent.id,
       body: "misfiled reply",
     });
@@ -556,7 +524,6 @@ describe("threaded session replies", () => {
 
     const result = await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       parentId: parent.id,
       body: "misfiled reply",
     });
@@ -568,17 +535,15 @@ describe("threaded session replies", () => {
   });
 
   it("deletes a whole thread with its session", async () => {
-    const { event, guest, session } = await setup();
+    const { guest, session } = await setup();
     act(guest.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       body: "top level",
     });
     const parent = await onlyComment(session.id);
     await createComment({
       sessionId: session.id,
-      eventSlug: event.slug,
       parentId: parent.id,
       body: "a reply",
     });

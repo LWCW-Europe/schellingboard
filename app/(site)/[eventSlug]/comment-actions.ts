@@ -124,7 +124,7 @@ export async function createSessionComment(
 ): Promise<CommentActionResult> {
   try {
     const guest = await requireGuest();
-    const { sessionId, parentId, body, eventSlug } = await requireParsed(
+    const { sessionId, parentId, body } = await requireParsed(
       sessionCommentSchema,
       input
     );
@@ -148,7 +148,6 @@ export async function createSessionComment(
       body,
       createdTime: await serverNow(),
     });
-    revalidatePath(`/${eventSlug}`, "layout");
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to post comment");
@@ -173,7 +172,9 @@ export async function updateComment(
       body,
       editedTime: await serverNow(),
     });
-    revalidatePath(`/${eventSlug}`, "layout");
+    if (eventSlug) {
+      revalidatePath(`/${eventSlug}`, "layout");
+    }
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to update comment");
@@ -203,7 +204,9 @@ export async function toggleCommentLike(
       guestId: guest,
       createdTime: await serverNow(),
     });
-    revalidatePath(`/${eventSlug}`, "layout");
+    if (eventSlug) {
+      revalidatePath(`/${eventSlug}`, "layout");
+    }
     return { success: true, liked };
   } catch (error) {
     return toResult(error, "Failed to like comment");
@@ -225,7 +228,9 @@ export async function deleteComment(
     await requireOwnComment(commentId, guest);
 
     await getRepositories().comments.delete(commentId);
-    revalidatePath(`/${eventSlug}`, "layout");
+    if (eventSlug) {
+      revalidatePath(`/${eventSlug}`, "layout");
+    }
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to delete comment");

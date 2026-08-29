@@ -59,7 +59,7 @@ export function CommentsSection({
   permalinkFor,
   changed,
 }: {
-  eventSlug: string;
+  eventSlug?: string;
   timezone: string;
   comments?: Comment[] | null;
   // Scope-specific: proposals and sessions differ in the action called and in
@@ -159,7 +159,7 @@ function CommentThread({
 }: {
   node: CommentNode;
   depth: number;
-  eventSlug: string;
+  eventSlug?: string;
   timezone: string;
   create: (input: CommentCreateInput) => Promise<CommentActionResult>;
   permalinkFor: (commentId: string) => string;
