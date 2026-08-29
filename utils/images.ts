@@ -152,16 +152,110 @@ export abstract class BaseImageResourceRepository<
     filename: string
   ): Promise<{ data: Buffer; contentType: string } | undefined> {
     if (!SAFE_FILENAME.test(filename)) return undefined;
+    return this.readStored(filename);
+  }
 
-    filename = path.join(/*turbopackIgnore: true*/ this.dirPath, filename);
+  /**
+   * {@link read} without the SAFE_FILENAME check, for names this class builds
+   * itself. Renditions are `<id>.<width>.<ext>`, which SAFE_FILENAME rejects
+   * (it allows no dot in the stem) — reading them through `read` silently
+   * missed the cache on every request.
+   */
+  private async readStored(
+    filename: string
+  ): Promise<{ data: Buffer; contentType: string } | undefined> {
+    const target = path.join(/*turbopackIgnore: true*/ this.dirPath, filename);
     try {
-      const data = await fs.readFile(filename);
-      const ext = filename.split(".").pop()!;
+      const data = await fs.readFile(target);
+      const ext = target.split(".").pop()!;
       return { data, contentType: CONTENT_TYPES[ext] };
     } catch {
       return undefined;
     }
   }
+
+  /**
+   * {@link read}, downscaled to `width`. Does the job next/image's optimizer
+   * would, because it can't reach these files once /media needs a cookie
+   * (see utils/image-loader.js).
+   *
+   * The rendition is cached beside the original as `<id>.<width>.<ext>`, so
+   * replacing an image drops its renditions too — {@link delete} already
+   * removes everything starting with `<id>.`.
+   */
+  async readSized(
+    filename: string,
+    width: number
+  ): Promise<{ data: Buffer; contentType: string } | undefined> {
+    if (!SAFE_FILENAME.test(filename)) return undefined;
+
+    const [base, ext] = splitExtension(filename);
+    const rendition = `${base}.${width}.${ext}`;
+    const cached = await this.readStored(rendition);
+    if (cached) return cached;
+
+    const original = await this.read(filename);
+    if (!original) return undefined;
+
+    let resized: Buffer;
+    try {
+      const image = sharp(original.data);
+      const { width: sourceWidth } = await image.metadata();
+      // Upscaling invents no detail and only costs bytes.
+      if (sourceWidth <= width) return original;
+      resized = await image
+        .resize(width, null, { withoutEnlargement: true })
+        .toBuffer();
+    } catch {
+      // A stored file sharp can't read is still servable as-is.
+      return original;
+    }
+
+    await this.writeRendition(rendition, resized);
+    return { data: resized, contentType: original.contentType };
+  }
+
+  /**
+   * Writes via a unique temporary name and renames into place, so a second
+   * request for the same rendition can never read a half-written file.
+   */
+  private async writeRendition(name: string, data: Buffer): Promise<void> {
+    const dir = this.dirPath;
+    const target = path.join(/*turbopackIgnore: true*/ dir, name);
+    const temp = `${target}.${crypto.randomUUID()}.tmp`;
+    try {
+      await fs.writeFile(temp, data);
+      await fs.rename(temp, target);
+    } catch {
+      // A failed cache write costs a resize next time, nothing more.
+      await fs.unlink(temp).catch(() => {});
+    }
+  }
+}
+
+/** Splits "a1.webp" into ["a1", "webp"]; the name is SAFE_FILENAME-checked. */
+function splitExtension(filename: string): [string, string] {
+  const dot = filename.lastIndexOf(".");
+  return [filename.slice(0, dot), filename.slice(dot + 1)];
+}
+
+// The widths next/image can ask for: its default imageSizes and deviceSizes.
+// An open width parameter would be a CPU-burn oracle — every distinct value
+// misses the rendition cache and costs a full decode plus resize.
+const ALLOWED_WIDTHS = new Set([
+  16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048,
+  3840,
+]);
+
+/**
+ * The width a media request asks for: null when it asks for none (serve the
+ * original), or false when the value isn't one we generate renditions for.
+ */
+export function requestedWidth(params: URLSearchParams): number | null | false {
+  const raw = params.get("w");
+  if (raw === null) return null;
+  const width = Number(raw);
+  return ALLOWED_WIDTHS.has(width) ? width : false;
 }
 
 const SAFE_FILENAME = /^[A-Za-z0-9_-]+\.(jpg|png|webp)$/;

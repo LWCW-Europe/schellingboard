@@ -1,22 +1,35 @@
-// Serves user-uploaded location images from SB_UPLOADS_DIR. URLs carry a
-// ?v= cache-buster set on upload, so responses can be cached aggressively.
+// Serves user-uploaded avatars from SB_UPLOADS_DIR. URLs carry a ?v=
+// cache-buster set on upload, and ?w= the width next/image asked for (see
+// utils/image-loader.js), so responses can be cached aggressively.
 import { NextRequest, NextResponse } from "next/server";
-import { getImageRepositories } from "@/utils/images";
+import { getImageRepositories, requestedWidth } from "@/utils/images";
+import { MEDIA_CACHE_CONTROL, requireMediaAuth } from "@/utils/media-auth";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ filename: string }> }
 ) {
-  const { filename } = await params;
+  const unauthorized = await requireMediaAuth(request);
+  if (unauthorized) return unauthorized;
 
-  const image = await getImageRepositories().avatars.read(filename);
+  const { filename } = await params;
+  const width = requestedWidth(request.nextUrl.searchParams);
+  if (width === false) {
+    return new NextResponse("Bad Request", { status: 400 });
+  }
+
+  const avatars = getImageRepositories().avatars;
+  const image =
+    width === null
+      ? await avatars.read(filename)
+      : await avatars.readSized(filename, width);
   if (!image) {
     return new NextResponse("Not Found", { status: 404 });
   }
   return new NextResponse(new Uint8Array(image.data), {
     headers: {
       "Content-Type": image.contentType,
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": MEDIA_CACHE_CONTROL,
     },
   });
 }

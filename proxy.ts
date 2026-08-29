@@ -7,6 +7,7 @@ import {
   requireAdminAuthApi,
   requireAuth,
 } from "./utils/auth";
+import { requireMediaAuth } from "./utils/media-auth";
 
 // Only requireAdminAuthApi may grant ADMIN_VERIFIED_HEADER (and only ever
 // sets it to "1"); every other forwarded request must have any
@@ -53,6 +54,13 @@ export async function proxy(request: NextRequest) {
     return requireAdminAuthApi(request);
   }
 
+  // Uploaded images are shown to attendees and previewed in the admin UI, so
+  // either cookie opens them; the route handlers apply the same rule again.
+  if (pathname.startsWith("/media/")) {
+    const mediaResponse = await requireMediaAuth(request);
+    return mediaResponse ?? forwardWithoutAdminHeader(request);
+  }
+
   // Check authentication for all other routes
   const authResponse = await requireAuth(request);
   if (authResponse) {
@@ -65,12 +73,20 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public assets (images, etc.)
+     * Everything except an explicit list of what must stay public:
+     * - _next/static — build output, no user data
+     * - _next/image  — dead under the custom loader (it 404s, see
+     *                  next.config.js), and build assets either way
+     * - the three icons app/layout.tsx loads, which the login page needs
+     *   before anyone has a cookie
+     * - locations/  — the seeded room photos in public/, which the admin UI
+     *   renders with the admin cookie alone (uploads live under /media)
+     *
+     * This deliberately does NOT exempt paths by file extension. It used to,
+     * and since media filenames are `<id>.<jpg|png|webp>` that exempted every
+     * uploaded avatar, location image and site map from auth entirely — see
+     * matcher's own test at tests/unit/proxy-matcher.test.ts.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:jpg|jpeg|gif|png|svg|ico|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-touch-icon.png|locations/).*)",
   ],
 };

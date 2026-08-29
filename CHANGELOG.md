@@ -80,6 +80,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **A cap on how much login mail one attendee can be sent**: asking for a login code, or for a link to set a password,
   sends mail to the address on file, and nothing limited how often. At most 20 such mails a day now go to any one
   attendee
+- **Uploaded pictures now need the site password too**: profile photos, room photos and the venue map were handed to
+  anyone who asked for them by address, with no authentication required. A photo's address ends in a long random code
+  nobody could guess, so this mattered only for the venue map, which sits at a fixed address. The reason for this was
+  that, surprisingly, it's the default way Next.js handles images. See the note _"If the src image requires authentication,
+  consider using the unoptimized property to disable Image Optimization."_
+  [here](https://nextjs.org/docs/app/api-reference/components/image).
 
 ### Internal
 

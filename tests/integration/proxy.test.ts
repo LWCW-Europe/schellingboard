@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { ADMIN_VERIFIED_HEADER, createAdminAuthCookie } from "@/utils/auth";
+import {
+  ADMIN_VERIFIED_HEADER,
+  createAdminAuthCookie,
+  createAuthCookie,
+} from "@/utils/auth";
 import { throughProxy } from "../helpers/through-proxy";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef"; // 32 chars
@@ -94,5 +98,37 @@ describe("proxy: /api/admin/* auth", () => {
     const admin = await createAdminAuthCookie();
     const result = await throughProxy("/api/admin/create-guest", {}, [admin]);
     if (!result.ok) throw new Error("expected proxy to forward the request");
+  });
+});
+
+// Uploaded images are shown to attendees, who hold the site cookie, and
+// previewed in the admin UI, which is independent of site auth — so either
+// cookie opens them. The route handlers apply the same rule (see
+// utils/media-auth.ts and tests/integration/media-routes.test.ts).
+describe("proxy: /media auth", () => {
+  beforeEach(() => {
+    vi.stubEnv("SITE_PASSWORD", "site-pw");
+    vi.stubEnv("ADMIN_PASSWORD", "admin-pw");
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("forwards a request carrying the site cookie", async () => {
+    const site = await createAuthCookie();
+    const result = await throughProxy("/media/avatars/abc.webp", {}, [site]);
+    if (!result.ok) throw new Error("expected proxy to forward the request");
+  });
+
+  it("forwards a request carrying only the admin cookie", async () => {
+    const admin = await createAdminAuthCookie();
+    const result = await throughProxy("/media/locations/abc.webp", {}, [admin]);
+    if (!result.ok) throw new Error("expected proxy to forward the request");
+  });
+
+  it("answers 401 rather than redirecting an unauthenticated image request", async () => {
+    const result = await throughProxy("/media/site/map.webp", {}, []);
+    if (result.ok) throw new Error("expected proxy to reject the request");
+    expect(result.response.status).toBe(401);
+    expect(result.response.headers.get("location")).toBeNull();
   });
 });

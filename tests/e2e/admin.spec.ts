@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { test, expect } from "./helpers/fixtures";
 import { uniqueSuffix } from "./helpers/unique";
 import { loginAndGoto } from "./helpers/auth";
+import { expectImageLoaded } from "./helpers/images";
 import { selectUser } from "./helpers/user";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
@@ -1668,6 +1669,10 @@ test.describe("Admin UI locations", () => {
     await gotoLocations(page);
     const region = page.getByRole("region", { name: "Locations" });
 
+    // A seeded room photo, which ships in public/ rather than the uploads
+    // volume — the other way an image can reach this page.
+    await expectImageLoaded(region.getByRole("img", { name: "Main Hall" }));
+
     const name = `E2E Photo Room ${uniqueSuffix()}`;
     await region.getByRole("button", { name: "New location" }).click();
     await region.getByLabel("Name", { exact: true }).fill(name);
@@ -1693,7 +1698,9 @@ test.describe("Admin UI locations", () => {
     await region.getByRole("button", { name: "Add location" }).click();
     const row = region.getByRole("listitem").filter({ hasText: name });
     await expect(row).toBeVisible();
-    await expect(row.getByRole("img", { name })).toBeVisible();
+    // Loaded, not just present: this page runs on the admin cookie alone, so
+    // an image gated on the site cookie would show up here as a broken box.
+    await expectImageLoaded(row.getByRole("img", { name }));
 
     await deleteLocation(page, name);
   });

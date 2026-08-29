@@ -1,5 +1,6 @@
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
+import { expectImageLoaded } from "./helpers/images";
 
 // Charlie Test is seeded with an uploaded photo and no other spec edits their
 // profile, so this never races profile.spec.ts, which resets Alice's avatar.
@@ -19,6 +20,9 @@ test("shows the photo big enough to recognise someone, without clicking", async 
   ).toBeVisible();
 
   const photo = profile.getByAltText(`Profile avatar of ${GUEST}`);
+  // The box below says nothing about whether the bytes arrived: uploads are
+  // served by /media, which authenticates the request itself.
+  await expectImageLoaded(photo);
   const box = (await photo.boundingBox())!;
   expect(box.width).toBeGreaterThanOrEqual(240);
   // Stored avatars are square crops, so an unsquare box means a stretched face.

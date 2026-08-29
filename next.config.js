@@ -28,19 +28,18 @@ const nextConfig = {
     ];
   },
   images: {
-    localPatterns: [
-      // Location uploads carry a ?v=<timestamp> cache-buster; omitting `search`
-      // allows any query string for these paths.
-      { pathname: "/media/**" },
-      // Other local/public assets (e.g. /map.png) without a query string.
-      { pathname: "/**", search: "" },
-    ],
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-      },
-    ],
+    // Media can't go through the built-in optimizer once /media requires a
+    // cookie: the optimizer fetches the source with a request carrying no
+    // headers at all, so the proxy bounces it and it 400s even for a caller
+    // who is logged in. This loader sends /media straight to the media routes,
+    // which resize and check auth themselves. See utils/image-loader.js .
+    //
+    // Naming any custom loader also switches the optimizer off app-wide —
+    // /_next/image then 404s — which is why no localPatterns/remotePatterns
+    // are configured here: they only ever gated that endpoint, and nothing
+    // reaches it now.
+    loader: "custom",
+    loaderFile: "./utils/image-loader.js",
   },
   env: {
     NEXT_PUBLIC_APP_VERSION:
