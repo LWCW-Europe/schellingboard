@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
+import { uniqueSuffix } from "./helpers/unique";
 import { loginAndGoto, login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
 
@@ -108,7 +109,7 @@ test("votes from two users persist independently across reloads", async ({
   // in this file votes as Bob in a parallel worker, and quick voting never
   // offers proposals the current user hosts, so no other test can add votes
   // to this proposal.
-  const title = `E2E Vote Target ${Date.now()}`;
+  const title = `E2E Vote Target ${uniqueSuffix()}`;
   await page.getByRole("link", { name: /Add Proposal/i }).click();
   await page.getByLabel("Title").fill(title);
   await page.getByLabel("Host(s)").click();

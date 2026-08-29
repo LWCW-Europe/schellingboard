@@ -1,4 +1,5 @@
 import { test, expect } from "./helpers/fixtures";
+import { uniqueSuffix } from "./helpers/unique";
 import { loginAndGoto, login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
 
@@ -17,7 +18,7 @@ test("should create a new session proposal, edit it, and add hosts", async ({
   // Go to proposals list first (optional, helps ensure baseline loaded)
   await page.goto("/Conference-Alpha/proposals");
   // Generate a unique title to avoid collisions between runs
-  const proposalTitle = `Playwright Test Proposal ${Date.now()}`;
+  const proposalTitle = `Playwright Test Proposal ${uniqueSuffix()}`;
   await expect(page.getByText(proposalTitle).first()).toHaveCount(0); // ensure not present
 
   await page
@@ -87,7 +88,7 @@ test("should delete a proposal from its edit page", async ({ page }) => {
   await page.goto("/Conference-Alpha/proposals");
 
   // Create a throwaway proposal so seeded data stays untouched
-  const proposalTitle = `Playwright Delete Proposal ${Date.now()}`;
+  const proposalTitle = `Playwright Delete Proposal ${uniqueSuffix()}`;
   await page.getByRole("link", { name: /Add Proposal/i }).click();
   await page.getByLabel("Title").fill(proposalTitle);
   await Promise.all([
@@ -124,7 +125,7 @@ test("a non-host cannot edit or delete another guest's proposal", async ({
 }) => {
   await login(page);
   await page.goto("/Conference-Alpha/proposals");
-  const proposalTitle = `Playwright Ownership Proposal ${Date.now()}`;
+  const proposalTitle = `Playwright Ownership Proposal ${uniqueSuffix()}`;
 
   // Alice creates a proposal; she's prefilled as its only host.
   await selectUser(page, /Alice Test/i);

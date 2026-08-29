@@ -1,4 +1,5 @@
 import { test, expect } from "./helpers/fixtures";
+import { uniqueSuffix } from "./helpers/unique";
 import { login } from "./helpers/auth";
 import { PROMPT_POOL } from "@/model/prompt-pool";
 import sharp from "sharp";
@@ -68,7 +69,7 @@ test.describe("Edit profile", () => {
       page.getByRole("heading", { name: /Edit profile/i })
     ).toBeVisible();
 
-    const aboutMe = `Conference enthusiast ${Date.now()}`;
+    const aboutMe = `Conference enthusiast ${uniqueSuffix()}`;
     await page.getByLabel("About me").fill(aboutMe);
     const pronounsEntry = page.getByLabel("Pronouns");
     await pronounsEntry.fill("She/Her");
@@ -138,7 +139,7 @@ test.describe("Edit profile", () => {
     await page.getByRole("link", { name: /Edit profile/i }).click();
 
     // Reset the avatar
-    const aboutMe = `Conference enthusiast ${Date.now()}`;
+    const aboutMe = `Conference enthusiast ${uniqueSuffix()}`;
     await page.getByLabel("About me").fill(aboutMe);
     await page.getByRole("button", { name: /^Save$/ }).click();
 
@@ -224,8 +225,15 @@ test.describe("Edit profile", () => {
     // A retry of this test runs against the profile saved by the previous
     // attempt, so clear the rows it left behind before adding new ones.
     const leftoverRows = page.getByRole("button", { name: "Remove" });
-    while ((await leftoverRows.count()) > 0) {
+    let left = await leftoverRows.count();
+    while (left > 0) {
       await leftoverRows.first().click();
+      // Wait for the row to actually go: a bare count() loop can click the
+      // same row twice while the first removal is still landing, and then
+      // never reaches zero. Re-read afterwards rather than counting down, so a
+      // row that renders late still gets removed.
+      await expect(leftoverRows).toHaveCount(left - 1);
+      left = await leftoverRows.count();
     }
 
     await page
@@ -567,7 +575,7 @@ test("sorts the attendee directory by recently updated", async ({ page }) => {
   await selectCurrentUser(page);
   await page.getByRole("link", { name: "Attendees", exact: true }).click();
   await page.getByRole("link", { name: /Edit profile/i }).click();
-  await page.getByLabel("About me").fill(`Freshly edited ${Date.now()}`);
+  await page.getByLabel("About me").fill(`Freshly edited ${uniqueSuffix()}`);
   await page.getByRole("button", { name: /^Save$/ }).click();
   await expect(page).toHaveURL(/\/guests\/[^/]+$/);
   // The save redirects here itself; a click that lands while that navigation

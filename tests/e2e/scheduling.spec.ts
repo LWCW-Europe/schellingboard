@@ -1,6 +1,7 @@
 import { Page } from "@playwright/test";
 import { DateTime } from "luxon";
 import { test, expect } from "./helpers/fixtures";
+import { uniqueSuffix } from "./helpers/unique";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
 import { dismissToast, toast } from "./helpers/toast";
@@ -75,7 +76,7 @@ test("a host can edit a session's title and the change persists", async ({
   page,
 }) => {
   await login(page);
-  const unique = Date.now();
+  const unique = uniqueSuffix();
   const title = `E2E Editable Session ${unique}`;
   const renamed = `E2E Renamed Session ${unique}`;
 
@@ -100,7 +101,7 @@ test("a host can delete a session and it disappears from the grid", async ({
   page,
 }) => {
   await login(page);
-  const title = `E2E Doomed Session ${Date.now()}`;
+  const title = `E2E Doomed Session ${uniqueSuffix()}`;
 
   await createSessionViaForm(page, title, /Garden Terrace/, "16:10");
 
@@ -124,7 +125,7 @@ test("a session booked after midnight lands on the next calendar date", async ({
   page,
 }) => {
   await login(page);
-  const title = `E2E Late Night Session ${Date.now()}`;
+  const title = `E2E Late Night Session ${uniqueSuffix()}`;
 
   // Gamma's last day runs 09:00 → 03:00 the next morning (see the seed), so
   // 01:10 is bookable under that day and belongs to the following date.

@@ -1,4 +1,5 @@
 import { test, expect } from "./helpers/fixtures";
+import { uniqueSuffix } from "./helpers/unique";
 import { login } from "./helpers/auth";
 import { dismissToast, toast } from "./helpers/toast";
 
@@ -19,7 +20,7 @@ test("a newly added session appears on the overview and can be opened", async ({
 
   // Unique per attempt: the DB is seeded once for the whole run, so a retry
   // would otherwise find the session its failed predecessor already created.
-  const sessionTitle = `Yak shaving ${Date.now()}`;
+  const sessionTitle = `Yak shaving ${uniqueSuffix()}`;
   await page.getByRole("textbox").first().fill(sessionTitle);
 
   // Add a host via the combobox (a host is required to enable Submit).

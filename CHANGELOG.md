@@ -60,6 +60,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- Throwaway names in E2E tests carry the worker's process id and a counter, not just `Date.now()`:
+  two parallel workers can land in the same millisecond, and the duplicate name would surface as an
+  unreproducible locator failure somewhere else entirely
 - E2E specs that change site-wide settings run in their own Playwright project, after the parallel
   bulk and with the site to themselves. `settings.spec.ts` restored what it changed, but only after
   asserting on it, and nothing stopped a future test from reading the site title in that window

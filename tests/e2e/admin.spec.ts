@@ -1,6 +1,7 @@
 import { Page, Route } from "@playwright/test";
 import sharp from "sharp";
 import { test, expect } from "./helpers/fixtures";
+import { uniqueSuffix } from "./helpers/unique";
 import { loginAndGoto } from "./helpers/auth";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
@@ -154,7 +155,7 @@ test.describe("Admin UI", () => {
     await adminLogin(page);
     await gotoUsers(page);
 
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const email = `e2e-admin-${unique}@test.example`;
     const name = `E2E Admin User ${unique}`;
     const renamed = `${name} Renamed`;
@@ -221,7 +222,7 @@ test.describe("Admin UI", () => {
     await adminLogin(page);
     await gotoUsers(page);
 
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const newName = `CSV Import User ${unique}`;
     const newEmail = `csv-import-${unique}@test.example`;
     // bob@test.com already exists in the seed, so he must be skipped.
@@ -355,7 +356,7 @@ test.describe("Admin UI events", () => {
     await expect(page.getByText("Conference Alpha")).toBeVisible();
 
     // Create a new event
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const eventName = `E2E Event ${unique}`;
     await page.getByRole("button", { name: "New event" }).click();
     await page.getByLabel("Name *").fill(eventName);
@@ -378,7 +379,7 @@ test.describe("Admin UI events", () => {
     await adminLogin(page);
     await page.goto("/admin/events");
 
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const eventName = `E2E Tabs ${unique}`;
     await page.getByRole("button", { name: "New event" }).click();
     await page.getByLabel("Name *").fill(eventName);
@@ -440,7 +441,7 @@ test.describe("Admin UI events", () => {
     await page.goto("/admin/events");
 
     // Create a throwaway event so we never touch the shared seeded events
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const original = `E2E Edit ${unique}`;
     const renamed = `E2E Edit Updated ${unique}`;
     await page.getByRole("button", { name: "New event" }).click();
@@ -490,7 +491,7 @@ test.describe("Admin UI events", () => {
     await page.goto("/admin/events");
 
     // Create a throwaway event
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const eventName = `Delete Me ${unique}`;
     await page.getByRole("button", { name: "New event" }).click();
     await page.getByLabel("Name *").fill(eventName);
@@ -520,7 +521,7 @@ test.describe("Admin UI events", () => {
     await page.goto("/admin/events");
 
     // Create a throwaway event with no phases initially
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const eventName = `E2E Phases ${unique}`;
     await page.getByRole("button", { name: "New event" }).click();
     await page.getByLabel("Name *").fill(eventName);
@@ -601,7 +602,7 @@ test.describe("Admin UI days", () => {
     await page.goto("/admin/events");
 
     // Create a throwaway event so we never touch seeded events
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const eventName = `E2E Days ${unique}`;
     await page.getByRole("button", { name: "New event" }).click();
     await page.getByLabel("Name *").fill(eventName);
@@ -703,7 +704,7 @@ test.describe("Admin UI guest assignment", () => {
     await page.goto("/admin/events");
 
     // Create a throwaway event
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const eventName = `E2E Guests ${unique}`;
     await page.getByRole("button", { name: "New event" }).click();
     await page.getByLabel("Name *").fill(eventName);
@@ -784,7 +785,7 @@ test.describe("Admin UI guest assignment", () => {
     await page.goto("/admin/events");
 
     // Fresh event so all seeded guests start unassigned.
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const eventName = `E2E Bulk Guests ${unique}`;
     await page.getByRole("button", { name: "New event" }).click();
     await page.getByLabel("Name *").fill(eventName);
@@ -913,7 +914,7 @@ test.describe("Admin UI locations", () => {
 
       // Create a throwaway event (seeded locations are linked to seeded events
       // only, so a fresh event starts with none assigned)
-      const unique = Date.now();
+      const unique = uniqueSuffix();
       const eventName = `E2E Locations ${unique}`;
       await page.getByRole("button", { name: "New event" }).click();
       await page.getByLabel("Name *").fill(eventName);
@@ -1079,7 +1080,7 @@ test.describe("Admin UI locations", () => {
     await page.goto("/admin/events");
 
     // Fresh event so all seeded locations start "Not assigned".
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const eventName = `E2E Loc Selection ${unique}`;
     await page.getByRole("button", { name: "New event" }).click();
     await page.getByLabel("Name *").fill(eventName);
@@ -1205,7 +1206,7 @@ test.describe("Admin UI proposals", () => {
     // at the end so the shared seed data stays intact.
     const original =
       "Conference Alpha Panel: Industry Leaders Share Their Insights";
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const edited = `Panel EDITED ${unique}`;
 
     await proposals
@@ -1245,7 +1246,7 @@ test.describe("Admin UI proposals", () => {
   test("deletes a proposal via named confirm", async ({ page }) => {
     // Create a fresh proposal so we never permanently delete seeded data
     await loginAndGoto(page, "/Conference-Alpha/proposals/new");
-    const title = `E2E Delete Test ${Date.now()}`;
+    const title = `E2E Delete Test ${uniqueSuffix()}`;
     await page.getByLabel("Title").fill(title);
     await Promise.all([
       page.waitForURL(/\/Conference-Alpha\/proposals$/),
@@ -1368,7 +1369,7 @@ test.describe("Admin UI sessions", () => {
 
     const sessions = page.getByRole("region", { name: "Sessions" });
     const original = "Opening Keynote - Conference Alpha";
-    const edited = `Keynote EDITED ${Date.now()}`;
+    const edited = `Keynote EDITED ${uniqueSuffix()}`;
 
     await sessions
       .getByRole("listitem")
@@ -1407,7 +1408,7 @@ test.describe("Admin UI sessions", () => {
     await openEventTab(page, "Sessions");
 
     const sessions = page.getByRole("region", { name: "Sessions" });
-    const title = `Lunch Blocker ${Date.now()}`;
+    const title = `Lunch Blocker ${uniqueSuffix()}`;
 
     await sessions.getByRole("button", { name: "Add session" }).click();
     await sessions.getByLabel("Title *").fill(title);
@@ -1590,7 +1591,7 @@ test.describe("Admin UI locations", () => {
     await gotoLocations(page);
     const region = page.getByRole("region", { name: "Locations" });
 
-    const unique = Date.now();
+    const unique = uniqueSuffix();
     const nameA = `E2E Room A ${unique}`;
     const nameB = `E2E Room B ${unique}`;
 
@@ -1664,7 +1665,7 @@ test.describe("Admin UI locations", () => {
     await gotoLocations(page);
     const region = page.getByRole("region", { name: "Locations" });
 
-    const name = `E2E Photo Room ${Date.now()}`;
+    const name = `E2E Photo Room ${uniqueSuffix()}`;
     await region.getByRole("button", { name: "New location" }).click();
     await region.getByLabel("Name", { exact: true }).fill(name);
 

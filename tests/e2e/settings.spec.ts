@@ -1,6 +1,7 @@
 import { Page } from "@playwright/test";
 import sharp from "sharp";
 import { test, expect } from "./helpers/fixtures";
+import { uniqueSuffix } from "./helpers/unique";
 import { loginAndGoto } from "./helpers/auth";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
@@ -45,7 +46,7 @@ test.describe("Admin site settings", () => {
     await adminLogin(page);
     await gotoSettings(page);
 
-    const unique = `E2E Conf ${Date.now()}`;
+    const unique = `E2E Conf ${uniqueSuffix()}`;
     await page.getByLabel("Title").fill(unique);
     await page.getByRole("button", { name: "Save settings" }).click();
     await expect(page.getByText("Settings saved.")).toBeVisible();

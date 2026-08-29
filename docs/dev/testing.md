@@ -179,8 +179,10 @@ Dates must be formatted in an explicit zone — the event's — never the proces
   seeded rows ("Alice sorts above Ahmad"), which stays true however many rows appear around them.
   Comparing one count against another (fewer after a filter than before) holds only where no row a
   parallel spec can add moves the two the same way
-- Give anything a test creates a name of its own (`E2E Admin User <timestamp>`), distinctive enough
-  that no other spec's search or filter can match it
+- Give anything a test creates a name of its own (`E2E Admin User ${uniqueSuffix()}`), distinctive
+  enough that no other spec's search or filter can match it. Take the suffix from
+  `tests/e2e/helpers/unique.ts`, never a bare `Date.now()`: workers are separate processes sharing
+  one database, and two of them can land in the same millisecond
 - A cross-test invariant that only a comment states ("no other test votes on this proposal") is
   enforced by nothing. Put it in the seed or the fixture where it can be relied on, or write the
   assertion so it does not need the invariant

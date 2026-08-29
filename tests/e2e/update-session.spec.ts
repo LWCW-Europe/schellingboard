@@ -1,5 +1,6 @@
 import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
+import { uniqueSuffix } from "./helpers/unique";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
 import { dismissToast, toast } from "./helpers/toast";
@@ -41,7 +42,7 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
   // The title doubles as the unique token for finding this test's emails
   // (both notification emails carry it in the subject), so leftover
   // mailbox contents from other tests or runs never match.
-  const title = `E2E Email Session ${Date.now()}`;
+  const title = `E2E Email Session ${uniqueSuffix()}`;
 
   // Charlie creates a session on the last event day (Garden Terrace 15:10 —
   // a slot no other spec claims; see the note in scheduling.spec.ts). Bob
