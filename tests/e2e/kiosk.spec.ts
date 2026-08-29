@@ -29,15 +29,27 @@ const duringGammaDayOne = DateTime.now()
 // wait for the simulated date to show so the override cookie is committed.
 async function setDevClock(page: Page, target: DateTime) {
   await expect(page.getByText("Dev clock")).toBeVisible();
-  await page
-    .getByLabel("Pick date and time")
-    .fill(target.toFormat("yyyy-MM-dd'T'HH:mm"));
+  // Applying the clock triggers a router.refresh(); a navigation started while
+  // its RSC payload is still streaming aborts it, which logs an RSC-payload
+  // error the console guard fails on. So wait for that very response, body and
+  // all — "networkidle" is both later and less certain, since Next goes on
+  // prefetching in the background. A refresh asks for RSC without the
+  // prefetch header, which is what tells it apart from those prefetches.
+  const [refreshed] = await Promise.all([
+    page.waitForResponse(
+      (res) =>
+        res.ok() &&
+        res.request().headers()["rsc"] === "1" &&
+        !res.request().headers()["next-router-prefetch"]
+    ),
+    page
+      .getByLabel("Pick date and time")
+      .fill(target.toFormat("yyyy-MM-dd'T'HH:mm")),
+  ]);
   // The toolbar prints the simulated instant in UTC; the calendar date is the
   // same as Berlin's for a 16:00 target, so match on the date alone.
   await expect(page.getByText(target.toFormat("yyyy-MM-dd"))).toBeVisible();
-  // Applying the clock triggers a router.refresh(); let its RSC fetch finish so
-  // a following navigation doesn't abort it (which logs an RSC-payload error).
-  await page.waitForLoadState("networkidle");
+  await refreshed.finished();
 }
 
 // Land the browser on `path` with the fake clock already inside Gamma's first
