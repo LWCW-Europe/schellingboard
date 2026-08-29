@@ -50,32 +50,38 @@ test("the toolbar scrolls out of view while the room headers stay pinned", async
 
   // Wheel down just enough to push the slim toolbar past the top edge while
   // staying within the first day (scrolling a full day's height would carry its
-  // sticky header off-screen too). Wheel scrolling is applied asynchronously, so
-  // scroll in steps and let it settle before asserting.
+  // sticky header off-screen too). Firefox applies wheel deltas
+  // asynchronously, so wheel until the toolbar has actually gone rather than a
+  // fixed number of times followed by a hopeful settle.
   await page.mouse.move(250, 400);
-  for (let i = 0; i < 4; i++) {
+  await expect(async () => {
     await page.mouse.wheel(0, 100);
-    await page.waitForTimeout(50);
-  }
-  await page.waitForTimeout(300);
-
-  await expect(toolbar).not.toBeInViewport();
+    await expect(toolbar).not.toBeInViewport({ timeout: 250 });
+  }).toPass();
   await expect(roomHeader).toBeInViewport();
 });
 
-test("the footer ends the schedule content", async ({ page }) => {
-  // Wheel all the way down over the schedule.
-  await page.mouse.move(250, 400);
-  for (let i = 0; i < 12; i++) {
-    await page.mouse.wheel(0, 2000);
-    await page.waitForTimeout(50);
-  }
-  await page.waitForTimeout(500);
+const footerLink = (page: import("@playwright/test").Page) =>
+  page.getByRole("link", { name: "Report a Bug" }).locator("visible=true");
 
-  // The footer sits at the end of the schedule content.
-  await expect(
-    page.getByRole("link", { name: "Report a Bug" }).locator("visible=true")
-  ).toBeInViewport();
+// Wheels down until the footer is on screen. Firefox applies wheel deltas
+// asynchronously, so a fixed number of wheels plus a settle can come up short
+// under load; this stops as soon as the end is reached instead. Where the view
+// pins the footer to the viewport it returns straight away, which is right —
+// there is nothing to scroll past to reach it.
+const scrollToEnd = async (page: import("@playwright/test").Page) => {
+  await page.mouse.move(250, 400);
+  await expect(async () => {
+    await page.mouse.wheel(0, 2000);
+    await expect(footerLink(page)).toBeInViewport({ timeout: 250 });
+  }).toPass();
+};
+
+test("the footer ends the schedule content", async ({ page }) => {
+  // The footer sits at the end of the schedule content, so wheeling down over
+  // the schedule brings it into view.
+  await scrollToEnd(page);
+  await expect(footerLink(page)).toBeInViewport();
 });
 
 // The text and RSVP views follow the rest of the site (the proposals list, for
@@ -83,17 +89,6 @@ test("the footer ends the schedule content", async ({ page }) => {
 // it stays visible and isn't stranded mid-page when the content is short (a
 // handful of RSVPs); on a phone it ends the content instead. The grid view
 // never pins it — see "the footer ends the schedule content" above.
-const footerLink = (page: import("@playwright/test").Page) =>
-  page.getByRole("link", { name: "Report a Bug" }).locator("visible=true");
-
-const scrollToEnd = async (page: import("@playwright/test").Page) => {
-  await page.mouse.move(250, 400);
-  for (let i = 0; i < 12; i++) {
-    await page.mouse.wheel(0, 2000);
-    await page.waitForTimeout(50);
-  }
-  await page.waitForTimeout(500);
-};
 
 for (const view of ["Text", "RSVP'd"]) {
   test.describe("on a wide screen", () => {
@@ -113,7 +108,8 @@ for (const view of ["Text", "RSVP'd"]) {
       };
 
       await atViewportBottom();
-      // Still there after scrolling through the sessions …
+      // Still there after scrolling the sessions (a pinned footer is already
+      // on screen, so this wheels once and returns) …
       await scrollToEnd(page);
       await atViewportBottom();
       // … and when a search leaves almost nothing to show, the case that
@@ -217,8 +213,17 @@ test.describe("on a wide screen", () => {
 
   test("hovering a room name shows its details", async ({ page }) => {
     const details = roomDetails(page);
-    await page.getByRole("button", { name: "Main Hall" }).first().hover();
-    await expect(details).toContainText(MAIN_HALL_DETAIL);
+    const roomName = page.getByRole("button", { name: "Main Hall" }).first();
+    // Hovering once is not enough: under load the mouse can arrive before the
+    // grid has hydrated, and a mouseenter nobody is listening for yet is
+    // simply lost — the cursor then rests on the name with no panel to show
+    // for it. Leave and come back until one lands. Re-hovering is safe; unlike
+    // the tap above it doesn't toggle.
+    await expect(async () => {
+      await page.mouse.move(0, 400);
+      await roomName.hover();
+      await expect(details).toContainText(MAIN_HALL_DETAIL, { timeout: 1000 });
+    }).toPass();
 
     await page.mouse.move(0, 400);
     await expect(details).toHaveCount(0);

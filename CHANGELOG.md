@@ -60,6 +60,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- The schedule-layout E2E tests scroll until what they assert on has moved, instead of wheeling a
+  fixed amount and waiting 300–500ms for it. The room-details hover retries too: under load the
+  mouse could arrive before the grid had hydrated, and that first hover was simply lost
 - E2E tests settle the page before reloading it rather than after. The kiosk tests wait for the
   dev clock's refresh to finish streaming, and the view-session test for the fetches the session
   modal starts; a reload aborts whatever is still in flight, which logs the RSC-payload and
