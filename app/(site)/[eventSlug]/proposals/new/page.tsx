@@ -1,4 +1,10 @@
+import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
+import {
+  unverifiedUserMessage,
+  verifiedCurrentUser,
+} from "@/utils/acting-guest";
+import { PageNotice } from "@/app/components/page-notice";
 import { SessionProposalForm } from "../../session-proposal-form";
 
 export default async function NewProposalPage({
@@ -13,6 +19,15 @@ export default async function NewProposalPage({
 
   if (!event) {
     return <div>Event not found</div>;
+  }
+
+  const cookieStore = await cookies();
+  if (!(await verifiedCurrentUser(cookieStore))) {
+    return (
+      <PageNotice backHref={`/${eventSlug}/proposals`} backLabel="Proposals">
+        {await unverifiedUserMessage(cookieStore, "creating a proposal")}
+      </PageNotice>
+    );
   }
 
   const guests = await repos.guests.list();

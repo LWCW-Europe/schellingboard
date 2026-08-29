@@ -6,7 +6,9 @@ import { selectUser } from "./helpers/user";
 test("should auto-focus the title input for new proposals", async ({
   page,
 }) => {
-  await loginAndGoto(page, "/Conference-Alpha/proposals/new");
+  await loginAndGoto(page, "/Conference-Alpha/proposals");
+  await selectUser(page, /Bob Test/i);
+  await page.getByRole("link", { name: /Add Proposal/i }).click();
   await expect(page.getByLabel("Title")).toBeFocused();
 });
 
@@ -17,6 +19,7 @@ test("should create a new session proposal, edit it, and add hosts", async ({
 
   // Go to proposals list first (optional, helps ensure baseline loaded)
   await page.goto("/Conference-Alpha/proposals");
+  await selectUser(page, /Bob Test/i);
   // Generate a unique title to avoid collisions between runs
   const proposalTitle = `Playwright Test Proposal ${uniqueSuffix()}`;
   await expect(page.getByText(proposalTitle).first()).toHaveCount(0); // ensure not present
@@ -60,14 +63,12 @@ test("should create a new session proposal, edit it, and add hosts", async ({
     page.getByRole("heading", { name: /Edit Session Proposal/i })
   ).toBeVisible();
 
-  // Click the hosts combobox to open it (it opens on focus) and type directly
+  // Bob is already a host: creating a proposal prefills the selected user, and
+  // the combobox is a toggle, so picking him again would remove him. Add Alice
+  // alongside him instead.
   await page.getByLabel("Host(s)").click();
   await page.keyboard.type("Alice Test");
   await page.getByRole("option", { name: /Alice Test/i }).click();
-
-  // Add second host - dropdown stays open in multi-select mode, just type
-  await page.keyboard.type("Bob Test");
-  await page.getByRole("option", { name: /Bob Test/i }).click();
 
   // Close the still-open hosts dropdown so it doesn't overlay Submit
   await page.keyboard.press("Escape");
@@ -86,6 +87,7 @@ test("should create a new session proposal, edit it, and add hosts", async ({
 test("should delete a proposal from its edit page", async ({ page }) => {
   await login(page);
   await page.goto("/Conference-Alpha/proposals");
+  await selectUser(page, /Bob Test/i);
 
   // Create a throwaway proposal so seeded data stays untouched
   const proposalTitle = `Playwright Delete Proposal ${uniqueSuffix()}`;

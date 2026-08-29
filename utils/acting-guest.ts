@@ -114,19 +114,3 @@ export async function unverifiedUserMessage(
   }
   return `You need to select who you are before ${task}. Pick your name via the “Select your name” chip in the header at the top of the page.`;
 }
-
-/**
- * True unless the guest cookie claims a protected guest without a verified
- * proof. Unlike verifiedCurrentUser, an absent cookie doesn't fail this
- * check — there's no protected identity being claimed, so there's nothing to
- * verify. For creation endpoints, which have no existing object to check
- * ownership against.
- */
-export async function actingUserIsVerified(
-  cookieStore: ReadonlyCookies
-): Promise<boolean> {
-  const value = cookieStore.get(GUEST_COOKIE_NAME)?.value;
-  const parsed = await readGuestCookie(value);
-  if (!parsed) return true;
-  return isVerifiedAsGuest(parsed.guestId, value);
-}

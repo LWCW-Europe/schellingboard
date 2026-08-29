@@ -63,9 +63,15 @@ function errorFields(result: object): string[] {
 
 describe("createProposal", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
+    // Creating requires a name to be selected. Tests that care about *which*
+    // name overwrite this; the rest just need to be past the identity gate.
+    cookieJar.set(
+      GUEST_COOKIE_NAME,
+      openGuestValue((await createGuest({ name: "Proposer" })).id)
+    );
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
   });
   afterEach(() => vi.unstubAllEnvs());

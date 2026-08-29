@@ -148,6 +148,7 @@ test("a day running past midnight says so, and its late slots name the day", asy
 }) => {
   await login(page);
   await page.goto("/Conference-Gamma");
+  await selectUser(page, /Alice Test/i);
   await page.getByRole("link", { name: "Add session" }).first().click();
   await expect(
     page.getByRole("heading", { name: /Add a session/i })
@@ -178,6 +179,7 @@ test("occupied start times are not offered in the same location but are in other
 }) => {
   await login(page);
   await page.goto("/Conference-Gamma");
+  await selectUser(page, /Alice Test/i);
   await page.getByRole("link", { name: "Add session" }).first().click();
   await expect(
     page.getByRole("heading", { name: /Add a session/i })

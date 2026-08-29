@@ -43,9 +43,13 @@ async function protectGuest(guestId: string): Promise<void> {
 }
 
 function makeAddReq(payload: unknown): NextRequest {
+  // Creating requires a name to be selected; these fixtures only seed a
+  // session, so act as its first host.
+  const hostId = (payload as SessionParams).hosts[0].id;
   return new NextRequest("http://test/api/add-session", {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: { cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(hostId)}` },
   });
 }
 
@@ -264,10 +268,12 @@ describe("POST /api/delete-session", () => {
   it("rejects a protected host without a verified session", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
-    await protectGuest(host.id);
     const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const id = await createScheduledSession(event.id, host, location, day);
+    // Protect only once the fixture exists: creating needs a selected name
+    // too, so a protected host can't seed one with an open cookie.
+    await protectGuest(host.id);
 
     const res = await POST(makeDeleteReq(id, { editorGuestId: host.id }));
     expect(res.status).toBe(403);
@@ -279,10 +285,12 @@ describe("POST /api/delete-session", () => {
   it("accepts a protected host with a verified session", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
-    await protectGuest(host.id);
     const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
     const id = await createScheduledSession(event.id, host, location, day);
+    // Protect only once the fixture exists: creating needs a selected name
+    // too, so a protected host can't seed one with an open cookie.
+    await protectGuest(host.id);
 
     const res = await POST(await makeDeleteReqWithAuthCookie(id, host.id));
     expect(res.ok).toBe(true);

@@ -1,20 +1,38 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { verifiedCurrentUser } from "@/utils/acting-guest";
+import {
+  unverifiedUserMessage,
+  verifiedCurrentUser,
+} from "@/utils/acting-guest";
 
+import { PageNotice } from "@/app/components/page-notice";
 import { SessionForm } from "./session-form";
 import { getRepositories } from "@/db/container";
 
-export async function renderSessionForm(props: {
-  params: Promise<{ eventSlug: string }>;
-}) {
+export async function renderSessionForm(
+  props: {
+    params: Promise<{ eventSlug: string }>;
+  },
+  // Completes "before …" in the message shown when no name is selected.
+  task: string
+) {
   const { eventSlug } = await props.params;
-  const currentUser = await verifiedCurrentUser(await cookies());
+  const cookieStore = await cookies();
+  const currentUser = await verifiedCurrentUser(cookieStore);
   const repos = getRepositories();
 
   const event = await repos.events.findBySlug(eventSlug);
   if (!event) {
     return <div>Event not found</div>;
+  }
+
+  // A session is attributed to its hosts, so it can't be booked anonymously.
+  if (!currentUser) {
+    return (
+      <PageNotice backHref={`/${eventSlug}`} backLabel="Schedule">
+        {await unverifiedUserMessage(cookieStore, task)}
+      </PageNotice>
+    );
   }
 
   const [days, sessions, guests, locations, allProposals] = await Promise.all([
@@ -25,8 +43,8 @@ export async function renderSessionForm(props: {
     repos.sessionProposals.listByEvent(event.id),
   ]);
 
-  const currentUserProposals = allProposals.filter(
-    (p) => currentUser && p.hosts.some((h) => h.id === currentUser)
+  const currentUserProposals = allProposals.filter((p) =>
+    p.hosts.some((h) => h.id === currentUser)
   );
   const hostlessProposals = allProposals.filter((p) => p.hosts.length === 0);
   const proposals = currentUserProposals.concat(hostlessProposals);

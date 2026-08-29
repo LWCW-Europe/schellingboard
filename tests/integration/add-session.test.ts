@@ -45,9 +45,13 @@ function makeReq(
   payload: unknown,
   opts?: { editorGuestId?: string; verified?: boolean }
 ): NextRequest {
+  // Creating requires a name to be selected, so default to the payload's
+  // first host: the ordinary case of a host booking their own session.
+  const actingGuestId =
+    opts?.editorGuestId ?? (payload as SessionParams).hosts?.[0]?.id;
   const cookies: string[] = [];
-  if (opts?.editorGuestId)
-    cookies.push(`${GUEST_COOKIE_NAME}=${openGuestValue(opts.editorGuestId)}`);
+  if (actingGuestId)
+    cookies.push(`${GUEST_COOKIE_NAME}=${openGuestValue(actingGuestId)}`);
   return new NextRequest("http://test/api/add-session", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -378,10 +382,17 @@ describe("POST /api/add-session", () => {
     const location = await createLocation({ eventId: event.id });
     const day = await createDay(event.id);
 
+    // The payload has no host to fall back to, so name the acting guest
+    // explicitly — otherwise the request is refused for having no name
+    // selected and never reaches the no-hosts check.
     const res = await POST(
-      makeReq({ ...buildPayload(guest, location, day), hosts: [] })
+      makeReq(
+        { ...buildPayload(guest, location, day), hosts: [] },
+        { editorGuestId: guest.id }
+      )
     );
     expect(res.ok).toBe(false);
+    expect(res.status).not.toBe(403);
   });
 
   it("rejects session with missing location id", async () => {
@@ -502,10 +513,14 @@ describe("POST /api/add-session", () => {
 
   // Route does not guard req.json() — parse errors surface as a thrown SyntaxError
   it("malformed JSON causes a SyntaxError", async () => {
+    const guest = await createGuest();
     const req = new NextRequest("http://test/api/add-session", {
       method: "POST",
       body: "not json",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(guest.id)}`,
+      },
     });
     await expect(POST(req)).rejects.toThrow(SyntaxError);
   });

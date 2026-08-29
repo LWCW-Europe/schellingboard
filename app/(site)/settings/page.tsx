@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { BackLink } from "@/app/components/back-link";
+import { PageNotice } from "@/app/components/page-notice";
 import { getRepositories } from "@/db/container";
 import {
   unverifiedUserMessage,
@@ -20,12 +20,9 @@ export default async function SettingsPage() {
   if (!currentUser) {
     return (
       <div className="flex flex-col gap-8">
-        <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
-          <BackLink href="/guests">Attendees</BackLink>
-          <p className="text-fg-muted">
-            {await unverifiedUserMessage(cookieStore, "changing your settings")}
-          </p>
-        </div>
+        <PageNotice backHref="/guests" backLabel="Attendees">
+          {await unverifiedUserMessage(cookieStore, "changing your settings")}
+        </PageNotice>
         <AppearanceSettings />
       </div>
     );

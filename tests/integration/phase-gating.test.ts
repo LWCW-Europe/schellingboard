@@ -5,10 +5,15 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+const cookieJar = new Map<string, string>();
+
 vi.mock("next/headers", () => ({
   cookies: () =>
     Promise.resolve({
-      get: () => undefined,
+      get: (name: string) => {
+        const value = cookieJar.get(name);
+        return value === undefined ? undefined : { name, value };
+      },
     }),
 }));
 
@@ -33,16 +38,26 @@ import { POST as addVote } from "@/app/api/add-vote/route";
 import { POST as addSession } from "@/app/api/add-session/route";
 import { POST as toggleRsvp } from "@/app/api/toggle-rsvp/route";
 import { createProposal } from "@/app/(site)/[eventSlug]/proposals/actions";
+import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 
 // Server-side phase gating mirrors the UI: voting only during the voting
 // phase, session creation only during the scheduling phase, and proposal
 // creation during the proposal *and* voting phases (the UI's "Add Proposal"
 // button is disabled only once scheduling starts).
 
-function makeReq(url: string, payload: unknown): NextRequest {
+// `actingGuestId` selects a name, which creating requires: these tests are
+// about the phase gate, so they must get past the identity gate first.
+function makeReq(
+  url: string,
+  payload: unknown,
+  actingGuestId?: string
+): NextRequest {
   return new NextRequest(url, {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: actingGuestId
+      ? { cookie: `${GUEST_COOKIE_NAME}=${openGuestValue(actingGuestId)}` }
+      : undefined,
   });
 }
 
@@ -81,13 +96,17 @@ async function addSessionIn(phase: "proposal" | "voting" | "scheduling") {
     startTime: slotStart(day, 60),
     duration: 60,
   };
-  const res = await addSession(makeReq("http://test/api/add-session", payload));
+  const res = await addSession(
+    makeReq("http://test/api/add-session", payload, guest.id)
+  );
   const sessions = await getRepositories().sessions.listByEvent(event.id);
   return { res, sessions };
 }
 
 async function proposeIn(phase: "proposal" | "voting" | "scheduling") {
   const event = await createEvent({ phase });
+  const guest = await createGuest({ eventId: event.id });
+  cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
   const fd = {
     eventId: event.id,
     eventSlug: "test-event",
@@ -124,7 +143,10 @@ async function toggleRsvpIn(
 
 describe("server-side phase gating", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => resetTestDb());
+  beforeEach(() => {
+    resetTestDb();
+    cookieJar.clear();
+  });
 
   it("rejects voting during the proposal phase", async () => {
     const { res, votes } = await voteOnProposalIn("proposal");

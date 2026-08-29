@@ -1,16 +1,53 @@
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
+
+const cookieJar = new Map<string, string>();
+
+vi.mock("next/headers", () => ({
+  cookies: () =>
+    Promise.resolve({
+      get: (name: string) => {
+        const value = cookieJar.get(name);
+        return value === undefined ? undefined : { name, value };
+      },
+    }),
+}));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent, createGuest, createSession } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { detectHostClashes } from "@/app/(site)/[eventSlug]/clash-actions";
+import { AUTH_COOKIE_NAME, createAuthCookie } from "@/utils/auth";
+import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
+
+const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
 // A host's own hosted sessions are public, so a clash may name them; the
 // sessions a host merely RSVP'd to are private, so a clash must only report
 // that they are "busy" at that time — never which session.
 describe("detectHostClashes", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => resetTestDb());
+  // Clash detection reports when a host is privately busy, so it needs both
+  // site auth and a guest the caller may act as; these tests are about what
+  // it then discloses. See action-site-auth.test.ts for the gate itself.
+  beforeEach(async () => {
+    resetTestDb();
+    cookieJar.clear();
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    cookieJar.set(AUTH_COOKIE_NAME, (await createAuthCookie()).value);
+    cookieJar.set(
+      GUEST_COOKIE_NAME,
+      openGuestValue((await createGuest({ name: "Organiser" })).id)
+    );
+  });
+  afterEach(() => vi.unstubAllEnvs());
 
   const T = (h: number, m = 0) => new Date(Date.UTC(2030, 0, 1, h, m, 0));
 

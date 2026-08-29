@@ -2,6 +2,7 @@
 
 import { getRepositories } from "@/db/container";
 import type { Session } from "@/db/repositories/interfaces";
+import { requireVerifiedGuest } from "@/utils/action-auth";
 import { getStartTimePlusBreak } from "@/utils/utils";
 import { newEmptySession, sessionsOverlap } from "../session_utils";
 
@@ -26,6 +27,9 @@ export async function detectHostClashes(input: {
   end: string; // ISO — candidate session end
   excludeSessionId?: string | null;
 }): Promise<HostClash[]> {
+  // Site auth is shared with every attendee, so it can't be the gate on a
+  // reply that reports when another guest is privately busy.
+  await requireVerifiedGuest("checking host availability");
   const { eventId, hostIds, start, end, excludeSessionId } = input;
   if (hostIds.length === 0) return [];
 

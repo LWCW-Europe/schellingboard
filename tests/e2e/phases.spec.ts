@@ -50,11 +50,13 @@ test("voting phase: proposing and voting are open, scheduling is not", async ({
   await page.goto("/Conference-Beta");
   await expect(page).toHaveURL(/\/Conference-Beta\/proposals$/);
 
+  // Proposing needs a name selected, so pick one before asking whether the
+  // phase allows it — otherwise this asserts the identity gate, not the phase.
+  await selectUser(page, /Alice Test/i);
   await expect(
     page.getByRole("link", { name: /Add Proposal/i })
   ).not.toHaveClass(/cursor-not-allowed/);
 
-  await selectUser(page, /Alice Test/i);
   const row = page.getByRole("row", {
     name: /Conference Beta Lightning Talks/,
   });

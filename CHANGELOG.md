@@ -23,6 +23,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **Proposing a session or booking one now asks who you are first**: "Add Proposal" is greyed out until you pick your
+  name, the way voting already was, and both forms ask for a name instead of opening. Before, either could be submitted
+  with no name chosen at all, leaving an entry nobody was recorded as having created
 - **What a room offers is easier to find**: room names on the schedule grid that have a description now carry an ⓘ,
   and tapping or hovering the name opens it. Before, the description only appeared when a mouse happened to rest on
   the name, with nothing to suggest it was there, and on a phone it was cut off at the edge of the screen

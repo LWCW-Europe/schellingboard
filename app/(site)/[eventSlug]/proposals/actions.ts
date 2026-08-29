@@ -12,8 +12,7 @@ import {
 } from "@/model/session";
 import { serverNow } from "@/utils/dev-clock-server";
 import {
-  actingUserIsVerified,
-  NAME_PROTECTED_ERROR,
+  unverifiedUserMessage,
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
 
@@ -23,8 +22,14 @@ export async function createProposal(
 export async function createProposal(
   input: unknown
 ): Promise<{ error: string | z.core.$ZodIssue[] } | { success: true }> {
-  if (!(await actingUserIsVerified(await cookies()))) {
-    return { error: NAME_PROTECTED_ERROR };
+  // Creating needs a name actually selected, not merely one that isn't being
+  // falsely claimed: a proposal is attributed to its hosts, so an anonymous
+  // caller has no identity to attribute it to.
+  const cookieStore = await cookies();
+  if (!(await verifiedCurrentUser(cookieStore))) {
+    return {
+      error: await unverifiedUserMessage(cookieStore, "creating a proposal"),
+    };
   }
 
   const parseResult = await sessionProposalSchema.safeParseAsync(input);

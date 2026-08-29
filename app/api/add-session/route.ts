@@ -4,8 +4,7 @@ import { inSchedPhase } from "@/app/(site)/utils/events";
 import { requestNow } from "@/utils/dev-clock";
 import { notifyCohostsAdded } from "@/utils/notifications";
 import {
-  actingUserIsVerified,
-  guestProtectionError,
+  unverifiedUserMessage,
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
 import { sessionBookingWindowError } from "@/utils/day-window";
@@ -16,8 +15,15 @@ import type { SessionParams } from "../session-form-utils";
 export const dynamic = "force-dynamic"; // defaults to auto
 
 export async function POST(req: NextRequest) {
-  if (!(await actingUserIsVerified(req.cookies))) {
-    return guestProtectionError();
+  // Creating needs a name actually selected, not merely one that isn't being
+  // falsely claimed: a session is attributed to its hosts, so an anonymous
+  // caller has no identity to attribute it to.
+  const actingGuestId = await verifiedCurrentUser(req.cookies);
+  if (!actingGuestId) {
+    return Response.json(
+      { error: await unverifiedUserMessage(req.cookies, "adding a session") },
+      { status: 403 }
+    );
   }
   const params = (await req.json()) as SessionParams;
   const repos = getRepositories();
@@ -100,9 +106,7 @@ export async function POST(req: NextRequest) {
     await notifyCohostsAdded({
       session,
       previousHostIds: [],
-      // Verified so notifications can't attribute the change to a protected
-      // guest someone merely claims to be.
-      changedById: await verifiedCurrentUser(req.cookies),
+      changedById: actingGuestId,
     });
     return Response.json({ success: true });
   } else {

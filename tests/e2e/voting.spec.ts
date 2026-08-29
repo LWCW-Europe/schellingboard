@@ -103,19 +103,16 @@ test("votes from two users persist independently across reloads", async ({
   await login(page);
   await page.goto("/Conference-Beta/proposals");
 
-  // Create a throwaway proposal hosted by Bob Test, before selecting a user
-  // (a selected user would be prefilled as host, and hosts get no voting
-  // buttons on their own proposals). The host matters: the quick-voting test
-  // in this file votes as Bob in a parallel worker, and quick voting never
-  // offers proposals the current user hosts, so no other test can add votes
-  // to this proposal.
+  // Create a throwaway proposal as Bob Test, who is prefilled as its host.
+  // The host matters twice over: hosts get no voting buttons on their own
+  // proposals, so the voters below must be someone else; and the quick-voting
+  // test in this file votes as Bob in a parallel worker, where quick voting
+  // never offers proposals the current user hosts, so no other test can add
+  // votes to this proposal.
+  await selectUser(page, /Bob Test/i);
   const title = `E2E Vote Target ${uniqueSuffix()}`;
   await page.getByRole("link", { name: /Add Proposal/i }).click();
   await page.getByLabel("Title").fill(title);
-  await page.getByLabel("Host(s)").click();
-  await page.keyboard.type("Bob Test");
-  await page.getByRole("option", { name: /Bob Test/i }).click();
-  await page.keyboard.press("Escape");
   await Promise.all([
     page.waitForURL(/\/Conference-Beta\/proposals$/),
     page.getByRole("button", { name: /Submit/i }).click(),

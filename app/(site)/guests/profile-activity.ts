@@ -1,6 +1,7 @@
 "use server";
 
 import { getRepositories } from "@/db/container";
+import { requireSiteAuth } from "@/utils/action-auth";
 import { eventNameToSlug } from "@/utils/utils";
 
 /** A session or proposal on a profile, ready to link to. */
@@ -24,6 +25,7 @@ export type ProfileActivity = {
 export async function listProfileActivity(
   guestId: string
 ): Promise<ProfileActivity> {
+  await requireSiteAuth();
   const repos = getRepositories();
   const [hostedSessions, proposals, events] = await Promise.all([
     repos.sessions.listHostedByGuest(guestId),

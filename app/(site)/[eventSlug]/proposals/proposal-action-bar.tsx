@@ -31,6 +31,12 @@ export function ProposalActionBar({
   const localZone = useLocalZone();
   const votingEnabled = !!currentUserId && inVotingPhase(event, now);
 
+  // A proposal is attributed to its hosts, so it can't be created anonymously.
+  const proposingEnabled = !!currentUserId && !inSchedPhase(event, now);
+  const proposingDisabledText = inSchedPhase(event, now)
+    ? "Proposal and voting phases are over"
+    : "Select a user first";
+
   let votingDisabledText = "";
   if (inSchedPhase(event, now)) {
     votingDisabledText = `The voting phase is over`;
@@ -46,14 +52,14 @@ export function ProposalActionBar({
   return (
     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-6">
       <HoverTooltip
-        text="Proposal and voting phases are over"
-        visible={inSchedPhase(event, now)}
+        text={proposingDisabledText}
+        visible={!proposingEnabled}
         unavailable
       >
         <Link
-          href={`/${eventSlug}/proposals/new`}
+          href={proposingEnabled ? `/${eventSlug}/proposals/new` : "#"}
           className={`bg-brand hover:bg-brand-hover transition-colors text-on-brand px-4 py-2 rounded-md flex items-center gap-2 ${
-            inSchedPhase(event, now) ? "opacity-50 cursor-not-allowed" : ""
+            proposingEnabled ? "" : "opacity-50 cursor-not-allowed"
           }`}
         >
           <PlusIcon className="h-5 w-5" />

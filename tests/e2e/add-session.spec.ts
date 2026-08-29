@@ -1,6 +1,7 @@
 import { test, expect } from "./helpers/fixtures";
 import { uniqueSuffix } from "./helpers/unique";
 import { login } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
 import { dismissToast, toast } from "./helpers/toast";
 
 test("a newly added session appears on the overview and can be opened", async ({
@@ -10,6 +11,7 @@ test("a newly added session appears on the overview and can be opened", async ({
 
   await page.goto("/Conference-Gamma");
   await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
+  await selectUser(page, /Alice Test/i);
 
   // Reach the form the way a real user does: click a free "+" slot in the grid.
   // We don't care which slot, so take the first.
@@ -23,16 +25,7 @@ test("a newly added session appears on the overview and can be opened", async ({
   const sessionTitle = `Yak shaving ${uniqueSuffix()}`;
   await page.getByRole("textbox").first().fill(sessionTitle);
 
-  // Add a host via the combobox (a host is required to enable Submit).
-  const hostsSection = page
-    .locator("div")
-    .filter({ hasText: /^Hosts/ })
-    .first();
-  await hostsSection.getByRole("button").first().click();
-  await page.keyboard.type("Alice Test");
-  await page.getByRole("option", { name: /Alice Test/i }).click();
-  await page.keyboard.press("Escape");
-
+  // A host is required to enable Submit; the selected user is prefilled as one.
   const submit = page.getByRole("button", { name: "Submit" });
   await expect(submit).toBeEnabled();
   await submit.click();

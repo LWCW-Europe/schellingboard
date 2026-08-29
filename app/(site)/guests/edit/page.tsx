@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { BackLink } from "@/app/components/back-link";
+import { PageNotice } from "@/app/components/page-notice";
 import { getRepositories } from "@/db/container";
 import { sanitizeGuest } from "@/utils/guests";
 import {
@@ -14,12 +14,9 @@ export default async function EditProfilePage() {
 
   if (!currentUser) {
     return (
-      <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
-        <BackLink href="/guests">Attendees</BackLink>
-        <p className="text-fg-muted">
-          {await unverifiedUserMessage(cookieStore, "editing your profile")}
-        </p>
-      </div>
+      <PageNotice backHref="/guests" backLabel="Attendees">
+        {await unverifiedUserMessage(cookieStore, "editing your profile")}
+      </PageNotice>
     );
   }
 

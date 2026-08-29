@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { test, expect } from "./helpers/fixtures";
 import { uniqueSuffix } from "./helpers/unique";
 import { loginAndGoto } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
 
@@ -1245,7 +1246,9 @@ test.describe("Admin UI proposals", () => {
 
   test("deletes a proposal via named confirm", async ({ page }) => {
     // Create a fresh proposal so we never permanently delete seeded data
-    await loginAndGoto(page, "/Conference-Alpha/proposals/new");
+    await loginAndGoto(page, "/Conference-Alpha/proposals");
+    await selectUser(page, /Bob Test/i);
+    await page.getByRole("link", { name: /Add Proposal/i }).click();
     const title = `E2E Delete Test ${uniqueSuffix()}`;
     await page.getByLabel("Title").fill(title);
     await Promise.all([
