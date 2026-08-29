@@ -1,7 +1,7 @@
 "use client";
 
-import { useContext, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useContext, useMemo, useTransition } from "react";
+import { useRouter, unstable_rethrow } from "next/navigation";
 
 import { Input } from "@/app/input";
 import { UserContext, useBreakMinutes, useSlotIncrement } from "../context";
@@ -41,7 +41,7 @@ export function SessionProposalForm(props: {
   ];
   const { user: currentUserId } = useContext(UserContext);
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleting, startDeleting] = useTransition();
 
   const defaultHosts = useMemo(() => {
     if (proposal) return proposal.hosts.map((h) => h.id);
@@ -97,25 +97,28 @@ export function SessionProposalForm(props: {
     }
   };
 
-  const handleDelete = async (): Promise<void> => {
+  // In a transition, because the action ends in a redirect: Next carries that
+  // out from inside one, while a redirect thrown outside a transition is left
+  // to the caller and ends up an unhandled rejection.
+  const handleDelete = (): void => {
     if (!proposal) return;
 
-    setIsDeleting(true);
+    startDeleting(async () => {
+      try {
+        // A delete that went through redirects to the proposals list, so
+        // anything that comes back here is a refusal.
+        const result = await deleteProposal(proposal.id, eventSlug);
 
-    try {
-      const result = await deleteProposal(proposal.id, eventSlug);
-
-      if (result.error) {
-        form.setError("root", { message: result.error });
-      } else {
-        router.push(`/${eventSlug}/proposals`);
+        if (result?.error) {
+          form.setError("root", { message: result.error });
+        }
+      } catch (err) {
+        // The redirect, on its way out to Next — not a failure to report.
+        unstable_rethrow(err);
+        form.setError("root", { message: "An unexpected error occurred" });
+        console.error(err);
       }
-    } catch (err) {
-      form.setError("root", { message: "An unexpected error occurred" });
-      console.error(err);
-    } finally {
-      setIsDeleting(false);
-    }
+    });
   };
 
   return (

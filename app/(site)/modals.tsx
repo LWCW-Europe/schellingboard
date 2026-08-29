@@ -105,7 +105,9 @@ export function CurrentUserModal(props: {
 
 export function ConfirmDeletionModal(props: {
   btnDisabled: boolean;
-  confirm: () => Promise<void>;
+  // Void as well as async: a confirm that hands the work to a transition
+  // returns before the work is done.
+  confirm: () => void | Promise<void>;
   itemName: string;
 }) {
   const { btnDisabled, confirm, itemName } = props;

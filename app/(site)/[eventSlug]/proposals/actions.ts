@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { inSchedPhase } from "@/app/(site)/utils/events";
@@ -149,7 +150,10 @@ export async function updateProposal(
 
 // Same reasoning as updateProposal: no phase gate, so a host can withdraw
 // their proposal in any phase, including scheduling.
-export async function deleteProposal(id: string, eventSlug: string) {
+export async function deleteProposal(
+  id: string,
+  eventSlug: string
+): Promise<{ error: string } | undefined> {
   try {
     const proposal = await getRepositories().sessionProposals.findById(id);
     if (!proposal) {
@@ -172,5 +176,10 @@ export async function deleteProposal(id: string, eventSlug: string) {
     console.error("Error deleting proposal:", error);
     return { error: "Failed to delete proposal" };
   }
-  return { success: true };
+  // Leaving the navigation to the caller would have Next re-render the page
+  // this action ran on first — the deleted proposal's own edit page, whose
+  // notFound() then reaches the browser as an uncaught error. Redirecting
+  // here replaces that render with the list's. Outside the try: redirect()
+  // works by throwing, and the catch above would swallow it.
+  redirect(`/${eventSlug}/proposals`);
 }

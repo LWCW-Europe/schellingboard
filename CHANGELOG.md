@@ -24,6 +24,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Deleting a proposal goes straight to the list**: the delete could throw an error into the browser
+  on the way out, because the page of the proposal just deleted was rendered once more before the
+  list appeared
 - **The session form shows which day owns the small hours**: a day that runs past midnight is now labelled with the
   hour it ends ("Friday, June 13 (until 03:00 Sat)"), and its start times after midnight carry their weekday ("Sat
   01:10"), so it's clear that the late slots belong to the evening's day. Day names also follow the event's timezone
