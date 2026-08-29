@@ -60,6 +60,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- E2E specs that change site-wide settings run in their own Playwright project, after the parallel
+  bulk and with the site to themselves. `settings.spec.ts` restored what it changed, but only after
+  asserting on it, and nothing stopped a future test from reading the site title in that window
 - The attendee-directory E2E tests assert the order of two named seeded attendees instead of who
   sits first in the whole list, which a user created by a parallel admin test could take. The rule
   behind it — never assert on a global aggregate of shared data — is written down in

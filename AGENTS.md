@@ -84,6 +84,8 @@ jj squash --from <commit> --to @ -m "message" -- <path>
   - `bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts` (one file)
   - `bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts:42` (one test by line)
   - `bun set-env.ts test bun x playwright test -g "creates a proposal"` (by title substring)
+  - add `--no-deps` for a spec in the `firefox-globals` project (`settings.spec.ts`), or the whole
+    project it depends on runs first
 - Full test strategy and TDD rules are in [docs/dev/testing.md](docs/dev/testing.md) — read it before writing any test
 - Before running tests for the first time in a session, check whether mailpit is running (`docker compose -f docker-compose.dev.yml $(test -f .env.dev.local && echo --env-file .env.dev.local) ps mailpit` — mirrors the `mailpit` Makefile target, including its `--env-file` conditional, since `.env.dev.local` can set a per-clone `COMPOSE_PROJECT_NAME`); if not, ask the user whether to start it (`make mailpit`)
 

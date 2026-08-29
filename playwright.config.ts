@@ -74,6 +74,12 @@ const baseURL = `http://localhost:${port}`;
 // .env.test names.
 process.env.SITE_URL = baseURL;
 
+// Specs that mutate the site-settings singleton, run apart from everything
+// else (see the "firefox-globals" project below). Anchored: an unanchored
+// pattern would swallow user-settings.spec.ts, which only touches one guest's
+// own preferences.
+const GLOBALS_MUTATING_SPECS = /[\\/]settings\.spec\.ts$/;
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -110,6 +116,27 @@ export default defineConfig({
     {
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
+      testIgnore: GLOBALS_MUTATING_SPECS,
+    },
+
+    /* Specs that change site-wide settings — one row every other test reads.
+     * They restore what they changed, but only after asserting on it, and
+     * nothing stops a future test from looking at the site title while that
+     * window is open. `dependencies` holds them until the parallel bulk above
+     * is done, so they have the site to themselves; `workers: 1` keeps them
+     * from racing each other once there is more than one such spec (a file's
+     * own `serial` mode only orders the tests within it).
+     *
+     * A failure anywhere in `firefox` skips this project entirely — Playwright
+     * does not run a project whose dependency failed. The run fails either
+     * way, but the site-settings specs go unreported until the bulk is green. */
+    {
+      name: "firefox-globals",
+      use: { ...devices["Desktop Firefox"] },
+      testMatch: GLOBALS_MUTATING_SPECS,
+      dependencies: ["firefox"],
+      fullyParallel: false,
+      workers: 1,
     },
 
     //  {

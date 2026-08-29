@@ -83,6 +83,24 @@ bun set-env.ts test bun x playwright test tests/e2e/proposals.spec.ts:42   # sin
 bun set-env.ts test bun x playwright test -g "creates a proposal"          # by title substring
 ```
 
+The suite runs as two projects. `firefox` holds everything and runs in
+parallel; `firefox-globals` holds the specs that change site-wide settings —
+one row every other test reads — and depends on `firefox`, so it starts only
+once the parallel bulk is done and has the site to itself. It runs on a single
+worker, so its specs don't race each other either. `settings.spec.ts` is the
+only member today; add a spec here (via `GLOBALS_MUTATING_SPECS` in
+`playwright.config.ts`) when it mutates a singleton rather than data of its
+own.
+
+The price of the dependency: a failure anywhere in `firefox` skips
+`firefox-globals` altogether, so those specs report nothing until the bulk is
+green again. Run them on their own to see where they stand. That also pulls in
+the whole project they depend on, so pass `--no-deps`:
+
+```bash
+bun set-env.ts test bun x playwright test tests/e2e/settings.spec.ts --no-deps
+```
+
 Run against a different environment (e.g. dev database — still resets it):
 
 ```bash
