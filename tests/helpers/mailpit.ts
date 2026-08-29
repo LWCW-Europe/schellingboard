@@ -30,14 +30,35 @@ async function mailpitGet(path: string): Promise<unknown> {
   return res.json();
 }
 
+// Mailpit answers a search with the newest 50 matches only.
+async function search(query: string): Promise<MessageSummary[]> {
+  const result = (await mailpitGet(
+    `/api/v1/search?query=${encodeURIComponent(query)}`
+  )) as { messages: MessageSummary[] };
+  return result.messages;
+}
+
+// Only for subjects unique to one test run (a session title, say): with fewer
+// than 50 matches the result is the whole truth, so its length can be waited
+// on. For a subject several tests share, wait on the message itself with
+// newestBySubjectTo — neither the length of a search result nor mailpit's own
+// match count means "one more arrived" there. The window caps at 50, and the
+// mailbox holds only the newest 500 messages of all, so an eviction of an
+// older match cancels out the arrival of a new one.
 export async function searchBySubject(
   subject: string
 ): Promise<MessageSummary[]> {
-  const query = encodeURIComponent(`subject:"${subject}"`);
-  const result = (await mailpitGet(`/api/v1/search?query=${query}`)) as {
-    messages: MessageSummary[];
-  };
-  return result.messages;
+  return search(`subject:"${subject}"`);
+}
+
+// The newest match, or undefined if there is none. Mailpit sorts newest first,
+// matches a subject on substring and an address on substring too, so pass the
+// full address.
+export async function newestBySubjectTo(
+  subject: string,
+  address: string
+): Promise<MessageSummary | undefined> {
+  return (await search(`subject:"${subject}" to:${address}`))[0];
 }
 
 export async function getMessage(

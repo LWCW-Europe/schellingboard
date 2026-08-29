@@ -4,7 +4,7 @@ import { login } from "./helpers/auth";
 import { openNameSwitcher, selectUser } from "./helpers/user";
 import {
   getMessage,
-  searchBySubject,
+  newestBySubjectTo,
   skipWithoutMailpit,
 } from "../helpers/mailpit";
 
@@ -30,33 +30,37 @@ const NADIA_PASSWORD = "nadia-e2e-password";
 const LOGIN_SUBJECT = "Your temporary login code";
 const RESET_SUBJECT = "Set your password";
 
-async function emailCount(subject: string, email: string): Promise<number> {
-  const messages = await searchBySubject(subject);
-  return messages.filter((m) => m.To.some((t) => t.Address === email)).length;
-}
+// Mailpit keeps mail from earlier runs and from earlier steps of this test, and
+// these subjects are shared by all of them, so the mail a test just triggered
+// is told from the rest by identity: callers take `mailOnTop` before the send
+// and we wait for a different message to reach the top.
+const mailOnTop = async (subject: string, email: string) =>
+  (await newestBySubjectTo(subject, email))?.ID;
 
-// Mailpit keeps emails from earlier runs, so callers pass the count they expect
-// after a fresh send and we poll until it is reached, then read the newest
-// message (Mailpit sorts newest first).
 async function newestMessageHtml(
   subject: string,
   email: string,
-  expectedCount: number
+  before: string | undefined
 ): Promise<string> {
   await expect
-    .poll(() => emailCount(subject, email), { timeout: 5000 })
-    .toBeGreaterThanOrEqual(expectedCount);
-  const messages = (await searchBySubject(subject)).filter((m) =>
-    m.To.some((t) => t.Address === email)
-  );
-  return (await getMessage(messages[0].ID)).HTML;
+    // Rendering the mail, delivering it over SMTP and mailpit indexing it are
+    // all outside the test's control and stretch under parallel load, so the
+    // budget is generous; the poll exits as soon as the mail is there.
+    .poll(() => mailOnTop(subject, email), { timeout: 15000 })
+    .not.toBe(before);
+  const newest = await newestBySubjectTo(subject, email);
+  expect(
+    newest,
+    `a "${subject}" mail should have reached ${email}`
+  ).toBeDefined();
+  return (await getMessage(newest!.ID)).HTML;
 }
 
 async function newestLoginCode(
   email: string,
-  expectedCount: number
+  before: string | undefined
 ): Promise<string> {
-  const html = await newestMessageHtml(LOGIN_SUBJECT, email, expectedCount);
+  const html = await newestMessageHtml(LOGIN_SUBJECT, email, before);
   // The code must be clearly visible so it can be typed on another device
   // (alphabet has no I/O/0/1).
   const code = html.match(/>([A-HJ-NP-Z2-9]{8})</)?.[1];
@@ -66,9 +70,9 @@ async function newestLoginCode(
 
 async function newestResetLink(
   email: string,
-  expectedCount: number
+  before: string | undefined
 ): Promise<string> {
-  const html = await newestMessageHtml(RESET_SUBJECT, email, expectedCount);
+  const html = await newestMessageHtml(RESET_SUBJECT, email, before);
   const link = html.match(/href="([^"]+)"/)?.[1]?.replace(/&amp;/g, "&");
   expect(link, "email should contain a reset link").toMatch(
     /^https?:\/\/.*\/auth\/reset\?/
@@ -143,10 +147,10 @@ test("protect a name via emailed link, then log in with password and single-use 
   await expect(
     page.getByText(/anyone can currently act under your name/i)
   ).toBeVisible();
-  const resetBefore = await emailCount(RESET_SUBJECT, PRIYA_EMAIL);
+  const resetBefore = await mailOnTop(RESET_SUBJECT, PRIYA_EMAIL);
   await page.getByRole("button", { name: "Enable protection" }).click();
   await expect(page.getByText(/check your email/i)).toBeVisible();
-  const resetLink = await newestResetLink(PRIYA_EMAIL, resetBefore + 1);
+  const resetLink = await newestResetLink(PRIYA_EMAIL, resetBefore);
 
   // Open the link as if on a fresh device — it must not log us in.
   await selectUser(page, /Bob Test/i);
@@ -179,9 +183,9 @@ test("protect a name via emailed link, then log in with password and single-use 
   await selectUser(page, /Bob Test/i);
   await openFilteredNameSwitcher(page, "Priya");
   await priyaOption.click();
-  const codeBefore = await emailCount(LOGIN_SUBJECT, PRIYA_EMAIL);
+  const codeBefore = await mailOnTop(LOGIN_SUBJECT, PRIYA_EMAIL);
   await page.getByRole("button", { name: /email me a code/i }).click();
-  const code = await newestLoginCode(PRIYA_EMAIL, codeBefore + 1);
+  const code = await newestLoginCode(PRIYA_EMAIL, codeBefore);
   await logInAs(page, code);
   await expect(headerChip(page, "Priya Sharma")).toBeVisible();
 
@@ -238,9 +242,9 @@ test("forgot password: reset it via an emailed link", async ({ page }) => {
   // Protect Ahmad and set the first password via the emailed link.
   await page.getByRole("button", { name: /your name/i }).click();
   await page.getByRole("menuitem", { name: /settings/i }).click();
-  const before1 = await emailCount(RESET_SUBJECT, AHMAD_EMAIL);
+  const before1 = await mailOnTop(RESET_SUBJECT, AHMAD_EMAIL);
   await page.getByRole("button", { name: "Enable protection" }).click();
-  const link1 = await newestResetLink(AHMAD_EMAIL, before1 + 1);
+  const link1 = await newestResetLink(AHMAD_EMAIL, before1);
   // Wait for the switch to settle before navigating: a goto racing the
   // logout-then-select reload aborts an in-flight request (console error).
   await selectUser(page, /Bob Test/i);
@@ -255,12 +259,12 @@ test("forgot password: reset it via an emailed link", async ({ page }) => {
   const ahmadOption = page.getByRole("option", { name: /Ahmad Karimi/i });
   await openFilteredNameSwitcher(page, "Ahmad");
   await ahmadOption.click();
-  const before2 = await emailCount(RESET_SUBJECT, AHMAD_EMAIL);
+  const before2 = await mailOnTop(RESET_SUBJECT, AHMAD_EMAIL);
   await page.getByRole("button", { name: /forgot your password/i }).click();
   await expect(
     page.getByText(/reset link sent|emailed to you moments ago/i)
   ).toBeVisible();
-  const link2 = await newestResetLink(AHMAD_EMAIL, before2 + 1);
+  const link2 = await newestResetLink(AHMAD_EMAIL, before2);
   await page.goto(link2);
   await page.getByLabel(/new password/i).fill(AHMAD_NEW_PASSWORD);
   await page.getByRole("button", { name: "Set password" }).click();
@@ -296,10 +300,10 @@ test("setting a password drops the selection the same browser was holding", asyn
 
   await page.getByRole("button", { name: /your name/i }).click();
   await page.getByRole("menuitem", { name: /settings/i }).click();
-  const resetBefore = await emailCount(RESET_SUBJECT, THABO_EMAIL);
+  const resetBefore = await mailOnTop(RESET_SUBJECT, THABO_EMAIL);
   await page.getByRole("button", { name: "Enable protection" }).click();
   await expect(page.getByText(/check your email/i)).toBeVisible();
-  const resetLink = await newestResetLink(THABO_EMAIL, resetBefore + 1);
+  const resetLink = await newestResetLink(THABO_EMAIL, resetBefore);
 
   // Unlike the test above, the link is opened in the browser that still holds
   // the selection — the case the bug was reported for.
@@ -356,10 +360,10 @@ test("a name protected from another device asks this browser to log in, not to p
   await pickName(phone, "Nadia Haddad");
   await phone.getByRole("button", { name: /your name/i }).click();
   await phone.getByRole("menuitem", { name: /settings/i }).click();
-  const resetBefore = await emailCount(RESET_SUBJECT, NADIA_EMAIL);
+  const resetBefore = await mailOnTop(RESET_SUBJECT, NADIA_EMAIL);
   await phone.getByRole("button", { name: "Enable protection" }).click();
   await expect(phone.getByText(/check your email/i)).toBeVisible();
-  await phone.goto(await newestResetLink(NADIA_EMAIL, resetBefore + 1));
+  await phone.goto(await newestResetLink(NADIA_EMAIL, resetBefore));
   await phone.getByLabel(/new password/i).fill(NADIA_PASSWORD);
   await phone.getByRole("button", { name: "Set password" }).click();
   await expect(phone.getByText(/password set/i)).toBeVisible();

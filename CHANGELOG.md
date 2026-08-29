@@ -60,6 +60,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- Mail E2E tests wait for the mail they triggered by its identity instead of counting how many
+  match its subject. Mailpit answers a search with the newest 50 matches and keeps only the newest
+  500 messages, so once a few suite runs had filled those the count of "Set your password" mails
+  for one guest stopped growing and every test waiting for one failed. The waits are also 15s now:
+  rendering, SMTP and indexing all stretch under parallel load
 - E2E tests no longer decide what to assert from a single `isVisible()` sample (quick voting, the
   voting-disabled state, admin login, the RSVP capacity test). Each now waits for the state it
   expects, and the RSVP capacity test books a slot that overlaps nothing, so whether it has to

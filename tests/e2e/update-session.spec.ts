@@ -112,7 +112,10 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
   // a co-host now and, as a host, that the session changed. Charlie made the
   // change, so he hears nothing.
   await expect
-    .poll(() => searchBySubject(title), { timeout: 1000 /* milliseconds */ })
+    // Generous: mail rendering, SMTP delivery and mailpit's indexing are all
+    // outside the test's control and stretch under parallel load. The poll
+    // exits as soon as the three are there, so the happy path pays nothing.
+    .poll(() => searchBySubject(title), { timeout: 15000 })
     .toHaveLength(3);
   const messages = await searchBySubject(title);
   const to = (address: string) =>
