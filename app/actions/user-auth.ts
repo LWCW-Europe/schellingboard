@@ -24,9 +24,13 @@ import {
   verifyUserPassword,
 } from "@/utils/user-credentials";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import { requireSiteAuth } from "@/utils/action-auth";
 import {
   TOO_MANY_ATTEMPTS_ERROR,
+  TOO_MANY_EMAILS_ERROR,
+  isEmailIssuanceBlocked,
   isLoginBlocked,
+  recordEmailIssued,
   recordLoginFailure,
 } from "@/utils/login-rate-limit";
 import { isMailerConfigured, sendMail } from "@/utils/mailer";
@@ -136,6 +140,7 @@ function isSpent(token: AuthCode): boolean {
 export async function requestLoginCodeAction(
   guestId: string
 ): Promise<UserAuthResult> {
+  await requireSiteAuth();
   if (!isMailerConfigured()) {
     return {
       ok: false,
@@ -149,6 +154,9 @@ export async function requestLoginCodeAction(
   }
 
   const now = new Date();
+  if (isEmailIssuanceBlocked(guestId, now.getTime())) {
+    return { ok: false, error: TOO_MANY_EMAILS_ERROR };
+  }
   const recent = await recentlyIssued(guestId, "login", now);
   if (recent) {
     // A spent code is not `throttled`: nothing usable is waiting in the inbox,
@@ -195,6 +203,7 @@ export async function requestLoginCodeAction(
     console.error("Failed to send login code email:", err);
     return { ok: false, error: "The email could not be sent — try again" };
   }
+  recordEmailIssued(guestId, now.getTime());
   return { ok: true };
 }
 
@@ -207,6 +216,7 @@ export async function requestLoginCodeAction(
 export async function requestPasswordLinkAction(
   guestId: string
 ): Promise<UserAuthResult> {
+  await requireSiteAuth();
   if (!isMailerConfigured()) {
     return {
       ok: false,
@@ -220,6 +230,9 @@ export async function requestPasswordLinkAction(
   }
 
   const now = new Date();
+  if (isEmailIssuanceBlocked(guestId, now.getTime())) {
+    return { ok: false, error: TOO_MANY_EMAILS_ERROR };
+  }
   if (await recentlyIssued(guestId, "reset", now)) {
     return {
       ok: false,
@@ -256,6 +269,7 @@ export async function requestPasswordLinkAction(
     console.error("Failed to send password link email:", err);
     return { ok: false, error: "The email could not be sent — try again" };
   }
+  recordEmailIssued(guestId, now.getTime());
   return { ok: true };
 }
 
@@ -282,6 +296,7 @@ export async function loginAsGuestAction(
   guestId: string,
   credential: string
 ): Promise<UserAuthResult> {
+  await requireSiteAuth();
   const { guests, authCodes } = getRepositories();
   const creds = await guests.getAuthCredentials(guestId);
   if (!creds) {
@@ -334,6 +349,7 @@ export async function setPasswordWithTokenAction(
   token: string,
   newPassword: string
 ): Promise<UserAuthResult> {
+  await requireSiteAuth();
   const parsed = newPasswordSchema.safeParse(newPassword);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
@@ -373,6 +389,7 @@ export async function changePasswordAction(
   currentPassword: string,
   newPassword: string
 ): Promise<UserAuthResult> {
+  await requireSiteAuth();
   const parsed = newPasswordSchema.safeParse(newPassword);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid" };
@@ -411,6 +428,7 @@ export async function changePasswordAction(
 export async function disableProtectionAction(
   currentPassword: string
 ): Promise<UserAuthResult> {
+  await requireSiteAuth();
   const cookieStore = await cookies();
   const guestId = await verifiedCurrentUser(cookieStore);
   if (!guestId) {
@@ -448,6 +466,7 @@ export async function disableProtectionAction(
  * have stopped honouring since the page was rendered (see UserProvider).
  */
 export async function currentVerifiedUserAction(): Promise<string | null> {
+  await requireSiteAuth();
   return verifiedCurrentUser(await cookies());
 }
 
@@ -461,6 +480,7 @@ export async function currentVerifiedUserAction(): Promise<string | null> {
 export async function selectUserAction(
   guestId: string | null
 ): Promise<SelectUserResult> {
+  await requireSiteAuth();
   const cookieStore = await cookies();
   if (guestId === null) {
     cookieStore.set(createGuestLogoutCookie());

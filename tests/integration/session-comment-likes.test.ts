@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetTestDb, setupTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import { createEvent, createGuest, createSession } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
@@ -51,10 +52,11 @@ async function likesOn(sessionId: string, commentId: string) {
 
 describe("session comment likes", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
 
   it("starts with no likes", async () => {
@@ -156,7 +158,7 @@ describe("session comment likes", () => {
 
   it("refuses to like without a selected name", async () => {
     const { session, comment } = await setup();
-    cookieJar.clear();
+    cookieJar.delete(GUEST_COOKIE_NAME);
 
     const result = await toggleCommentLike({
       commentId: comment.id,

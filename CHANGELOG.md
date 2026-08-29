@@ -77,9 +77,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **A booked session can't outlast the event's maximum**: the length also came from the form and was never rechecked,
   so a hand-crafted request could hold a room for the whole booking window. Hosts booking for themselves are now held
   to the longest duration the form offers
+- **A cap on how much login mail one attendee can be sent**: asking for a login code, or for a link to set a password,
+  sends mail to the address on file, and nothing limited how often. At most 20 such mails a day now go to any one
+  attendee
 
 ### Internal
 
+- Every server action that isn't a login or logout checks the site-auth cookie itself. Next only
+  dispatches an action on the route that defines it, so one on a protected page was already
+  unreachable without site auth — but that is a framework detail, not a control this codebase owns.
+  A test enumerates the `"use server"` exports and fails on one that is neither classified as
+  pre-auth nor shown to refuse an unauthenticated caller
 - Comments live behind a scope-agnostic core (find, edit, like, delete) plus one repository per subject, so
   proposals, sessions and profiles share a single implementation. Adding a fourth thing to comment on is a join
   table and one line of wiring, not another copy of the same forty lines

@@ -43,6 +43,7 @@ vi.mock("next/cache", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import {
   createDay,
   createEvent,
@@ -283,10 +284,11 @@ const PROPOSAL_ACTION_VERIFIERS: Record<
 
 describe("mutating-surface regression guard", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
   afterEach(() => vi.unstubAllEnvs());
 

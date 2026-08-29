@@ -17,6 +17,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import { createEvent, createGuest, createProposal } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
@@ -53,10 +54,11 @@ async function likesOn(proposalId: string, commentId: string) {
 
 describe("proposal comment likes", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
 
   it("starts with no likes", async () => {
@@ -160,7 +162,8 @@ describe("proposal comment likes", () => {
 
   it("refuses to like without a selected name", async () => {
     const { event, proposal, comment } = await setup();
-    cookieJar.clear();
+    // Drop only the name, not site auth: this is about the identity gate.
+    cookieJar.delete(GUEST_COOKIE_NAME);
 
     const result = await toggleCommentLike({
       commentId: comment.id,

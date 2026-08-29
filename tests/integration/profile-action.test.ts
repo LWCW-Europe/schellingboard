@@ -25,6 +25,7 @@ vi.mock("next/cache", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import { createGuest } from "../helpers/factories";
 import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
@@ -40,11 +41,12 @@ let uploadsDir: string;
 describe("updateProfileAction", () => {
   beforeAll(() => setupTestDb());
 
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     uploadsDir = fs.mkdtempSync(path.join(os.tmpdir(), "uploads-test-"));
     vi.stubEnv("SB_UPLOADS_DIR", uploadsDir);
+    await siteAuthenticate(cookieJar);
   });
 
   afterEach(() => {

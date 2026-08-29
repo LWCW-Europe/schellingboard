@@ -26,6 +26,7 @@ vi.mock("next/cache", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import {
   createEvent,
   createGuest,
@@ -70,10 +71,11 @@ function postReq(path: string, payload: unknown, cookie?: string): NextRequest {
 describe("write enforcement for protected guests", () => {
   beforeAll(() => setupTestDb());
 
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
 
   afterEach(() => vi.unstubAllEnvs());

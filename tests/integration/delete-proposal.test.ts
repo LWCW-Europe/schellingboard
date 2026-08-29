@@ -39,6 +39,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import {
   createEvent,
   createGuest,
@@ -80,12 +81,13 @@ async function deleteAndFollowRedirect(
 describe("deleteProposal", () => {
   beforeAll(() => setupTestDb());
 
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     redirects.length = 0;
     revalidated.length = 0;
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
   afterEach(() => vi.unstubAllEnvs());
 

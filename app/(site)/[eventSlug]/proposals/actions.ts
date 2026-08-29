@@ -15,6 +15,7 @@ import {
   unverifiedUserMessage,
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
+import { requireSiteAuth } from "@/utils/action-auth";
 
 export async function createProposal(
   sessionProposal: z.input<typeof sessionProposalSchema>
@@ -22,6 +23,7 @@ export async function createProposal(
 export async function createProposal(
   input: unknown
 ): Promise<{ error: string | z.core.$ZodIssue[] } | { success: true }> {
+  await requireSiteAuth();
   // Creating needs a name actually selected, not merely one that isn't being
   // falsely claimed: a proposal is attributed to its hosts, so an anonymous
   // caller has no identity to attribute it to.
@@ -93,6 +95,7 @@ export async function updateProposal(
   id: string,
   input: unknown
 ): Promise<{ error: string | z.core.$ZodIssue[] } | { success: true }> {
+  await requireSiteAuth();
   const parseResult = await sessionProposalUpdateSchema.safeParseAsync(input);
   if (!parseResult.success) {
     return { error: parseResult.error.issues };
@@ -159,6 +162,7 @@ export async function deleteProposal(
   id: string,
   eventSlug: string
 ): Promise<{ error: string } | undefined> {
+  await requireSiteAuth();
   try {
     const proposal = await getRepositories().sessionProposals.findById(id);
     if (!proposal) {

@@ -35,6 +35,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import { createEvent, createGuest, createSession } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import {
@@ -64,12 +65,13 @@ function act(guestId: string): void {
 
 describe("profile comments", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
     vi.mocked(sendMail).mockReset();
     afterTasks.length = 0;
+    await siteAuthenticate(cookieJar);
   });
 
   it("emails the profile's owner about a new comment", async () => {
@@ -281,10 +283,11 @@ async function onlyComment(profileId: string) {
 
 describe("editing a profile comment", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
 
   it("replaces the body and records when it was edited", async () => {
@@ -341,10 +344,11 @@ describe("editing a profile comment", () => {
 
 describe("deleting a profile comment", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
 
   it("removes a childless comment outright", async () => {
@@ -423,10 +427,11 @@ describe("deleting a profile comment", () => {
 
 describe("threaded profile replies", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
 
   it("records the parent of a reply", async () => {

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { emailSettingsSchema } from "@/model/guest";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import { requireSiteAuth } from "@/utils/action-auth";
 import { z } from "zod";
 
 export type SettingsActionResult =
@@ -16,6 +17,7 @@ export async function updateEmailSettingsAction(
 export async function updateEmailSettingsAction(
   settings: unknown
 ): Promise<SettingsActionResult> {
+  await requireSiteAuth();
   const parseResult = emailSettingsSchema.safeParse(settings);
   if (!parseResult.success) {
     return { ok: false, error: parseResult.error.issues };

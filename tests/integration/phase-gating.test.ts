@@ -22,6 +22,7 @@ vi.mock("@/utils/mailer", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import {
   createEvent,
   createGuest,
@@ -143,9 +144,10 @@ async function toggleRsvpIn(
 
 describe("server-side phase gating", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
+    await siteAuthenticate(cookieJar);
   });
 
   it("rejects voting during the proposal phase", async () => {

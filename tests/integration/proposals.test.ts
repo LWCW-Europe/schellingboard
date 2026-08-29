@@ -25,6 +25,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import {
   createEvent,
   createGuest,
@@ -73,6 +74,7 @@ describe("createProposal", () => {
       openGuestValue((await createGuest({ name: "Proposer" })).id)
     );
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -203,10 +205,11 @@ describe("createProposal", () => {
 
 describe("updateProposal", () => {
   beforeAll(() => setupTestDb());
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
   });
   afterEach(() => vi.unstubAllEnvs());
 

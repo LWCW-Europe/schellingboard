@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { getImageRepositories } from "@/utils/images";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import { requireSiteAuth } from "@/utils/action-auth";
 import { serverNow } from "@/utils/dev-clock-server";
 import { profileSchema } from "@/model/guest";
 import { z } from "zod";
@@ -40,6 +41,7 @@ export async function updateProfileAction(
 export async function updateProfileAction(
   formData: unknown
 ): Promise<ProfileActionResult> {
+  await requireSiteAuth();
   const parseResult = await profileActionSchema.safeParseAsync(formData);
   if (!parseResult.success) {
     return { ok: false, error: parseResult.error.issues };

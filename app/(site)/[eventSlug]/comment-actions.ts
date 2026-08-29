@@ -24,6 +24,7 @@ import {
   NAME_PROTECTED_ERROR,
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
+import { requireSiteAuth } from "@/utils/action-auth";
 
 export type CommentActionResult =
   { error: string | z.core.$ZodIssue[] } | { success: true };
@@ -96,6 +97,7 @@ export async function createProposalComment(
 export async function createProposalComment(
   input: unknown
 ): Promise<CommentActionResult> {
+  await requireSiteAuth();
   try {
     const guest = await requireGuest();
     const { proposalId, parentId, body, eventSlug } = await requireParsed(
@@ -136,6 +138,7 @@ export async function createSessionComment(
 export async function createSessionComment(
   input: unknown
 ): Promise<CommentActionResult> {
+  await requireSiteAuth();
   try {
     const guest = await requireGuest();
     const { sessionId, parentId, body } = await requireParsed(
@@ -175,6 +178,7 @@ export async function createProfileComment(
 export async function createProfileComment(
   input: unknown
 ): Promise<CommentActionResult> {
+  await requireSiteAuth();
   try {
     const guest = await requireGuest();
     const { profileId, parentId, body } = await requireParsed(
@@ -214,6 +218,7 @@ export async function updateComment(
 export async function updateComment(
   input: unknown
 ): Promise<CommentActionResult> {
+  await requireSiteAuth();
   try {
     const guest = await requireGuest();
     const { commentId, body, eventSlug } = await requireParsed(
@@ -239,6 +244,7 @@ export async function toggleCommentLike(
 export async function toggleCommentLike(
   input: unknown
 ): Promise<CommentLikeResult> {
+  await requireSiteAuth();
   try {
     const guest = await requireGuest();
     const { commentId, eventSlug } = await requireParsed(
@@ -269,6 +275,7 @@ export async function deleteComment(
 export async function deleteComment(
   input: unknown
 ): Promise<CommentActionResult> {
+  await requireSiteAuth();
   try {
     const guest = await requireGuest();
     const { commentId, eventSlug } = await requireParsed(

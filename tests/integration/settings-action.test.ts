@@ -13,6 +13,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
+import { siteAuthenticate } from "../helpers/site-auth";
 import { createGuest } from "../helpers/factories";
 import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
@@ -22,9 +23,10 @@ import { updateEmailSettingsAction } from "@/app/actions/settings";
 describe("updateEmailSettingsAction", () => {
   beforeAll(() => setupTestDb());
 
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     cookieJar.clear();
+    await siteAuthenticate(cookieJar);
   });
 
   it("updates the current user's email settings", async () => {

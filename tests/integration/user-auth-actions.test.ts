@@ -42,9 +42,14 @@ import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createGuest } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { sendMail, isMailerConfigured } from "@/utils/mailer";
-import { readGuestCookie, GUEST_COOKIE_NAME } from "@/utils/auth";
+import {
+  createAuthCookie,
+  readGuestCookie,
+  GUEST_COOKIE_NAME,
+} from "@/utils/auth";
 import { MAX_CODE_ATTEMPTS, hashUserPassword } from "@/utils/user-credentials";
 import {
+  MAX_EMAILS_PER_GUEST_PER_DAY,
   MAX_LOGIN_FAILURES_PER_CLIENT,
   resetLoginRateLimiter,
 } from "@/utils/login-rate-limit";
@@ -108,12 +113,23 @@ async function userAuthCookieValidFor(guestId: string): Promise<boolean> {
   return parsed?.guestId === guestId && parsed.level === "verified";
 }
 
+/**
+ * Freezes the clock at `time` and re-issues the site-auth cookie against it.
+ * The cookie beforeEach put in the jar was signed on the real clock, so once
+ * time rolls back it looks issued in the future and stops validating.
+ */
+async function freezeClockAt(time: Date): Promise<void> {
+  vi.useFakeTimers();
+  vi.setSystemTime(time);
+  setJarCookie(await createAuthCookie());
+}
+
 describe("user auth actions", () => {
   beforeAll(() => {
     setupTestDb();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     resetTestDb();
     resetLoginRateLimiter();
     cookieJar.clear();
@@ -121,6 +137,8 @@ describe("user auth actions", () => {
     vi.mocked(isMailerConfigured).mockReturnValue(true);
     vi.stubEnv("AUTH_SECRET", VALID_SECRET);
     vi.stubEnv("SITE_URL", "https://sessions.test.example");
+    // Every user-auth action requires site auth (utils/action-auth.ts).
+    setJarCookie(await createAuthCookie());
   });
 
   afterEach(() => {
@@ -142,8 +160,7 @@ describe("user auth actions", () => {
     });
 
     it("throttles repeated requests, allowing a new one after a minute", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-07-18T12:00:00Z"));
+      await freezeClockAt(new Date("2026-07-18T12:00:00Z"));
       const guest = await createGuest();
       expect((await requestLoginCodeAction(guest.id)).ok).toBe(true);
       const throttled = await requestLoginCodeAction(guest.id);
@@ -154,6 +171,64 @@ describe("user auth actions", () => {
       vi.setSystemTime(new Date("2026-07-18T12:01:01Z"));
       expect((await requestLoginCodeAction(guest.id)).ok).toBe(true);
       expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(2);
+    });
+
+    // REQUEST_THROTTLE_SECONDS bounds the *rate*, not the total: a stream of
+    // successful requests never trips isLoginBlocked, which counts only
+    // failures. Without a cumulative cap one guest id buys ~1,440 emails a
+    // day to that attendee's inbox, indefinitely.
+    it("caps how many codes a guest can be sent in a day", async () => {
+      await freezeClockAt(new Date("2026-07-18T12:00:00Z"));
+      const guest = await createGuest();
+
+      // Two minutes apart so each request clears REQUEST_THROTTLE_SECONDS and
+      // the daily cap, not the rate throttle, is what finally refuses one.
+      for (let i = 0; i < MAX_EMAILS_PER_GUEST_PER_DAY; i++) {
+        vi.setSystemTime(new Date(Date.UTC(2026, 6, 18, 12, i * 2, 0)));
+        expect((await requestLoginCodeAction(guest.id)).ok).toBe(true);
+      }
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(
+        MAX_EMAILS_PER_GUEST_PER_DAY
+      );
+
+      vi.setSystemTime(new Date(Date.UTC(2026, 6, 18, 23, 0, 0)));
+      const capped = await requestLoginCodeAction(guest.id);
+      expect(capped.ok).toBe(false);
+      expect(vi.mocked(sendMail)).toHaveBeenCalledTimes(
+        MAX_EMAILS_PER_GUEST_PER_DAY
+      );
+
+      // A day later the budget is fresh again.
+      vi.setSystemTime(new Date(Date.UTC(2026, 6, 19, 12, 30, 0)));
+      expect((await requestLoginCodeAction(guest.id)).ok).toBe(true);
+    });
+
+    // The cap is per guest, so flooding one inbox can't lock everyone else out.
+    it("caps each guest separately", async () => {
+      await freezeClockAt(new Date("2026-07-18T12:00:00Z"));
+      const flooded = await createGuest();
+      const other = await createGuest();
+
+      for (let i = 0; i < MAX_EMAILS_PER_GUEST_PER_DAY; i++) {
+        vi.setSystemTime(new Date(Date.UTC(2026, 6, 18, 12, i * 2, 0)));
+        expect((await requestLoginCodeAction(flooded.id)).ok).toBe(true);
+      }
+      expect((await requestLoginCodeAction(flooded.id)).ok).toBe(false);
+      expect((await requestLoginCodeAction(other.id)).ok).toBe(true);
+    });
+
+    // Both flows mail the same inbox, so they must share one budget rather
+    // than doubling it.
+    it("counts login codes and password links against one budget", async () => {
+      await freezeClockAt(new Date("2026-07-18T12:00:00Z"));
+      const guest = await createGuest();
+
+      for (let i = 0; i < MAX_EMAILS_PER_GUEST_PER_DAY; i++) {
+        vi.setSystemTime(new Date(Date.UTC(2026, 6, 18, 12, i * 2, 0)));
+        expect((await requestLoginCodeAction(guest.id)).ok).toBe(true);
+      }
+      vi.setSystemTime(new Date(Date.UTC(2026, 6, 18, 22, 0, 0)));
+      expect((await requestPasswordLinkAction(guest.id)).ok).toBe(false);
     });
 
     it("fails for an unknown guest without sending mail", async () => {
@@ -185,8 +260,7 @@ describe("user auth actions", () => {
     });
 
     it("throttles repeated requests, allowing a new one after a minute", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-07-18T12:00:00Z"));
+      await freezeClockAt(new Date("2026-07-18T12:00:00Z"));
       const guest = await createGuest();
       expect((await requestPasswordLinkAction(guest.id)).ok).toBe(true);
       const throttled = await requestPasswordLinkAction(guest.id);
@@ -238,7 +312,7 @@ describe("user auth actions", () => {
     it("the code is single-use: a second login with it fails", async () => {
       const { guest, code } = await protectedGuestWithCode();
       expect((await loginAsGuestAction(guest.id, code)).ok).toBe(true);
-      cookieJar.clear();
+      cookieJar.delete(GUEST_COOKIE_NAME);
       expect((await loginAsGuestAction(guest.id, code)).ok).toBe(false);
     });
 
@@ -251,8 +325,7 @@ describe("user auth actions", () => {
     });
 
     it("rejects an expired code", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-07-18T12:00:00Z"));
+      await freezeClockAt(new Date("2026-07-18T12:00:00Z"));
       const { guest, code } = await protectedGuestWithCode();
       vi.setSystemTime(new Date("2026-07-18T12:10:01Z"));
       const result = await loginAsGuestAction(guest.id, code);
@@ -289,8 +362,7 @@ describe("user auth actions", () => {
     });
 
     it("a used-up code can be replaced, and says so meanwhile", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-07-18T12:00:00Z"));
+      await freezeClockAt(new Date("2026-07-18T12:00:00Z"));
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
       const { guest } = await protectedGuestWithCode();
       for (let i = 0; i < MAX_CODE_ATTEMPTS; i++) {
@@ -635,7 +707,7 @@ describe("user auth actions", () => {
       expect(result).toEqual({ ok: true });
       const email = await lastEmail();
       expect(email.subject).toMatch(/password/i);
-      cookieJar.clear();
+      cookieJar.delete(GUEST_COOKIE_NAME);
       expect(
         (await loginAsGuestAction(guest.id, "new password entirely")).ok
       ).toBe(true);
@@ -648,7 +720,7 @@ describe("user auth actions", () => {
         "new password entirely"
       );
       expect(result.ok).toBe(false);
-      cookieJar.clear();
+      cookieJar.delete(GUEST_COOKIE_NAME);
       expect(
         (await loginAsGuestAction(guest.id, "correct horse battery")).ok
       ).toBe(true);
@@ -663,7 +735,7 @@ describe("user auth actions", () => {
 
     it("fails when no user is selected", async () => {
       await loggedInProtectedGuest();
-      cookieJar.clear();
+      cookieJar.delete(GUEST_COOKIE_NAME);
       expect(
         (
           await changePasswordAction(
