@@ -93,7 +93,6 @@ async function notifySessionChangedUnsafe({
   const messageProps = {
     sessionUrl: sessionUrl(base, event.slug, after.id),
     title: after.title,
-    description: after.description,
     newTime: formatSessionTime(after, event.timezone, event.breakMinutes),
     oldTime: timeChanged
       ? formatSessionTime(before, event.timezone, event.breakMinutes)
@@ -180,7 +179,6 @@ async function notifySessionDeletedUnsafe({
   }
   const messageProps = {
     title: session.title,
-    description: session.description,
     time: formatSessionTime(session, event.timezone, event.breakMinutes),
     location: formatLocations(session),
     eventUrl: `${base}/${event.slug}`,
@@ -279,7 +277,6 @@ async function notifyCohostsAddedUnsafe({
 
   const message = cohostAddedEmail({
     title: session.title,
-    description: session.description,
     time: formatSessionTime(session, event.timezone, event.breakMinutes),
     location: formatLocations(session),
     sessionUrl: sessionUrl(base, event.slug, session.id),
@@ -313,7 +310,6 @@ async function deliverCommentEmails({
   const messageProps = {
     subject,
     commenterName: comment.author?.name ?? "Someone",
-    body: comment.body,
     url,
   };
 

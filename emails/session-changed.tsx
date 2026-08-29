@@ -1,13 +1,15 @@
 import type { EmailMessage } from "@/utils/mailer";
-import { EmailMarkdown } from "@/emails/markdown";
 
 // Sent to hosts and RSVP'd guests when a session changes time and/or
 // location. Times and locations come preformatted; the old value is given
 // only for what actually changed.
+//
+// The session's description is deliberately left out: it is not what the
+// notification is about, and there is no reason to hand it to the recipient's
+// email provider.
 export function sessionChangedEmail(props: {
   recipient: "host" | "attendee";
   title: string;
-  description: string;
   newTime: string;
   oldTime?: string;
   newLocation: string;
@@ -41,9 +43,6 @@ export function sessionChangedEmail(props: {
           <strong>Location:</strong> {props.newLocation}
           {props.oldLocation && <> (was {props.oldLocation})</>}
         </p>
-        {props.description && (
-          <EmailMarkdown>{props.description}</EmailMarkdown>
-        )}
         <p>
           <a href={props.sessionUrl}>View the session</a>
         </p>

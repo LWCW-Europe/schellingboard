@@ -31,6 +31,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   "← Proposals" style already used elsewhere
 - **The session form starts where every other form does**: the add and edit session pages left an empty band above the
   form that no other page has
+- **Notification emails link instead of quoting**: emails about a session being moved or deleted, or about you being
+  added as a co-host, no longer repeat the session's description, and comment emails no longer repeat the comment.
+  Each says what happened and links to it. Before, the full text went out to every recipient's email provider whether
+  or not it had anything to do with the notification
 
 ### Fixed
 

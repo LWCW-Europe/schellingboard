@@ -1,5 +1,4 @@
 import type { EmailMessage } from "@/utils/mailer";
-import { EmailMarkdown } from "@/emails/markdown";
 
 /** What was commented on, and how to name it in the email. */
 export type CommentSubject =
@@ -31,13 +30,15 @@ function relation(subject: CommentSubject, to: CommentRecipient): string {
     : `a ${subject.kind} you commented on`;
 }
 
-// Sent when someone comments on a proposal, a session or a profile. The body
-// is the comment's markdown.
+// Sent when someone comments on a proposal, a session or a profile.
+//
+// The comment's text is deliberately left out: it is enough to say that there
+// is one and link to it, and there is no reason to hand what guests write to
+// each other to their email providers.
 export function commentEmail(props: {
   subject: CommentSubject;
   recipient: CommentRecipient;
   commenterName: string;
-  body: string;
   url: string;
 }): EmailMessage {
   const title = heading(props.subject, props.recipient);
@@ -53,7 +54,6 @@ export function commentEmail(props: {
           {props.commenterName} commented on{" "}
           {relation(props.subject, props.recipient)}.
         </p>
-        <EmailMarkdown>{props.body}</EmailMarkdown>
         <p>
           <a href={props.url}>View the comment</a>
         </p>
