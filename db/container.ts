@@ -38,6 +38,7 @@ export type Repositories = {
   comments: CommentsRepository;
   proposalComments: SubjectCommentsRepository;
   sessionComments: SubjectCommentsRepository;
+  profileComments: SubjectCommentsRepository;
   days: DaysRepository;
   events: EventsRepository;
   guests: GuestsRepository;
@@ -59,6 +60,7 @@ function buildRepositories(sqlite: Database.Database): Repositories {
     comments: new SqliteCommentsRepository(db),
     proposalComments: sqliteSubjectCommentsRepository(db, "proposal"),
     sessionComments: sqliteSubjectCommentsRepository(db, "session"),
+    profileComments: sqliteSubjectCommentsRepository(db, "profile"),
     days: new SqliteDaysRepository(db),
     events: new SqliteEventsRepository(db),
     guests: new SqliteGuestsRepository(db),

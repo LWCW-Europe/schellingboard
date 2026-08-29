@@ -4,6 +4,7 @@ import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent, createGuest, createSession } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 import { GET as sessionComments } from "@/app/api/session/[sessionId]/comments/route";
+import { GET as profileComments } from "@/app/api/profile/[profileId]/comments/route";
 
 describe("comment read endpoints", () => {
   beforeAll(() => setupTestDb());
@@ -36,6 +37,35 @@ describe("comment read endpoints", () => {
     const res = await sessionComments(
       new Request("http://test/api/session/nope/comments"),
       { params: Promise.resolve({ sessionId: "nope" }) }
+    );
+
+    expect(res.status).toBe(404);
+  });
+
+  it("serves a profile's comments", async () => {
+    const owner = await createGuest();
+    const commenter = await createGuest();
+    await getRepositories().profileComments.create({
+      subjectId: owner.id,
+      authorId: commenter.id,
+      body: "Nice to meet you",
+      createdTime: new Date(),
+    });
+
+    const res = await profileComments(
+      new Request(`http://test/api/profile/${owner.id}/comments`),
+      { params: Promise.resolve({ profileId: owner.id }) }
+    );
+
+    expect(res.status).toBe(200);
+    const comments = (await res.json()) as { body: string }[];
+    expect(comments.map((c) => c.body)).toEqual(["Nice to meet you"]);
+  });
+
+  it("answers 404 for a profile that does not exist", async () => {
+    const res = await profileComments(
+      new Request("http://test/api/profile/nope/comments"),
+      { params: Promise.resolve({ profileId: "nope" }) }
     );
 
     expect(res.status).toBe(404);
