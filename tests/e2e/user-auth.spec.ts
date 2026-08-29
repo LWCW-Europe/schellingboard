@@ -14,7 +14,10 @@ const PRIYA_EMAIL = "priya.sharma@example.com";
 const PRIYA_PASSWORD = "priya-e2e-password";
 const PRIYA_NEW_PASSWORD = "priya-e2e-password-2";
 
-// Ahmad Karimi is used by no other spec, likewise.
+// Ahmad Karimi, likewise, for his protection settings. His profile is another
+// matter: profile.spec.ts asserts the directory order between him and Alice, so
+// nothing may edit it. Protecting a name doesn't — profileUpdatedAt is stamped
+// only by a profile save.
 const AHMAD_EMAIL = "ahmad.karimi@example.com";
 const AHMAD_PASSWORD = "ahmad-e2e-password";
 const AHMAD_NEW_PASSWORD = "ahmad-e2e-password-2";

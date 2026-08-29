@@ -60,6 +60,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- The attendee-directory E2E tests assert the order of two named seeded attendees instead of who
+  sits first in the whole list, which a user created by a parallel admin test could take. The rule
+  behind it — never assert on a global aggregate of shared data — is written down in
+  [docs/dev/testing.md § E2E conventions](docs/dev/testing.md#e2e-conventions)
 - The schedule-layout E2E tests scroll until what they assert on has moved, instead of wheeling a
   fixed amount and waiting 300–500ms for it. The room-details hover retries too: under load the
   mouse could arrive before the grid had hydrated, and that first hover was simply lost

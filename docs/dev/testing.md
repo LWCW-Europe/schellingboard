@@ -155,6 +155,17 @@ Dates must be formatted in an explicit zone — the event's — never the proces
 - Imitate human behavior — click visible elements, navigate naturally
 - Use semantic locators (`getByRole`, `getByText`, `getByLabel`), not IDs or CSS classes
 - Never construct URLs with internal IDs or replay raw API payloads
+- Never assert on a global aggregate of shared data — an exact total, "first in the list". The
+  whole suite shares one database and runs in parallel, so another spec creating a user or editing
+  a profile can move any of them. Assert within data the test created itself, or between two named
+  seeded rows ("Alice sorts above Ahmad"), which stays true however many rows appear around them.
+  Comparing one count against another (fewer after a filter than before) holds only where no row a
+  parallel spec can add moves the two the same way
+- Give anything a test creates a name of its own (`E2E Admin User <timestamp>`), distinctive enough
+  that no other spec's search or filter can match it
+- A cross-test invariant that only a comment states ("no other test votes on this proposal") is
+  enforced by nothing. Put it in the seed or the fixture where it can be relied on, or write the
+  assertion so it does not need the invariant
 
 ## Test data
 

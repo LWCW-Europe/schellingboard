@@ -505,6 +505,12 @@ test("filters the directory to filled-in profiles", async ({ page }) => {
   expect(await shown()).toBeGreaterThan(0);
 });
 
+// Directory order is asserted between two seeded attendees, never as a
+// position in the list as a whole: admin.spec.ts creates and imports users in
+// parallel, and one of those may legitimately sort above both.
+const firstOfAliceOrAhmad = (attendees: import("@playwright/test").Locator) =>
+  attendees.filter({ hasText: /Alice Test|Ahmad Karimi/ }).first();
+
 test("searches, filters and sorts without going back to the server", async ({
   page,
 }) => {
@@ -515,7 +521,7 @@ test("searches, filters and sorts without going back to the server", async ({
     .getByRole("list")
     .filter({ has: page.getByRole("link", { name: "Alice Test" }) })
     .getByRole("listitem");
-  await expect(attendees.first()).toContainText("Ahmad Karimi");
+  await expect(firstOfAliceOrAhmad(attendees)).toContainText("Ahmad Karimi");
 
   // The browser holds the whole directory, so every toggle re-renders the list
   // in place. Anything asking /guests for a fresh list would re-render the page
@@ -535,9 +541,11 @@ test("searches, filters and sorts without going back to the server", async ({
   await page.getByRole("button", { name: /Filter by Has profile/ }).click();
   await expect(page.getByRole("link", { name: "Amara Okafor" })).toHaveCount(0);
 
-  // Alice is the first guest seeded, so she carries the most recent stamp.
+  // Alice is the first guest seeded, so she carries the most recent stamp —
+  // and only this file's own tests ever edit a profile, so she stays ahead of
+  // Ahmad whatever else the run is doing.
   await page.getByLabel("Sort by").selectOption("Recently updated");
-  await expect(attendees.first()).toContainText("Alice Test");
+  await expect(firstOfAliceOrAhmad(attendees)).toContainText("Alice Test");
 
   // Only Olga is based there, and no editing test writes that city.
   await page.getByLabel("Search").fill("Novosibirsk");
@@ -578,12 +586,15 @@ test("sorts the attendee directory by recently updated", async ({ page }) => {
     .getByRole("listitem");
 
   // The seeded update times are all hours or days old, so the edit above makes
-  // Alice the most recent — and alphabetically she is not first.
-  await expect(attendees.first()).toContainText("Ahmad Karimi");
+  // Alice the most recently updated of the two — and alphabetically she is the
+  // later one.
+  await expect(firstOfAliceOrAhmad(attendees)).toContainText("Ahmad Karimi");
 
   await page.getByLabel("Sort by").selectOption("Recently updated");
-  await expect(attendees.first()).toContainText("Alice Test");
-  await expect(attendees.first()).toContainText("updated just now");
+  await expect(firstOfAliceOrAhmad(attendees)).toContainText("Alice Test");
+  await expect(firstOfAliceOrAhmad(attendees)).toContainText(
+    "updated just now"
+  );
 
   // A search is ranked by relevance, so sorting is off the table while one is
   // active.
