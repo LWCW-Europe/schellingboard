@@ -37,6 +37,7 @@ export type Repositories = {
   /** Scope-agnostic comment operations (find, edit, like, delete). */
   comments: CommentsRepository;
   proposalComments: SubjectCommentsRepository;
+  sessionComments: SubjectCommentsRepository;
   days: DaysRepository;
   events: EventsRepository;
   guests: GuestsRepository;
@@ -57,6 +58,7 @@ function buildRepositories(sqlite: Database.Database): Repositories {
     authCodes: new SqliteAuthCodesRepository(db),
     comments: new SqliteCommentsRepository(db),
     proposalComments: sqliteSubjectCommentsRepository(db, "proposal"),
+    sessionComments: sqliteSubjectCommentsRepository(db, "session"),
     days: new SqliteDaysRepository(db),
     events: new SqliteEventsRepository(db),
     guests: new SqliteGuestsRepository(db),

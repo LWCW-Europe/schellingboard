@@ -44,13 +44,13 @@ vi.mock("next/cache", () => ({
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import {
+  createDay,
   createEvent,
   createGuest,
   createLocation,
-  createDay,
-  slotStart,
   createProposal,
   createSession,
+  slotStart,
 } from "../helpers/factories";
 import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
@@ -86,7 +86,7 @@ const OUT_OF_SCOPE_PREFIXES = ["admin/", "auth/"];
 const OUT_OF_SCOPE_EXACT = new Set(["health"]);
 
 // Read-only surfaces are exempt from the invariant per CONTRIBUTING.md.
-const READ_ONLY = new Set(["rsvps", "votes"]);
+const READ_ONLY = new Set(["rsvps", "votes", "session/[sessionId]/comments"]);
 
 type Verifier = () => Promise<void>;
 

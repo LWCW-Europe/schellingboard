@@ -253,7 +253,7 @@ type CommentJoin = {
   attach: (tx: Tx, commentId: string, subjectId: string) => void;
 };
 
-const JOINS: Record<"proposal", CommentJoin> = {
+const JOINS: Record<"proposal" | "session", CommentJoin> = {
   proposal: {
     table: schema.proposalComments,
     commentId: schema.proposalComments.commentId,
@@ -263,6 +263,13 @@ const JOINS: Record<"proposal", CommentJoin> = {
         .insert(schema.proposalComments)
         .values({ commentId, proposalId })
         .run(),
+  },
+  session: {
+    table: schema.sessionComments,
+    commentId: schema.sessionComments.commentId,
+    subjectId: schema.sessionComments.sessionId,
+    attach: (tx, commentId, sessionId) =>
+      tx.insert(schema.sessionComments).values({ commentId, sessionId }).run(),
   },
 };
 

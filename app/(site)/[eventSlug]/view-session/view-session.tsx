@@ -15,6 +15,7 @@ import { sessionsOverlap } from "../../session_utils";
 import { LockIcon } from "../../lock-icon";
 import { LocationTag } from "../session-text";
 import { viewProposalLinkFromElsewhere } from "../modal-nav";
+import { SessionComments } from "../session-comments";
 import { Markdown } from "@/app/(site)/markdown";
 
 export function ViewSession(props: {
@@ -340,6 +341,11 @@ export function ViewSession(props: {
           .
         </p>
       )}
+      <SessionComments
+        sessionId={session.id}
+        eventSlug={eventSlug}
+        timezone={event.timezone}
+      />
     </div>
   );
 }

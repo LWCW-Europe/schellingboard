@@ -174,6 +174,12 @@ Unlike votes, hosts plan around it. If you change your mind, take it back with
 - A session marked **closed** warns that you can be at most five minutes late,
   but doesn't block your RSVP.
 
+### Discuss a session
+
+Open a session to find the same comment section proposals have — useful for
+"which room did this move to?" and other last-minute coordination. Everything works as described under
+[Discuss a proposal](#discuss-a-proposal): threaded replies, likes, editing and deleting your own comments.
+
 ## Attendee directory & profiles
 
 The directory lists everyone at the event on a single page — photo and the

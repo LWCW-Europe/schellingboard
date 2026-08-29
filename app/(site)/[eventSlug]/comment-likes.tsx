@@ -18,7 +18,9 @@ export function CommentLikes({
   onChanged,
 }: {
   comment: Pick<Comment, "id" | "likes">;
-  eventSlug: string;
+  // Only the cache invalidation target for pages that server-render their
+  // comments — proposals. Sessions omit it.
+  eventSlug?: string;
   onChanged: () => void;
 }) {
   const { user: currentUserId } = useContext(UserContext);
