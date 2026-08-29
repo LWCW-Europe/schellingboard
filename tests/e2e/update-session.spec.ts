@@ -44,7 +44,10 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
   const title = `E2E Email Session ${Date.now()}`;
 
   // Charlie creates a session on the last event day (Garden Terrace 15:10 —
-  // a slot no other spec claims; see the note in scheduling.spec.ts).
+  // a slot no other spec claims; see the note in scheduling.spec.ts). Bob
+  // RSVPs to it below and never withdraws, so no parallel spec may make him
+  // RSVP anything overlapping this time in any room: he'd get a clash warning
+  // to confirm, here or there.
   await page.goto("/Conference-Gamma");
   await selectUser(page, /Charlie Test/i);
   await page.getByRole("link", { name: "Add session" }).first().click();
