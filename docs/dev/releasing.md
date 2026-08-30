@@ -10,6 +10,8 @@ documentation.
 
 1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header), and replace the `[Unreleased]` compare link at the bottom of the file with the new version's, pointing from the previous release's endpoint to the new tag (`vX.Y.Z`). Do _not_ add a fresh `## [Unreleased]` section here — the released tag should carry no empty section, since that is what the documentation site publishes. Step 4 reopens it afterwards.
 
+   **Release the in-app notes in the same commit** — in `app/release-notes.ts`, the first entry of `releaseNotes` is the one being prepared: replace its `version: "Unreleased"` with this version and add the `date`. Nothing else moves. Verify the highlights in fact describe this release; that entry is what the footer's version button has been showing all along, so it is worth re-reading rather than assuming. `make test` fails until the newest release the changelog names has an entry.
+
    **Record the release's database in the same commit**, so future releases are tested against an upgrade from it:
 
    ```bash

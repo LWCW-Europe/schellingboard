@@ -10,6 +10,10 @@ export function Modal(props: {
   hideClose?: boolean;
   zIndex?: string;
   portal?: boolean; // Explicitly control portaling behavior
+  // Passed rather than merged into the panel's classes: two max-width
+  // utilities on one element are resolved by the stylesheet's order, not the
+  // attribute's, so the wider one wouldn't reliably win.
+  maxWidth?: string;
 }) {
   const {
     open,
@@ -18,6 +22,7 @@ export function Modal(props: {
     hideClose,
     zIndex = "z-10",
     portal = false,
+    maxWidth = "sm:max-w-lg",
   } = props;
   const fakeRef = useRef(null);
 
@@ -53,7 +58,9 @@ export function Modal(props: {
                 leaveFrom="opacity-100 translate-y-0 sm:scale-100"
                 leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
               >
-                <Dialog.Panel className="relative mb-10 transform overflow-visible rounded-lg bg-surface-raised px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                <Dialog.Panel
+                  className={`relative mb-10 transform overflow-visible rounded-lg bg-surface-raised px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full ${maxWidth} sm:p-6`}
+                >
                   {children}
                   {!hideClose && (
                     <div className="mt-4">

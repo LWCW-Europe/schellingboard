@@ -1,6 +1,6 @@
 "use client";
-import { getAppVersion } from "@/utils/git";
 import { ThemeSelect } from "./theme-select";
+import { WhatsNew } from "./whats-new";
 
 // Flexbox centres each item's *box*, but Montserrat's font box is top-heavy
 // (12px ascent to 3px descent at our 12px size), so the glyphs land 1.5px
@@ -14,16 +14,11 @@ const OPTICAL_CENTRE = "-translate-y-[1.5px]";
 // RSVP views. The bar spans the full — possibly horizontally overflowing —
 // grid width, while the text stays pinned to the visible area.
 export default function Footer({ inline }: { inline?: boolean }) {
-  const appVersion = getAppVersion();
-
   const content = (
     // Wrapping matters on narrow phones: the version can be a long dev string
     // (`a1b2c3d4-dirty`), and three links plus it no longer fit on one line.
     <div className="px-3 flex flex-wrap gap-x-2 gap-y-1 justify-between items-center text-xs text-fg-subtle">
-      <span className={`flex gap-1 ${OPTICAL_CENTRE}`}>
-        <span className="hidden sm:block">Version: </span>
-        {appVersion}
-      </span>
+      <WhatsNew className={OPTICAL_CENTRE} />
       {/* The only control that is on every page, which is why the theme lives
           here: the settings page needs a name to have been picked first. */}
       <ThemeSelect />

@@ -4,10 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+> **Developers**: Remember to update [`app/release-notes.ts`](app/release-notes.ts)
+> — a sentence or two for the changes an organizer or attendee cares about.
+
 ## [Unreleased]
 
 ### Added
 
+- **What's new, in the app**: clicking the version at the bottom of any page opens a short summary of what
+  the last three releases changed, each with its release date, so it is easy to see whether the site is
+  running something recent. A site running a build made since the last release lists those changes too,
+  as "Unreleased". A link goes on to the full changelog on GitHub
 - **Comments on attendee profiles**: a profile now ends with the same comment section sessions and proposals already
   have — threaded replies, likes, editing and deleting your own comments. Open anyone in the directory to say hi or
   arrange to meet up

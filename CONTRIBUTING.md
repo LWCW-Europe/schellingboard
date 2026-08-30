@@ -276,6 +276,8 @@ Update `CHANGELOG.md` under `[Unreleased]` alongside any user-facing change.
 - Breaking changes: `> **Breaking change**: ...` blockquote at the top of the release
 - Skip internal refactors/tests unless they materially affect the dev workflow — then use `Internal`
 
+The app carries a much shorter version of this: `app/release-notes.ts`, shown when the footer's version is clicked. Highlights are inline markdown, so they take the same **bold** lead phrase as the bullets here. Add yours as the change lands, to the first entry — the undated `"Unreleased"` one, shown like any other, since a deployment built from `main` is running exactly those changes. Finalizing the release only gives that entry its version and date — see [Releasing a new version](docs/dev/releasing.md).
+
 ## Documentation
 
 Two audiences, two places:
