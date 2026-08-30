@@ -96,6 +96,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- Room photos shipped with the demo data no longer make Next warn that the image loader ignores the
+  requested width. The custom loader hands anything outside `/media/` back unchanged, so those
+  `<Image>`s now declare `unoptimized` instead of asking for a srcset of identical URLs
 - Releases are made by CI instead of by hand on a laptop: pushing a `vX.Y.Z` tag builds the image,
   runs the E2E suite against it, and only then publishes it to Docker Hub and opens the GitHub
   release. Whether the release takes over `:latest` is worked out from the repository's tags instead

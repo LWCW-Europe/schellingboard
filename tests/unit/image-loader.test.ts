@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import loader from "@/utils/image-loader";
+import loader, { isUnoptimized } from "@/utils/image-loader";
 
 // Next's built-in optimizer cannot fetch /media: it builds its upstream
 // request with no headers at all, so the proxy sees no site-auth cookie and
@@ -37,5 +37,19 @@ describe("image loader", () => {
     ]) {
       expect(loader({ src, width: 384 })).toBe(src);
     }
+  });
+});
+
+// Next warns in dev when a loader returns the src unchanged ("has a 'loader'
+// property that does not implement width") and would emit a srcset of
+// identical URLs, so every <Image> whose src can miss the media routes has to
+// declare itself unoptimized.
+describe("isUnoptimized", () => {
+  it("is false for media, which the media routes resize", () => {
+    expect(isUnoptimized("/media/locations/l1.jpg?v=123")).toBe(false);
+  });
+
+  it("is true for build assets, which this loader passes through", () => {
+    expect(isUnoptimized("/locations/loc-main-hall.jpg")).toBe(true);
   });
 });

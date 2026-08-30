@@ -22,11 +22,23 @@
 const DEFAULT_QUALITY = 75;
 
 /**
+ * Whether <Image> must render `src` with `unoptimized`. Everything this loader
+ * hands back unchanged has to: Next warns in dev that the loader ignores the
+ * requested width, and builds a srcset of identical URLs.
+ *
+ * @param {string} src
+ * @returns {boolean}
+ */
+export function isUnoptimized(src) {
+  return !src.startsWith("/media/");
+}
+
+/**
  * @param {import("next/image").ImageLoaderProps} props
  * @returns {string}
  */
 export default function imageLoader({ src, width, quality }) {
-  if (!src.startsWith("/media/")) return src;
+  if (isUnoptimized(src)) return src;
 
   // Stored media URLs already carry a ?v= cache-buster.
   const separator = src.includes("?") ? "&" : "?";

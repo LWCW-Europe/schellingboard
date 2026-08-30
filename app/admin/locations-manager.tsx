@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
+import { isUnoptimized } from "@/utils/image-loader";
 import clsx from "clsx";
 import { Input } from "@/app/input";
 import type { Location } from "@/db/repositories/interfaces";
@@ -290,6 +291,7 @@ function LocationForm({
           <Image
             src={location.imageUrl}
             alt={`Current image of ${location.name}`}
+            unoptimized={isUnoptimized(location.imageUrl)}
             width={160}
             height={120}
             className="rounded border border-line-subtle"
@@ -451,6 +453,7 @@ function LocationRow({
           <Image
             src={location.imageUrl}
             alt={location.name}
+            unoptimized={isUnoptimized(location.imageUrl)}
             width={80}
             height={60}
             className="rounded border border-line-subtle shrink-0"

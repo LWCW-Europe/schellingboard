@@ -7,6 +7,7 @@ import { getNumSlots, getNowOffsetPx } from "@/utils/slots";
 import { useKioskMode } from "./kiosk";
 import { useContext } from "react";
 import Image from "next/image";
+import { isUnoptimized } from "@/utils/image-loader";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { Tooltip } from "./tooltip";
 import { DateTime } from "luxon";
@@ -125,6 +126,7 @@ export function DayGrid(props: {
                 <Image
                   src={loc.imageUrl}
                   alt={loc.name}
+                  unoptimized={isUnoptimized(loc.imageUrl)}
                   className="w-full aspect-[4/3]"
                   style={{ maxHeight: 200 }}
                   width={500}
