@@ -39,7 +39,10 @@ import { getRepositories } from "@/db/container";
 import { createAdminAuthCookie } from "@/utils/auth";
 import { testEmail } from "@/emails/test-email";
 import { sendMail } from "@/utils/mailer";
-import { VoteChoice } from "@/db/repositories/interfaces";
+import {
+  DEFAULT_EMAIL_SETTINGS,
+  VoteChoice,
+} from "@/db/repositories/interfaces";
 import {
   createGuestAction,
   updateGuestAction,
@@ -251,15 +254,7 @@ describe("admin guest actions", () => {
       expect(result).toEqual({ ok: true });
       const guest =
         await getRepositories().guests.findByEmail("alice@test.example");
-      expect(guest?.info.emailSettings).toEqual({
-        rsvpChange: true,
-        hostChange: true,
-        cohostAdd: true,
-        proposalComment: true,
-        sessionComment: true,
-        profileComment: true,
-        commentThread: false,
-      });
+      expect(guest?.info.emailSettings).toEqual(DEFAULT_EMAIL_SETTINGS);
     });
   });
 

@@ -78,7 +78,32 @@ export type Event = {
   /** When true, a session's capacity (> 0) rejects further RSVPs once reached. */
   rsvpCapacityHardLimit: boolean;
   icon?: string | null;
+  /** Whether attendees can book 1-on-1 meetings with each other. */
+  meetingsEnabled: boolean;
+  meetingSlotMinutes: number;
+  /**
+   * Time-of-day bounds ("HH:mm") for 1-on-1 slots. Undefined means the day's
+   * own window.
+   */
+  meetingDayStart?: string;
+  meetingDayEnd?: string;
+  /** How many unanswered requests one attendee may have outstanding. */
+  maxOpenMeetingRequests: number;
 };
+
+/**
+ * The organizer's 1-on-1 settings. Split out because they are configured from
+ * the admin Meetings section after the event exists, never at creation, so
+ * `create` takes them as optional and falls back to the schema's defaults.
+ */
+export type EventMeetingSettings = Pick<
+  Event,
+  | "meetingsEnabled"
+  | "meetingSlotMinutes"
+  | "meetingDayStart"
+  | "meetingDayEnd"
+  | "maxOpenMeetingRequests"
+>;
 
 export interface EventsRepository {
   list(): Promise<Event[]>;
@@ -90,7 +115,10 @@ export interface EventsRepository {
    * Creates the event with a slug derived from its name. Rejects when another
    * event already has that slug (unique constraint).
    */
-  create(data: Omit<Event, "id" | "slug">): Promise<Event>;
+  create(
+    data: Omit<Event, "id" | "slug" | keyof EventMeetingSettings> &
+      Partial<EventMeetingSettings>
+  ): Promise<Event>;
   update(
     id: string,
     patch: Partial<Omit<Event, "id" | "slug">>
@@ -120,6 +148,10 @@ export type EmailSettings = {
    * commented on.
    */
   commentThread: boolean;
+  /** Someone asked the guest for a 1-on-1 meeting. */
+  meetingRequest: boolean;
+  /** A 1-on-1 the guest asked for was accepted, declined or canceled. */
+  meetingResponse: boolean;
 };
 
 export const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
@@ -130,6 +162,10 @@ export const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   sessionComment: true,
   profileComment: true,
   commentThread: false,
+  // On by default, unlike the comment-thread digest: this mail is addressed
+  // personally to the guest and is waiting on their answer.
+  meetingRequest: true,
+  meetingResponse: true,
 };
 
 type GuestPrivateInfo = {
@@ -756,6 +792,110 @@ export interface VotesRepository {
     proposalId: string,
     guestIds: string[]
   ): Promise<void>;
+}
+
+// ── Meetings ───────────────────────────────────────────────────────────────────
+
+export type MeetingPoint = {
+  id: string;
+  eventId: string;
+  name: string;
+  description: string;
+  sortIndex: number;
+};
+
+export interface MeetingPointsRepository {
+  /** An event's suggested places to meet, in the organizer's order. */
+  listByEvent(eventId: string): Promise<MeetingPoint[]>;
+  create(data: Omit<MeetingPoint, "id">): Promise<MeetingPoint>;
+  update(
+    id: string,
+    patch: Partial<Omit<MeetingPoint, "id" | "eventId">>
+  ): Promise<MeetingPoint | undefined>;
+  delete(id: string): Promise<void>;
+}
+
+export interface MeetingAvailabilityRepository {
+  /**
+   * The slot starts (ISO) a guest declared for an event, chronologically. An
+   * empty result means they are not bookable — the same state as never having
+   * switched meetings on.
+   */
+  listByGuestAndEvent(guestId: string, eventId: string): Promise<Date[]>;
+  /** Replaces a guest's whole declared set for the event. */
+  replaceForGuest(
+    guestId: string,
+    eventId: string,
+    slotStarts: Date[]
+  ): Promise<void>;
+}
+
+/**
+ * Stored meeting states. "expired" is deliberately absent: a pending request
+ * whose slot has passed is expired by definition, and deriving that on read
+ * needs no scheduler.
+ */
+export type MeetingStatus = "pending" | "accepted" | "declined" | "canceled";
+
+export type Meeting = {
+  id: string;
+  eventId: string;
+  requesterId: string;
+  recipientId: string;
+  /** ISO instants; the slot the requester picked. */
+  slotStart: Date;
+  slotEnd: Date;
+  /** Where to meet, as agreed at request time. Never empty. */
+  meetingPoint: string;
+  message: string;
+  status: MeetingStatus;
+  createdAt: Date;
+  respondedAt?: Date;
+};
+
+export interface MeetingsRepository {
+  findById(id: string): Promise<Meeting | undefined>;
+  /**
+   * Every meeting the guest is part of at the event, in either direction,
+   * ordered by slot. Callers filter by status: the schedule shows pending and
+   * accepted, clash detection only accepted.
+   */
+  listByGuestAndEvent(guestId: string, eventId: string): Promise<Meeting[]>;
+  /**
+   * Requests this guest has sent and not heard back on, for the organizer's
+   * cap. `now` bounds it: a pending request whose slot has passed is expired
+   * by definition, and an expired request is not outstanding.
+   */
+  countOpenByRequester(
+    requesterId: string,
+    eventId: string,
+    now: Date
+  ): Promise<number>;
+  create(
+    data: Omit<Meeting, "id" | "status" | "respondedAt">
+  ): Promise<Meeting>;
+  /**
+   * The cap check and the insert in one transaction, returning null when the
+   * requester is already at `cap`. Two separate awaits leave a window a double
+   * submit walks straight through — the same hazard
+   * {@link RsvpsRepository.createIfUnderCapacity} exists for.
+   */
+  createIfUnderCap(
+    data: Omit<Meeting, "id" | "status" | "respondedAt">,
+    cap: number,
+    now: Date
+  ): Promise<Meeting | null>;
+  /**
+   * Moves the meeting to `status`, but only from one of `from` — undefined
+   * when it is in some other state, which is how a caller learns that someone
+   * (a cancelling requester, a second tab) got there first.
+   */
+  updateStatus(
+    id: string,
+    status: MeetingStatus,
+    respondedAt: Date,
+    from: MeetingStatus[]
+  ): Promise<Meeting | undefined>;
 }
 
 // ── Images ─────────────────────────────────────────────────────────────────────

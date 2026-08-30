@@ -282,6 +282,8 @@ describe("write enforcement for protected guests", () => {
         sessionComment: false,
         profileComment: false,
         commentThread: false,
+        meetingRequest: false,
+        meetingResponse: false,
       });
       expect(settingsResult.ok).toBe(false);
     });

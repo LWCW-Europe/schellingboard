@@ -3,7 +3,11 @@ import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
 import { eventNameToSlug } from "@/utils/utils";
-import type { Event, EventsRepository } from "../interfaces";
+import type {
+  Event,
+  EventMeetingSettings,
+  EventsRepository,
+} from "../interfaces";
 
 type EventRow = typeof schema.events.$inferInsert;
 
@@ -42,6 +46,11 @@ function rowToEvent(row: typeof schema.events.$inferSelect): Event {
     timezone: row.timezone,
     rsvpCapacityHardLimit: row.rsvpCapacityHardLimit,
     icon: row.icon ?? undefined,
+    meetingsEnabled: row.meetingsEnabled,
+    meetingSlotMinutes: row.meetingSlotMinutes,
+    meetingDayStart: row.meetingDayStart ?? undefined,
+    meetingDayEnd: row.meetingDayEnd ?? undefined,
+    maxOpenMeetingRequests: row.maxOpenMeetingRequests,
   };
 }
 
@@ -79,7 +88,10 @@ export class SqliteEventsRepository implements EventsRepository {
     return row ? rowToEvent(row) : undefined;
   }
 
-  async create(data: Omit<Event, "id" | "slug">): Promise<Event> {
+  async create(
+    data: Omit<Event, "id" | "slug" | keyof EventMeetingSettings> &
+      Partial<EventMeetingSettings>
+  ): Promise<Event> {
     const id = nanoid();
     const slug = eventNameToSlug(data.name);
     this.db
@@ -104,9 +116,24 @@ export class SqliteEventsRepository implements EventsRepository {
         timezone: data.timezone,
         rsvpCapacityHardLimit: data.rsvpCapacityHardLimit,
         icon: data.icon ?? null,
+        ...(data.meetingsEnabled !== undefined && {
+          meetingsEnabled: data.meetingsEnabled,
+        }),
+        ...(data.meetingSlotMinutes !== undefined && {
+          meetingSlotMinutes: data.meetingSlotMinutes,
+        }),
+        meetingDayStart: data.meetingDayStart ?? null,
+        meetingDayEnd: data.meetingDayEnd ?? null,
+        ...(data.maxOpenMeetingRequests !== undefined && {
+          maxOpenMeetingRequests: data.maxOpenMeetingRequests,
+        }),
       })
       .run();
-    return { id, slug, ...data };
+    // Read back rather than returning `data`: the meeting settings are
+    // optional, and the caller must see the defaults the schema supplied.
+    const created = await this.findById(id);
+    if (!created) throw new Error("Failed to create event");
+    return created;
   }
 
   async update(
@@ -144,6 +171,16 @@ export class SqliteEventsRepository implements EventsRepository {
     if (patch.rsvpCapacityHardLimit !== undefined)
       set.rsvpCapacityHardLimit = patch.rsvpCapacityHardLimit;
     if ("icon" in patch) set.icon = patch.icon ?? null;
+    if (patch.meetingsEnabled !== undefined)
+      set.meetingsEnabled = patch.meetingsEnabled;
+    if (patch.meetingSlotMinutes !== undefined)
+      set.meetingSlotMinutes = patch.meetingSlotMinutes;
+    if ("meetingDayStart" in patch)
+      set.meetingDayStart = patch.meetingDayStart ?? null;
+    if ("meetingDayEnd" in patch)
+      set.meetingDayEnd = patch.meetingDayEnd ?? null;
+    if (patch.maxOpenMeetingRequests !== undefined)
+      set.maxOpenMeetingRequests = patch.maxOpenMeetingRequests;
 
     this.db
       .update(schema.events)

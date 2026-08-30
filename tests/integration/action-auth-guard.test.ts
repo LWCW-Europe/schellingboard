@@ -162,6 +162,8 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       sessionComment: true,
       profileComment: true,
       commentThread: true,
+      meetingRequest: true,
+      meetingResponse: true,
     });
   },
   "actions/user-auth.ts:requestLoginCodeAction": async () => {

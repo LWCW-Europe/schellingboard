@@ -204,6 +204,13 @@
       "when": 1788001821549,
       "tag": "0028_session_profile_comment_email_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "6",
+      "when": 1788252255683,
+      "tag": "0029_meetings",
+      "breakpoints": true
     }
   ]
 }
