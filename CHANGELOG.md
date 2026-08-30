@@ -114,6 +114,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   The retry is what makes `trace: on-first-retry` record anything, so a flake now leaves a trace to
   open instead of a bare error message, and a broken test is told apart from a flaky one — without
   letting either through `make precommit`
+- eslint ignores the Playwright output directories. It parsed the trace-viewer bundle inside
+  `playwright-report/`, which ran it out of heap — so `make lint`, and with it `make precommit`,
+  crashed after any local E2E run until the report was deleted. Prettier was unaffected: it skips
+  gitignored files by default, eslint does not
 - Throwaway names in E2E tests carry the worker's process id and a counter, not just `Date.now()`:
   two parallel workers can land in the same millisecond, and the duplicate name would surface as an
   unreproducible locator failure somewhere else entirely

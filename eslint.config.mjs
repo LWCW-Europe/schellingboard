@@ -17,7 +17,10 @@ function dropTsPlugin(configs) {
 export default tseslint.config(
   {
     // `site/` is the generated docs site (see docs/dev/documentation.md);
-    // its JS comes from docmd, not from us.
+    // its JS comes from docmd, not from us. The Playwright output below is
+    // likewise not ours — and the trace viewer bundle inside the html report
+    // is big enough to run eslint out of heap, so an E2E run would otherwise
+    // leave `make lint` crashing until the report is deleted.
     ignores: [
       "tailwind.config.ts",
       ".next/**",
@@ -26,6 +29,11 @@ export default tseslint.config(
       "site/**",
       "coverage/**",
       "docs/dev/attendance-model/.venv/**",
+      "playwright-report/**",
+      "blob-report/**",
+      "test-results/**",
+      ".flake-hunt/**",
+      ".e2e-docker/**",
     ],
   },
   ...dropTsPlugin(coreWebVitals),
