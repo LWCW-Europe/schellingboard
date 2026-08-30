@@ -10,47 +10,14 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import {
+  collectSpecs,
+  specFile,
+  specTitle,
+  type JsonReport,
+} from "./playwright-json";
 
-// Only the parts of the Playwright JSON reporter's output this report reads.
-// Everything is optional: a run killed mid-suite still writes a file.
-interface JsonError {
-  message?: string;
-}
-interface JsonAttachment {
-  name?: string;
-  path?: string;
-}
-interface JsonResult {
-  status?: string;
-  duration?: number;
-  errors?: JsonError[];
-  error?: JsonError;
-  attachments?: JsonAttachment[];
-}
-interface JsonTest {
-  status?: string;
-  timeout?: number;
-  results?: JsonResult[];
-}
-interface JsonSpec {
-  title?: string;
-  file?: string;
-  tests?: JsonTest[];
-}
-interface JsonSuite {
-  title?: string;
-  file?: string;
-  specs?: JsonSpec[];
-  suites?: JsonSuite[];
-}
-interface JsonStats {
-  duration?: number;
-  unexpected?: number;
-}
-interface JsonReport {
-  suites?: JsonSuite[];
-  errors?: JsonError[];
-  stats?: JsonStats;
+interface HuntReport extends JsonReport {
   // Not Playwright's: set by e2e-flake-hunt.sh when HUNT_KEEP_PASSING=0 threw
   // a green run's per-test data away.
   shrunk?: boolean;
@@ -96,9 +63,9 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 // from a timeout, so flag it before it starts failing.
 const OUTLIER_FRACTION = 0.6;
 
-function readJson(file: string): JsonReport | undefined {
+function readJson(file: string): HuntReport | undefined {
   try {
-    return JSON.parse(fs.readFileSync(file, "utf8")) as JsonReport;
+    return JSON.parse(fs.readFileSync(file, "utf8")) as HuntReport;
   } catch {
     return undefined;
   }
@@ -120,30 +87,11 @@ function normalizeSignature(message: string): string {
     .trim();
 }
 
-function collectSpecs(
-  suites: JsonSuite[],
-  ancestors: string[]
-): { spec: JsonSpec; titlePath: string[] }[] {
-  const out: { spec: JsonSpec; titlePath: string[] }[] = [];
-  for (const suite of suites) {
-    // The file-level suite is titled with the file path itself; describe
-    // blocks below it carry real titles.
-    const title = suite.title && suite.title !== suite.file ? suite.title : "";
-    const nextAncestors = title ? [...ancestors, title] : ancestors;
-    for (const spec of suite.specs ?? []) {
-      out.push({ spec, titlePath: nextAncestors });
-    }
-    out.push(...collectSpecs(suite.suites ?? [], nextAncestors));
-  }
-  return out;
-}
-
 function observationsOf(report: JsonReport): Observation[] {
   const observations: Observation[] = [];
-  for (const { spec, titlePath } of collectSpecs(report.suites ?? [], [])) {
-    const name = [...titlePath, spec.title ?? "(untitled)"].join(" › ");
-    const key = `${spec.file ?? "(unknown file)"} › ${name}`;
-    for (const test of spec.tests ?? []) {
+  for (const collected of collectSpecs(report.suites ?? [])) {
+    const key = `${specFile(collected)} › ${specTitle(collected)}`;
+    for (const test of collected.spec.tests ?? []) {
       const results = test.results ?? [];
       const durationMs = results.reduce((sum, r) => sum + (r.duration ?? 0), 0);
       const failing = results.find(

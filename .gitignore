@@ -45,6 +45,8 @@ package-lock.json
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+# JSON report, written by the CI reporter (see playwright.config.ts)
+/playwright-results.json
 
 /tests/test-data.json
 

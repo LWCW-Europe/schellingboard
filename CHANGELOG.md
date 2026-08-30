@@ -105,6 +105,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   report plus traces of what failed; `scripts/e2e-flake-report.ts` aggregates those into a report
   ranking flaky tests by failure rate and grouping them by error signature. See
   [docs/dev/testing.md § Flake hunting](docs/dev/testing.md#flake-hunting)
+- CI names the E2E tests that only passed on retry — a warning annotation and a job-summary table
+  from `scripts/ci-flaky-summary.ts`, plus Playwright's `github` reporter putting each failed
+  attempt next to the line that failed — and uploads the Playwright reports plus the traces of
+  failed attempts as an artifact. Before, retries turned a flake into a plain green check with
+  nothing kept to debug it. See
+  [docs/dev/testing.md § Flaky tests on CI](docs/dev/testing.md#flaky-tests-on-ci)
 - Throwaway names in E2E tests carry the worker's process id and a counter, not just `Date.now()`:
   two parallel workers can land in the same millisecond, and the duplicate name would surface as an
   unreproducible locator failure somewhere else entirely

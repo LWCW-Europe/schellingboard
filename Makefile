@@ -119,7 +119,7 @@ clean:
 	rm -rf .next
 	rm -f next-env.d.ts
 	rm -f data.db data.test.db
-	rm -rf playwright-report test-results .e2e-docker
+	rm -rf playwright-report test-results playwright-results.json .e2e-docker
 	rm -f tsconfig.tsbuildinfo
 	rm -rf www-site
 	rm -rf uploads uploads-test

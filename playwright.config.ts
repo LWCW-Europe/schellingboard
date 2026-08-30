@@ -95,8 +95,20 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: "html",
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters
+   * On CI the run is only worth as much as the record it leaves behind: the
+   * JSON report is what scripts/ci-flaky-summary.ts reads to name the tests
+   * that passed on retry, and the html report is uploaded as an artifact
+   * (`open: never` — nothing can open a browser there anyway). `github` puts
+   * each failed attempt next to the line that failed — for flaky tests too, so
+   * a green run can carry red annotations. */
+  reporter: process.env.CI
+    ? [
+        ["html", { open: "never" }],
+        ["json", { outputFile: "playwright-results.json" }],
+        ["github"],
+      ]
+    : "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */

@@ -223,6 +223,28 @@ If the mail variables are set in `.env.test.local`, start mailpit (`make
 mailpit`) before a hunt — otherwise the email specs fail identically in every
 run and clutter the report as persistent failures.
 
+## Flaky tests on CI
+
+CI runs the suite with `retries: 2`, so a test that fails once and passes on the
+next attempt leaves a green check. The E2E workflow makes that visible instead:
+
+- **Error annotations** — Playwright's own `github` reporter annotates every
+  failed attempt with its error message and location, flaky tests included. So
+  a green run can carry red annotations: they are a failed attempt, not a
+  failed run.
+- **Warning annotations** — `scripts/ci-flaky-summary.ts` reads the JSON report
+  and emits one `::warning` per test Playwright classified as flaky, plus a
+  table in the job summary — the part the reporter cannot do, and the one that
+  survives being scrolled past.
+- **The `playwright-report` artifact** (14 days) holds the html report, the JSON
+  report and `test-results/` — including the trace of the failed attempt, since
+  `trace: on-first-retry` records exactly that one. Download it, unzip it and
+  open the trace with `bun x playwright show-trace <path>`.
+
+A flaky warning is a test that failed for a reason; treat it as a bug to be
+diagnosed from that trace, not as noise. Retries stay at 2 until the suite is
+stable — the aim is to measure flakiness, not to start failing on it.
+
 ## E2E conventions
 
 - Imitate human behavior — click visible elements, navigate naturally

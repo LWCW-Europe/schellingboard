@@ -76,3 +76,25 @@ jobs:
 
       - name: E2E Tests
         run: make test-e2e
+
+      # CI retries twice, so a test that only passed on its second attempt
+      # leaves a green check and no trace in the log. Name those explicitly —
+      # a warning annotation each, plus a table in the job summary.
+      - name: Report tests that passed on retry
+        if: always()
+        run: bun scripts/ci-flaky-summary.ts
+
+      # The reports and the traces of failed attempts (trace: on-first-retry)
+      # are the only way to debug a failure once the runner is gone.
+      # See docs/dev/testing.md § Flaky tests on CI.
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+            playwright-results.json
+          retention-days: 14
+          if-no-files-found: ignore
