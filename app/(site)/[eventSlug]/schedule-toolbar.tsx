@@ -13,7 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { DateTime } from "luxon";
 import Link from "next/link";
-import { Modal } from "@/app/(site)/modals";
+import { Modal } from "@/app/components/modal";
 import { Markdown } from "@/app/(site)/markdown";
 import { hasPhases } from "@/app/(site)/utils/events";
 import type { Event } from "@/db/repositories/interfaces";

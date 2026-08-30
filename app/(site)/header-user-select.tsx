@@ -12,7 +12,7 @@ import {
 import { ChevronDownIcon, UserCircleIcon } from "@heroicons/react/24/outline";
 import type { Guest } from "@/db/repositories/interfaces";
 import { UserSelect } from "./user-select";
-import { Modal } from "./modals";
+import { Modal } from "@/app/components/modal";
 import { UserContext } from "./context";
 import { logoutAction } from "@/app/actions/auth";
 
