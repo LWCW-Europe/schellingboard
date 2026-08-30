@@ -1,0 +1,165 @@
+name: Release
+
+# Everything a release does once its tag exists: build the image, prove it
+# works, publish it to Docker Hub and open the GitHub release. Pushing the tag
+# is the only manual step, and the point of no return — see
+# docs/dev/releasing.md.
+#
+# The docs site rebuilds from the same tag push, in docs.yml. The two are
+# independent: documentation for a version that has no image yet is harmless,
+# and neither should wait on the other.
+on:
+  push:
+    tags:
+      # `v*.*.*` keeps other tags out; the exact version is validated below,
+      # since a glob cannot tell v3.4.2 from v3.4.2-rc1.
+      - "v*.*.*"
+  # Republishing a tag (a Docker Hub outage, a flake in the E2E gate): run this
+  # workflow against the tag, not a branch.
+  workflow_dispatch:
+
+# A release must never race another one for `:latest`.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # create the GitHub release
+
+    # Email tests are opt-in via these vars (unset means skip — see
+    # docs/dev/testing.md § Running tests), but CI must always run them: they
+    # fail loudly here if the vars are missing, rather than silently skip.
+    env:
+      MAILPIT_API_URL: http://localhost:8025
+      SMTP_URL: smtp://localhost:1025
+      SMTP_FROM: Test <mailer-test@test.example>
+      # The version the footer shows and the image is tagged with. Taken from
+      # the tag rather than left to scripts/app-version.js, which asks jj or
+      # `git describe` — neither of which is reliable on a CI checkout.
+      APP_VERSION: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v7.0.1
+        with:
+          # Every tag, because whether this release takes over `:latest`
+          # depends on the ones already published (scripts/release-tags.ts).
+          fetch-depth: 0
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright Browsers
+        run: bunx playwright install --with-deps firefox
+
+      # The E2E suite sends real email to mailpit (see docs/dev/testing.md
+      # § Running tests). Started from the compose file rather than as a service
+      # container so the image pin has one home that Dependabot can update.
+      - name: Start mailpit
+        run: docker compose -f docker-compose.dev.yml up -d --wait mailpit
+
+      - name: Build the image
+        id: build
+        # Captured in its own assignment: inside `echo "image=$(...)"` a failed
+        # build is an empty string the step still exits 0 on, and the release
+        # would fall over a step later with the wrong error.
+        run: |
+          image="$(bash scripts/docker-build.sh)"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+
+      # Before the E2E gate, so a ref that is not a release version (v3.4.2-rc1,
+      # a dispatch against a branch) fails ahead of the ten minutes, not after.
+      - name: Work out which tags to publish
+        env:
+          IMAGE: ${{ steps.build.outputs.image }}
+        run: |
+          refs="$(bun scripts/release-tags.ts "$IMAGE")"
+          printf 'Will publish:\n%s\n' "$refs"
+          {
+            echo 'RELEASE_REFS<<REFS_EOF'
+            echo "$refs"
+            echo REFS_EOF
+          } >> "$GITHUB_ENV"
+
+      # The release gate: the only tier that runs the artifact we ship, against
+      # the very image about to be pushed. See docs/dev/testing.md § Testing the
+      # Docker image.
+      - name: E2E Tests against the image
+        env:
+          IMAGE: ${{ steps.build.outputs.image }}
+        run: make test-e2e-docker
+
+      # CI retries twice, so a test that only passed on its second attempt would
+      # let the release through with nothing in the log — and a flake here can
+      # be a real fault in the image we are about to publish.
+      - name: Report tests that passed on retry
+        if: always()
+        run: bun scripts/ci-flaky-summary.ts
+
+      # The reports and the traces of failed attempts are the only way to debug
+      # a failure once the runner is gone — and here that failure is holding up
+      # a release. Kept for a green run too: that is where the retried attempts
+      # the step above names are looked at.
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+            playwright-results.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Log in to Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          printf '%s' "$DOCKERHUB_TOKEN" |
+            docker login --username "$DOCKERHUB_USERNAME" --password-stdin
+
+      - name: Publish the image
+        env:
+          IMAGE: ${{ steps.build.outputs.image }}
+        run: |
+          for ref in $RELEASE_REFS; do
+            docker tag "$IMAGE" "$ref"
+            docker push "$ref"
+          done
+
+      # Last, so a release exists only once its images do. `--latest` follows
+      # the same decision `:latest` did: a patch to an older line is published
+      # without becoming the release GitHub points newcomers at.
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          # Every other step here can simply be repeated; this one cannot, and
+          # re-running the workflow after a publishing failure has to work.
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "Release $VERSION already exists — leaving it alone."
+            exit 0
+          fi
+          if printf '%s\n' $RELEASE_REFS | grep -q ':latest$'; then
+            latest=--latest
+          else
+            latest=--latest=false
+          fi
+          cat > "$RUNNER_TEMP/release-notes.md" <<EOF
+          See [changelog]($REPO_URL/blob/$VERSION/CHANGELOG.md).
+
+          Container images on [Docker hub](https://hub.docker.com/r/schellingboard/schellingboard).
+          EOF
+          gh release create "$VERSION" --title "$VERSION" "$latest" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"

@@ -89,6 +89,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- Releases are made by CI instead of by hand on a laptop: pushing a `vX.Y.Z` tag builds the image,
+  runs the E2E suite against it, and only then publishes it to Docker Hub and opens the GitHub
+  release. Whether the release takes over `:latest` is worked out from the repository's tags instead
+  of being remembered, so a patch to an older line can no longer displace a newer one. See
+  [docs/dev/releasing.md](docs/dev/releasing.md)
 - Release-upgrade tests: `make test` now restores an older release's seeded database, migrates it
   forward and exercises CRUD on it, so a migration that only breaks against real data, or a read
   path that assumes a shape only new rows have, fails before it ships. Releasing records the

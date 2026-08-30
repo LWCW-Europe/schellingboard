@@ -295,9 +295,9 @@ where screenshots live.
 
 ## Releasing a New Version
 
-Finalize the changelog, tag `main`, verify the tagged image with
-`make test-e2e-docker`, push the tag (which publishes the documentation), then
-publish the Docker images. Full checklist:
+Finalize the changelog, tag `main`, push the tag. The rest is CI: it builds the
+image, runs the E2E suite against it, publishes it to Docker Hub and opens the
+GitHub release, while the docs site rebuilds from the same tag. Full checklist:
 [Releasing a new version](docs/dev/releasing.md).
 
 ## Version Control

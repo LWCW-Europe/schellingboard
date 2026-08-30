@@ -21,7 +21,8 @@ services:
     # compares versions against (a digest on its own tells it nothing).
     image: axllent/mailpit:v1.31.0@sha256:c96991d9bef73594c246d89ca81411d4e916f03e76a7d2d72fa2ab5dd3c9ce24
     # CI sets neither variable and hardcodes these defaults in the MAILPIT_API_URL
-    # and SMTP_URL of both workflows — change a default here and change them too.
+    # and SMTP_URL of the ci, ci-e2e and release workflows — change a default
+    # here and change them too.
     ports:
       - "${MAILPIT_SMTP_PORT:-1025}:1025" # SMTP
       - "${MAILPIT_UI_PORT:-8025}:8025" # web UI

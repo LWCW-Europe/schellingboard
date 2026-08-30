@@ -6,8 +6,9 @@
 # migrations, uploads and the SQLite file on a mounted /data volume. Bugs that
 # only exist there (a file the standalone tracer failed to copy, a path that
 # resolves differently under a different working directory) are invisible to
-# every other test tier, which is why this is a release checklist item — see
-# docs/dev/testing.md § Testing the Docker image.
+# every other test tier, which is why the release workflow runs this against the
+# image it is about to publish — see docs/dev/testing.md § Testing the Docker
+# image.
 #
 # Run through set-env.ts (`make test-e2e-docker`) so the test credentials and
 # the optional mail variables are already in the environment; they are handed
@@ -30,9 +31,10 @@ CONTAINER="schellingboard-e2e-$$"
 # Build from the working tree unless the caller named an image (e.g. to run the
 # suite against a release image that was already built or pulled).
 #
-# Through the same script `make docker-build` runs, so the release build is a
-# cache hit of this one and what gets published is what was tested here. That
-# guarantee is the reason the build command isn't inlined here.
+# Through the same script `make docker-build` and the release workflow run, so
+# what gets published is what was tested here — the workflow goes further and
+# hands us the very image it will push. That guarantee is the reason the build
+# command isn't inlined here.
 if [ -n "${IMAGE:-}" ]; then
   echo "==> Using existing image $IMAGE"
 else
