@@ -66,6 +66,10 @@ data.*.db-journal
 # `make test-e2e-docker` (see docs/dev/testing.md § Testing the Docker image)
 /.e2e-docker
 
+# Database and uploads seeded by `make dump-release-db`
+# (see docs/dev/testing.md § Release-upgrade tests)
+/.release-dump
+
 # Results and traces of scripts/e2e-flake-hunt.sh
 # (see docs/dev/testing.md § Flake hunting)
 /.flake-hunt

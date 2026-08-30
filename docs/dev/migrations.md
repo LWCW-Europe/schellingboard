@@ -4,6 +4,10 @@
 snapshot in `drizzle/meta/` and writes a new `NNNN_*.sql` file plus an updated
 `drizzle/meta/NNNN_snapshot.json` and `drizzle/meta/_journal.json`.
 
+`make test` applies every migration to each released version's database as well as to an empty one,
+so a migration that only fails against populated data fails there — see
+[Release-upgrade tests](testing.md#release-upgrade-tests).
+
 ## Resolving migration conflicts
 
 When two branches each add a migration, `drizzle/meta/_journal.json` and the latest

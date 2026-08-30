@@ -1,6 +1,17 @@
 # Releasing a New Version
 
-1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header), and replace the `[Unreleased]` compare link at the bottom of the file with the new version's, pointing from the previous release's endpoint to the new tag (`vX.Y.Z`). Do _not_ add a fresh `## [Unreleased]` section here — the released tag should carry no empty section, since that is what the documentation site publishes. Step 6 reopens it afterwards. Commit and merge this like any other change.
+1. **Finalize the changelog** — in `CHANGELOG.md`, rename `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (no `v` prefix in the header), and replace the `[Unreleased]` compare link at the bottom of the file with the new version's, pointing from the previous release's endpoint to the new tag (`vX.Y.Z`). Do _not_ add a fresh `## [Unreleased]` section here — the released tag should carry no empty section, since that is what the documentation site publishes. Step 6 reopens it afterwards.
+
+   **Record the release's database in the same commit**, so future releases are tested against an upgrade from it:
+
+   ```bash
+   make dump-release-db VERSION=vX.Y.Z
+   ```
+
+   It writes no dump when the release ships no migration, only the `tests/fixtures/upgrade/releases.json` entry pointing at the dump that already covers the upgrade. `make test` fails until the version the changelog now names appears there, so the fixture cannot be forgotten — and being in the release commit, it is inside the tag, where a patch release branched off that tag needs it. See [Release-upgrade tests](testing.md#release-upgrade-tests).
+
+   Commit and merge this like any other change.
+
 2. **Tag the resulting commit on `main`, locally for now**:
 
    ```bash

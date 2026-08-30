@@ -107,6 +107,64 @@ Run against a different environment (e.g. dev database — still resets it):
 bun set-env.ts dev bun x playwright test
 ```
 
+## Release-upgrade tests
+
+Every other tier starts from a database this checkout's migrations built. A
+self-hoster's does not: it was written by an older release and is migrated
+forward when they pull a new image. `tests/integration/release-upgrade.test.ts`
+covers that path — for each stored release it restores that release's seeded
+database, lets the repositories migrate it (what starting the app does), and
+then checks that
+
+- every migration applied, and the result has the same shape as a fresh
+  database — same columns, foreign keys and indexes;
+- the old release's data still reads back through the repositories;
+- creating, updating and deleting works for proposals, votes, sessions, rooms,
+  days, RSVPs, comments, guests and the site settings.
+
+It runs in `make test` like any other integration test; the whole set takes a
+few seconds. It is deliberately shallow — enough to catch a migration that only
+fails against real data, or a read path that assumes a shape only new rows
+have, not an exhaustive replay of every feature.
+
+The fixtures are SQL dumps of a release's seeded database in
+`tests/fixtures/upgrade/`, one per **distinct schema** rather than per release:
+a release that ships no migration reaches the same database as the one before
+it, so it needs no dump of its own. Record one while finalizing the changelog,
+in the release commit itself (see [Releasing a New
+Version](releasing.md)):
+
+```bash
+make dump-release-db VERSION=v3.5.0
+```
+
+The dump has to come from the release itself — its schema, its seed script. At
+that point that is the working tree, which the script seeds with the `small`
+profile into a scratch database of its own. Recording a version that is already
+tagged instead checks the tag out into a throwaway `git worktree` and seeds it
+there, so a dump taken after the fact still comes from the released code. When
+the release applies the same migrations as a dump that already exists, no dump
+is written.
+
+`tests/fixtures/upgrade/releases.json` says which dump covers which release, so
+a release without one is on the record instead of just missing:
+
+```json
+{ "v3.4.1": "v3.4.0" } // no migrations of its own, v3.4.0's dump covers it
+```
+
+The tests hold that file to the changelog — every released version has to
+appear in it, so a forgotten `make dump-release-db` fails `make test` in the
+release commit rather than quietly leaving a version untested. They also check
+the other direction: every dump the file names exists, and every stored dump is
+named.
+
+Dumps are never edited or regenerated: an old one is a record of what that
+release actually wrote, and `make dump-release-db` refuses to overwrite one.
+When support for upgrading from old versions is dropped, delete those dumps,
+drop their `releases.json` entries, and raise `oldestSupported` to the oldest
+version still covered.
+
 ## Testing the Docker image
 
 `make test-e2e` runs the suite against `next build && next start`, which is not

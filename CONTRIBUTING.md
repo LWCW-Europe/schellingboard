@@ -240,6 +240,9 @@ against a real in-memory SQLite DB — where most business logic is covered), an
 **E2E** (Playwright, for behavior that only manifests in a browser). A fourth
 run, [`make test-e2e-docker`](docs/dev/testing.md#testing-the-docker-image),
 exercises the image we actually ship; it is not part of `make precommit`.
+`make test` also carries the
+[release-upgrade tests](docs/dev/testing.md#release-upgrade-tests), which
+migrate a released version's database forward and exercise CRUD on it.
 
 ```bash
 make test          # Unit and integration tests (Vitest)
