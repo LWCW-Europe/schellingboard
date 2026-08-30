@@ -38,7 +38,8 @@ export const SHOWN_RELEASES = 3;
 
 export const releaseNotes: ReleaseNote[] = [
   {
-    version: "Unreleased",
+    version: "3.5.0",
+    date: "2026-08-30",
     highlights: [
       "**Comments on sessions and on attendee profiles**, with threaded replies, likes and editing — the section proposals already had.",
       "**A session booked into the hours after midnight** lands on the right date, instead of disappearing from the schedule.",
