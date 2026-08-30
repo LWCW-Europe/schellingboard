@@ -64,6 +64,16 @@ export const guests = sqliteTable(
     })
       .notNull()
       .default(false),
+    emailOnMeetingRequest: integer("email_on_meeting_request", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(true),
+    emailOnMeetingResponse: integer("email_on_meeting_response", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(true),
     avatarUrl: text("avatar_url"),
     // When the guest last changed a public profile field — their name counts,
     // email settings and credentials don't. NULL for profiles nobody ever
@@ -144,6 +154,17 @@ export const events = sqliteTable(
       .notNull()
       .default(false),
     icon: text("icon"),
+    meetingsEnabled: integer("meetings_enabled", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    meetingSlotMinutes: integer("meeting_slot_minutes").notNull().default(30),
+    // Time-of-day bounds ("HH:mm") for 1-on-1 slots. NULL means the day's own
+    // window, so an organiser who never sets them still gets slots.
+    meetingDayStart: text("meeting_day_start"),
+    meetingDayEnd: text("meeting_day_end"),
+    maxOpenMeetingRequests: integer("max_open_meeting_requests")
+      .notNull()
+      .default(5),
   },
   (table) => [uniqueIndex("events_slug_unique").on(table.slug)]
 );
@@ -377,5 +398,92 @@ export const votes = sqliteTable(
   },
   (t) => [
     uniqueIndex("votes_proposal_guest_unique").on(t.proposalId, t.guestId),
+  ]
+);
+
+// The organizer's suggested places to meet. Never reserved and never a grid
+// column, which is why these aren't `locations`: a pair naming one is saying
+// where to find each other, not claiming it.
+export const meetingPoints = sqliteTable(
+  "meeting_points",
+  {
+    id: text("id").primaryKey(),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    sortIndex: integer("sort_index").notNull().default(0),
+  },
+  (t) => [index("meeting_points_event_idx").on(t.eventId)]
+);
+
+// A slot a guest declared themselves free for. Slots themselves are derived
+// from the event's days and `meetingSlotMinutes` rather than stored, so these
+// rows key on the slot's start instant: narrowing the meeting hours later
+// simply stops offering the rows that fall outside, with nothing to migrate.
+//
+// Only availability is recorded here. Whether the guest is *also* free of
+// sessions at that slot is computed when someone tries to book them, so an
+// RSVP made after this was saved still counts.
+export const meetingAvailability = sqliteTable(
+  "meeting_availability",
+  {
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    guestId: text("guest_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+    slotStart: text("slot_start").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.eventId, t.guestId, t.slotStart] }),
+    index("meeting_availability_slot_idx").on(t.eventId, t.slotStart),
+  ]
+);
+
+export const meetings = sqliteTable(
+  "meetings",
+  {
+    id: text("id").primaryKey(),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    requesterId: text("requester_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+    recipientId: text("recipient_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+    slotStart: text("slot_start").notNull(),
+    slotEnd: text("slot_end").notNull(),
+    // Free text, not a `meeting_points` reference: the requester may type their
+    // own, and what the pair agreed on shouldn't change under them when the
+    // organizer renames or removes a suggestion.
+    meetingPoint: text("meeting_point").notNull(),
+    message: text("message").notNull().default(""),
+    // Not "expired": a request whose slot has passed is expired by definition,
+    // so it is derived on read rather than swept by a job the app has no
+    // scheduler to run.
+    status: text("status", {
+      enum: ["pending", "accepted", "declined", "canceled"],
+    })
+      .notNull()
+      .default("pending"),
+    createdAt: text("created_at").notNull(),
+    respondedAt: text("responded_at"),
+  },
+  (t) => [
+    index("meetings_event_requester_idx").on(t.eventId, t.requesterId),
+    index("meetings_event_recipient_idx").on(t.eventId, t.recipientId),
+    // Asking the same person for the same slot twice is a double submit, not a
+    // second option: it would leave them two identical requests to answer.
+    uniqueIndex("meetings_no_duplicate_request").on(
+      t.eventId,
+      t.requesterId,
+      t.recipientId,
+      t.slotStart
+    ),
   ]
 );

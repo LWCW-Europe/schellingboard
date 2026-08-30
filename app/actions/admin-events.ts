@@ -8,7 +8,7 @@ import {
   RESERVED_EVENT_SLUGS,
 } from "@/utils/utils";
 import { isAdminRequest } from "@/utils/acting-admin";
-import type { Event } from "@/db/repositories/interfaces";
+import type { Event, EventMeetingSettings } from "@/db/repositories/interfaces";
 import type { AdminActionResult } from "./admin-guests";
 import { isEventIconName } from "@/app/event-icons";
 import {
@@ -38,9 +38,11 @@ function parseDate(value: string | undefined): Date | undefined {
   return isNaN(d.getTime()) ? undefined : d;
 }
 
-// Phase dates are deliberately excluded: they are managed only by
-// updateEventPhasesAction. Including the keys here (even as undefined) would
-// make the repository update NULL them out on every basic-info save.
+// Phase dates and the meeting settings are deliberately excluded: they are
+// managed only by updateEventPhasesAction and the admin Meetings section.
+// Excluding them is what keeps a basic-info save from touching them — and for
+// the nullable meeting-hours pair it is required, since events.update tests
+// those with `in` and would NULL them out if the keys were present at all.
 type ParsedEvent = Omit<
   Event,
   | "id"
@@ -51,6 +53,7 @@ type ParsedEvent = Omit<
   | "votingPhaseEnd"
   | "schedulingPhaseStart"
   | "schedulingPhaseEnd"
+  | keyof EventMeetingSettings
 >;
 type ParseResult = { data: ParsedEvent } | { error: string };
 

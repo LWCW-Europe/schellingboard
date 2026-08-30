@@ -92,6 +92,8 @@ function rowToGuest(row: typeof schema.guests.$inferSelect): CompleteGuest {
         sessionComment: row.emailOnSessionComment,
         profileComment: row.emailOnProfileComment,
         commentThread: row.emailOnCommentThread,
+        meetingRequest: row.emailOnMeetingRequest,
+        meetingResponse: row.emailOnMeetingResponse,
       },
     },
   };
@@ -491,6 +493,8 @@ export class SqliteGuestsRepository implements GuestsRepository {
         emailOnSessionComment: settings.sessionComment,
         emailOnProfileComment: settings.profileComment,
         emailOnCommentThread: settings.commentThread,
+        emailOnMeetingRequest: settings.meetingRequest,
+        emailOnMeetingResponse: settings.meetingResponse,
       })
       .where(eq(schema.guests.id, id))
       .run();

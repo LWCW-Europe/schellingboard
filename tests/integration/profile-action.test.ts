@@ -29,6 +29,7 @@ import { siteAuthenticate } from "../helpers/site-auth";
 import { createGuest } from "../helpers/factories";
 import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
+import { DEFAULT_EMAIL_SETTINGS } from "@/db/repositories/interfaces";
 import { updateProfileAction } from "@/app/actions/profile";
 import { createImageFile } from "@/tests/helpers/utils";
 import fs from "fs";
@@ -67,13 +68,10 @@ describe("updateProfileAction", () => {
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
     expect(updated?.info.emailSettings).toEqual({
+      ...DEFAULT_EMAIL_SETTINGS,
       rsvpChange: false,
       hostChange: false,
       cohostAdd: true,
-      proposalComment: true,
-      sessionComment: true,
-      profileComment: true,
-      commentThread: false,
     });
   });
 

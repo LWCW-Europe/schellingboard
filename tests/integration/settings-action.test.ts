@@ -32,7 +32,7 @@ describe("updateEmailSettingsAction", () => {
   it("updates the current user's email settings", async () => {
     const guest = await createGuest({ name: "Guest" });
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
-    const result = await updateEmailSettingsAction({
+    const settings = {
       rsvpChange: false,
       hostChange: false,
       cohostAdd: true,
@@ -40,18 +40,13 @@ describe("updateEmailSettingsAction", () => {
       sessionComment: false,
       profileComment: true,
       commentThread: true,
-    });
+      meetingRequest: false,
+      meetingResponse: true,
+    };
+    const result = await updateEmailSettingsAction(settings);
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
-    expect(updated?.info.emailSettings).toEqual({
-      rsvpChange: false,
-      hostChange: false,
-      cohostAdd: true,
-      proposalComment: false,
-      sessionComment: false,
-      profileComment: true,
-      commentThread: true,
-    });
+    expect(updated?.info.emailSettings).toEqual(settings);
   });
 
   it("fails when no user is selected", async () => {
@@ -64,6 +59,8 @@ describe("updateEmailSettingsAction", () => {
       sessionComment: false,
       profileComment: false,
       commentThread: false,
+      meetingRequest: false,
+      meetingResponse: false,
     });
     expect(result).toEqual({ ok: false, error: "No user is logged in" });
     const unchanged = await getRepositories().guests.findById(guest.id);
