@@ -223,10 +223,28 @@ If the mail variables are set in `.env.test.local`, start mailpit (`make
 mailpit`) before a hunt — otherwise the email specs fail identically in every
 run and clutter the report as persistent failures.
 
-## Flaky tests on CI
+## Flaky tests
 
-CI runs the suite with `retries: 2`, so a test that fails once and passes on the
-next attempt leaves a green check. The E2E workflow makes that visible instead:
+Locally the suite retries a failing test **once**, and a test that then passes
+still fails the run (`failOnFlakyTests`). The retry is not leniency, it is
+evidence: `trace: on-first-retry` records nothing when nothing is retried, so
+without it a local flake left an error message and no way to look into it. Now
+it leaves `test-results/<test>-retry1/trace.zip`, and the terminal ends with a
+`flaky` section naming the test — which also tells you at a glance whether the
+test is flaky or plain broken, since a broken one fails both attempts. Open the
+trace with:
+
+```bash
+bun x playwright show-trace test-results/<test>-retry1/trace.zip
+```
+
+A second local retry would buy only a failure rate out of three, at the price of
+running every genuinely failing test three times while you work — measuring
+rates is what [Flake hunting](#flake-hunting) is for.
+
+CI is the other way round: it retries twice and stays green, because nobody is
+watching a run to interrupt, and a suite that goes red on a known flake gets
+ignored wholesale. So the run records instead of failing:
 
 - **Error annotations** — Playwright's own `github` reporter annotates every
   failed attempt with its error message and location, flaky tests included. So
@@ -242,8 +260,8 @@ next attempt leaves a green check. The E2E workflow makes that visible instead:
   open the trace with `bun x playwright show-trace <path>`.
 
 A flaky warning is a test that failed for a reason; treat it as a bug to be
-diagnosed from that trace, not as noise. Retries stay at 2 until the suite is
-stable — the aim is to measure flakiness, not to start failing on it.
+diagnosed from that trace, not as noise. CI's retries stay at 2 until the suite
+is stable — the aim there is to measure flakiness, not to start failing on it.
 
 ## E2E conventions
 

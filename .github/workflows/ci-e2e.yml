@@ -86,7 +86,7 @@ jobs:
 
       # The reports and the traces of failed attempts (trace: on-first-retry)
       # are the only way to debug a failure once the runner is gone.
-      # See docs/dev/testing.md § Flaky tests on CI.
+      # See docs/dev/testing.md § Flaky tests.
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v7.0.1

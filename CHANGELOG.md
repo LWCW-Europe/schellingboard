@@ -109,8 +109,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   from `scripts/ci-flaky-summary.ts`, plus Playwright's `github` reporter putting each failed
   attempt next to the line that failed — and uploads the Playwright reports plus the traces of
   failed attempts as an artifact. Before, retries turned a flake into a plain green check with
-  nothing kept to debug it. See
-  [docs/dev/testing.md § Flaky tests on CI](docs/dev/testing.md#flaky-tests-on-ci)
+  nothing kept to debug it. See [docs/dev/testing.md § Flaky tests](docs/dev/testing.md#flaky-tests)
+- A local E2E run retries a failing test once and still fails if it then passes (`failOnFlakyTests`).
+  The retry is what makes `trace: on-first-retry` record anything, so a flake now leaves a trace to
+  open instead of a bare error message, and a broken test is told apart from a flaky one — without
+  letting either through `make precommit`
 - Throwaway names in E2E tests carry the worker's process id and a counter, not just `Date.now()`:
   two parallel workers can land in the same millisecond, and the duplicate name would surface as an
   unreproducible locator failure somewhere else entirely

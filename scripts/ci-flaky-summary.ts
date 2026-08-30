@@ -86,7 +86,7 @@ function formatSummary(flaky: FlakyTest[]): string {
     `### Flaky tests (${flaky.length})`,
     "",
     "Passed only on retry. Open the `playwright-report` artifact — the trace of" +
-      " the failed attempt is in it (see docs/dev/testing.md § Flaky tests on CI).",
+      " the failed attempt is in it (see docs/dev/testing.md § Flaky tests).",
     "",
     "| Test | Where | Attempts |",
     "| --- | --- | --- |",

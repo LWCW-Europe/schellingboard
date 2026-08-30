@@ -91,8 +91,15 @@ export default defineConfig({
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  /* One retry locally, purely for the evidence: `trace: on-first-retry` records
+   * nothing at all when a failure is never retried, so a local flake used to
+   * leave an error message and no way to look into it. The retry also says
+   * whether the test is flaky or broken. It buys no leniency —
+   * `failOnFlakyTests` keeps the run red — so precommit still stops here.
+   * CI retries twice and stays green (see the flaky reporting below); dropping
+   * that before the suite is stable would only make CI red noise. */
+  retries: process.env.CI ? 2 : 1,
+  failOnFlakyTests: !process.env.CI,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters

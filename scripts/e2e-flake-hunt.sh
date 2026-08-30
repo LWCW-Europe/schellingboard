@@ -112,7 +112,7 @@ fi
 PW_ARGS=(--reporter=json --trace=retain-on-failure)
 # Raw failure rates are the point, so no retries — and with one server shared
 # by every run, a retry would re-enter a database the suite has already
-# mutated. (CI=1 in the environment would otherwise switch retries on.)
+# mutated. The config retries in every environment, so this has to say so.
 PW_ARGS+=(--retries=0)
 if [ -n "${E2E_WORKERS:-}" ]; then
   PW_ARGS+=("--workers=$E2E_WORKERS")
