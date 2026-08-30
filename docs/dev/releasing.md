@@ -44,7 +44,9 @@ documentation.
 
 4. **Reopen the changelog** — in a follow-up commit on `main`, add an empty
    `## [Unreleased]` section above `## [X.Y.Z]` and an `[Unreleased]` compare
-   link from `vX.Y.Z` to `HEAD`.
+   link from `vX.Y.Z` to `HEAD`. **Reopen the in-app notes too** — in
+   `app/release-notes.ts`, add a new first entry with `version: "Unreleased"`
+   and no `date`, above the one just released.
 
 ## What the release workflow does
 
