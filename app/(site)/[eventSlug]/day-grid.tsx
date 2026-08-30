@@ -42,7 +42,8 @@ export function DayGrid(props: {
   const numLocations = includedLocations.length;
   const slotIncrement = useSlotIncrement();
   const numSlots = getNumSlots(day.start, day.end, slotIncrement);
-  const hasImages = includedLocations.some((loc) => loc.imageUrl);
+  const firstImageIndex = includedLocations.findIndex((loc) => loc.imageUrl);
+  const hasImages = firstImageIndex !== -1;
   const date = DateTime.fromJSDate(day.start).setZone(timezone);
 
   // Kiosk mode: a red line across the day at the current time. `now` comes from
@@ -120,13 +121,15 @@ export function DayGrid(props: {
       {hasImages && (
         <>
           <div className="sticky left-0 z-20 bg-surface border-r border-line-subtle" />
-          {includedLocations.map((loc) => (
+          {includedLocations.map((loc, i) => (
             <div key={loc.name} className="border-l border-line-subtle p-1">
               {loc.imageUrl && (
                 <Image
                   src={loc.imageUrl}
                   alt={loc.name}
                   unoptimized={isUnoptimized(loc.imageUrl)}
+                  // Above the fold, so it is usually the LCP element
+                  priority={i === firstImageIndex}
                   className="w-full aspect-[4/3]"
                   style={{ maxHeight: 200 }}
                   width={500}
