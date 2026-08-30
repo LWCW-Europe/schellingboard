@@ -1,4 +1,4 @@
-.PHONY: help dev mailpit build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed test-e2e-docker format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate www
+.PHONY: help dev mailpit build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed test-e2e-docker format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed dump-release-db install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate www
 
 SHELL := /usr/bin/env bash
 
@@ -31,6 +31,7 @@ help:
 	@printf "  %-28s %s\n" "make dev-migrate-status" "Check migration status"
 	@printf "  %-28s %s\n" "make dev-migrate-create" "Generate new migration"
 	@printf "  %-28s %s\n" "make dev-db-seed"        "Reset dev database and seed dummy data (SEED_PROFILE=small|large)"
+	@printf "  %-28s %s\n" "make dump-release-db"    "Record VERSION=vX.Y.Z's seeded DB as an upgrade-test fixture"
 	@printf "\nDocumentation site:\n"
 	@printf "  %-28s %s\n" "make docs"               "Preview the docs in docs/public"
 	@printf "  %-28s %s\n" "make docs-build"         "Build the public docs site into site/"
@@ -142,6 +143,12 @@ dev-migrate-create: install
 
 dev-db-seed: install
 	bun set-env.ts dev bun x tsx scripts/seed/seed-database.ts
+
+# Once per release: the fixture the release-upgrade tests migrate forward.
+# No set-env.ts — the script seeds a database of its own, in a worktree of the
+# released version, and must not pick up this checkout's DATABASE_URL.
+dump-release-db: install
+	bun x tsx scripts/dump-release-db.ts $(VERSION)
 
 # docs/public is the only copy of the documentation; released versions are
 # rebuilt from git tags (see scripts/build-docs.sh), so these two targets see

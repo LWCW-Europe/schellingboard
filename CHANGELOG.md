@@ -89,6 +89,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- Release-upgrade tests: `make test` now restores an older release's seeded database, migrates it
+  forward and exercises CRUD on it, so a migration that only breaks against real data, or a read
+  path that assumes a shape only new rows have, fails before it ships. Releasing records the
+  fixture, once per release that changes the schema. See
+  [docs/dev/testing.md § Release-upgrade tests](docs/dev/testing.md#release-upgrade-tests)
 - The E2E test for comment likes is marked slow and waits for the reloaded modal's like count before
   asserting that the hover preview is hidden. Two identities, a second browser context and a reload
   ran it just over the 30s default, and the tooltip assertion failed on an element that had not
