@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Build the image we publish, and print its name.
 #
-# Two callers, one build: `make docker-build` (the release build) and
-# scripts/e2e-docker.sh (the E2E run against the image). Building the same
-# thing is the point — the release build is meant to be a cache hit of the one
-# the suite already ran against, so what gets published is what was tested —
-# and that only holds as long as neither side grows a build flag the other
-# lacks. Keeping the command in one place is what keeps that true.
+# Three callers, one build: the release workflow (which then hands the image to
+# the E2E run and pushes that same image), `make docker-build`, and
+# scripts/e2e-docker.sh when nobody named an image for it. Building the same
+# thing is the point — what gets published has to be what was tested — and that
+# only holds as long as no caller grows a build flag the others lack. Keeping
+# the command in one place is what keeps that true.
 #
 # Only the image reference goes to stdout, so a caller can capture it:
 #
@@ -25,8 +25,8 @@ cd "$(dirname "$0")/.."
 APP_VERSION="${APP_VERSION:-$(bun scripts/app-version.js)}"
 # It is the tag too, so a leftover image says which tree it came from and
 # successive builds don't overwrite each other. Never :latest — that means the
-# newest published release, which the release checklist tags deliberately (see
-# docs/dev/releasing.md).
+# newest published release, and only scripts/release-tags.ts decides who gets
+# it (see docs/dev/releasing.md).
 IMAGE="schellingboard/schellingboard:$APP_VERSION"
 
 docker build --build-arg "APP_VERSION=$APP_VERSION" -t "$IMAGE" . >&2

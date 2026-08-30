@@ -183,19 +183,22 @@ bun set-env.ts test bash scripts/e2e-docker.sh tests/e2e/proposals.spec.ts
 ```
 
 It is not part of `make precommit` — it builds an image and takes a few
-minutes. Run it before a release (see [Releasing a New Version](releasing.md))
-and after changing the `Dockerfile`, the standalone build, or anything touching
-paths, uploads or migrations.
+minutes. The release workflow runs it against the image it is about to publish
+and refuses to publish if it fails (see [Releasing a New
+Version](releasing.md)), so the reason to run it by hand is a change to the
+`Dockerfile`, the standalone build, or anything touching paths, uploads or
+migrations — well before a release rather than at one.
 
 What it does, and why each piece is there:
 
 - **Picks a free port** and starts the container on it, then waits for
   `/api/health`.
 - **Builds through `scripts/docker-build.sh`**, the script `make docker-build`
-  runs too — same build arguments, same `:<version>` tag, so the release build
-  is a cache hit of this one and what gets published is what was tested here.
-  The version is the one `scripts/app-version.js` prints, which is also what
-  the footer shows.
+  and the release workflow run too — same build arguments, same `:<version>`
+  tag, so what gets published is what was tested. (In the release workflow the
+  build comes first and is handed here by name in `IMAGE`, so the very image
+  that is pushed is the one the suite ran against.) The version is the one
+  `scripts/app-version.js` prints, which is also what the footer shows.
 - **Bind-mounts `.e2e-docker/`** (gitignored) as `/data`. Seeding runs on the
   host, as usual, and writes to the same SQLite file and uploads directory the
   container reads — so no seeding code has to exist inside the image. The
