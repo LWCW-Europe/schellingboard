@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Internal
+
+- The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually
+  the page's largest element, so Next warned that the Largest Contentful Paint image was being
+  lazy-loaded
+
 ## [3.5.0] - 2026-08-30
 
 ### Added
