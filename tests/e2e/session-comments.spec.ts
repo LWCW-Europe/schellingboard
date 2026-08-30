@@ -209,6 +209,11 @@ test("keeps replies readable when their parent is deleted", async ({
 });
 
 test("likes a comment and shows who liked it", async ({ page, browser }) => {
+  // Two identities, each a real logout-then-login round trip, plus a second
+  // browser context and a reload, add up to just over the 30s default once
+  // parallel workers compete for the server.
+  test.slow();
+
   await login(page);
   await page.goto("/Conference-Gamma");
   await actAs(page, /Alice Test/i);
@@ -241,6 +246,9 @@ test("likes a comment and shows who liked it", async ({ page, browser }) => {
   const reopened = page.getByRole("dialog", { name: "Session details" });
   // Hovering previews the likers, newest first, without opening anything.
   const count = reopened.getByRole("button", { name: "2 likes" });
+  // The reloaded modal fetches its comments, so wait for the count before
+  // asserting on the preview: an absent tooltip would satisfy nothing.
+  await expect(count).toBeVisible();
   const tooltip = page.getByRole("tooltip");
   await expect(tooltip).toHaveCSS("opacity", "0");
   await count.hover();

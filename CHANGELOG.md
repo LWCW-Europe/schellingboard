@@ -89,6 +89,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- The E2E test for comment likes is marked slow and waits for the reloaded modal's like count before
+  asserting that the hover preview is hidden. Two identities, a second browser context and a reload
+  ran it just over the 30s default, and the tooltip assertion failed on an element that had not
+  rendered yet
 - Every server action that isn't a login or logout checks the site-auth cookie itself. Next only
   dispatches an action on the route that defines it, so one on a protected page was already
   unreachable without site auth — but that is a framework detail, not a control this codebase owns.
