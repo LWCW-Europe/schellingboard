@@ -61,7 +61,9 @@ describe("in-app release notes", () => {
   });
 
   it("say something, briefly", () => {
+    // The reopened Unreleased entry starts empty and fills in as changes land.
     for (const note of releaseNotes) {
+      if (note.date === undefined) continue;
       expect(note.highlights.length).toBeGreaterThan(0);
     }
     const highlights = releaseNotes.flatMap((note) => note.highlights);
