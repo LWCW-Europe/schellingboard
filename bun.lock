@@ -36,7 +36,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@docmd/core": "^0.9.3",
+        "@docmd/core": "^0.9.4",
         "@playwright/test": "^1.62.1",
         "@tailwindcss/postcss": "^4.3.3",
         "@types/better-sqlite3": "^9.6.0",
@@ -105,7 +105,7 @@
 
     "@docmd/api": ["@docmd/api@0.9.4", "", { "dependencies": { "@docmd/parser": "^0.9.4", "@docmd/tui": "^0.9.4", "@docmd/utils": "^0.9.4" }, "optionalDependencies": { "@docmd/engine-js": "^0.9.4", "@docmd/engine-rust": "^0.9.4" } }, "sha512-3wOlmyo5HDWh1g1hwApISm1mYrk36ffJyJtY78NVp77DpxE3Ojm0lf9Fg0sgsjbqA1F+/wo1BiS735jwOeVkIA=="],
 
-    "@docmd/core": ["@docmd/core@0.9.3", "", { "dependencies": { "@docmd/api": "^0.9.3", "@docmd/deployer": "^0.9.3", "@docmd/live": "^0.9.3", "@docmd/parser": "^0.9.3", "@docmd/plugin-ai": "^0.9.3", "@docmd/plugin-analytics": "^0.9.3", "@docmd/plugin-git": "^0.9.3", "@docmd/plugin-installer": "^0.9.3", "@docmd/plugin-llms": "^0.9.3", "@docmd/plugin-mermaid": "^0.9.3", "@docmd/plugin-okf": "^0.9.3", "@docmd/plugin-openapi": "^0.9.3", "@docmd/plugin-search": "^0.9.3", "@docmd/plugin-seo": "^0.9.3", "@docmd/plugin-sitemap": "^0.9.3", "@docmd/themes": "^0.9.3", "@docmd/tui": "^0.9.3", "@docmd/ui": "^0.9.3", "@docmd/utils": "^0.9.3", "esbuild": "^0.28.2", "ws": "^8.21.3" }, "bin": { "docmd": "dist/bin/docmd.js" } }, "sha512-iz9v5e2EjKsjnpH263+HVOR25T90z1qcu1VKTJ46tyNcNjTKWfMZe7kfwkgDZ6RDbOsv1ZDrx9RxdS+mTIhkig=="],
+    "@docmd/core": ["@docmd/core@0.9.4", "", { "dependencies": { "@docmd/api": "^0.9.4", "@docmd/deployer": "^0.9.4", "@docmd/live": "^0.9.4", "@docmd/parser": "^0.9.4", "@docmd/plugin-ai": "^0.9.4", "@docmd/plugin-analytics": "^0.9.4", "@docmd/plugin-git": "^0.9.4", "@docmd/plugin-installer": "^0.9.4", "@docmd/plugin-llms": "^0.9.4", "@docmd/plugin-mermaid": "^0.9.4", "@docmd/plugin-okf": "^0.9.4", "@docmd/plugin-openapi": "^0.9.4", "@docmd/plugin-search": "^0.9.4", "@docmd/plugin-seo": "^0.9.4", "@docmd/plugin-sitemap": "^0.9.4", "@docmd/themes": "^0.9.4", "@docmd/tui": "^0.9.4", "@docmd/ui": "^0.9.4", "@docmd/utils": "^0.9.4", "esbuild": "^0.28.2", "ws": "^8.21.3" }, "bin": { "docmd": "dist/bin/docmd.js" } }, "sha512-xmUydrx7rrssxRUs58LtGVtMSmLFAndaZsrYSCG60L0VMKYGq0E/+oOkhgdyOeDGS/z8bgbMifRKk7AxljYApg=="],
 
     "@docmd/deployer": ["@docmd/deployer@0.9.4", "", { "dependencies": { "@docmd/api": "^0.9.4" } }, "sha512-kGmAEepRI/OOnt5ZbBwswElFhP4CQm6lDGtwFOKZZfs3imcvUs2dFtRTqvNPc/Sb7ka9ElMFW6d+dZw6DU6XkQ=="],
 
@@ -503,7 +503,7 @@
 
     "@types/react": ["@types/react@19.2.18", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-AnzbBERsrLKtk2XSfTbYRLjQPdy116Sty4q+T+Bp3IC4l6jNBvreVPAHmpq9qhXQM7CXZPjLVmGMw9sy+hxQ3w=="],
 
-    "@types/react-dom": ["@types/react-dom@19.2.4", "", { "peerDependencies": { "@types/react": "^19.2.0" } }, "sha512-Bsc+QHgp+P/F02XDzNCY9jnZNCUuLki36KT7VKrTXXLdHf+vHMNZnW1rVu5DNW/rCK+fya3DATySbLM4yhtKUw=="],
+    "@types/react-dom": ["@types/react-dom@19.2.5", "", { "peerDependencies": { "@types/react": "^19.2.0" } }, "sha512-fMPwH9v7r/pp43yUd2/Mbiex5KouJwwR3dzHkhLREUC6764VyDsqxhAxv6OFEYR1RhjOyD1naqba8ECDBe7ZQg=="],
 
     "@types/turndown": ["@types/turndown@5.0.6", "", {}, "sha512-ru00MoyeeouE5BX4gRL+6m/BsDfbRayOskWqUvh7CLGW+UXxHQItqALa38kKnOiZPqJrtzJUgAC2+F0rL1S4Pg=="],
 
