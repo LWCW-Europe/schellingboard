@@ -114,11 +114,13 @@ export async function POST(req: NextRequest) {
     }
 
     await notifyCohostsAdded({
+      now: requestNow(req),
       session: updated,
       previousHostIds: prevSession.hosts.map((h) => h.id),
       changedById: actor,
     });
     await notifySessionChanged({
+      now: requestNow(req),
       before: prevSession,
       after: updated,
       changedById: actor,

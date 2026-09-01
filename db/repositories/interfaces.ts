@@ -934,10 +934,10 @@ export interface NotificationsRepository {
   /**
    * Marks one notification read, iff it belongs to `guestId`; false when it
    * does not exist or is someone else's. Already-read rows keep their original
-   * timestamp.
+   * timestamp. `readAt` comes from the caller so the dev fake clock reaches it.
    */
-  markRead(guestId: string, id: string): Promise<boolean>;
-  markAllRead(guestId: string): Promise<void>;
+  markRead(guestId: string, id: string, readAt: Date): Promise<boolean>;
+  markAllRead(guestId: string, readAt: Date): Promise<void>;
 }
 
 // ── Images ─────────────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getRepositories } from "@/db/container";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
+import { serverNow } from "@/utils/dev-clock-server";
 import { requireSiteAuth } from "@/utils/action-auth";
 
 export type NotificationActionResult =
@@ -21,7 +22,8 @@ export async function markNotificationReadAction(
 
   const marked = await getRepositories().notifications.markRead(
     currentUser,
-    id
+    id,
+    await serverNow()
   );
   if (!marked) return { ok: false, error: "Notification not found" };
 
@@ -37,7 +39,10 @@ export async function markAllNotificationsReadAction(): Promise<NotificationActi
   const currentUser = await verifiedCurrentUser(await cookies());
   if (!currentUser) return { ok: false, error: NO_USER };
 
-  await getRepositories().notifications.markAllRead(currentUser);
+  await getRepositories().notifications.markAllRead(
+    currentUser,
+    await serverNow()
+  );
   revalidatePath("/notifications");
   return { ok: true };
 }
@@ -57,7 +62,7 @@ export async function openNotificationAction(id: string): Promise<void> {
   const notification = await notifications.findForGuest(currentUser, id);
   if (!notification) return;
 
-  await notifications.markRead(currentUser, id);
+  await notifications.markRead(currentUser, id, await serverNow());
   revalidatePath("/notifications");
   redirect(notification.url);
 }

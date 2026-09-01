@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
     }
 
     await notifyCohostsAdded({
+      now: requestNow(req),
       session,
       previousHostIds: [],
       changedById: actingGuestId,

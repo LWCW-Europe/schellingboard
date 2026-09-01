@@ -125,7 +125,8 @@ export async function createProposalComment(
       createdTime: await serverNow(),
     });
     revalidateEvent(eventSlug);
-    after(() => notifyProposalCommented({ proposalId, comment }));
+    const now = await serverNow();
+    after(() => notifyProposalCommented({ proposalId, comment, now }));
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to post comment");
@@ -165,7 +166,8 @@ export async function createSessionComment(
       body,
       createdTime: await serverNow(),
     });
-    after(() => notifySessionCommented({ sessionId, comment }));
+    const now = await serverNow();
+    after(() => notifySessionCommented({ sessionId, comment, now }));
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to post comment");
@@ -205,7 +207,8 @@ export async function createProfileComment(
       body,
       createdTime: await serverNow(),
     });
-    after(() => notifyProfileCommented({ profileId, comment }));
+    const now = await serverNow();
+    after(() => notifyProfileCommented({ profileId, comment, now }));
     return { success: true };
   } catch (error) {
     return toResult(error, "Failed to post comment");

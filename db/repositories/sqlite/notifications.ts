@@ -95,10 +95,10 @@ export class SqliteNotificationsRepository implements NotificationsRepository {
     return rowToNotification(row);
   }
 
-  async markRead(guestId: string, id: string): Promise<boolean> {
+  async markRead(guestId: string, id: string, readAt: Date): Promise<boolean> {
     const result = this.db
       .update(schema.notifications)
-      .set({ readAt: new Date().toISOString() })
+      .set({ readAt: readAt.toISOString() })
       .where(
         and(
           eq(schema.notifications.id, id),
@@ -123,10 +123,10 @@ export class SqliteNotificationsRepository implements NotificationsRepository {
     return existing !== undefined;
   }
 
-  async markAllRead(guestId: string): Promise<void> {
+  async markAllRead(guestId: string, readAt: Date): Promise<void> {
     this.db
       .update(schema.notifications)
-      .set({ readAt: new Date().toISOString() })
+      .set({ readAt: readAt.toISOString() })
       .where(
         and(
           eq(schema.notifications.guestId, guestId),

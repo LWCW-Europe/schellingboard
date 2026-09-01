@@ -40,9 +40,12 @@ const MESSAGE = {
   body: <p>Your session moved.</p>,
 };
 
+const NOW = new Date("2026-08-01T12:00:00.000Z");
+
 const IN_APP = {
   text: "Your session moved",
   url: "/e?viewSession=s1",
+  at: NOW,
 };
 
 describe("notifyGuest", () => {
@@ -177,6 +180,7 @@ describe("notifySessionChanged", () => {
       before: session,
       after,
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledOnce();
@@ -211,6 +215,7 @@ describe("notifySessionChanged", () => {
       before: session,
       after,
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).not.toHaveBeenCalled();
@@ -229,6 +234,7 @@ describe("notifySessionChanged", () => {
         before: session,
         after,
         changedById: null,
+        now: NOW,
       })
     ).resolves.toBeUndefined();
 
@@ -250,6 +256,7 @@ describe("notifySessionChanged", () => {
       before: withHost,
       after,
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledTimes(2);
@@ -284,6 +291,7 @@ describe("notifySessionChanged", () => {
       before: withHost,
       after,
       changedById: null,
+      now: NOW,
     });
 
     // Host has rsvpChange off but hostChange on: they're still emailed.
@@ -309,6 +317,7 @@ describe("notifySessionChanged", () => {
       before: withHost,
       after,
       changedById: null,
+      now: NOW,
     });
 
     const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
@@ -330,6 +339,7 @@ describe("notifySessionChanged", () => {
       before: withHost,
       after,
       changedById: host.id,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledOnce();
@@ -346,6 +356,7 @@ describe("notifySessionChanged", () => {
       before: session,
       after,
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledOnce();
@@ -368,6 +379,7 @@ describe("notifySessionChanged", () => {
       before: session,
       after,
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).not.toHaveBeenCalled();
@@ -392,6 +404,7 @@ describe("notifySessionChanged", () => {
       before: session,
       after,
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledOnce();
@@ -411,6 +424,7 @@ describe("notifySessionChanged", () => {
       before: session,
       after,
       changedById: null,
+      now: NOW,
     });
 
     const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
@@ -454,6 +468,7 @@ describe("notifySessionDeleted", () => {
       session,
       rsvpGuestIds: [attendee.id],
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledTimes(2);
@@ -512,6 +527,7 @@ describe("notifySessionDeleted", () => {
       session,
       rsvpGuestIds: [optedOutAttendee.id, optedInAttendee.id],
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledOnce();
@@ -567,6 +583,7 @@ describe("notifyCohostsAdded", () => {
         session,
         previousHostIds: [],
         changedById: null,
+        now: NOW,
       })
     ).resolves.toBeUndefined();
 
@@ -580,6 +597,7 @@ describe("notifyCohostsAdded", () => {
       session,
       previousHostIds: [],
       changedById: null,
+      now: NOW,
     });
 
     // Only the new co-host; RSVP'd guests are not involved.
@@ -604,6 +622,7 @@ describe("notifyCohostsAdded", () => {
       session,
       previousHostIds: [cohost.id],
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).not.toHaveBeenCalled();
@@ -616,6 +635,7 @@ describe("notifyCohostsAdded", () => {
       session,
       previousHostIds: [],
       changedById: cohost.id,
+      now: NOW,
     });
 
     expect(sendMail).not.toHaveBeenCalled();
@@ -635,6 +655,7 @@ describe("notifyCohostsAdded", () => {
       session: after,
       previousHostIds: [],
       changedById: null,
+      now: NOW,
     });
 
     expect(sendMail).not.toHaveBeenCalled();
@@ -705,6 +726,7 @@ describe("notifyProposalCommented", () => {
     await notifyProposalCommented({
       proposalId: proposal.id,
       comment: posted,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledTimes(2);
@@ -736,6 +758,7 @@ describe("notifyProposalCommented", () => {
     await notifyProposalCommented({
       proposalId: proposal.id,
       comment: posted,
+      now: NOW,
     });
 
     const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
@@ -750,6 +773,7 @@ describe("notifyProposalCommented", () => {
     await notifyProposalCommented({
       proposalId: proposal.id,
       comment: posted,
+      now: NOW,
     });
 
     const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
@@ -769,6 +793,7 @@ describe("notifyProposalCommented", () => {
     await notifyProposalCommented({
       proposalId: proposal.id,
       comment: posted,
+      now: NOW,
     });
 
     expect(sendMail).not.toHaveBeenCalled();
@@ -784,6 +809,7 @@ describe("notifyProposalCommented", () => {
     await notifyProposalCommented({
       proposalId: proposal.id,
       comment: posted,
+      now: NOW,
     });
 
     const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
@@ -801,6 +827,7 @@ describe("notifyProposalCommented", () => {
     await notifyProposalCommented({
       proposalId: proposal.id,
       comment: posted,
+      now: NOW,
     });
 
     expect(sendMail).not.toHaveBeenCalled();
@@ -816,6 +843,7 @@ describe("notifyProposalCommented", () => {
       notifyProposalCommented({
         proposalId: proposal.id,
         comment: posted,
+        now: NOW,
       })
     ).resolves.toBeUndefined();
     expect(sendMail).not.toHaveBeenCalled();
@@ -871,6 +899,7 @@ describe("notifySessionCommented", () => {
     await notifySessionCommented({
       sessionId: session.id,
       comment: posted,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledTimes(2);
@@ -894,6 +923,7 @@ describe("notifySessionCommented", () => {
     await notifySessionCommented({
       sessionId: session.id,
       comment: posted,
+      now: NOW,
     });
 
     const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
@@ -911,6 +941,7 @@ describe("notifySessionCommented", () => {
     await notifySessionCommented({
       sessionId: session.id,
       comment: posted,
+      now: NOW,
     });
 
     const [notification] = await getRepositories().notifications.listByGuest(
@@ -931,6 +962,7 @@ describe("notifySessionCommented", () => {
     await notifySessionCommented({
       sessionId: session.id,
       comment: posted,
+      now: NOW,
     });
 
     const listed = await getRepositories().notifications.listByGuest(host.id);
@@ -946,6 +978,7 @@ describe("notifySessionCommented", () => {
     await notifySessionCommented({
       sessionId: session.id,
       comment: posted,
+      now: NOW,
     });
 
     const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
@@ -965,6 +998,7 @@ describe("notifySessionCommented", () => {
     await notifySessionCommented({
       sessionId: session.id,
       comment: posted,
+      now: NOW,
     });
 
     expect(sendMail).not.toHaveBeenCalled();
@@ -980,6 +1014,7 @@ describe("notifySessionCommented", () => {
       notifySessionCommented({
         sessionId: session.id,
         comment: posted,
+        now: NOW,
       })
     ).resolves.toBeUndefined();
     expect(sendMail).not.toHaveBeenCalled();
@@ -1033,6 +1068,7 @@ describe("notifyProfileCommented", () => {
     await notifyProfileCommented({
       profileId: owner.id,
       comment: posted,
+      now: NOW,
     });
 
     expect(sendMail).toHaveBeenCalledTimes(2);
@@ -1062,6 +1098,7 @@ describe("notifyProfileCommented", () => {
     await notifyProfileCommented({
       profileId: owner.id,
       comment: posted,
+      now: NOW,
     });
 
     const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
@@ -1076,6 +1113,7 @@ describe("notifyProfileCommented", () => {
     await notifyProfileCommented({
       profileId: owner.id,
       comment: posted,
+      now: NOW,
     });
 
     const recipients = vi.mocked(sendMail).mock.calls.map((c) => c[0].to);
@@ -1093,6 +1131,7 @@ describe("notifyProfileCommented", () => {
     await notifyProfileCommented({
       profileId: owner.id,
       comment: posted,
+      now: NOW,
     });
 
     expect(sendMail).not.toHaveBeenCalled();
@@ -1105,7 +1144,7 @@ describe("notifyProfileCommented", () => {
     await getRepositories().guests.delete(owner.id);
 
     await expect(
-      notifyProfileCommented({ profileId: owner.id, comment: posted })
+      notifyProfileCommented({ profileId: owner.id, comment: posted, now: NOW })
     ).resolves.toBeUndefined();
     expect(sendMail).not.toHaveBeenCalled();
   });

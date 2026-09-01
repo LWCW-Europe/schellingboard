@@ -4,6 +4,10 @@ import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createGuest } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
 
+// Read time is passed in rather than taken from the wall clock, so the dev
+// fake clock reaches these rows like every other timestamp in the app.
+const READ_AT = new Date("2026-09-13T12:00:00.000Z");
+
 async function notify(
   guestId: string,
   opts?: { text?: string; url?: string; createdAt?: Date }
@@ -90,7 +94,7 @@ describe("notifications repository", () => {
     const guest = await createGuest();
     const created = await notify(guest.id);
 
-    const marked = await notifications.markRead(guest.id, created.id);
+    const marked = await notifications.markRead(guest.id, created.id, READ_AT);
 
     expect(marked).toBe(true);
     expect(await notifications.countUnread(guest.id)).toBe(0);
@@ -106,7 +110,7 @@ describe("notifications repository", () => {
     const other = await createGuest();
     const created = await notify(guest.id);
 
-    const marked = await notifications.markRead(other.id, created.id);
+    const marked = await notifications.markRead(other.id, created.id, READ_AT);
 
     expect(marked).toBe(false);
     expect(await notifications.countUnread(guest.id)).toBe(1);
@@ -120,10 +124,21 @@ describe("notifications repository", () => {
     await notify(guest.id);
     await notify(other.id);
 
-    await notifications.markAllRead(guest.id);
+    await notifications.markAllRead(guest.id, READ_AT);
 
     expect(await notifications.countUnread(guest.id)).toBe(0);
     expect(await notifications.countUnread(other.id)).toBe(1);
+  });
+
+  it("stores the read time it was given, not the wall clock", async () => {
+    const { notifications } = getRepositories();
+    const guest = await createGuest();
+    const created = await notify(guest.id);
+
+    await notifications.markRead(guest.id, created.id, READ_AT);
+
+    const [listed] = await notifications.listByGuest(guest.id);
+    expect(listed.readAt).toEqual(READ_AT);
   });
 
   // The link is handed to redirect() when the notification is opened, so an
@@ -154,10 +169,10 @@ describe("notifications repository", () => {
     const { notifications } = getRepositories();
     const guest = await createGuest();
     const created = await notify(guest.id);
-    await notifications.markRead(guest.id, created.id);
+    await notifications.markRead(guest.id, created.id, READ_AT);
     const [first] = await notifications.listByGuest(guest.id);
 
-    await notifications.markRead(guest.id, created.id);
+    await notifications.markRead(guest.id, created.id, READ_AT);
 
     const [again] = await notifications.listByGuest(guest.id);
     expect(again.readAt).toEqual(first.readAt);

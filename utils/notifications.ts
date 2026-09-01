@@ -17,8 +17,10 @@ import {
 } from "@/emails/comment";
 import { getStartTimePlusBreak } from "@/utils/utils";
 
-// One line in the past tense, and where it happened.
-export type InAppNotice = { text: string; url: string };
+// One line in the past tense, where it happened, and when — `at` comes from
+// the caller's clock so the dev fake clock reaches these rows like every other
+// timestamp (ADR 0004).
+export type InAppNotice = { text: string; url: string; at: Date };
 
 // Tell the guest that something happened, on both channels: an in-app
 // notification always, and `message` by email iff they have opted in for
@@ -46,7 +48,7 @@ export async function notifyGuest(
     type: setting,
     text: inApp.text,
     url: inApp.url,
-    createdAt: new Date(),
+    createdAt: inApp.at,
   });
 
   if (!guest.info.emailSettings[setting]) return;
@@ -84,6 +86,7 @@ export async function notifySessionChanged(args: {
   before: Session;
   after: Session;
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   try {
     await notifySessionChangedUnsafe(args);
@@ -96,10 +99,12 @@ async function notifySessionChangedUnsafe({
   before,
   after,
   changedById,
+  now,
 }: {
   before: Session;
   after: Session;
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   const timeChanged =
     before.startTime?.getTime() !== after.startTime?.getTime() ||
@@ -142,8 +147,12 @@ async function notifySessionChangedUnsafe({
     changedById,
     hostMessage,
     attendeeMessage,
-    hostInApp: { text: `Your session "${after.title}" ${what}`, url: path },
-    attendeeInApp: { text: `"${after.title}" ${what}`, url: path },
+    hostInApp: {
+      text: `Your session "${after.title}" ${what}`,
+      url: path,
+      at: now,
+    },
+    attendeeInApp: { text: `"${after.title}" ${what}`, url: path, at: now },
   });
 }
 
@@ -191,6 +200,7 @@ export async function notifySessionDeleted(args: {
   session: Session;
   rsvpGuestIds: string[];
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   try {
     await notifySessionDeletedUnsafe(args);
@@ -203,10 +213,12 @@ async function notifySessionDeletedUnsafe({
   session,
   rsvpGuestIds,
   changedById,
+  now,
 }: {
   session: Session;
   rsvpGuestIds: string[];
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   const event = await getRepositories().events.findById(session.eventId);
   if (!event) return;
@@ -235,10 +247,12 @@ async function notifySessionDeletedUnsafe({
     hostInApp: {
       text: `Your session "${session.title}" was deleted`,
       url: eventPath,
+      at: now,
     },
     attendeeInApp: {
       text: `"${session.title}" was deleted`,
       url: eventPath,
+      at: now,
     },
   });
 }
@@ -289,6 +303,7 @@ export async function notifyCohostsAdded(args: {
   session: Session;
   previousHostIds: string[];
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   try {
     await notifyCohostsAddedUnsafe(args);
@@ -301,10 +316,12 @@ async function notifyCohostsAddedUnsafe({
   session,
   previousHostIds,
   changedById,
+  now,
 }: {
   session: Session;
   previousHostIds: string[];
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   const previous = new Set(previousHostIds);
   const added = session.hosts.filter(
@@ -326,6 +343,7 @@ async function notifyCohostsAddedUnsafe({
   const inApp = {
     text: `You were added as a co-host of "${session.title}"`,
     url: path,
+    at: now,
   };
   for (const host of added) {
     await tryNotifyGuest(host.id, "cohostAdd", message, inApp);
@@ -345,6 +363,7 @@ async function deliverCommentNotifications({
   earlier,
   comment,
   path,
+  now,
 }: {
   subject: CommentSubject;
   responsibleIds: string[];
@@ -352,6 +371,7 @@ async function deliverCommentNotifications({
   earlier: Comment[];
   comment: Comment;
   path: string;
+  now: Date;
 }): Promise<void> {
   const messageProps = {
     subject,
@@ -376,6 +396,7 @@ async function deliverCommentNotifications({
           messageProps.commenterName
         ),
         url: path,
+        at: now,
       }
     );
   }
@@ -396,6 +417,7 @@ async function deliverCommentNotifications({
           messageProps.commenterName
         ),
         url: path,
+        at: now,
       }
     );
   }
@@ -418,9 +440,11 @@ async function notifyCommented(
 export async function notifyProposalCommented({
   proposalId,
   comment,
+  now,
 }: {
   proposalId: string;
   comment: Comment;
+  now: Date;
 }): Promise<void> {
   await notifyCommented("proposal", async () => {
     const { proposalComments, events, sessionProposals } = getRepositories();
@@ -438,7 +462,8 @@ export async function notifyProposalCommented({
       responsibleSetting: "proposalComment",
       earlier: await proposalComments.list(proposalId),
       comment,
-          path: proposalCommentPath(event.slug, proposalId, comment.id),
+      now,
+      path: proposalCommentPath(event.slug, proposalId, comment.id),
     });
   });
 }
@@ -446,9 +471,11 @@ export async function notifyProposalCommented({
 export async function notifySessionCommented({
   sessionId,
   comment,
+  now,
 }: {
   sessionId: string;
   comment: Comment;
+  now: Date;
 }): Promise<void> {
   await notifyCommented("session", async () => {
     const { sessionComments, events, sessions } = getRepositories();
@@ -466,7 +493,8 @@ export async function notifySessionCommented({
       responsibleSetting: "sessionComment",
       earlier: await sessionComments.list(sessionId),
       comment,
-          path: `${sessionPath(event.slug, sessionId)}#comment-${comment.id}`,
+      now,
+      path: `${sessionPath(event.slug, sessionId)}#comment-${comment.id}`,
     });
   });
 }
@@ -474,9 +502,11 @@ export async function notifySessionCommented({
 export async function notifyProfileCommented({
   profileId,
   comment,
+  now,
 }: {
   profileId: string;
   comment: Comment;
+  now: Date;
 }): Promise<void> {
   await notifyCommented("profile", async () => {
     const { profileComments, guests } = getRepositories();
@@ -490,7 +520,8 @@ export async function notifyProfileCommented({
       responsibleSetting: "profileComment",
       earlier: await profileComments.list(profileId),
       comment,
-          path: `/guests/${profileId}#comment-${comment.id}`,
+      now,
+      path: `/guests/${profileId}#comment-${comment.id}`,
     });
   });
 }

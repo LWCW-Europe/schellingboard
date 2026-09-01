@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
   }
 
   await notifySessionDeleted({
+    now: requestNow(req),
     session,
     rsvpGuestIds,
     changedById: actor,
