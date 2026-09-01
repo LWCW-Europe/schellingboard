@@ -211,6 +211,13 @@
       "when": 1788252255683,
       "tag": "0029_meetings",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1788252381645,
+      "tag": "0030_notifications",
+      "breakpoints": true
     }
   ]
 }

@@ -487,3 +487,43 @@ export const meetings = sqliteTable(
     ),
   ]
 );
+
+// One in-app notification for one guest. `type` is the same key as the guest's
+// email settings (see EmailSettings), so a notification and the mail about it
+// are never two separate taxonomies.
+//
+// `readAt` is per row rather than a single "last read" marker on the guest:
+// notifications are read by clicking through to the thing that happened, in
+// whatever order the guest cares about, so unread is not a suffix of the list.
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    guestId: text("guest_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+    // The guest's email-setting keys, so a notification and the mail about it
+    // stay one taxonomy.
+    type: text("type", {
+      enum: [
+        "rsvpChange",
+        "hostChange",
+        "cohostAdd",
+        "proposalComment",
+        "sessionComment",
+        "profileComment",
+        "commentThread",
+        "meetingRequest",
+        "meetingResponse",
+      ],
+    }).notNull(),
+    text: text("text").notNull(),
+    url: text("url").notNull(),
+    createdAt: text("created_at").notNull(),
+    readAt: text("read_at"),
+  },
+  (t) => [
+    index("notifications_guest_created_idx").on(t.guestId, t.createdAt),
+    index("notifications_guest_read_idx").on(t.guestId, t.readAt),
+  ]
+);

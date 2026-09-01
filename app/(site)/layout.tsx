@@ -35,6 +35,12 @@ export default async function SiteLayout({
   const mapImageUrl = isAuthenticated
     ? (await getRepositories().settings.get()).mapImageUrl
     : "";
+  // Counted here rather than in the client: the selected guest is a cookie the
+  // layout already reads, and one indexed count is cheaper than a round trip
+  // from every page.
+  const unreadNotifications = initialUser
+    ? await getRepositories().notifications.countUnread(initialUser)
+    : 0;
 
   return (
     <UserProvider initialUser={initialUser}>
@@ -44,6 +50,8 @@ export default async function SiteLayout({
           guests={guests}
           showGuestsLink={isAuthenticated}
           mapImageUrl={mapImageUrl}
+          showNotifications={initialUser !== null}
+          unreadNotifications={unreadNotifications}
         />
         <main className="lg:px-24 sm:p-3 flex-1 pt-20 sm:pt-24 lg:pb-16">
           {children}

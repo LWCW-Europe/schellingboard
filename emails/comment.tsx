@@ -30,6 +30,22 @@ function relation(subject: CommentSubject, to: CommentRecipient): string {
     : `a ${subject.kind} you commented on`;
 }
 
+// The one-line version, for the in-app notification. Names the thing rather
+// than the relation ("a session you're hosting"): in a list of notifications
+// the title is what tells them apart.
+export function commentNoticeText(
+  subject: CommentSubject,
+  to: CommentRecipient,
+  commenterName: string
+): string {
+  if (subject.kind === "profile") {
+    return to === "responsible"
+      ? `${commenterName} commented on your profile`
+      : `${commenterName} commented on ${subject.ownerName}'s profile`;
+  }
+  return `${commenterName} commented on "${subject.title}"`;
+}
+
 // Sent when someone comments on a proposal, a session or a profile.
 //
 // The comment's text is deliberately left out: it is enough to say that there
