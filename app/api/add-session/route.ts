@@ -41,7 +41,8 @@ export async function POST(req: NextRequest) {
   }
   const input = prepareToInsert(params, day);
   const event = await repos.events.findById(input.eventId);
-  if (!event || !inSchedPhase(event, requestNow(req))) {
+  const now = requestNow(req);
+  if (!event || !inSchedPhase(event, now)) {
     return Response.json(
       { error: "Sessions can only be created during the scheduling phase" },
       { status: 403 }
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
     }
 
     await notifyCohostsAdded({
-      now: requestNow(req),
+      now,
       session,
       previousHostIds: [],
       changedById: actingGuestId,

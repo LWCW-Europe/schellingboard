@@ -18,12 +18,16 @@ export function isDevToolsEnabled(): boolean {
 
 /**
  * The offset carried by the cookie value, or 0 when dev tools are disabled,
- * the cookie is absent, or its value is not a finite number.
+ * the cookie is absent, or its value is not a finite number — or is so large
+ * that the shifted time is not a real date. That last case matters because the
+ * offset is written into timestamps now, and `toISOString()` throws on an
+ * Invalid Date rather than skewing quietly.
  */
 export function parseTimeOffset(raw: string | null | undefined): number {
   if (!raw || !isDevToolsEnabled()) return 0;
   const n = Number(raw);
-  return Number.isFinite(n) ? n : 0;
+  if (!Number.isFinite(n)) return 0;
+  return Number.isNaN(new Date(Date.now() + n).getTime()) ? 0 : n;
 }
 
 export function nowWithOffset(offsetMs: number): Date {

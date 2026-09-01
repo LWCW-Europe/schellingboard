@@ -109,6 +109,9 @@ describe("notifyGuest", () => {
     expect(listed[0].text).toBe("Your session moved");
     expect(listed[0].url).toBe("/e?viewSession=s1");
     expect(listed[0].readAt).toBeUndefined();
+    // The caller's clock, not the wall clock: this is what the notification
+    // and the thing it announces agree on when the dev clock is offset.
+    expect(listed[0].createdAt).toEqual(NOW);
   });
 
   it("records it once and mails it too when the setting is on", async () => {
@@ -239,6 +242,33 @@ describe("notifySessionChanged", () => {
     ).resolves.toBeUndefined();
 
     expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  // The slot that just freed up is the useful half: someone told their session
+  // moved may want to attend something else in the old slot, or host in it.
+  it("names the old time as well as the new one in the app", async () => {
+    const { session } = await setup();
+    const host = await createGuest({ email: "host@test.example" });
+    const withHost = await getRepositories().sessions.update(session.id, {
+      hostIds: [host.id],
+    });
+    const after = await getRepositories().sessions.update(session.id, {
+      startTime: new Date("2026-08-01T15:00:00Z"),
+      endTime: new Date("2026-08-01T16:00:00Z"),
+    });
+
+    await notifySessionChanged({
+      before: withHost,
+      after,
+      changedById: null,
+      now: NOW,
+    });
+
+    const [notification] = await getRepositories().notifications.listByGuest(
+      host.id
+    );
+    expect(notification.text).toMatch(/^Your session ".*" moved to /);
+    expect(notification.text).toMatch(/\(was .+\)$/);
   });
 
   it("emails hosts, addressing them as hosts", async () => {

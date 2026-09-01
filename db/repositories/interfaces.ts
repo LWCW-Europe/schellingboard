@@ -930,6 +930,8 @@ export interface NotificationsRepository {
   ): Promise<Notification[]>;
   /** Drives the nav badge. */
   countUnread(guestId: string): Promise<number>;
+  /** Everything the guest has, read or not — what paging is measured against. */
+  countByGuest(guestId: string): Promise<number>;
   create(data: Omit<Notification, "id" | "readAt">): Promise<Notification>;
   /**
    * Marks one notification read, iff it belongs to `guestId`; false when it

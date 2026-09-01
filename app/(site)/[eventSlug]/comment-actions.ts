@@ -117,15 +117,15 @@ export async function createProposalComment(
       }
     }
 
+    const now = await serverNow();
     const comment = await getRepositories().proposalComments.create({
       subjectId: proposalId,
       authorId: guest,
       parentId,
       body,
-      createdTime: await serverNow(),
+      createdTime: now,
     });
     revalidateEvent(eventSlug);
-    const now = await serverNow();
     after(() => notifyProposalCommented({ proposalId, comment, now }));
     return { success: true };
   } catch (error) {
@@ -159,14 +159,14 @@ export async function createSessionComment(
       }
     }
 
+    const now = await serverNow();
     const comment = await getRepositories().sessionComments.create({
       subjectId: sessionId,
       authorId: guest,
       parentId,
       body,
-      createdTime: await serverNow(),
+      createdTime: now,
     });
-    const now = await serverNow();
     after(() => notifySessionCommented({ sessionId, comment, now }));
     return { success: true };
   } catch (error) {
@@ -200,14 +200,14 @@ export async function createProfileComment(
       }
     }
 
+    const now = await serverNow();
     const comment = await getRepositories().profileComments.create({
       subjectId: profileId,
       authorId: guest,
       parentId,
       body,
-      createdTime: await serverNow(),
+      createdTime: now,
     });
-    const now = await serverNow();
     after(() => notifyProfileCommented({ profileId, comment, now }));
     return { success: true };
   } catch (error) {
@@ -230,9 +230,10 @@ export async function updateComment(
     );
     await requireOwnComment(commentId, guest);
 
+    const now = await serverNow();
     await getRepositories().comments.update(commentId, {
       body,
-      editedTime: await serverNow(),
+      editedTime: now,
     });
     revalidateEvent(eventSlug);
     return { success: true };
@@ -260,10 +261,11 @@ export async function toggleCommentLike(
       return { error: "Comment not found" };
     }
 
+    const now = await serverNow();
     const liked = await getRepositories().comments.toggleLike({
       commentId,
       guestId: guest,
-      createdTime: await serverNow(),
+      createdTime: now,
     });
     revalidateEvent(eventSlug);
     return { success: true, liked };

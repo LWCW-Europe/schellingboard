@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
   }
 
   const event = await repos.events.findById(session.eventId);
-  if (!event || !inSchedPhase(event, requestNow(req))) {
+  const now = requestNow(req);
+  if (!event || !inSchedPhase(event, now)) {
     return new Response(
       "Sessions can only be deleted during the scheduling phase",
       { status: 403 }
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
   }
 
   await notifySessionDeleted({
-    now: requestNow(req),
+    now,
     session,
     rsvpGuestIds,
     changedById: actor,

@@ -29,6 +29,15 @@ describe("parseTimeOffset", () => {
     });
   });
 
+  // The offset reaches toISOString() now that timestamps are written from it,
+  // and `new Date(Date.now() + 1e20)` is an Invalid Date, which throws there.
+  it("ignores an offset that would not be a real date", () => {
+    withDevTools(true, () => {
+      expect(parseTimeOffset("1e20")).toBe(0);
+      expect(parseTimeOffset("-1e20")).toBe(0);
+    });
+  });
+
   it("returns the numeric offset when dev tools are enabled", () => {
     withDevTools(true, () => {
       expect(parseTimeOffset("86400000")).toBe(86_400_000);

@@ -144,8 +144,9 @@ export async function adminCreateSessionAction(
 
   await revalidateEventPaths(input.eventId);
 
+  const now = await serverNow();
   await notifyCohostsAdded({
-    now: await serverNow(),
+    now,
     session: created,
     previousHostIds: [],
     changedById: null,
@@ -210,14 +211,15 @@ export async function adminUpdateSessionAction(
 
   await revalidateEventPaths(session.eventId);
 
+  const now = await serverNow();
   await notifyCohostsAdded({
-    now: await serverNow(),
+    now,
     session: updated,
     previousHostIds: session.hosts.map((h) => h.id),
     changedById: null,
   });
   await notifySessionChanged({
-    now: await serverNow(),
+    now,
     before: session,
     after: updated,
     changedById: null,
@@ -243,8 +245,9 @@ export async function adminDeleteSessionAction(input: {
   }
 
   await revalidateEventPaths(session.eventId);
+  const now = await serverNow();
   await notifySessionDeleted({
-    now: await serverNow(),
+    now,
     session,
     rsvpGuestIds,
     changedById: null,

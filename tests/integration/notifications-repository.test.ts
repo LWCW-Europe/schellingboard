@@ -77,6 +77,18 @@ describe("notifications repository", () => {
     expect(second.map((n) => n.text)).toEqual(["n2", "n1"]);
   });
 
+  it("counts everything a guest has, for paging", async () => {
+    const { notifications } = getRepositories();
+    const guest = await createGuest();
+    const other = await createGuest();
+    await notify(guest.id);
+    await notify(guest.id, { url: "/other" });
+    await notify(other.id);
+
+    expect(await notifications.countByGuest(guest.id)).toBe(2);
+    expect(await notifications.countByGuest(other.id)).toBe(1);
+  });
+
   it("counts what is unread, per guest", async () => {
     const { notifications } = getRepositories();
     const guest = await createGuest();
@@ -148,6 +160,14 @@ describe("notifications repository", () => {
 
     await expect(
       notify(guest.id, { url: "https://elsewhere.example/phish" })
+    ).rejects.toThrow(/site-relative/i);
+    // Protocol-relative and backslash forms start with "/" but browsers
+    // resolve them as absolute URLs to another host.
+    await expect(
+      notify(guest.id, { url: "//elsewhere.example/phish" })
+    ).rejects.toThrow(/site-relative/i);
+    await expect(
+      notify(guest.id, { url: "/\\elsewhere.example/phish" })
     ).rejects.toThrow(/site-relative/i);
   });
 

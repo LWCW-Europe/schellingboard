@@ -74,13 +74,23 @@ export class SqliteNotificationsRepository implements NotificationsRepository {
     return row?.count ?? 0;
   }
 
+  async countByGuest(guestId: string): Promise<number> {
+    const row = this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.notifications)
+      .where(eq(schema.notifications.guestId, guestId))
+      .get();
+    return row?.count ?? 0;
+  }
+
   async create(
     data: Omit<Notification, "id" | "readAt">
   ): Promise<Notification> {
     // Enforced here rather than trusted from producers: openNotificationAction
     // hands this straight to redirect(), where an absolute URL would send the
-    // guest off the site.
-    if (!data.url.startsWith("/")) {
+    // guest off the site. A single leading slash is not enough — "//host/x" and
+    // "/\\host/x" are resolved by browsers as absolute URLs elsewhere.
+    if (!/^\/(?![/\\])/.test(data.url)) {
       throw new Error(
         `Notification link must be site-relative, got "${data.url}"`
       );

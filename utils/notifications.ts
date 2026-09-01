@@ -135,10 +135,7 @@ async function notifySessionChangedUnsafe({
     ...messageProps,
     recipient: "attendee",
   });
-  const what = changeSummary(messageProps.newTime, messageProps.newLocation, {
-    timeChanged,
-    locationChanged,
-  });
+  const what = changeSummary(messageProps);
   await notifySessionRecipients({
     hostIds: after.hosts.map((host) => host.id),
     rsvpGuestIds: (await rsvps.listBySession(after.id)).map(
@@ -156,18 +153,25 @@ async function notifySessionChangedUnsafe({
   });
 }
 
-// What to say happened, given only what actually changed.
-function changeSummary(
-  newTime: string,
-  newLocation: string,
-  changed: { timeChanged: boolean; locationChanged: boolean }
-): string {
-  if (changed.timeChanged && changed.locationChanged) {
-    return `is now ${newTime}, ${newLocation}`;
+// What to say happened, given only what actually changed. The old value is
+// named too: someone told their session moved wants to know which slot just
+// freed up, to fill it or to host in it.
+function changeSummary({
+  newTime,
+  oldTime,
+  newLocation,
+  oldLocation,
+}: {
+  newTime: string;
+  oldTime?: string;
+  newLocation: string;
+  oldLocation?: string;
+}): string {
+  if (oldTime !== undefined && oldLocation !== undefined) {
+    return `is now ${newTime}, ${newLocation} (was ${oldTime}, ${oldLocation})`;
   }
-  return changed.timeChanged
-    ? `moved to ${newTime}`
-    : `moved to ${newLocation}`;
+  if (oldTime !== undefined) return `moved to ${newTime} (was ${oldTime})`;
+  return `moved to ${newLocation} (was ${oldLocation})`;
 }
 
 // The guests to tell about a session's deletion, to be called *before*

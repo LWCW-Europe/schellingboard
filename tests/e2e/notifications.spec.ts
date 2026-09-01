@@ -26,7 +26,7 @@ async function commentOnProfile(page: Page, name: string, body: string) {
 }
 
 function bell(page: Page) {
-  return page.getByRole("link", { name: /^Notifications/ }).first();
+  return page.getByRole("link", { name: /^Notifications/ });
 }
 
 test("a comment on your profile becomes a notification you can open", async ({

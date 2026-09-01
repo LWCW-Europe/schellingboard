@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
-import { DateTime } from "luxon";
+import { redirect } from "next/navigation";
 import { PageNotice } from "@/app/components/page-notice";
 import { getRepositories } from "@/db/container";
 import {
@@ -8,18 +8,12 @@ import {
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
 import { openNotificationAction } from "@/app/actions/notifications";
+import { outOfRangePageRedirect, parsePage } from "@/utils/pagination";
+import { formatRelativeTime } from "@/utils/relative-time";
+import { serverNow } from "@/utils/dev-clock-server";
 import { MarkAllReadButton, MarkReadButton } from "./mark-read-buttons";
 
 const PAGE_SIZE = 20;
-// SQLite refuses a non-integer OFFSET, so "?page=1.05" or "?page=1e999" would
-// crash the page rather than show the first one.
-const MAX_PAGE = 10_000;
-
-export function parsePage(raw: string | undefined): number {
-  const parsed = Math.floor(Number(raw ?? 1));
-  if (!Number.isFinite(parsed) || parsed < 1) return 1;
-  return Math.min(parsed, MAX_PAGE);
-}
 
 export default async function NotificationsPage({
   searchParams,
@@ -39,14 +33,24 @@ export default async function NotificationsPage({
 
   const page = parsePage((await searchParams).page);
   const { notifications } = getRepositories();
-  // One extra row answers "is there another page" without a second count.
-  const rows = await notifications.listByGuest(currentUser, {
-    limit: PAGE_SIZE + 1,
+  const total = await notifications.countByGuest(currentUser);
+  // A stale link to a page that no longer exists lands on the last real one,
+  // as everywhere else that paginates.
+  const redirectTarget = outOfRangePageRedirect({
+    basePath: "/notifications",
+    page,
+    total,
+    pageSize: PAGE_SIZE,
+  });
+  if (redirectTarget) redirect(redirectTarget);
+
+  const listed = await notifications.listByGuest(currentUser, {
+    limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
   });
-  const hasOlder = rows.length > PAGE_SIZE;
-  const listed = rows.slice(0, PAGE_SIZE);
+  const hasOlder = page * PAGE_SIZE < total;
   const unread = await notifications.countUnread(currentUser);
+  const now = await serverNow();
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
@@ -57,9 +61,8 @@ export default async function NotificationsPage({
 
       {listed.length === 0 ? (
         <p className="text-fg-muted">
-          {page === 1
-            ? "Nothing yet. When someone comments on your session or changes something you have RSVP'd to, it will show up here."
-            : "No more notifications."}
+          Nothing yet. When someone comments on your session or changes
+          something you have RSVP&apos;d to, it will show up here.
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -91,7 +94,7 @@ export default async function NotificationsPage({
                       {notification.text}
                     </span>
                     <span className="block text-sm text-fg-muted">
-                      {DateTime.fromJSDate(notification.createdAt).toRelative()}
+                      {formatRelativeTime(notification.createdAt, now)}
                     </span>
                   </button>
                 </form>

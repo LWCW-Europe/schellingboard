@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getRepositories } from "@/db/container";
-import { outOfRangePageRedirect } from "@/utils/pagination";
+import { outOfRangePageRedirect, parsePage } from "@/utils/pagination";
 import { requireAdminPage } from "../../../require-admin";
 import {
   EventGuestsManager,
@@ -12,11 +12,6 @@ const PAGE_SIZE = 25;
 
 function parseFilter(value: string | undefined): GuestFilter {
   return value === "assigned" || value === "not-assigned" ? value : "all";
-}
-
-function parsePage(value: string | undefined): number {
-  const n = Number(value);
-  return Number.isInteger(n) && n >= 1 ? n : 1;
 }
 
 export default async function AdminEventGuestsPage({

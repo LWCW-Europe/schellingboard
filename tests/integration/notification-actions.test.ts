@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 
 const cookieJar = new Map<string, string>();
 
@@ -24,6 +32,7 @@ import { setupTestDb, resetTestDb } from "../helpers/db";
 import { siteAuthenticate } from "../helpers/site-auth";
 import { createGuest } from "../helpers/factories";
 import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
+import { TIME_OFFSET_COOKIE } from "@/utils/dev-clock";
 import { getRepositories } from "@/db/container";
 import { redirect } from "next/navigation";
 import {
@@ -156,5 +165,36 @@ describe("openNotificationAction", () => {
 
     expect(await getRepositories().notifications.countUnread(guest.id)).toBe(1);
     expect(redirect).not.toHaveBeenCalled();
+  });
+});
+
+// The actions read the clock through serverNow(), so a time-travelled session
+// stamps its reads with the same offset everything else in the app uses.
+describe("the dev fake clock reaches read timestamps", () => {
+  beforeAll(() => setupTestDb());
+
+  beforeEach(async () => {
+    resetTestDb();
+    cookieJar.clear();
+    await siteAuthenticate(cookieJar);
+    vi.stubEnv("SB_ENABLE_DEV_TOOLS", "1");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("stamps a read with the offset the toolbar is holding", async () => {
+    const guest = await createGuest();
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
+    const notification = await notify(guest.id);
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+    cookieJar.set(TIME_OFFSET_COOKIE, String(threeDays));
+
+    await markNotificationReadAction(notification.id);
+
+    const [listed] = await getRepositories().notifications.listByGuest(
+      guest.id
+    );
+    const shift = listed.readAt!.getTime() - Date.now();
+    expect(shift).toBeGreaterThan(threeDays - 60_000);
   });
 });
