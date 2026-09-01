@@ -161,14 +161,19 @@ describe("notifications repository", () => {
     await expect(
       notify(guest.id, { url: "https://elsewhere.example/phish" })
     ).rejects.toThrow(/site-relative/i);
-    // Protocol-relative and backslash forms start with "/" but browsers
-    // resolve them as absolute URLs to another host.
-    await expect(
-      notify(guest.id, { url: "//elsewhere.example/phish" })
-    ).rejects.toThrow(/site-relative/i);
-    await expect(
-      notify(guest.id, { url: "/\\elsewhere.example/phish" })
-    ).rejects.toThrow(/site-relative/i);
+    // Everything a browser would resolve to another origin, not just the two
+    // obvious spellings: it strips tabs and newlines before parsing, so those
+    // forms reach the same place as "//host".
+    for (const url of [
+      "//elsewhere.example/phish",
+      "/\\elsewhere.example/phish",
+      "/\t/elsewhere.example/phish",
+      "/\n/elsewhere.example/phish",
+      "https://elsewhere.example/phish",
+      "not-even-a-path",
+    ]) {
+      await expect(notify(guest.id, { url })).rejects.toThrow(/site-relative/i);
+    }
   });
 
   it("finds one by id, scoped to its guest", async () => {

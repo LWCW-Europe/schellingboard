@@ -20,6 +20,26 @@ function rowToNotification(
   };
 }
 
+// Enforced here rather than trusted from producers: openNotificationAction
+// hands the stored link straight to redirect(), where anything a browser
+// resolves to another origin sends the guest off the site.
+//
+// Asking the URL parser rather than pattern-matching is what makes this hold:
+// "//host/x", "/\\host/x" and "/<tab>/host/x" all start with a slash and all
+// resolve elsewhere, because the parser strips control characters exactly as
+// browsers do. The leading slash is still required separately — "foo" resolves
+// to this origin but is not a link from the site root.
+const LINK_BASE = "https://notification-link.invalid";
+
+function isSiteRelative(url: string): boolean {
+  if (!url.startsWith("/")) return false;
+  try {
+    return new URL(url, LINK_BASE).origin === LINK_BASE;
+  } catch {
+    return false;
+  }
+}
+
 export class SqliteNotificationsRepository implements NotificationsRepository {
   constructor(private readonly db: DB) {}
 
@@ -86,11 +106,7 @@ export class SqliteNotificationsRepository implements NotificationsRepository {
   async create(
     data: Omit<Notification, "id" | "readAt">
   ): Promise<Notification> {
-    // Enforced here rather than trusted from producers: openNotificationAction
-    // hands this straight to redirect(), where an absolute URL would send the
-    // guest off the site. A single leading slash is not enough — "//host/x" and
-    // "/\\host/x" are resolved by browsers as absolute URLs elsewhere.
-    if (!/^\/(?![/\\])/.test(data.url)) {
+    if (!isSiteRelative(data.url)) {
       throw new Error(
         `Notification link must be site-relative, got "${data.url}"`
       );
