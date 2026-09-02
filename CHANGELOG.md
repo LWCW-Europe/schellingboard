@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   notifications page lists everything newest first. Clicking one marks it read and opens what
   happened. Everything that emails you appears here too, and the email settings now govern email
   alone — so an event with no email set up still reaches its attendees
+- **Meetings, set up by the organizer**: an event's Config tab has a new Meetings section — switch
+  1-on-1 meetings on, list the places you suggest people meet, and cap how many unanswered requests
+  one attendee may have outstanding at a time. Meeting slots follow the event's schedule increment,
+  so changing that asks attendees to choose their availability again
 
 ### Internal
 

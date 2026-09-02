@@ -828,6 +828,12 @@ export interface MeetingAvailabilityRepository {
     eventId: string,
     slotStarts: Date[]
   ): Promise<void>;
+  /**
+   * Drops every guest's declared slots for the event. Used when the event's
+   * slot increment changes: slots are derived from it, so a coarser grid would
+   * re-read a declared half-hour as a full hour the guest never offered.
+   */
+  deleteByEvent(eventId: string): Promise<void>;
 }
 
 /**
