@@ -859,6 +859,9 @@ export type Meeting = {
   respondedAt?: Date;
 };
 
+export type MeetingRequestOutcome =
+  { meeting: Meeting } | { refused: "cap" | "duplicate" };
+
 export interface MeetingsRepository {
   findById(id: string): Promise<Meeting | undefined>;
   /**
@@ -881,16 +884,21 @@ export interface MeetingsRepository {
     data: Omit<Meeting, "id" | "status" | "respondedAt">
   ): Promise<Meeting>;
   /**
-   * The cap check and the insert in one transaction, returning null when the
-   * requester is already at `cap`. Two separate awaits leave a window a double
-   * submit walks straight through — the same hazard
-   * {@link RsvpsRepository.createIfUnderCapacity} exists for.
+   * Both refusals and the insert in one transaction. Two separate awaits leave
+   * a window a double submit walks straight through — the same hazard
+   * {@link RsvpsRepository.createIfUnderCapacity} exists for, and the reason
+   * "already asked them" is decided here rather than read off a constraint
+   * violation.
+   *
+   * "duplicate" means a live request already covers that pair and slot;
+   * declined and cancelled ones do not count, so the pair can agree on a slot
+   * they had earlier passed on.
    */
-  createIfUnderCap(
+  createIfAllowed(
     data: Omit<Meeting, "id" | "status" | "respondedAt">,
     cap: number,
     now: Date
-  ): Promise<Meeting | null>;
+  ): Promise<MeetingRequestOutcome>;
   /**
    * Moves the meeting to `status`, but only from one of `from` — undefined
    * when it is in some other state, which is how a caller learns that someone

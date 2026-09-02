@@ -147,6 +147,15 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       await import("@/app/(site)/[eventSlug]/comment-actions");
     return deleteComment({ commentId: "c", eventSlug: "s" });
   },
+  "actions/meetings.ts:requestMeetingAction": async () => {
+    const { requestMeetingAction } = await import("@/app/actions/meetings");
+    return requestMeetingAction({
+      eventId: "e",
+      recipientId: "g",
+      slotStart: new Date().toISOString(),
+      meetingPoint: "Coffee bar",
+    });
+  },
   "actions/meetings.ts:saveMeetingAvailabilityAction": async () => {
     const { saveMeetingAvailabilityAction } =
       await import("@/app/actions/meetings");

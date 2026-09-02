@@ -399,19 +399,19 @@ describe("meetings", () => {
       createdAt: new Date("2026-09-01T08:00:00.000Z"),
     });
 
-    const first = await meetings.createIfUnderCap(
+    const first = await meetings.createIfAllowed(
       request(SLOT_A, SLOT_B),
       1,
       BEFORE_SLOTS
     );
-    const second = await meetings.createIfUnderCap(
+    const second = await meetings.createIfAllowed(
       request(SLOT_B, SLOT_C),
       1,
       BEFORE_SLOTS
     );
 
-    expect(first?.status).toBe("pending");
-    expect(second).toBeNull();
+    expect(first).toHaveProperty("meeting.status", "pending");
+    expect(second).toEqual({ refused: "cap" });
     expect(
       await meetings.listByGuestAndEvent(requester.id, event.id)
     ).toHaveLength(1);
@@ -430,20 +430,25 @@ describe("meetings", () => {
       message: "",
       createdAt: new Date("2026-09-01T08:00:00.000Z"),
     });
-    const first = await meetings.createIfUnderCap(
+    const first = await meetings.createIfAllowed(
       request(SLOT_A, SLOT_B),
       1,
       BEFORE_SLOTS
     );
-    await meetings.updateStatus(first!.id, "declined", new Date(), ["pending"]);
+    await meetings.updateStatus(
+      (first as { meeting: { id: string } }).meeting.id,
+      "declined",
+      new Date(),
+      ["pending"]
+    );
 
-    const second = await meetings.createIfUnderCap(
+    const second = await meetings.createIfAllowed(
       request(SLOT_B, SLOT_C),
       1,
       BEFORE_SLOTS
     );
 
-    expect(second?.status).toBe("pending");
+    expect(second).toHaveProperty("meeting.status", "pending");
   });
 
   // Asking the same person twice for the same slot is a double submit, not a

@@ -2,7 +2,12 @@ import { and, asc, count, eq, gt, inArray, or } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
-import type { Meeting, MeetingStatus, MeetingsRepository } from "../interfaces";
+import type {
+  Meeting,
+  MeetingRequestOutcome,
+  MeetingStatus,
+  MeetingsRepository,
+} from "../interfaces";
 
 type DB = BetterSQLite3Database<typeof schema>;
 
@@ -90,18 +95,19 @@ export class SqliteMeetingsRepository implements MeetingsRepository {
     return rowToMeeting(row);
   }
 
-  async createIfUnderCap(
+  async createIfAllowed(
     data: Omit<Meeting, "id" | "status" | "respondedAt">,
     cap: number,
     now: Date
-  ): Promise<Meeting | null> {
+  ): Promise<MeetingRequestOutcome> {
     return this.db.transaction((tx) => {
+      if (this.hasLiveRequest(tx, data)) return { refused: "duplicate" };
       if (this.countOpen(tx, data.requesterId, data.eventId, now) >= cap) {
-        return null;
+        return { refused: "cap" };
       }
       const row = toRow(data);
       tx.insert(schema.meetings).values(row).run();
-      return rowToMeeting(row);
+      return { meeting: rowToMeeting(row) };
     });
   }
 
@@ -119,6 +125,30 @@ export class SqliteMeetingsRepository implements MeetingsRepository {
       )
       .run();
     return result.changes === 0 ? undefined : this.findById(id);
+  }
+
+  // The same pair and slot, still awaiting or holding an answer. Mirrors the
+  // partial unique index, which stays as the backstop: this is what turns the
+  // clash into a sentence the requester can act on.
+  private hasLiveRequest(
+    db: DB,
+    data: Pick<Meeting, "eventId" | "requesterId" | "recipientId" | "slotStart">
+  ): boolean {
+    return (
+      db
+        .select({ id: schema.meetings.id })
+        .from(schema.meetings)
+        .where(
+          and(
+            eq(schema.meetings.eventId, data.eventId),
+            eq(schema.meetings.requesterId, data.requesterId),
+            eq(schema.meetings.recipientId, data.recipientId),
+            eq(schema.meetings.slotStart, data.slotStart.toISOString()),
+            inArray(schema.meetings.status, ["pending", "accepted"])
+          )
+        )
+        .get() !== undefined
+    );
   }
 
   // Shared by the plain count and the transactional create, so "outstanding"
