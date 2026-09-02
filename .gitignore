@@ -95,3 +95,7 @@ www-site/
 # Spec-Kit for Claude
 .specify/
 .claude/skills/speckit-*/
+
+# Dev-server config for Claude Code's preview pane -- local tooling, and the
+# command it runs depends on where node lives on the machine
+.claude/launch.json
