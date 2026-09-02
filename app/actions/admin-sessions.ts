@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getRepositories } from "@/db/container";
 import { isAdminRequest } from "@/utils/acting-admin";
 import { sessionSlotAlignmentError } from "@/utils/day-window";
+import { serverNow } from "@/utils/dev-clock-server";
 import {
   notifyCohostsAdded,
   notifySessionChanged,
@@ -143,7 +144,9 @@ export async function adminCreateSessionAction(
 
   await revalidateEventPaths(input.eventId);
 
+  const now = await serverNow();
   await notifyCohostsAdded({
+    now,
     session: created,
     previousHostIds: [],
     changedById: null,
@@ -208,12 +211,15 @@ export async function adminUpdateSessionAction(
 
   await revalidateEventPaths(session.eventId);
 
+  const now = await serverNow();
   await notifyCohostsAdded({
+    now,
     session: updated,
     previousHostIds: session.hosts.map((h) => h.id),
     changedById: null,
   });
   await notifySessionChanged({
+    now,
     before: session,
     after: updated,
     changedById: null,
@@ -239,7 +245,9 @@ export async function adminDeleteSessionAction(input: {
   }
 
   await revalidateEventPaths(session.eventId);
+  const now = await serverNow();
   await notifySessionDeleted({
+    now,
     session,
     rsvpGuestIds,
     changedById: null,

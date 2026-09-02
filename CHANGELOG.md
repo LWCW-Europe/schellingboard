@@ -9,6 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **In-app notifications** (#750): a bell in the header counts what is waiting, and the
+  notifications page lists everything newest first. Clicking one marks it read and opens what
+  happened. Everything that emails you appears here too, and the email settings now govern email
+  alone — so an event with no email set up still reaches its attendees
+
 ### Internal
 
 - The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually

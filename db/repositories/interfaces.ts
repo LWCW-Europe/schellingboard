@@ -898,6 +898,50 @@ export interface MeetingsRepository {
   ): Promise<Meeting | undefined>;
 }
 
+// ── Notifications ──────────────────────────────────────────────────────────────
+
+/**
+ * What happened, as one of the guest's email-setting keys. The two channels
+ * share a taxonomy: the setting decides whether mail goes out, never whether
+ * the in-app notification is recorded.
+ */
+export type NotificationType = keyof EmailSettings;
+
+export type Notification = {
+  id: string;
+  guestId: string;
+  type: NotificationType;
+  /** One line, in the past tense: "Anna commented on your session". */
+  text: string;
+  /** Site-relative path to whatever happened, e.g. `/eventslug?viewSession=x`. */
+  url: string;
+  createdAt: Date;
+  /** Unset while unread. */
+  readAt?: Date;
+};
+
+export interface NotificationsRepository {
+  /** One notification, iff it belongs to `guestId`. */
+  findForGuest(guestId: string, id: string): Promise<Notification | undefined>;
+  /** Newest first. */
+  listByGuest(
+    guestId: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<Notification[]>;
+  /** Drives the nav badge. */
+  countUnread(guestId: string): Promise<number>;
+  /** Everything the guest has, read or not — what paging is measured against. */
+  countByGuest(guestId: string): Promise<number>;
+  create(data: Omit<Notification, "id" | "readAt">): Promise<Notification>;
+  /**
+   * Marks one notification read, iff it belongs to `guestId`; false when it
+   * does not exist or is someone else's. Already-read rows keep their original
+   * timestamp. `readAt` comes from the caller so the dev fake clock reaches it.
+   */
+  markRead(guestId: string, id: string, readAt: Date): Promise<boolean>;
+  markAllRead(guestId: string, readAt: Date): Promise<void>;
+}
+
 // ── Images ─────────────────────────────────────────────────────────────────────
 
 export interface ImageResourceRepository<Id> {

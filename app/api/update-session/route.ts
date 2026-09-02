@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
     return new Response(msg, { status: 404 });
   }
   const event = await repos.events.findById(prevSession.eventId);
-  if (!event || !inSchedPhase(event, requestNow(req))) {
+  const now = requestNow(req);
+  if (!event || !inSchedPhase(event, now)) {
     return new Response(
       "Sessions can only be edited during the scheduling phase",
       { status: 403 }
@@ -114,11 +115,13 @@ export async function POST(req: NextRequest) {
     }
 
     await notifyCohostsAdded({
+      now,
       session: updated,
       previousHostIds: prevSession.hosts.map((h) => h.id),
       changedById: actor,
     });
     await notifySessionChanged({
+      now,
       before: prevSession,
       after: updated,
       changedById: actor,

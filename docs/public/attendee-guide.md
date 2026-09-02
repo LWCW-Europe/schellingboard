@@ -256,16 +256,33 @@ you it happened.
 - **Lost both your password and your email?** Ask an organizer to update the
   address on file; codes then go to the new one.
 
+## Notifications
+
+The bell in the header counts what is waiting for you, and the notifications
+page lists everything newest first. You'll be told when:
+
+- a session you host or have RSVP'd to is moved or deleted
+- someone adds you as a co-host
+- someone comments on a proposal or session you host, or on your profile
+- someone else comments on something you commented on
+
+**Clicking a notification marks it read and takes you straight to what
+happened.** If you'd rather clear one without opening it, use the tick beside
+it, or **Mark all as read** at the top. Nothing is ever deleted, so the page
+stays a record of the event.
+
+Notifications appear whether or not the event has email set up, and turning an
+email off (below) never hides it here.
+
 ## Settings
 
-- **Email notifications** (if the event has email) — when a session you host
-  or RSVP'd to is moved or deleted, when someone adds you as a co-host, and
-  when someone comments on a proposal or session you host or on your own
-  profile. All on by default, each can be turned off. Emails about every new
-  comment on a proposal, session or profile _you_ commented on are off by
-  default. Every email says what happened and links to it — session
-  descriptions and comment text stay on the site rather than going out to your
-  email provider.
+- **Email notifications** (if the event has email) — the same list as
+  Notifications above, sent to your inbox as well. All on by default, each can
+  be turned off. Emails about every new comment on a proposal, session or
+  profile _you_ commented on are off by default. Turning one off stops the
+  email only — you still see it in the app. Every email says what happened and
+  links to it — session descriptions and comment text stay on the site rather
+  than going out to your email provider.
 - **Appearance** — System, Light or Dark, also available at the very bottom of
   every page. **System** follows your phone or laptop, so the site turns dark
   in the evening if your device does. The choice is remembered per device, not

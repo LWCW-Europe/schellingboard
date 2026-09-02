@@ -151,6 +151,21 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
     const { updateProfileAction } = await import("@/app/actions/profile");
     return updateProfileAction({ name: "N" });
   },
+  "actions/notifications.ts:openNotificationAction": async () => {
+    const { openNotificationAction } =
+      await import("@/app/actions/notifications");
+    return openNotificationAction("n");
+  },
+  "actions/notifications.ts:markNotificationReadAction": async () => {
+    const { markNotificationReadAction } =
+      await import("@/app/actions/notifications");
+    return markNotificationReadAction("n");
+  },
+  "actions/notifications.ts:markAllNotificationsReadAction": async () => {
+    const { markAllNotificationsReadAction } =
+      await import("@/app/actions/notifications");
+    return markAllNotificationsReadAction();
+  },
   "actions/settings.ts:updateEmailSettingsAction": async () => {
     const { updateEmailSettingsAction } =
       await import("@/app/actions/settings");

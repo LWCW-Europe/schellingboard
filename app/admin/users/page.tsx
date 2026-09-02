@@ -2,16 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getRepositories } from "@/db/container";
 import { SECONDARY_BUTTON } from "../buttons";
-import { outOfRangePageRedirect } from "@/utils/pagination";
+import { outOfRangePageRedirect, parsePage } from "@/utils/pagination";
 import { requireAdminPage } from "../require-admin";
 import { GuestsManager, type AdminUser } from "../guests-manager";
 
 const PAGE_SIZE = 25;
-
-function parsePage(value: string | undefined): number {
-  const n = Number(value);
-  return Number.isInteger(n) && n >= 1 ? n : 1;
-}
 
 export default async function AdminUsersPage({
   searchParams,

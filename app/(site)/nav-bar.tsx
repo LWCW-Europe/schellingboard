@@ -2,6 +2,7 @@
 import { Disclosure } from "@headlessui/react";
 import {
   Bars3Icon,
+  BellIcon,
   UserGroupIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -24,11 +25,15 @@ export default function NavBar({
   guests,
   showGuestsLink,
   mapImageUrl,
+  showNotifications,
+  unreadNotifications,
 }: {
   navItems: NavItem[];
   guests: Guest[];
   showGuestsLink: boolean;
   mapImageUrl: string;
+  showNotifications: boolean;
+  unreadNotifications: number;
 }) {
   return (
     <Disclosure
@@ -75,6 +80,20 @@ export default function NavBar({
                       Attendees
                     </Link>
                   )}
+                  {showNotifications && (
+                    <Link
+                      href="/notifications"
+                      aria-label={notificationsLabel(unreadNotifications)}
+                      className="relative flex cursor-pointer items-center rounded-md p-2 text-fg-subtle hover:bg-surface-muted"
+                    >
+                      <BellIcon className="block h-5 w-auto" />
+                      {unreadNotifications > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-accent px-1 text-center text-xs font-medium leading-4 text-fg-inverse">
+                          {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                        </span>
+                      )}
+                    </Link>
+                  )}
                   {mapImageUrl && <MapModal mapImageUrl={mapImageUrl} />}
                   {guests.length > 0 && <HeaderUserSelect guests={guests} />}
                 </div>
@@ -106,6 +125,10 @@ export default function NavBar({
       )}
     </Disclosure>
   );
+}
+
+function notificationsLabel(unread: number): string {
+  return unread > 0 ? `Notifications (${unread} unread)` : "Notifications";
 }
 
 function NavBarItem(props: { item: NavItem; highlightCurrent: boolean }) {

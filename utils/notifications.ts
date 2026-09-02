@@ -10,34 +10,66 @@ import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
 import { sessionDeletedEmail } from "@/emails/session-deleted";
 import { cohostAddedEmail } from "@/emails/cohost-added";
-import { type CommentSubject, commentEmail } from "@/emails/comment";
+import {
+  type CommentSubject,
+  commentEmail,
+  commentNoticeText,
+} from "@/emails/comment";
 import { getStartTimePlusBreak } from "@/utils/utils";
 
-// Send `message` to the guest, iff they have opted in to emails for
-// `setting` (see EmailSettings).
+// One line in the past tense, where it happened, and when — `at` comes from
+// the caller's clock so the dev fake clock reaches these rows like every other
+// timestamp (ADR 0004).
+export type InAppNotice = { text: string; url: string; at: Date };
+
+// Tell the guest that something happened, on both channels: an in-app
+// notification always, and `message` by email iff they have opted in for
+// `setting` (see EmailSettings). Opting out of the mail is a request not to be
+// interrupted outside the app, not a request to be uninformed inside it.
 //
-// An unknown guest id is a no-op rather than an error: notifications should be
-// sent after the triggering change is committed, by which time the guest may
-// have been deleted.
+// The in-app row is written first, so a mail that fails to send doesn't take
+// the notification with it.
+//
+// An unknown guest id is a no-op rather than an error: notifications are sent
+// after the triggering change is committed, by which time the guest may have
+// been deleted.
 export async function notifyGuest(
   guestId: string,
   setting: keyof EmailSettings,
-  message: EmailMessage
+  message: EmailMessage,
+  inApp: InAppNotice
 ): Promise<void> {
-  const guest = await getRepositories().guests.findById(guestId);
-  if (!guest || !guest.info.emailSettings[setting]) return;
+  const { guests, notifications } = getRepositories();
+  const guest = await guests.findById(guestId);
+  if (!guest) return;
+
+  await notifications.create({
+    guestId,
+    type: setting,
+    text: inApp.text,
+    url: inApp.url,
+    createdAt: inApp.at,
+  });
+
+  if (!guest.info.emailSettings[setting]) return;
+  // Without a base URL an email can only carry dead links. SITE_URL is
+  // required wherever SMTP is configured, so this drops nothing that could
+  // have been delivered — the in-app notification above is what such an
+  // instance runs on.
+  if (siteUrl() === null) return;
   await sendMail({ to: guest.info.email, ...message });
 }
 
 async function tryNotifyGuest(
   guestId: string,
   setting: keyof EmailSettings,
-  message: EmailMessage
+  message: EmailMessage,
+  inApp: InAppNotice
 ): Promise<void> {
   try {
-    await notifyGuest(guestId, setting, message);
+    await notifyGuest(guestId, setting, message, inApp);
   } catch (err) {
-    console.error(`Failed to email guest ${guestId}:`, err);
+    console.error(`Failed to notify guest ${guestId}:`, err);
   }
 }
 
@@ -54,6 +86,7 @@ export async function notifySessionChanged(args: {
   before: Session;
   after: Session;
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   try {
     await notifySessionChangedUnsafe(args);
@@ -66,10 +99,12 @@ async function notifySessionChangedUnsafe({
   before,
   after,
   changedById,
+  now,
 }: {
   before: Session;
   after: Session;
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   const timeChanged =
     before.startTime?.getTime() !== after.startTime?.getTime() ||
@@ -81,17 +116,9 @@ async function notifySessionChangedUnsafe({
   const event = await events.findById(after.eventId);
   if (!event) return;
 
-  // No SITE_URL means SMTP is not configured either (initMailer enforces
-  // that), so no email could be sent anyway.
-  const base = siteUrl();
-  if (base === null) {
-    console.warn(
-      "SITE_URL is not set - not sending session change notifications"
-    );
-    return;
-  }
+  const path = sessionPath(event.slug, after.id);
   const messageProps = {
-    sessionUrl: sessionUrl(base, event.slug, after.id),
+    sessionUrl: emailBase() + path,
     title: after.title,
     newTime: formatSessionTime(after, event.timezone, event.breakMinutes),
     oldTime: timeChanged
@@ -108,7 +135,7 @@ async function notifySessionChangedUnsafe({
     ...messageProps,
     recipient: "attendee",
   });
-
+  const what = changeSummary(messageProps);
   await notifySessionRecipients({
     hostIds: after.hosts.map((host) => host.id),
     rsvpGuestIds: (await rsvps.listBySession(after.id)).map(
@@ -117,7 +144,34 @@ async function notifySessionChangedUnsafe({
     changedById,
     hostMessage,
     attendeeMessage,
+    hostInApp: {
+      text: `Your session "${after.title}" ${what}`,
+      url: path,
+      at: now,
+    },
+    attendeeInApp: { text: `"${after.title}" ${what}`, url: path, at: now },
   });
+}
+
+// What to say happened, given only what actually changed. The old value is
+// named too: someone told their session moved wants to know which slot just
+// freed up, to fill it or to host in it.
+function changeSummary({
+  newTime,
+  oldTime,
+  newLocation,
+  oldLocation,
+}: {
+  newTime: string;
+  oldTime?: string;
+  newLocation: string;
+  oldLocation?: string;
+}): string {
+  if (oldTime !== undefined && oldLocation !== undefined) {
+    return `is now ${newTime}, ${newLocation} (was ${oldTime}, ${oldLocation})`;
+  }
+  if (oldTime !== undefined) return `moved to ${newTime} (was ${oldTime})`;
+  return `moved to ${newLocation} (was ${oldLocation})`;
 }
 
 // The guests to tell about a session's deletion, to be called *before*
@@ -150,6 +204,7 @@ export async function notifySessionDeleted(args: {
   session: Session;
   rsvpGuestIds: string[];
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   try {
     await notifySessionDeletedUnsafe(args);
@@ -162,26 +217,22 @@ async function notifySessionDeletedUnsafe({
   session,
   rsvpGuestIds,
   changedById,
+  now,
 }: {
   session: Session;
   rsvpGuestIds: string[];
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   const event = await getRepositories().events.findById(session.eventId);
   if (!event) return;
 
-  const base = siteUrl();
-  if (base === null) {
-    console.warn(
-      "SITE_URL is not set - not sending session deletion notifications"
-    );
-    return;
-  }
+  const eventPath = `/${event.slug}`;
   const messageProps = {
     title: session.title,
     time: formatSessionTime(session, event.timezone, event.breakMinutes),
     location: formatLocations(session),
-    eventUrl: `${base}/${event.slug}`,
+    eventUrl: emailBase() + eventPath,
   };
 
   await notifySessionRecipients({
@@ -196,6 +247,17 @@ async function notifySessionDeletedUnsafe({
       ...messageProps,
       recipient: "attendee",
     }),
+    // The session is gone, so the link can only be the event it was at.
+    hostInApp: {
+      text: `Your session "${session.title}" was deleted`,
+      url: eventPath,
+      at: now,
+    },
+    attendeeInApp: {
+      text: `"${session.title}" was deleted`,
+      url: eventPath,
+      at: now,
+    },
   });
 }
 
@@ -205,12 +267,16 @@ async function notifySessionRecipients({
   changedById,
   hostMessage,
   attendeeMessage,
+  hostInApp,
+  attendeeInApp,
 }: {
   hostIds: string[];
   rsvpGuestIds: string[];
   changedById: string | null;
   hostMessage: EmailMessage;
   attendeeMessage: EmailMessage;
+  hostInApp: InAppNotice;
+  attendeeInApp: InAppNotice;
 }): Promise<void> {
   // Guards against telling anyone twice (or the editor at all), should a
   // guest ever be both host and RSVP'd.
@@ -219,12 +285,12 @@ async function notifySessionRecipients({
   for (const hostId of hostIds) {
     if (done.has(hostId)) continue;
     done.add(hostId);
-    await tryNotifyGuest(hostId, "hostChange", hostMessage);
+    await tryNotifyGuest(hostId, "hostChange", hostMessage, hostInApp);
   }
   for (const guestId of rsvpGuestIds) {
     if (done.has(guestId)) continue;
     done.add(guestId);
-    await tryNotifyGuest(guestId, "rsvpChange", attendeeMessage);
+    await tryNotifyGuest(guestId, "rsvpChange", attendeeMessage, attendeeInApp);
   }
 }
 
@@ -241,6 +307,7 @@ export async function notifyCohostsAdded(args: {
   session: Session;
   previousHostIds: string[];
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   try {
     await notifyCohostsAddedUnsafe(args);
@@ -253,10 +320,12 @@ async function notifyCohostsAddedUnsafe({
   session,
   previousHostIds,
   changedById,
+  now,
 }: {
   session: Session;
   previousHostIds: string[];
   changedById: string | null;
+  now: Date;
 }): Promise<void> {
   const previous = new Set(previousHostIds);
   const added = session.hosts.filter(
@@ -267,50 +336,51 @@ async function notifyCohostsAddedUnsafe({
   const event = await getRepositories().events.findById(session.eventId);
   if (!event) return;
 
-  // No SITE_URL means SMTP is not configured either (initMailer enforces
-  // that), so no email could be sent anyway.
-  const base = siteUrl();
-  if (base === null) {
-    console.warn("SITE_URL is not set - not sending co-host notifications");
-    return;
-  }
-
+  const path = sessionPath(event.slug, session.id);
   const message = cohostAddedEmail({
     title: session.title,
     time: formatSessionTime(session, event.timezone, event.breakMinutes),
     location: formatLocations(session),
-    sessionUrl: sessionUrl(base, event.slug, session.id),
+    sessionUrl: emailBase() + path,
   });
 
+  const inApp = {
+    text: `You were added as a co-host of "${session.title}"`,
+    url: path,
+    at: now,
+  };
   for (const host of added) {
-    await tryNotifyGuest(host.id, "cohostAdd", message);
+    await tryNotifyGuest(host.id, "cohostAdd", message, inApp);
   }
 }
 
-// Email a new comment to the guests responsible for what was commented on —
-// a proposal's or session's hosts, a profile's owner — who have opted in, and
-// to the authors of its earlier comments (who have opted in — off by default).
+// Notify the guests responsible for what was commented on — a proposal's or
+// session's hosts, a profile's owner — and the authors of its earlier
+// comments. Everyone told gets the in-app notification; their email settings
+// decide who also gets mail (for earlier commenters that is off by default).
 // The comment's own author is never told about their own comment, and nobody
 // is told twice, whichever way they qualify.
-async function deliverCommentEmails({
+async function deliverCommentNotifications({
   subject,
   responsibleIds,
   responsibleSetting,
   earlier,
   comment,
-  url,
+  path,
+  now,
 }: {
   subject: CommentSubject;
   responsibleIds: string[];
   responsibleSetting: keyof EmailSettings;
   earlier: Comment[];
   comment: Comment;
-  url: string;
+  path: string;
+  now: Date;
 }): Promise<void> {
   const messageProps = {
     subject,
     commenterName: comment.author?.name ?? "Someone",
-    url,
+    url: emailBase() + path,
   };
 
   const done = new Set(comment.author ? [comment.author.id] : []);
@@ -322,7 +392,16 @@ async function deliverCommentEmails({
     await tryNotifyGuest(
       guestId,
       responsibleSetting,
-      commentEmail({ ...messageProps, recipient: "responsible" })
+      commentEmail({ ...messageProps, recipient: "responsible" }),
+      {
+        text: commentNoticeText(
+          subject,
+          "responsible",
+          messageProps.commenterName
+        ),
+        url: path,
+        at: now,
+      }
     );
   }
 
@@ -334,7 +413,16 @@ async function deliverCommentEmails({
     await tryNotifyGuest(
       author.id,
       "commentThread",
-      commentEmail({ ...messageProps, recipient: "commenter" })
+      commentEmail({ ...messageProps, recipient: "commenter" }),
+      {
+        text: commentNoticeText(
+          subject,
+          "commenter",
+          messageProps.commenterName
+        ),
+        url: path,
+        at: now,
+      }
     );
   }
 }
@@ -344,15 +432,10 @@ async function deliverCommentEmails({
 // guests.
 async function notifyCommented(
   kind: CommentSubject["kind"],
-  send: (base: string) => Promise<void>
+  send: () => Promise<void>
 ): Promise<void> {
   try {
-    const base = siteUrl();
-    if (base === null) {
-      console.warn("SITE_URL is not set - not sending comment notifications");
-      return;
-    }
-    await send(base);
+    await send();
   } catch (err) {
     console.error(`Failed to send ${kind}-comment notifications:`, err);
   }
@@ -361,11 +444,13 @@ async function notifyCommented(
 export async function notifyProposalCommented({
   proposalId,
   comment,
+  now,
 }: {
   proposalId: string;
   comment: Comment;
+  now: Date;
 }): Promise<void> {
-  await notifyCommented("proposal", async (base) => {
+  await notifyCommented("proposal", async () => {
     const { proposalComments, events, sessionProposals } = getRepositories();
     const proposal = await sessionProposals.findById(proposalId);
     if (!proposal) {
@@ -375,13 +460,14 @@ export async function notifyProposalCommented({
     if (!event) {
       return;
     }
-    await deliverCommentEmails({
+    await deliverCommentNotifications({
       subject: { kind: "proposal", title: proposal.title },
       responsibleIds: proposal.hosts.map((host) => host.id),
       responsibleSetting: "proposalComment",
       earlier: await proposalComments.list(proposalId),
       comment,
-      url: proposalCommentUrl(base, event.slug, proposalId, comment.id),
+      now,
+      path: proposalCommentPath(event.slug, proposalId, comment.id),
     });
   });
 }
@@ -389,11 +475,13 @@ export async function notifyProposalCommented({
 export async function notifySessionCommented({
   sessionId,
   comment,
+  now,
 }: {
   sessionId: string;
   comment: Comment;
+  now: Date;
 }): Promise<void> {
-  await notifyCommented("session", async (base) => {
+  await notifyCommented("session", async () => {
     const { sessionComments, events, sessions } = getRepositories();
     const session = await sessions.findById(sessionId);
     if (!session) {
@@ -403,13 +491,14 @@ export async function notifySessionCommented({
     if (!event) {
       return;
     }
-    await deliverCommentEmails({
+    await deliverCommentNotifications({
       subject: { kind: "session", title: session.title },
       responsibleIds: session.hosts.map((host) => host.id),
       responsibleSetting: "sessionComment",
       earlier: await sessionComments.list(sessionId),
       comment,
-      url: `${sessionUrl(base, event.slug, sessionId)}#comment-${comment.id}`,
+      now,
+      path: `${sessionPath(event.slug, sessionId)}#comment-${comment.id}`,
     });
   });
 }
@@ -417,42 +506,52 @@ export async function notifySessionCommented({
 export async function notifyProfileCommented({
   profileId,
   comment,
+  now,
 }: {
   profileId: string;
   comment: Comment;
+  now: Date;
 }): Promise<void> {
-  await notifyCommented("profile", async (base) => {
+  await notifyCommented("profile", async () => {
     const { profileComments, guests } = getRepositories();
     const owner = await guests.findById(profileId);
     if (!owner) {
       return;
     }
-    await deliverCommentEmails({
+    await deliverCommentNotifications({
       subject: { kind: "profile", ownerName: owner.name },
       responsibleIds: [profileId],
       responsibleSetting: "profileComment",
       earlier: await profileComments.list(profileId),
       comment,
-      url: `${base}/guests/${profileId}#comment-${comment.id}`,
+      now,
+      path: `/guests/${profileId}#comment-${comment.id}`,
     });
   });
 }
 
 // Deep link to the comment inside the proposal modal, same shape as
 // modal-nav's viewProposalLinkFromElsewhere plus the comment's anchor.
-function proposalCommentUrl(
-  base: string,
+function proposalCommentPath(
   eventSlug: string,
   proposalId: string,
   commentId: string
 ) {
-  return `${base}/${eventSlug}/proposals?viewProposal=${proposalId}#comment-${commentId}`;
+  return `/${eventSlug}/proposals?viewProposal=${proposalId}#comment-${commentId}`;
 }
 
 // Deep link to the session, same shape as modal-nav's
 // viewSessionLinkFromElsewhere.
-function sessionUrl(base: string, eventSlug: string, sessionId: string) {
-  return `${base}/${eventSlug}?viewSession=${sessionId}`;
+function sessionPath(eventSlug: string, sessionId: string) {
+  return `/${eventSlug}?viewSession=${sessionId}`;
+}
+
+// Emails need an absolute link; in-app notifications keep the path, so they
+// survive the site moving and still work on an instance with no SITE_URL at
+// all. An empty base only happens when SMTP is unconfigured too (initMailer
+// enforces that pairing), so the email built on it can never be sent.
+function emailBase(): string {
+  return siteUrl() ?? "";
 }
 
 function sameLocations(a: { id: string }[], b: { id: string }[]): boolean {

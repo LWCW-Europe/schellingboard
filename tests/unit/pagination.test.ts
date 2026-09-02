@@ -1,5 +1,34 @@
 import { describe, it, expect } from "vitest";
-import { outOfRangePageRedirect } from "@/utils/pagination";
+import { outOfRangePageRedirect, parsePage } from "@/utils/pagination";
+
+// A non-integer OFFSET is rejected by SQLite with "datatype mismatch", so a
+// page number that is not a whole number has to become 1 rather than reach a
+// query. Six pages share this.
+describe("parsePage", () => {
+  it("reads an ordinary page number", () => {
+    expect(parsePage("3")).toBe(3);
+  });
+
+  it("falls back to the first page for anything that is not one", () => {
+    expect(parsePage(undefined)).toBe(1);
+    expect(parsePage("")).toBe(1);
+    expect(parsePage("abc")).toBe(1);
+    expect(parsePage("0")).toBe(1);
+    expect(parsePage("-4")).toBe(1);
+  });
+
+  it("rejects fractions and infinities rather than rounding them", () => {
+    expect(parsePage("1.05")).toBe(1);
+    expect(parsePage("2.9")).toBe(1);
+    expect(parsePage("1e999")).toBe(1);
+  });
+
+  // Beyond the last page is not this function's problem: outOfRangePageRedirect
+  // sends the visitor to the last real one.
+  it("passes a too-large page through", () => {
+    expect(parsePage("99999999")).toBe(99999999);
+  });
+});
 
 describe("outOfRangePageRedirect", () => {
   it("returns null when the page is within range", () => {
