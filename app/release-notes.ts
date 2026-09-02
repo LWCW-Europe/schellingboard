@@ -41,6 +41,7 @@ export const releaseNotes: ReleaseNote[] = [
     version: "Unreleased",
     highlights: [
       "**Notifications in the app**: a bell in the header counts what is waiting, and clicking one takes you to it. Everything that emails you appears here too, even where email is not set up.",
+      "**Meetings**: an event's Config tab can switch on 1-on-1s between attendees — the places you suggest people meet, and a cap on how many unanswered requests one person may have out.",
     ],
   },
   {

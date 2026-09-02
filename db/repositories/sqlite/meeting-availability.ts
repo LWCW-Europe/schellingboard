@@ -48,4 +48,11 @@ export class SqliteMeetingAvailabilityRepository implements MeetingAvailabilityR
         .run();
     });
   }
+
+  async deleteByEvent(eventId: string): Promise<void> {
+    this.db
+      .delete(schema.meetingAvailability)
+      .where(eq(schema.meetingAvailability.eventId, eventId))
+      .run();
+  }
 }

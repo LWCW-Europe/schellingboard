@@ -205,7 +205,9 @@ export async function updateEventAction(
   const existing = await getRepositories().events.findById(input.id);
   if (!existing) return { ok: false, error: "Event not found" };
 
-  if (parsed.data.slotIncrementMinutes !== existing.slotIncrementMinutes) {
+  const incrementChanged =
+    parsed.data.slotIncrementMinutes !== existing.slotIncrementMinutes;
+  if (incrementChanged) {
     const error = await slotIncrementChangeError(
       input.id,
       parsed.data.slotIncrementMinutes
@@ -215,6 +217,14 @@ export async function updateEventAction(
 
   const updated = await getRepositories().events.update(input.id, parsed.data);
   if (!updated) return { ok: false, error: "Event not found" };
+
+  // 1-on-1 slots are this same grid, so a new increment re-reads what people
+  // declared. A coarser grid is the dangerous direction: a surviving 10:00 row
+  // would advertise 10:00-11:00 when the guest only ever offered 10:00-10:30.
+  // A finer grid could in principle be kept; it isn't worth the special case.
+  if (incrementChanged) {
+    await getRepositories().meetingAvailability.deleteByEvent(input.id);
+  }
 
   revalidatePath("/admin");
   revalidatePath("/admin/events");

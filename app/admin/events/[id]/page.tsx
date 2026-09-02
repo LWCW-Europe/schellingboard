@@ -5,6 +5,7 @@ import { requireAdminPage } from "../../require-admin";
 import { EventDetailForm } from "./event-detail-form";
 import { EventPhasesForm } from "./event-phases-form";
 import { EventDaysManager, type SerializedDay } from "./event-days-manager";
+import { EventMeetingsForm } from "./event-meetings-form";
 
 export default async function AdminEventConfigPage({
   params,
@@ -19,6 +20,7 @@ export default async function AdminEventConfigPage({
   if (!event) notFound();
 
   const scheduledSessions = await repos.sessions.listScheduledByEvent(id);
+  const meetingPoints = await repos.meetingPoints.listByEvent(id);
   const days: SerializedDay[] = (await repos.days.listByEvent(id)).map((d) => ({
     id: d.id,
     eventId: d.eventId,
@@ -40,6 +42,10 @@ export default async function AdminEventConfigPage({
       <hr className="border-line-subtle" />
       <div className="max-w-3xl">
         <EventPhasesForm event={event} />
+      </div>
+      <hr className="border-line-subtle" />
+      <div className="max-w-3xl">
+        <EventMeetingsForm event={event} points={meetingPoints} />
       </div>
       <hr className="border-line-subtle" />
       <EventDaysManager days={days} eventId={id} timezone={event.timezone} />

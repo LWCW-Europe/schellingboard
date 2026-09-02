@@ -252,6 +252,60 @@ describe("event actions", () => {
     });
   });
 
+  // 1-on-1 slots derive from the event's increment, so changing it re-reads
+  // what attendees declared. Rows that *do* land on the coarser grid are the
+  // hazard, not the ones that don't: a surviving 09:00 would advertise a full
+  // hour the guest never offered.
+  describe("slot increment and declared meeting availability", () => {
+    it("clears availability whose rows survive a coarser grid", async () => {
+      const repos = getRepositories();
+      const event = await createEvent();
+      const guest = await createGuest({ eventId: event.id });
+      await createDay(event.id, {
+        start: new Date("2026-09-01T09:00:00.000Z"),
+        end: new Date("2026-09-01T12:00:00.000Z"),
+      });
+      // 09:00 is a slot on both the 30- and the 60-minute grid.
+      await repos.meetingAvailability.replaceForGuest(guest.id, event.id, [
+        new Date("2026-09-01T09:00:00.000Z"),
+        new Date("2026-09-01T09:30:00.000Z"),
+      ]);
+
+      const result = await updateEventAction({
+        id: event.id,
+        ...VALID_EVENT_INPUT,
+        name: event.name,
+        slotIncrementMinutes: "60",
+      });
+
+      expect(result.ok).toBe(true);
+      expect(
+        await repos.meetingAvailability.listByGuestAndEvent(guest.id, event.id)
+      ).toEqual([]);
+    });
+
+    it("keeps availability when the increment is unchanged", async () => {
+      const repos = getRepositories();
+      const event = await createEvent();
+      const guest = await createGuest({ eventId: event.id });
+      const slot = new Date("2026-09-01T09:00:00.000Z");
+      await repos.meetingAvailability.replaceForGuest(guest.id, event.id, [
+        slot,
+      ]);
+
+      await updateEventAction({
+        id: event.id,
+        ...VALID_EVENT_INPUT,
+        name: event.name,
+        description: "Changed, but not the grid",
+      });
+
+      expect(
+        await repos.meetingAvailability.listByGuestAndEvent(guest.id, event.id)
+      ).toEqual([slot]);
+    });
+  });
+
   describe("createEventAction", () => {
     it("creates an event", async () => {
       const result = await createEventAction(VALID_EVENT_INPUT);
