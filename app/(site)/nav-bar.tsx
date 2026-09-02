@@ -56,10 +56,13 @@ export default function NavBar({
                 </Disclosure.Button>
               </div>
               <div className="flex justify-between w-full items-center">
-                <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
+                {/* min-w-0 + a scrolling row: a site with enough events would
+                    otherwise let the links push the name chip beside them out
+                    of reach, since a flex row does not wrap. */}
+                <div className="flex min-w-0 flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                   {/* Desktop nav */}
-                  <div className="hidden sm:block">
-                    <div className="flex space-x-4">
+                  <div className="hidden min-w-0 sm:block">
+                    <div className="flex space-x-4 overflow-x-auto">
                       {navItems.map((item) => (
                         <NavBarItem
                           key={item.name}
@@ -70,7 +73,7 @@ export default function NavBar({
                     </div>
                   </div>
                 </div>
-                <div className="flex min-w-0 items-center gap-3">
+                <div className="flex shrink-0 items-center gap-3">
                   {showGuestsLink && (
                     <Link
                       href="/guests"

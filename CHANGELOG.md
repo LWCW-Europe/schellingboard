@@ -26,6 +26,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   "Notifications" got a web address the site's own page of that name already answers, so the event
   could never be opened. Creating one now fails with the same message other reserved names give
 
+### Fixed
+
+- **Picking your name works however many events a site runs**: the header lists every event, and
+  from about seven onwards the links crowded the name chip beside them off the row, leaving no way
+  to say who you are. The links now scroll instead of pushing
+
 ### Internal
 
 - The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually
