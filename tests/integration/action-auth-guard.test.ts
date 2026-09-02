@@ -83,12 +83,12 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       await import("@/app/(site)/guests/profile-activity");
     return listProfileActivity("some-guest");
   },
-  "(site)/[eventSlug]/clash-actions.ts:detectHostClashes": async () => {
-    const { detectHostClashes } =
+  "(site)/[eventSlug]/clash-actions.ts:detectGuestClashes": async () => {
+    const { detectGuestClashes } =
       await import("@/app/(site)/[eventSlug]/clash-actions");
-    return detectHostClashes({
+    return detectGuestClashes({
       eventId: "e",
-      hostIds: ["g"],
+      guestIds: ["g"],
       start: new Date().toISOString(),
       end: new Date().toISOString(),
     });
