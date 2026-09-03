@@ -105,7 +105,15 @@ export function normalizeWebsiteUrl(raw: string): string {
 
 // Top-level route segments served by this app (see app/); an event slug
 // matching one of these would shadow or be shadowed by that route.
-export const RESERVED_EVENT_SLUGS = new Set(["admin", "api", "login", "media"]);
+export const RESERVED_EVENT_SLUGS = new Set([
+  "admin",
+  "api",
+  "guests",
+  "login",
+  "media",
+  "notifications",
+  "settings",
+]);
 
 /**
  * URL for fetching a guest's votes. Encodes both values so reserved URL

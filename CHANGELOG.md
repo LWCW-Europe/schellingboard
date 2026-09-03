@@ -20,6 +20,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   one attendee may have outstanding at a time. Meeting slots follow the event's schedule increment,
   so changing that asks attendees to choose their availability again
 
+### Fixed
+
+- **Event names that a site page would hide are rejected**: an event named "Guests", "Settings" or
+  "Notifications" got a web address the site's own page of that name already answers, so the event
+  could never be opened. Creating one now fails with the same message other reserved names give
+
 ### Internal
 
 - The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually
