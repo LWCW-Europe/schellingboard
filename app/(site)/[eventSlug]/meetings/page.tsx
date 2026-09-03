@@ -8,6 +8,7 @@ import {
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
 import { meetingSlotsForDay } from "@/utils/meeting-slots";
+import { MeetingModalFromUrl } from "../meeting-modal";
 import { AvailabilityForm, type SlotDay } from "./availability-form";
 
 export const dynamic = "force-dynamic";
@@ -94,15 +95,20 @@ export default async function MeetingsPage({
   const offered = new Set(slotDays.flatMap((d) => d.slots.map((s) => s.start)));
 
   return (
-    <AvailabilityForm
-      eventId={event.id}
-      eventSlug={eventSlug}
-      eventName={event.name}
-      timezone={event.timezone}
-      days={slotDays}
-      declared={declared
-        .map((d) => d.toISOString())
-        .filter((start) => offered.has(start))}
-    />
+    <>
+      <AvailabilityForm
+        eventId={event.id}
+        eventSlug={eventSlug}
+        eventName={event.name}
+        timezone={event.timezone}
+        days={slotDays}
+        declared={declared
+          .map((d) => d.toISOString())
+          .filter((start) => offered.has(start))}
+      />
+      {/* Where a meeting notification lands: this page is here in every phase,
+          while the schedule only exists once scheduling starts. */}
+      <MeetingModalFromUrl />
+    </>
   );
 }

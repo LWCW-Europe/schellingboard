@@ -24,6 +24,10 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock("@/utils/mailer", () => ({
+  sendMail: vi.fn(),
+}));
+
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { siteAuthenticate } from "../helpers/site-auth";
 import { createEvent, createGuest, createDay } from "../helpers/factories";
@@ -113,6 +117,23 @@ describe("requestMeetingAction", () => {
     expect(meeting.slotStart.toISOString()).toBe(SLOT);
     // The slot's length comes from the event, never from the caller.
     expect(meeting.slotEnd.toISOString()).toBe(SLOT_2);
+  });
+
+  it("tells the recipient they were asked", async () => {
+    const { event, requester, recipient } = await scenario();
+
+    await request(event, recipient);
+
+    const [notification] = await getRepositories().notifications.listByGuest(
+      recipient.id
+    );
+    expect(notification.type).toBe("meetingRequest");
+    expect(notification.text).toContain(requester.name);
+    const [meeting] = await getRepositories().meetings.listByGuestAndEvent(
+      requester.id,
+      event.id
+    );
+    expect(notification.url).toContain(`/meetings?viewMeeting=${meeting.id}`);
   });
 
   it("requires a meeting point", async () => {

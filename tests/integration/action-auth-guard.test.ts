@@ -156,6 +156,10 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       meetingPoint: "Coffee bar",
     });
   },
+  "actions/meetings.ts:respondToMeetingAction": async () => {
+    const { respondToMeetingAction } = await import("@/app/actions/meetings");
+    return respondToMeetingAction({ meetingId: "m", response: "accept" });
+  },
   "actions/meetings.ts:saveMeetingAvailabilityAction": async () => {
     const { saveMeetingAvailabilityAction } =
       await import("@/app/actions/meetings");

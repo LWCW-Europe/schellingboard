@@ -11,6 +11,7 @@ import { EventContext } from "../context";
 import { getDefaultFoldedDayIds } from "@/utils/schedule-fold";
 import { KioskController, useKioskMode } from "./kiosk";
 import { SessionModal } from "./session-modal";
+import { MeetingModalFromUrl } from "./meeting-modal";
 import type { DayWithSessions } from "../context";
 import { useDragToPan } from "./use-drag-to-pan";
 import Footer from "@/app/footer";
@@ -157,6 +158,7 @@ export function EventDisplay() {
       {viewSession && (
         <SessionModal sessionId={viewSession} eventSlug={event.slug} />
       )}
+      <MeetingModalFromUrl />
       {kiosk && <KioskController />}
     </>
   );

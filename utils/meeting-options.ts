@@ -1,11 +1,8 @@
 import { getRepositories } from "@/db/container";
 import { serverNow } from "@/utils/dev-clock-server";
 import { meetingSlotsForDay } from "@/utils/meeting-slots";
-import {
-  clashesForInterval,
-  loadGuestSchedules,
-  type GuestClash,
-} from "@/utils/guest-clashes";
+import { clashesForInterval, loadGuestSchedules } from "@/utils/guest-clashes";
+import type { MeetingClash } from "@/utils/meeting-clash-text";
 import { DateTime } from "luxon";
 import type { Event, MeetingPoint } from "@/db/repositories/interfaces";
 
@@ -15,11 +12,7 @@ export type MeetingSlotOption = {
   label: string;
   state: "available" | "busy" | "unavailable";
   /** Why it reads as busy. Empty unless `state` is "busy". */
-  clashes: (Pick<GuestClash, "guestName" | "kind" | "title"> & {
-    /** The viewer's own clash, so the warning can say "you" rather than
-        naming the reader back to themselves in the third person. */
-    isViewer: boolean;
-  })[];
+  clashes: MeetingClash[];
 };
 
 /**

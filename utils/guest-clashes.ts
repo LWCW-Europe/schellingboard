@@ -71,9 +71,18 @@ export function clashesForInterval(
     breakMinutes: number;
     /** The session being edited, which must not clash with itself. */
     excludeSessionId?: string | null;
+    /** The meeting being examined, which must not clash with itself. */
+    excludeMeetingId?: string;
   }
 ): GuestClash[] {
-  const { eventId, start, end, breakMinutes, excludeSessionId } = opts;
+  const {
+    eventId,
+    start,
+    end,
+    breakMinutes,
+    excludeSessionId,
+    excludeMeetingId,
+  } = opts;
 
   // sessionsOverlap skips a session whose id matches the candidate's, which is
   // how the session being edited is excluded from clashing with itself.
@@ -125,6 +134,7 @@ export function clashesForInterval(
     // private as an RSVP, so it reports busy with no title.
     for (const meeting of schedule.meetings) {
       if (meeting.status !== "accepted") continue;
+      if (meeting.id === excludeMeetingId) continue;
       if (
         meeting.slotStart.getTime() >= end.getTime() ||
         meeting.slotEnd.getTime() <= start.getTime()

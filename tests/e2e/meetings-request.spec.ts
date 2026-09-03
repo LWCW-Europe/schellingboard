@@ -142,7 +142,7 @@ async function openProfile(page: Page, name: string) {
   await expect(page.getByRole("heading", { name })).toBeVisible();
 }
 
-test.describe("requesting a 1-on-1", () => {
+test.describe("1-on-1 meetings", () => {
   // Torn down in afterEach rather than at the end of the test body. Every
   // event is a link in the site header, and a header long enough to push the
   // name chip out of reach breaks every later spec that picks a user -- so an
@@ -179,7 +179,7 @@ test.describe("requesting a 1-on-1", () => {
     }
   });
 
-  test("books a slot the other attendee declared, from their profile", async ({
+  test("books a slot the other attendee declared, and gets an answer", async ({
     page,
   }) => {
     // One journey through the whole feature, and it drives the admin UI to set
@@ -239,5 +239,36 @@ test.describe("requesting a 1-on-1", () => {
     await send.click();
 
     await expect(page.getByText(new RegExp(`Asked ${askee}`))).toBeVisible();
+
+    // The askee is told, and answers from the notification.
+    await page.goto("/guests");
+    await actAs(page, new RegExp(askee));
+    await page.getByRole("link", { name: /^Notifications/ }).click();
+    await page
+      .getByRole("button", {
+        name: new RegExp(`${asker} asked you for a 1-on-1`),
+      })
+      .click();
+
+    const meeting = page.getByRole("dialog", { name: "Meeting details" });
+    await expect(meeting).toBeVisible();
+    await expect(meeting.getByText("Coffee bar")).toBeVisible();
+    await meeting.getByRole("button", { name: "Accept" }).click();
+    await expect(meeting.getByText(/Confirmed/)).toBeVisible();
+
+    // Answering refreshes the page behind the modal. Navigating away while
+    // that RSC fetch is in flight aborts it, and Next reports the abort on the
+    // console -- which the console guard fails the test for.
+    await page.waitForLoadState("networkidle");
+
+    // And the asker hears back.
+    await page.goto("/guests");
+    await actAs(page, new RegExp(asker));
+    await page.getByRole("link", { name: /^Notifications/ }).click();
+    await expect(
+      page.getByRole("button", {
+        name: new RegExp(`${askee} accepted your 1-on-1`),
+      })
+    ).toBeVisible();
   });
 });

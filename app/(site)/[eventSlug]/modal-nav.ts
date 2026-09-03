@@ -107,6 +107,19 @@ export function openingModalFromRedirect() {
   proposalDismissMode = "replace";
 }
 
+// Meetings have no in-place opener yet, so a meeting modal is always reached
+// by a link from elsewhere — a notification — where "back" would leave the
+// site rather than the modal.
+export function dismissViewMeeting() {
+  const params = new URLSearchParams(window.location.search);
+  params.delete("viewMeeting");
+  const query = params.toString();
+  const url = query
+    ? `${window.location.pathname}?${query}`
+    : window.location.pathname;
+  window.history.replaceState(null, "", url);
+}
+
 export function dismissViewProposal(router: ReturnType<typeof useRouter>) {
   if (proposalDismissMode === "back") {
     router.back();
