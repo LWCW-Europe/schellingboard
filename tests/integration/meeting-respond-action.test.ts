@@ -33,7 +33,10 @@ import { siteAuthenticate } from "../helpers/site-auth";
 import { createEvent, createGuest } from "../helpers/factories";
 import { GUEST_COOKIE_NAME, verifiedGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
-import { respondToMeetingAction } from "@/app/actions/meetings";
+import {
+  cancelMeetingAction,
+  respondToMeetingAction,
+} from "@/app/actions/meetings";
 import type { Event, Guest, Meeting } from "@/db/repositories/interfaces";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
@@ -228,6 +231,125 @@ describe("respondToMeetingAction", () => {
     const result = await respondToMeetingAction({
       meetingId: meeting.id,
       response: "maybe" as unknown as "accept",
+    });
+
+    expect(result).toEqual({ ok: false, error: "Invalid request" });
+  });
+});
+
+describe("cancelMeetingAction", () => {
+  beforeAll(() => setupTestDb());
+
+  beforeEach(async () => {
+    resetTestDb();
+    cookieJar.clear();
+    vi.stubEnv("AUTH_SECRET", VALID_SECRET);
+    await siteAuthenticate(cookieJar);
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  async function accepted() {
+    const scene = await scenario();
+    await respondToMeetingAction({
+      meetingId: scene.meeting.id,
+      response: "accept",
+    });
+    return scene;
+  }
+
+  it("lets the requester take back a request nobody has answered", async () => {
+    const { requester, recipient, meeting } = await scenario();
+    await signIn(requester.id);
+
+    const result = await cancelMeetingAction({ meetingId: meeting.id });
+
+    expect(result.ok).toBe(true);
+    expect(
+      (await getRepositories().meetings.findById(meeting.id))?.status
+    ).toBe("canceled");
+    const [notification] = await getRepositories().notifications.listByGuest(
+      recipient.id
+    );
+    expect(notification.text).toMatch(/canceled/);
+  });
+
+  it("lets either party call off a confirmed meeting", async () => {
+    const { requester, meeting } = await accepted();
+
+    const result = await cancelMeetingAction({ meetingId: meeting.id });
+
+    expect(result.ok).toBe(true);
+    expect(
+      (await getRepositories().meetings.findById(meeting.id))?.status
+    ).toBe("canceled");
+    // The one who cancelled is the recipient here, so the requester is told.
+    const [notification] = await getRepositories().notifications.listByGuest(
+      requester.id
+    );
+    expect(notification.text).toMatch(/canceled/);
+  });
+
+  // While it is pending, the person asked has Decline: cancelling it on the
+  // requester's behalf would tell them something else happened.
+  it("refuses the recipient a pending request", async () => {
+    const { meeting } = await scenario();
+
+    const result = await cancelMeetingAction({ meetingId: meeting.id });
+
+    expect(result.ok).toBe(false);
+    expect(
+      (await getRepositories().meetings.findById(meeting.id))?.status
+    ).toBe("pending");
+  });
+
+  it("refuses anyone who is not part of the meeting", async () => {
+    const { event, meeting } = await accepted();
+    const bystander = await createGuest({ eventId: event.id });
+    await signIn(bystander.id);
+
+    const result = await cancelMeetingAction({ meetingId: meeting.id });
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("refuses a meeting that is already declined", async () => {
+    const { requester, meeting } = await scenario();
+    await respondToMeetingAction({
+      meetingId: meeting.id,
+      response: "decline",
+    });
+    await signIn(requester.id);
+
+    const result = await cancelMeetingAction({ meetingId: meeting.id });
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("refuses a meeting whose slot has already started", async () => {
+    const { requester, meeting } = await scenario({ slotStart: PAST_SLOT });
+    await signIn(requester.id);
+
+    const result = await cancelMeetingAction({ meetingId: meeting.id });
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("refuses when nobody is signed in", async () => {
+    const { meeting } = await accepted();
+    cookieJar.clear();
+    await siteAuthenticate(cookieJar);
+
+    const result = await cancelMeetingAction({ meetingId: meeting.id });
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("answers a malformed payload instead of throwing", async () => {
+    await accepted();
+
+    const result = await cancelMeetingAction({
+      meetingId: 42 as unknown as string,
     });
 
     expect(result).toEqual({ ok: false, error: "Invalid request" });

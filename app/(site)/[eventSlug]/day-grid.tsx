@@ -14,6 +14,8 @@ import { DateTime } from "luxon";
 import type { Guest, Location } from "@/db/repositories/interfaces";
 import type { DayWithSessions } from "@/app/(site)/context";
 import { EventContext, useSlotIncrement } from "@/app/(site)/context";
+import { MeetingsCol, meetingsForDay } from "./meetings-col";
+import { useMyMeetings } from "./use-meetings";
 
 // Width of the left time-axis gutter. The body rows show `HH:mm` labels and the
 // header corner shows the day's date, so it has to fit a short date.
@@ -33,6 +35,14 @@ export function DayGrid(props: {
   const { event, now } = useContext(EventContext);
   const timezone = event?.timezone ?? "UTC";
   const searchParams = useSearchParams();
+  const { meetings } = useMyMeetings();
+  // The viewer's own 1-on-1s, outside the ?loc= filter below: the column is
+  // not a location, so filtering the schedule down to one room must not drop
+  // it (issue #392, section 2.6). Nothing to show means no column at all,
+  // rather than dead
+  // width on a phone.
+  const myMeetings = meetings ? meetingsForDay(meetings, day) : [];
+  const showMeetings = myMeetings.length > 0;
   const locParams = searchParams?.getAll("loc");
   const locationsFromParams = locations.filter((loc) =>
     locParams?.includes(loc.name)
@@ -58,7 +68,9 @@ export function DayGrid(props: {
     <div
       className="grid bg-surface"
       style={{
-        gridTemplateColumns: `${GUTTER} repeat(${numLocations}, minmax(120px, 240px))`,
+        gridTemplateColumns: `${GUTTER} ${
+          showMeetings ? "minmax(96px, 160px) " : ""
+        }repeat(${numLocations}, minmax(120px, 240px))`,
       }}
     >
       {/* Row 1 — room-name header, sticky to the top. The corner cell (where no
@@ -70,6 +82,11 @@ export function DayGrid(props: {
           {date.toFormat("MMM d")}
         </span>
       </div>
+      {showMeetings && (
+        <div className="sticky top-0 z-20 bg-surface border-b border-l border-line-subtle p-1">
+          <h3 className="font-semibold text-xs sm:text-sm">1-on-1s</h3>
+        </div>
+      )}
       {includedLocations.map((loc) => (
         <div
           key={loc.name}
@@ -107,6 +124,11 @@ export function DayGrid(props: {
       ))}
       {/* Row 2 — room description */}
       <div className="sticky top-0 z-20 bg-surface border-r border-line-subtle" />
+      {showMeetings && (
+        <div className="border-l border-line-subtle p-1">
+          <p className="text-[10px] text-fg-subtle">Only you see these</p>
+        </div>
+      )}
       {includedLocations.map((loc) => (
         <div key={loc.name} className="border-l border-line-subtle p-1">
           <p className="text-[10px] text-fg-subtle">
@@ -121,6 +143,7 @@ export function DayGrid(props: {
       {hasImages && (
         <>
           <div className="sticky left-0 z-20 bg-surface border-r border-line-subtle" />
+          {showMeetings && <div className="border-l border-line-subtle p-1" />}
           {includedLocations.map((loc, i) => (
             <div key={loc.name} className="border-l border-line-subtle p-1">
               {loc.imageUrl && (
@@ -170,6 +193,14 @@ export function DayGrid(props: {
           />
         )}
       </div>
+      {showMeetings && (
+        <MeetingsCol
+          meetings={myMeetings}
+          day={day}
+          eventSlug={event?.slug ?? ""}
+          nowOffsetPx={nowOffsetPx}
+        />
+      )}
       {includedLocations.map((location) => (
         <LocationCol
           key={location.name}

@@ -15,7 +15,7 @@ import {
   notifyMeetingOutcome,
   notifyMeetingRequested,
 } from "@/utils/notifications";
-import type { Event } from "@/db/repositories/interfaces";
+import type { Event, MeetingStatus } from "@/db/repositories/interfaces";
 
 export type MeetingActionResult = { ok: true } | { ok: false; error: string };
 
@@ -37,6 +37,8 @@ const respondSchema = z.object({
   meetingId: z.string(),
   response: z.enum(["accept", "decline"]),
 });
+
+const cancelSchema = z.object({ meetingId: z.string() });
 
 const availabilitySchema = z.object({
   eventId: z.string(),
@@ -210,6 +212,65 @@ export async function respondToMeetingAction(
   await notifyMeetingOutcome({
     meeting: answered,
     outcome,
+    actorId: guestId,
+    now,
+  });
+
+  const event = await repos.events.findById(meeting.eventId);
+  if (event) revalidatePath(`/${event.slug}`);
+  return { ok: true };
+}
+
+/**
+ * Calling a meeting off. Either party may cancel one they had agreed; while it
+ * is still pending only the requester may, since the person asked has Decline
+ * — and being told "canceled" where they had declined would misdescribe it.
+ */
+export async function cancelMeetingAction(
+  raw: z.input<typeof cancelSchema>
+): Promise<MeetingActionResult> {
+  await requireSiteAuth();
+
+  const parsed = cancelSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "Invalid request" };
+  const input = parsed.data;
+
+  const guestId = await verifiedCurrentUser(await cookies());
+  if (!guestId) {
+    return { ok: false, error: "Sign in to cancel a meeting" };
+  }
+
+  const repos = getRepositories();
+  const meeting = await repos.meetings.findById(input.meetingId);
+  if (!meeting) return { ok: false, error: "Meeting not found" };
+  const isRequester = meeting.requesterId === guestId;
+  if (!isRequester && meeting.recipientId !== guestId) {
+    return { ok: false, error: "This isn't your meeting" };
+  }
+
+  const now = await serverNow();
+  // A meeting that has already begun happened or didn't; calling it off after
+  // the fact would only send its other half a notification about the past.
+  if (meeting.slotStart.getTime() <= now.getTime()) {
+    return { ok: false, error: "That slot has already started" };
+  }
+
+  const from: MeetingStatus[] = isRequester
+    ? ["pending", "accepted"]
+    : ["accepted"];
+  const canceled = await repos.meetings.updateStatus(
+    meeting.id,
+    "canceled",
+    now,
+    from
+  );
+  if (!canceled) {
+    return { ok: false, error: "There is nothing left to cancel" };
+  }
+
+  await notifyMeetingOutcome({
+    meeting: canceled,
+    outcome: "canceled",
     actorId: guestId,
     now,
   });

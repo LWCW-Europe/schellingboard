@@ -98,6 +98,14 @@ async function meetingsEvent(page: Page, eventName: string, names: string[]) {
   await meetings.getByRole("button", { name: "Save meetings" }).click();
   await expect(meetings.getByText("Saved!")).toBeVisible();
 
+  // The 1-on-1s column lives on the schedule, which only exists once the
+  // event is in its scheduling phase.
+  const scheduling = page.getByRole("group", { name: "Scheduling phase" });
+  await scheduling.getByLabel("Start").fill("2026-01-01T00:00");
+  await scheduling.getByLabel("End").fill("2027-01-01T00:00");
+  await page.getByRole("button", { name: "Save phases" }).click();
+  await expect(page.getByText("Saved!").last()).toBeVisible();
+
   await page.getByRole("button", { name: "Add day" }).click();
   await page.getByLabel("Start *").last().fill(`${EVENT_START}T09:00`);
   await page.getByLabel("End *").last().fill(`${EVENT_START}T10:00`);
@@ -263,8 +271,15 @@ test.describe("1-on-1 meetings", () => {
 
     // Answering refreshes the page behind the modal. Navigating away while
     // that RSC fetch is in flight aborts it, and Next reports the abort on the
-    // console -- which the console guard fails the test for.
+    // console -- which the console guard fails the test for. The goto just
+    // below is exactly that navigation.
     await page.waitForLoadState("networkidle");
+
+    // It is on their schedule too, in a column only they can see.
+    await page.goto(`/${slug}`);
+    const column = page.getByRole("link", { name: new RegExp(asker) });
+    await expect(column).toBeVisible();
+    await expect(page.getByText("Coffee bar").first()).toBeVisible();
 
     // And the asker hears back, then asks for the day's other slot.
     await page.goto("/guests");
@@ -312,5 +327,17 @@ test.describe("1-on-1 meetings", () => {
         name: new RegExp(`${askee} declined your 1-on-1`),
       })
     ).toBeVisible();
+
+    // Either of them can call it off from the block on the schedule.
+    await page.goto(`/${slug}`);
+    await page.getByRole("link", { name: new RegExp(askee) }).click();
+    const confirmed = page.getByRole("dialog", { name: "Meeting details" });
+    await confirmed.getByRole("button", { name: "Cancel meeting" }).click();
+    await confirmed.getByRole("button", { name: "Cancel meeting" }).click();
+    await expect(confirmed.getByText(/was canceled/)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("link", { name: new RegExp(askee) })
+    ).toBeHidden();
   });
 });

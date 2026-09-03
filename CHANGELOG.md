@@ -29,6 +29,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   only the slots they cleared are off limits. The person asked gets a notification with **Accept**
   and **Decline**, and hears about their own clashes before they answer; the asker is told either
   way. A request nobody answers before its slot begins simply lapses
+- **Your 1-on-1s on the schedule**: agreed meetings and the ones still waiting for an answer appear
+  as the first column of the schedule grid, in their own time slot next to whatever they would clash
+  with. The column is yours alone — nobody else sees it, and it is left out entirely when you have
+  no meetings that day. Tapping one opens it, which is also where either of you can call it off; the
+  other is told
 
 ### Fixed
 

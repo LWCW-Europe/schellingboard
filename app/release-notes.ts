@@ -45,6 +45,7 @@ export const releaseNotes: ReleaseNote[] = [
       "**Picking your name** works however many events a site runs: past about seven, the header's event links crowded the name chip off the row and there was no way to say who you are.",
       "**Say when you're free**: with meetings on, attendees get a 1-on-1s page to mark which slots they're open for. Turning the switch off clears it and keeps them unbookable.",
       "**Ask for a 1-on-1**: attendees book one of the slots someone is open for from their profile, and say where to meet. The person asked accepts or declines, warned about anything it clashes with.",
+      "**Your 1-on-1s on the schedule**: agreed meetings and the ones still waiting for an answer get their own column on the grid, which only you can see. Tap one to open it, or to call it off.",
     ],
   },
   {
