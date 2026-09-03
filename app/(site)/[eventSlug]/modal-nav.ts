@@ -25,6 +25,9 @@ To summarize:
   navigation to set dismiss mode to "back".
 * When linking from a different page, use `<Link {...viewFooLinkFromElsewhere(...)}>`. There is no
   in-place open and no history entry of ours to pop, so it sets the dismiss mode to "replace".
+* When the modal is opened by a server-action redirect rather than a link (the notification
+  list), call `openingModalFromRedirect()` from the click that submits the action. Same
+  reasoning as FromElsewhere — there is just no link whose onClick could do it.
 */
 
 export function viewSessionLinkFromOwner(
@@ -92,6 +95,18 @@ export function viewProposalLinkFromElsewhere(
   };
 }
 
+/**
+ * Dismiss mode for a modal reached without going through one of the links
+ * above: the notification list opens one by submitting a server action that
+ * redirects into it, so no opener's onClick runs and a "back" armed by an
+ * earlier schedule or proposal click would still be in force — and would pop
+ * the reader off the page they just landed on.
+ */
+export function openingModalFromRedirect() {
+  sessionDismissMode = "replace";
+  proposalDismissMode = "replace";
+}
+
 export function dismissViewProposal(router: ReturnType<typeof useRouter>) {
   if (proposalDismissMode === "back") {
     router.back();
@@ -138,8 +153,9 @@ export function isPlainLeftClick(e: MouseEvent<HTMLAnchorElement>) {
 // because it has to survive across the parent re-render triggered by navigation,
 // and it isn't part of any component's render output.
 //
-// Every opener (viewFooLinkFromOwner / viewFooLinkFromElsewhere) writes the mode,
-// so the value is never inherited from an unrelated earlier modal. The default
-// applies only to direct/deep-link opens, where "replace" is intended.
+// Every opener (viewFooLinkFromOwner / viewFooLinkFromElsewhere /
+// openingModalFromRedirect) writes the mode, so the value is never inherited
+// from an unrelated earlier modal. The default applies only to direct/deep-link
+// opens, where "replace" is intended.
 let sessionDismissMode: "back" | "replace" = "replace";
 let proposalDismissMode: "back" | "replace" = "replace";
