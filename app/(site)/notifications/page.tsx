@@ -12,6 +12,7 @@ import { outOfRangePageRedirect, parsePage } from "@/utils/pagination";
 import { formatRelativeTime } from "@/utils/relative-time";
 import { serverNow } from "@/utils/dev-clock-server";
 import { MarkAllReadButton, MarkReadButton } from "./mark-read-buttons";
+import { OpenNotificationButton } from "./open-notification-button";
 
 const PAGE_SIZE = 20;
 
@@ -80,10 +81,7 @@ export default async function NotificationsPage({
                   action={openNotificationAction.bind(null, notification.id)}
                   className="min-w-0 flex-1"
                 >
-                  <button
-                    type="submit"
-                    className="w-full cursor-pointer text-left"
-                  >
+                  <OpenNotificationButton>
                     <span
                       className={
                         notification.readAt
@@ -96,7 +94,7 @@ export default async function NotificationsPage({
                     <span className="block text-sm text-fg-muted">
                       {formatRelativeTime(notification.createdAt, now)}
                     </span>
-                  </button>
+                  </OpenNotificationButton>
                 </form>
                 {!notification.readAt && (
                   <MarkReadButton id={notification.id} />

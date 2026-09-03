@@ -82,3 +82,61 @@ test("marks a notification read without opening it", async ({ page }) => {
   );
   await expect(row).toBeVisible();
 });
+
+// Conference Gamma is in the scheduling phase, so only its schedule has
+// sessions. Carlos Silva hosts this one and no other spec touches either, so
+// his badge and its comment thread are this test's alone.
+const GREEN_SESSION =
+  /Sustainable Software Development: Green Coding Practices/;
+
+async function openSession(page: Page, title: RegExp) {
+  await page.getByRole("link", { name: title }).click();
+  const modal = page.getByRole("dialog", { name: "Session details" });
+  await expect(modal).toBeVisible();
+  return modal;
+}
+
+test("closing a session opened from a notification stays on the schedule", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Gamma");
+
+  await actAs(page, /Anna Kowalska/i);
+  const commented = await openSession(page, GREEN_SESSION);
+  await commented.getByPlaceholder("Add a comment").fill("count me in");
+  await commented.getByRole("button", { name: "Comment", exact: true }).click();
+  await expect(
+    commented.getByRole("heading", { name: /1 comment/ })
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(commented).toBeHidden();
+
+  await actAs(page, /Carlos Silva/i);
+
+  // Opening a session from the schedule arms "dismiss by going back" (see
+  // modal-nav.ts, anchor MnpjIo7Y). That must not still be armed for the modal
+  // the notification opens, whose own history entry is the notification list.
+  const fromSchedule = await openSession(page, GREEN_SESSION);
+  await page.keyboard.press("Escape");
+  await expect(fromSchedule).toBeHidden();
+
+  await bell(page).click();
+  await page
+    .getByRole("button", { name: /Anna Kowalska commented on/ })
+    .click();
+
+  const fromNotification = page.getByRole("dialog", {
+    name: "Session details",
+  });
+  await expect(fromNotification).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(fromNotification).toBeHidden();
+
+  // Closing it leaves the reader on the schedule the session is on, not back
+  // on the list they came from.
+  await expect(
+    page.getByRole("heading", { name: "Notifications" })
+  ).toBeHidden();
+  await expect(page.getByRole("link", { name: GREEN_SESSION })).toBeVisible();
+});
