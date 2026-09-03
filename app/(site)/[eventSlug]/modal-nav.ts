@@ -105,6 +105,7 @@ export function viewProposalLinkFromElsewhere(
 export function openingModalFromRedirect() {
   sessionDismissMode = "replace";
   proposalDismissMode = "replace";
+  meetingDismissMode = "replace";
 }
 
 export function viewMeetingLinkFromOwner(

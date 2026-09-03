@@ -328,6 +328,30 @@ test.describe("1-on-1 meetings", () => {
       })
     ).toBeVisible();
 
+    // Opening one from the schedule arms "dismiss by going back" (modal-nav.ts,
+    // anchor MnpjIo7Y). A meeting reached from a notification afterwards must
+    // not inherit it, or closing that one would pop back to the list.
+    await page.goto(`/${slug}`);
+    await page.getByRole("link", { name: new RegExp(askee) }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Meeting details" })
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await page.goto("/notifications");
+    await page
+      .getByRole("button", { name: new RegExp(askee) })
+      .first()
+      .click();
+    const fromNotification = page.getByRole("dialog", {
+      name: "Meeting details",
+    });
+    await expect(fromNotification).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("heading", { name: "Notifications" })
+    ).toBeHidden();
+
     // Either of them can call it off from the block on the schedule.
     await page.goto(`/${slug}`);
     await page.getByRole("link", { name: new RegExp(askee) }).click();
@@ -339,5 +363,13 @@ test.describe("1-on-1 meetings", () => {
     await expect(
       page.getByRole("link", { name: new RegExp(askee) })
     ).toBeHidden();
+
+    // Two things are still in flight here, and afterEach navigates the moment
+    // this returns: Escape dismisses by rewriting the URL (modal-nav.ts), and
+    // cancelling refreshes the schedule behind the modal. An unfinished
+    // rewrite interrupts the teardown's own goto; an unfinished refresh is a
+    // stream aborted under it, which the console guard reports.
+    await expect(page).not.toHaveURL(/viewMeeting=/);
+    await page.waitForLoadState("networkidle");
   });
 });
