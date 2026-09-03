@@ -51,11 +51,14 @@ test.describe("attendee meeting availability", () => {
     await alice.click();
     await expect(alice).toBeChecked();
 
-    // Now as that attendee.
-    const slug = eventName.replace(/ /g, "-");
-    await loginAndGoto(page, `/${slug}/meetings`);
+    // Now as that attendee, reaching the page the way one would: the event in
+    // the header, then the toolbar's 1-on-1s link.
+    await loginAndGoto(page, "/guests");
     await selectUser(page, /Alice Test/i);
-    await page.goto(`/${slug}/meetings`);
+    await page.getByRole("link", { name: eventName }).click();
+    await page.getByRole("link", { name: "1-on-1s" }).click();
+    await expect(page).toHaveURL(/\/meetings$/);
+    const eventSlug = new URL(page.url()).pathname.split("/")[1];
 
     const form = page.getByRole("form", { name: "1-on-1 meetings" });
     await expect(form.getByLabel(/open to 1-on-1 meetings/)).not.toBeChecked();
@@ -81,6 +84,31 @@ test.describe("attendee meeting availability", () => {
     ).toBeChecked();
     // 09:00-11:00 in 30-minute slots.
     await expect(form.getByRole("listitem")).toHaveCount(4);
+
+    // A day the organizer later shortens drops slots the guest had declared.
+    // Those must not linger in the form's selection, or every later save is
+    // refused for slots it never renders and the guest cannot untick.
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    // Scoped to Days: the event's own "End *" date sits on this page too.
+    const days = page.getByRole("region", { name: "Days" });
+    await days.getByRole("button", { name: /^Edit day / }).click();
+    await days.getByLabel("End *").fill("2026-10-01T10:00");
+    // The bookings window has to stay inside the day's own.
+    await days.getByLabel("Bookings close *").fill("2026-10-01T10:00");
+    await days.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(
+      page.getByText(/2026-10-01T09:00 – 2026-10-01T10:00/)
+    ).toBeVisible();
+
+    await page.goto(`/${eventSlug}/meetings`);
+    await expect(form.getByRole("listitem")).toHaveCount(2);
+    await form.getByRole("button", { name: "Save availability" }).click();
+    await expect(form.getByText("Saved!")).toBeVisible();
 
     // Opting back out clears the declaration entirely.
     await form.getByLabel(/open to 1-on-1 meetings/).uncheck();

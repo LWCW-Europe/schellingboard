@@ -58,11 +58,24 @@ export default async function MeetingsPage({
   const zoned = (date: Date) =>
     DateTime.fromJSDate(date).setZone(event.timezone);
 
+  // Days only have to not overlap, so an event may legitimately run 09:00-12:00
+  // and 14:00-18:00 on one date: the date alone is not a unique heading, and
+  // the window disambiguates the ones that repeat.
+  const dateCounts = new Map<string, number>();
+  for (const day of days) {
+    const date = zoned(day.start).toFormat("EEE d LLL");
+    dateCounts.set(date, (dateCounts.get(date) ?? 0) + 1);
+  }
+
   const slotDays: SlotDay[] = days
     .map((day) => ({
-      // The day's own date, so two days of the same event never share a
-      // heading even when one runs past midnight into the next.
-      label: zoned(day.start).toFormat("EEE d LLL"),
+      id: day.id,
+      label:
+        (dateCounts.get(zoned(day.start).toFormat("EEE d LLL")) ?? 0) > 1
+          ? `${zoned(day.start).toFormat("EEE d LLL")}, ${zoned(
+              day.start
+            ).toFormat("HH:mm")}–${zoned(day.end).toFormat("HH:mm")}`
+          : zoned(day.start).toFormat("EEE d LLL"),
       slots: meetingSlotsForDay(day, event.slotIncrementMinutes).map(
         (slot) => ({
           start: slot.start.toISOString(),
@@ -74,13 +87,22 @@ export default async function MeetingsPage({
     }))
     .filter((day) => day.slots.length > 0);
 
+  // Only what the event still offers. A day shortened or deleted after someone
+  // declared leaves rows for slots the form no longer renders, and the save
+  // action refuses any it isn't offering -- so passing them through would leave
+  // the guest with a form that cannot be saved and nothing to untick.
+  const offered = new Set(slotDays.flatMap((d) => d.slots.map((s) => s.start)));
+
   return (
     <AvailabilityForm
       eventId={event.id}
+      eventSlug={eventSlug}
       eventName={event.name}
       timezone={event.timezone}
       days={slotDays}
-      declared={declared.map((d) => d.toISOString())}
+      declared={declared
+        .map((d) => d.toISOString())
+        .filter((start) => offered.has(start))}
     />
   );
 }

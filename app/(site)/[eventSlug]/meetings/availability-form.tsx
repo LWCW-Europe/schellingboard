@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { BackLink } from "@/app/components/back-link";
 import { saveMeetingAvailabilityAction } from "@/app/actions/meetings";
 
 export type SlotDay = {
+  /** Two days may share a date, so the id is what keys them apart. */
+  id: string;
   label: string;
   slots: { start: string; label: string }[];
 };
@@ -15,12 +18,14 @@ const QUIET_BUTTON =
 
 export function AvailabilityForm({
   eventId,
+  eventSlug,
   eventName,
   timezone,
   days,
   declared,
 }: {
   eventId: string;
+  eventSlug: string;
   eventName: string;
   timezone: string;
   days: SlotDay[];
@@ -35,6 +40,9 @@ export function AvailabilityForm({
   const [isSaving, startSave] = useTransition();
 
   const allSlots = days.flatMap((day) => day.slots.map((s) => s.start));
+  // Saving this would store nothing, and nothing reads back as "not open" --
+  // so the switch would silently flip itself off. Say so instead.
+  const emptyWhileOpen = open && selected.size === 0;
 
   const change = (next: Set<string>) => {
     setSaved(false);
@@ -90,6 +98,7 @@ export function AvailabilityForm({
       aria-label="1-on-1 meetings"
       className="max-w-2xl mx-auto w-full px-4 sm:px-0 flex flex-col gap-6 py-8"
     >
+      <BackLink href={`/${eventSlug}`}>Schedule</BackLink>
       <div>
         <h1 className="text-3xl font-bold text-fg">1-on-1 meetings</h1>
         <p className="text-fg-muted mt-2">{eventName}</p>
@@ -134,7 +143,7 @@ export function AvailabilityForm({
           )}
 
           {days.map((day) => (
-            <section key={day.label} aria-label={day.label}>
+            <section key={day.id} aria-label={day.label}>
               <div className="flex items-center justify-between gap-3 mb-1">
                 <h2 className="text-lg font-semibold text-fg">{day.label}</h2>
                 <div className="flex gap-2">
@@ -177,8 +186,17 @@ export function AvailabilityForm({
       )}
 
       <div className="flex items-center justify-end gap-3">
+        {emptyWhileOpen && (
+          <span className="text-sm text-fg-subtle">
+            Clearing every slot is the same as switching this off.
+          </span>
+        )}
         {saved && <span className="text-sm text-success-fg">Saved!</span>}
-        <button type="submit" disabled={isSaving} className={BUTTON}>
+        <button
+          type="submit"
+          disabled={isSaving || emptyWhileOpen}
+          className={BUTTON}
+        >
           {isSaving ? "Saving..." : "Save availability"}
         </button>
       </div>

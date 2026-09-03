@@ -257,6 +257,26 @@ describe("saveMeetingAvailabilityAction", () => {
     expect(result.ok).toBe(false);
   });
 
+  // A "use server" export is reachable with any payload, so a malformed one
+  // has to come back as a result rather than throwing out of the action.
+  it("refuses a malformed payload instead of throwing", async () => {
+    const event = await meetingsEvent();
+    const guest = await createGuest({ eventId: event.id });
+    await signIn(guest.id);
+
+    for (const bad of [
+      { eventId: event.id, slotStarts: 5 },
+      { eventId: event.id, slotStarts: {} },
+      { eventId: 7, slotStarts: [] },
+      {},
+    ]) {
+      const result = await saveMeetingAvailabilityAction(
+        bad as unknown as Parameters<typeof saveMeetingAvailabilityAction>[0]
+      );
+      expect(result.ok).toBe(false);
+    }
+  });
+
   it("reports an unknown event", async () => {
     const event = await meetingsEvent();
     const guest = await createGuest({ eventId: event.id });

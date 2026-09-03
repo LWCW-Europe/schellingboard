@@ -1,9 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
-import { verifiedCurrentUser } from "@/utils/acting-guest";
+import {
+  unverifiedUserMessage,
+  verifiedCurrentUser,
+} from "@/utils/acting-guest";
 import { requireSiteAuth } from "@/utils/action-auth";
 import { meetingSlotsForDay } from "@/utils/meeting-slots";
 import type { Event } from "@/db/repositories/interfaces";
@@ -26,17 +30,37 @@ async function eventSlotStarts(event: Event): Promise<Set<string>> {
   );
 }
 
-export async function saveMeetingAvailabilityAction(input: {
-  eventId: string;
-  slotStarts: string[];
-}): Promise<MeetingActionResult> {
+// A "use server" export is a public endpoint behind site auth, so the types
+// above it are advisory: the payload is parsed rather than trusted, and a
+// malformed one comes back as a result instead of throwing.
+const availabilitySchema = z.object({
+  eventId: z.string(),
+  slotStarts: z.array(z.string()),
+});
+
+export async function saveMeetingAvailabilityAction(
+  raw: z.input<typeof availabilitySchema>
+): Promise<MeetingActionResult> {
   await requireSiteAuth();
+
+  const parsed = availabilitySchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "Invalid request" };
+  const input = parsed.data;
 
   // Site auth is shared with every attendee, so it cannot be the gate on
   // writing one guest's own availability.
-  const guestId = await verifiedCurrentUser(await cookies());
+  const cookieStore = await cookies();
+  const guestId = await verifiedCurrentUser(cookieStore);
   if (!guestId) {
-    return { ok: false, error: "Sign in to set your availability" };
+    // Shared with the page, so the copy can't drift -- and so a protected name
+    // selected without verifying is told to switch to it, not to "sign in".
+    return {
+      ok: false,
+      error: await unverifiedUserMessage(
+        cookieStore,
+        "setting your meeting availability"
+      ),
+    };
   }
 
   const repos = getRepositories();
