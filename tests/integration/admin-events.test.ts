@@ -424,6 +424,14 @@ describe("event actions", () => {
       expect(!result.ok && result.error).toMatch(/reserved/i);
     });
 
+    it.each(["Notifications", "Guests", "Settings"])(
+      "rejects %s, whose slug a top-level page would shadow",
+      async (name) => {
+        const result = await createEventAction({ ...VALID_EVENT_INPUT, name });
+        expect(!result.ok && result.error).toMatch(/reserved/i);
+      }
+    );
+
     it("returns a friendly error when a concurrent create wins the slug race", async () => {
       // Simulate a concurrent request inserting the same slug after this
       // request's findBySlug pre-check passes but before its insert runs,
