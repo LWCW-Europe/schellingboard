@@ -56,6 +56,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`make arch` checks the module graph** for circular dependencies and layer violations, using
   dependency-cruiser. It runs as part of `make precommit`; `make arch-graph` renders the dependency
   graph. See `docs/dev/architecture-rules.md`
+- **Lint now bans ambient clock reads** in `app/`, `db/`, `emails/`, `model/` and `utils/`: "now"
+  has to come from the request boundary so the dev fake clock can't be silently bypassed. Deliberate
+  exceptions — the clock itself, auth expiry and throttles — are marked line by line with their
+  reason, so the rest of those files stays checked. See ADR 0004
+- Session times that the type allows to be absent now render a placeholder rather than falling back
+  to the current time or the epoch, both of which printed a plausible-looking wrong time
 - **The dev fake clock reaches proposal timestamps and the past-booking check**: a proposal created
   under a time offset was stamped with real time, so it came out older than the comments on it — and
   "a session must start in the future" was judged against real time too, letting a time-travelled

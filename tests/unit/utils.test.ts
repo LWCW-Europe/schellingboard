@@ -9,6 +9,9 @@ import {
   formatSlotLabel,
   getPercentThroughDay,
   getStartTimePlusBreak,
+  formatOptionalTime,
+  formatStartTimePlusBreak,
+  TIME_FORMAT,
   votesApiUrl,
   normalizeForSearch,
   containsIgnoringAccents,
@@ -274,8 +277,7 @@ function makeSession(startTime: Date, endTime: Date): Session {
 describe("getStartTimePlusBreak", () => {
   it("adds a 10 minute break to the start", () => {
     const start = new Date("2025-06-15T10:00:00Z");
-    const end = new Date("2025-06-15T11:00:00Z");
-    const adjusted = getStartTimePlusBreak(makeSession(start, end), 10);
+    const adjusted = getStartTimePlusBreak(start, 10);
     expect(adjusted.toJSDate().getTime()).toBe(
       new Date("2025-06-15T10:10:00Z").getTime()
     );
@@ -283,11 +285,55 @@ describe("getStartTimePlusBreak", () => {
 
   it("adds a 5 minute break to the start", () => {
     const start = new Date("2025-06-15T10:00:00Z");
-    const end = new Date("2025-06-15T11:30:00Z");
-    const adjusted = getStartTimePlusBreak(makeSession(start, end), 5);
+    const adjusted = getStartTimePlusBreak(start, 5);
     expect(adjusted.toJSDate().getTime()).toBe(
       new Date("2025-06-15T10:05:00Z").getTime()
     );
+  });
+});
+
+// ── formatOptionalTime ───────────────────────────────────────────────────────
+
+describe("formatOptionalTime", () => {
+  it("formats a time in the event's zone", () => {
+    expect(
+      formatOptionalTime(
+        new Date("2025-06-15T10:00:00Z"),
+        "Europe/Berlin",
+        TIME_FORMAT
+      )
+    ).toBe("12:00");
+  });
+
+  it("renders a placeholder instead of a plausible time when absent", () => {
+    expect(formatOptionalTime(undefined, "Europe/Berlin", TIME_FORMAT)).toBe(
+      "—"
+    );
+  });
+});
+
+// ── formatStartTimePlusBreak ─────────────────────────────────────────────────
+
+describe("formatStartTimePlusBreak", () => {
+  const start = new Date("2025-06-15T10:00:00Z");
+  const end = new Date("2025-06-15T11:00:00Z");
+
+  it("formats the break-adjusted start in the event's zone", () => {
+    expect(
+      formatStartTimePlusBreak(
+        makeSession(start, end),
+        10,
+        "Europe/Berlin",
+        TIME_FORMAT
+      )
+    ).toBe("12:10");
+  });
+
+  it("renders a placeholder instead of the epoch when the start is absent", () => {
+    const session = { ...makeSession(start, end), startTime: undefined };
+    expect(
+      formatStartTimePlusBreak(session, 10, "Europe/Berlin", TIME_FORMAT)
+    ).toBe("—");
   });
 });
 

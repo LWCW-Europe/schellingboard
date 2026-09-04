@@ -25,7 +25,9 @@ selector plus the sentence you want the author to read:
 }
 ```
 
-Scope it with a config block listing the enforced areas in `files`.
+Scope it with a config block listing the enforced areas in `files`. The
+ambient-clock ban (ADR 0004) is the worked example: it covers `app/`, `db/`,
+`emails/`, `model/` and `utils/`.
 
 Exempt a line, not a file, with `eslint-disable-next-line <rule> -- <reason>`.
 A file-wide `ignores` entry would stop checking the other hundred lines too,

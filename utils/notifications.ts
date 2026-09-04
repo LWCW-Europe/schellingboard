@@ -682,7 +682,9 @@ function formatSessionTime(
   breakMinutes: number
 ): string {
   if (!session.startTime || !session.endTime) return "Unscheduled";
-  const start = getStartTimePlusBreak(session, breakMinutes).setZone(timezone);
+  const start = getStartTimePlusBreak(session.startTime, breakMinutes).setZone(
+    timezone
+  );
   const end = DateTime.fromJSDate(session.endTime).setZone(timezone);
   return `${start.toFormat("cccc d LLLL, HH:mm")}–${end.toFormat("HH:mm")}`;
 }
