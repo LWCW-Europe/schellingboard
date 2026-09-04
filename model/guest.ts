@@ -1,5 +1,16 @@
 import { z } from "zod";
-import { CONTACT_TYPES, type ContactType } from "@/db/repositories/interfaces";
+
+export const CONTACT_TYPES = [
+  "email",
+  "phone",
+  "whatsapp",
+  "signal",
+  "telegram",
+  "discord",
+  "website",
+  "other",
+] as const;
+export type ContactType = (typeof CONTACT_TYPES)[number];
 
 export const CONTACT_TYPE_LABELS: Record<ContactType, string> = {
   email: "Email",

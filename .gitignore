@@ -99,3 +99,6 @@ www-site/
 # Dev-server config for Claude Code's preview pane -- local tooling, and the
 # command it runs depends on where node lives on the machine
 .claude/launch.json
+
+# Dependency graph rendered by `make arch-graph`.
+arch-graph.svg

@@ -16,7 +16,7 @@ import { Input } from "@/app/input";
 import { updateProfileAction } from "@/app/actions/profile";
 import { Avatar } from "../avatar";
 import type { Guest } from "@/db/repositories/interfaces";
-import { CONTACT_TYPES } from "@/db/repositories/interfaces";
+import { CONTACT_TYPES } from "@/model/guest";
 import { resizeImage } from "@/utils/images-client";
 import { AVATAR_MAX_SIZE } from "@/utils/avatar-image-constraints";
 import clsx from "clsx";
