@@ -1,7 +1,7 @@
 import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
-import { openNameSwitcher, selectUser } from "./helpers/user";
+import { openNameSwitcher, selectUser, tapUntilOpen } from "./helpers/user";
 import {
   getMessage,
   newestBySubjectTo,
@@ -106,6 +106,40 @@ async function logInAs(page: Page, credential: string) {
   await page.getByRole("button", { name: "Log in" }).click();
 }
 
+test("the name switcher focuses its search, and clearing it keeps the modal open", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/");
+
+  // Not openNameSwitcher: that helper clicks the search box, which would
+  // focus it and hide the very thing under test. Opening by hand still needs
+  // tapUntilOpen for the hydration race.
+  const nameBox = page.getByLabel("My name is:");
+  await tapUntilOpen(
+    page.getByRole("button", { name: "Your name", exact: true }),
+    nameBox
+  );
+  await expect(nameBox).toBeFocused();
+
+  await nameBox.pressSequentially("Bob");
+  await expect(page.getByRole("option", { name: /Bob Test/i })).toBeVisible();
+  await nameBox.press("Backspace");
+  await nameBox.press("Backspace");
+  await nameBox.press("Backspace");
+  await expect(nameBox).toHaveValue("");
+
+  // Emptying the search is not a deselection: the modal is still there and
+  // still picks a name. A deselection reaches the server (selectUserAction)
+  // before it closes the modal, so let that round trip drain first —
+  // asserting straight after the last Backspace passes even when the bug is
+  // there.
+  await page.waitForLoadState("networkidle");
+  await expect(nameBox).toBeVisible();
+  await page.getByRole("option", { name: /Bob Test/i }).click();
+  await expect(headerChip(page, "Bob Test")).toBeVisible();
+});
+
 test("logging out from the chip menu clears the selected name", async ({
   page,
 }) => {
@@ -177,6 +211,8 @@ test("protect a name via emailed link, then log in with password and single-use 
   ).toBeVisible();
   await priyaOption.click();
   await expect(page.getByText(/has protected their account/i)).toBeVisible();
+  // The credential field says whose credential it wants.
+  await expect(page.getByLabel("Logging in as")).toHaveValue("Priya Sharma");
   await logInAs(page, "not-the-password");
   await expect(page.getByText(/wrong password or code/i)).toBeVisible();
   await logInAs(page, PRIYA_PASSWORD);

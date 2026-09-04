@@ -5,7 +5,6 @@ import {
   requestLoginCodeAction,
   requestPasswordLinkAction,
 } from "@/app/actions/user-auth";
-import { PasswordManagerHint } from "@/app/password-manager-hint";
 
 // Credential prompt for switching to a protected guest: accepts either the
 // permanent password or an emailed single-use login code in one field, with a
@@ -97,10 +96,29 @@ export function GuestLoginForm({
       }}
     >
       <p className="text-sm text-fg-muted">
-        {guestName} has protected their account. Enter their password, or use a
+        This user has protected their account. Enter their password, or use a
         single-use code emailed to them. Forgot the password? Reset it instead.
       </p>
-      <PasswordManagerHint username={guestName} />
+      <label
+        htmlFor="guest-login-username"
+        className="text-sm font-medium text-fg-muted"
+      >
+        Logging in as
+      </label>
+      {/* A visible field rather than the hidden PasswordManagerHint: it is the
+          only thing naming the account the credential below belongs to, which
+          an empty password box on its own left the user guessing. It still
+          carries the autocomplete wiring the hint existed for — see
+          password-manager-hint.tsx for why a username field has to be here. */}
+      <input
+        id="guest-login-username"
+        name="username"
+        type="text"
+        autoComplete="username"
+        value={guestName}
+        readOnly
+        className="rounded-md border border-line bg-surface-muted px-3 py-2 text-sm text-fg-muted outline-none focus:ring-2 focus:ring-brand-accent focus:border-transparent"
+      />
       <label
         htmlFor="guest-credential"
         className="text-sm font-medium text-fg-muted"

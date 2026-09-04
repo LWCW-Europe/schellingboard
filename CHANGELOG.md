@@ -35,6 +35,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Picking your name works however many events a site runs**: the header lists every event, and
   from about seven onwards the links crowded the name chip beside them off the row, leaving no way
   to say who you are. The links now scroll instead of pushing
+- **Picking your name is less fiddly** (#777): the search box is focused as soon as the "My name is"
+  box opens, so you can type straight away, and erasing what you typed no longer closes the box on
+  you
+- **The password prompt now names the account beside the box** (#777): choosing a protected name
+  showed a "Logging in as" field only to password managers, leaving a blank password box with
+  nothing but a sentence above it to say whose password it wanted
 - **Account settings now says why enabling protection failed** (#716): on a site with no email set
   up, "Enable protection" looked like it did nothing at all — the server's explanation was thrown
   away instead of shown

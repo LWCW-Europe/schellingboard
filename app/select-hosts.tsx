@@ -20,8 +20,10 @@ export function SelectHosts<
   // one flow that then asks for a password or code; in co-host pickers the
   // indicator would wrongly imply credentials are needed to add someone.
   showProtected?: boolean;
+  autoFocus?: boolean;
 }) {
-  const { guests, hosts, setHosts, id, selectMany, showProtected } = props;
+  const { guests, hosts, setHosts, id, selectMany, showProtected, autoFocus } =
+    props;
   const [query, setQuery] = useState("");
   const filteredGuests = guests
     .filter((guest) => containsIgnoringAccents(guest.name, query))
@@ -57,6 +59,7 @@ export function SelectHosts<
           )}
           <Combobox.Input
             id={id}
+            autoFocus={autoFocus}
             onChange={(event) => setQuery(event.target.value)}
             value={query}
             className="border-none focus:ring-0 px-0 py-1 text-sm flex-1 min-w-8 bg-transparent placeholder:text-fg-subtle outline-none"
@@ -142,8 +145,15 @@ export function SelectHosts<
         <Combobox
           value={hosts[0] ?? null}
           by="id"
-          onChange={(newHosts) => {
-            setHosts(newHosts ? [newHosts] : []);
+          // A single-select combobox reports an emptied input as onChange(null).
+          // That is the user erasing their search, not unpicking the selection —
+          // treating it as a deselection would fire the caller's "nothing is
+          // selected any more" path (and, in the name switcher, close the modal)
+          // on the way to typing a different name. Removal stays with the chip's
+          // explicit "Remove <name>" button.
+          onChange={(newHost) => {
+            if (!newHost) return;
+            setHosts([newHost]);
             setQuery("");
           }}
           immediate
