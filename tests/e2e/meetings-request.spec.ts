@@ -1,0 +1,243 @@
+import { Page } from "@playwright/test";
+import { test, expect } from "./helpers/fixtures";
+import { uniqueSuffix } from "./helpers/unique";
+import { loginAndGoto } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
+
+/**
+ * The event runs a month out. Relative to the run rather than a fixed date:
+ * the picker only offers slots that are still ahead, so a hard-coded October
+ * would quietly stop offering anything once October passed.
+ */
+const isoDay = (offsetDays: number) => {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+};
+const EVENT_START = isoDay(30);
+const EVENT_END = isoDay(32);
+
+/** How the picker heads that day's slots: luxon's "EEE d LLL". */
+const DAY_HEADING = new RegExp(
+  new Date(`${EVENT_START}T09:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  })
+);
+
+/**
+ * Two throwaway attendees. Never the shared seeded guests: assigning those to
+ * a meetings-enabled event leaves them bookable for the rest of the run, which
+ * other specs then trip over -- admin.spec.ts warns about exactly this kind of
+ * global guest state.
+ */
+async function adminLogin(page: Page) {
+  await page.goto("/admin");
+  await page.getByLabel("Password").fill(ADMIN_PASSWORD);
+  await page.getByRole("button", { name: "Access Admin" }).click();
+  await expect(page).toHaveURL(/\/admin\/events$/);
+}
+
+async function createGuests(page: Page, names: string[]) {
+  await adminLogin(page);
+  await page.goto("/admin/users");
+  for (const name of names) {
+    await page.getByLabel("Name").fill(name);
+    await page
+      .getByLabel("Email")
+      .fill(`${name.toLowerCase().replace(/[^a-z0-9]/g, "-")}@test.example`);
+    await page.getByRole("button", { name: "Add user" }).click();
+    // The users table is paginated, so the new row isn't on screen; the form
+    // clearing itself is what says the create landed.
+    await expect(page.getByLabel("Name")).toHaveValue("");
+  }
+}
+
+/**
+ * An event with meetings on, one short day, a meeting point, and the two
+ * attendees — set up the way an organizer would, through the admin UI.
+ */
+async function meetingsEvent(page: Page, eventName: string, names: string[]) {
+  await page.goto("/admin/events");
+
+  // The list is server-rendered, so its buttons are clickable a moment before
+  // React attaches their handlers, and a click in that window is silently
+  // dropped. Re-checking first keeps a retry from acting twice.
+  // (helpers/user.ts hits the same hazard in the header.)
+  const nameField = page.getByLabel("Name *");
+  await expect(async () => {
+    if (!(await nameField.isVisible())) {
+      await page.getByRole("button", { name: "New event" }).click();
+    }
+    await expect(nameField).toBeVisible({ timeout: 2000 });
+  }).toPass();
+
+  await nameField.fill(eventName);
+  await page.getByLabel("Start *").fill(EVENT_START);
+  await page.getByLabel("End *").fill(EVENT_END);
+
+  const row = page.getByRole("listitem").filter({ hasText: eventName });
+  await expect(async () => {
+    // The form closes on success, which is what stops a retry re-submitting.
+    if (await nameField.isVisible()) {
+      await page.getByRole("button", { name: "Create event" }).click();
+    }
+    await expect(row).toBeVisible({ timeout: 3000 });
+  }).toPass();
+
+  await row.getByRole("link", { name: "Manage" }).click();
+
+  const meetings = page.getByRole("form", { name: "Meetings" });
+  await meetings.getByLabel("Enable meetings").check();
+  await meetings.getByRole("button", { name: /add meeting point/i }).click();
+  await meetings.getByLabel("Name *").fill("Coffee bar");
+  await meetings.getByRole("button", { name: /add meeting point/i }).click();
+  await meetings.getByRole("button", { name: "Save meetings" }).click();
+  await expect(meetings.getByText("Saved!")).toBeVisible();
+
+  await page.getByRole("button", { name: "Add day" }).click();
+  await page.getByLabel("Start *").last().fill(`${EVENT_START}T09:00`);
+  await page.getByLabel("End *").last().fill(`${EVENT_START}T10:00`);
+  await page.getByLabel("Bookings open *").fill(`${EVENT_START}T09:00`);
+  await page.getByLabel("Bookings close *").fill(`${EVENT_START}T10:00`);
+  await page.getByRole("button", { name: "Add day" }).last().click();
+  await expect(page.getByText(`${EVENT_START}T09:00`)).toBeVisible();
+
+  await page.getByRole("link", { name: "Guests" }).click();
+  const guests = page.getByRole("region", { name: "Guests" });
+  for (const name of names) {
+    // The list is paginated, and a just-created guest is rarely on page one.
+    await guests.getByPlaceholder("Search name or email…").fill(name);
+    const assign = guests
+      .getByRole("row")
+      .filter({ hasText: name })
+      .getByRole("checkbox", { name: /^Assign / });
+    await assign.click();
+    await expect(assign).toBeChecked();
+  }
+}
+
+// selectUser logs out and back in; navigating before that settles aborts the
+// request and drops the selection. Same helper the comment specs use.
+async function actAs(page: Page, name: RegExp) {
+  await selectUser(page, name);
+  await expect(page.getByRole("button", { name: /^Your name:/ })).toBeVisible();
+}
+
+// Each directory row is a link whose name is the whole row, so the name alone
+// never matches exactly.
+async function openProfile(page: Page, name: string) {
+  await page.goto("/guests");
+  await page
+    .getByPlaceholder(/search/i)
+    .first()
+    .fill(name);
+  await page
+    .getByRole("link", { name: new RegExp(name) })
+    .first()
+    .click();
+  await expect(page.getByRole("heading", { name })).toBeVisible();
+}
+
+test.describe("requesting a 1-on-1", () => {
+  // Torn down in afterEach rather than at the end of the test body. Every
+  // event is a link in the site header, and a header long enough to push the
+  // name chip out of reach breaks every later spec that picks a user -- so an
+  // assertion failing halfway through must not leave one behind. The guests go
+  // too: they stop being bookable with the event, but they would otherwise
+  // pile up in the directory run after run.
+  const leftBehind: { events: string[]; guests: string[] } = {
+    events: [],
+    guests: [],
+  };
+
+  test.afterEach(async ({ page }) => {
+    for (const eventName of leftBehind.events.splice(0)) {
+      await page.goto("/admin/events");
+      await page
+        .getByRole("listitem")
+        .filter({ hasText: eventName })
+        .getByRole("link", { name: "Manage" })
+        .click();
+      await page.getByRole("button", { name: "Delete event" }).click();
+      await page.getByLabel("Type the event name to confirm").fill(eventName);
+      await page.getByRole("button", { name: "Confirm delete" }).click();
+      await expect(page).toHaveURL(/\/admin\/events$/);
+    }
+
+    for (const name of leftBehind.guests.splice(0)) {
+      await page.goto("/admin/users");
+      // The table is paginated, so a guest created mid-run is rarely on page one.
+      await page.getByPlaceholder("Search name or email…").fill(name);
+      const row = page.getByRole("listitem").filter({ hasText: name });
+      await row.getByRole("button", { name: "Delete" }).click();
+      await row.getByRole("button", { name: "Confirm delete" }).click();
+      await expect(row).toBeHidden();
+    }
+  });
+
+  test("books a slot the other attendee declared, from their profile", async ({
+    page,
+  }) => {
+    // One journey through the whole feature, and it drives the admin UI to set
+    // the event up first: it lands within a few seconds of the 30s default on
+    // an idle machine, so it goes over the moment the suite runs it alongside
+    // anything else.
+    test.slow();
+
+    const unique = uniqueSuffix();
+    const eventName = `E2E Request ${unique}`;
+    const asker = `Asker ${unique}`;
+    const askee = `Askee ${unique}`;
+    await createGuests(page, [asker, askee]);
+    leftBehind.guests.push(asker, askee);
+    await meetingsEvent(page, eventName, [asker, askee]);
+    leftBehind.events.push(eventName);
+    const slug = eventName.replace(/ /g, "-");
+
+    // Nobody is bookable yet, so the profile offers nothing.
+    await loginAndGoto(page, "/guests");
+    await actAs(page, new RegExp(asker));
+    await openProfile(page, askee);
+    await expect(
+      page.getByRole("button", { name: /schedule a meeting/i })
+    ).toBeHidden();
+
+    // The askee declares they are open to meetings.
+    await page.goto(`/${slug}/meetings`);
+    await actAs(page, new RegExp(askee));
+    await page.goto(`/${slug}/meetings`);
+    const availability = page.getByRole("form", { name: "1-on-1 meetings" });
+    await availability.getByLabel(/open to 1-on-1 meetings/).check();
+    await availability
+      .getByRole("button", { name: "Save availability" })
+      .click();
+    await expect(availability.getByText("Saved!")).toBeVisible();
+
+    // Alice books him from his profile.
+    await actAs(page, new RegExp(asker));
+    await openProfile(page, askee);
+
+    const schedule = page.getByRole("button", { name: /schedule a meeting/i });
+    await expect(schedule).toBeVisible();
+    await schedule.click();
+
+    // Where to meet first: picking a slot can insert a busy warning above
+    // this row, and clicking into a shifting layout is what Playwright
+    // reports as "element is not stable".
+    const send = page.getByRole("button", { name: "Send request" });
+    await expect(send).toBeVisible();
+    await page.getByRole("button", { name: "Coffee bar" }).click();
+
+    // Every day has an 09:00, so the slot has to be found within its own day.
+    const dayRegion = page.getByRole("region", { name: DAY_HEADING }).first();
+    await dayRegion.getByRole("button", { name: /^09:00/ }).click();
+
+    await send.click();
+
+    await expect(page.getByText(new RegExp(`Asked ${askee}`))).toBeVisible();
+  });
+});

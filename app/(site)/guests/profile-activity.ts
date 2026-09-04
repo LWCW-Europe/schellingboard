@@ -1,8 +1,11 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
+import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { requireSiteAuth } from "@/utils/action-auth";
 import { eventNameToSlug } from "@/utils/utils";
+import { meetingOptionsFor, type MeetingOption } from "@/utils/meeting-options";
 
 /** A session or proposal on a profile, ready to link to. */
 export type ProfileActivityItem = {
@@ -14,6 +17,12 @@ export type ProfileActivityItem = {
 export type ProfileActivity = {
   hosting: ProfileActivityItem[];
   proposals: ProfileActivityItem[];
+  /**
+   * What the reader may book with this guest. Folded in here rather than
+   * fetched on its own: a server action re-renders the route's RSC tree, and
+   * the directory behind a profile is a big one to render twice per open.
+   */
+  meetingOptions: MeetingOption[];
 };
 
 /**
@@ -27,10 +36,14 @@ export async function listProfileActivity(
 ): Promise<ProfileActivity> {
   await requireSiteAuth();
   const repos = getRepositories();
-  const [hostedSessions, proposals, events] = await Promise.all([
+  const viewerId = await verifiedCurrentUser(await cookies());
+  // The event list is fetched first because the meeting options are computed
+  // over it, rather than each looking its own events up again.
+  const events = await repos.events.list();
+  const [hostedSessions, proposals, meetingOptions] = await Promise.all([
     repos.sessions.listHostedByGuest(guestId),
     repos.sessionProposals.listByHost(guestId),
-    repos.events.list(),
+    meetingOptionsFor(viewerId, guestId, events),
   ]);
 
   const slugOf = (eventId: string) =>
@@ -47,5 +60,6 @@ export async function listProfileActivity(
       title: p.title,
       eventSlug: slugOf(p.eventId),
     })),
+    meetingOptions,
   };
 }

@@ -206,6 +206,30 @@ Slots are as long as the event's schedule increment and cover the whole of each
 day. If the organizer later changes that increment, everyone's availability is
 cleared and you are asked to choose again — the slots themselves have moved.
 
+### Ask someone for a 1-on-1
+
+Open anyone from the [attendee directory](#attendee-directory--profiles). If
+they are open to meetings at an event you both attend, their profile has a
+**Schedule a meeting** button; if there is no button, they haven't said they are
+free for any slot that is still ahead.
+
+The picker lists their slots day by day:
+
+- **Plain** — they are free, and so are you.
+- **Busy** — one of you is hosting a session, has RSVP'd to one, or has another
+  1-on-1 then. It says who and, where it isn't private, what. This is only a
+  warning: you can still pick the slot and the two of you can sort it out.
+- **Unavailable** — a slot they cleared. These can't be picked.
+
+Then say **where to meet** — either one of the places the organizer suggested,
+or type your own — and optionally add a line about what you'd like to talk
+about. Nothing is reserved: the meeting point is just how you find each other.
+
+Press **Send request** and they hear about it. Asking the same person for the
+same slot twice isn't possible while that request is still open, and the
+organizer caps how many unanswered requests you may have out at once — if you
+hit it, wait for a reply or cancel one.
+
 ## Attendee directory & profiles
 
 The directory lists everyone at the event on a single page — photo and the

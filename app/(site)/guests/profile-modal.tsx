@@ -454,9 +454,23 @@ function useProfileActivity(guestId: string): ProfileActivity | null {
 
   useEffect(() => {
     let live = true;
-    void listProfileActivity(guestId).then((activity) => {
-      if (live) setLoaded({ guestId, activity });
-    });
+    void listProfileActivity(guestId)
+      .then((activity) => {
+        if (live) setLoaded({ guestId, activity });
+      })
+      // Leaving the page aborts the request, and the rejection that follows is
+      // expected -- there is no profile left to report it on. A navigation
+      // tears the document down without running the cleanup below, so the
+      // abort has to be told apart by its kind rather than by `live`: fetch
+      // reports it as a TypeError ("NetworkError", "Failed to fetch"), and an
+      // explicit cancel as an AbortError. Anything else is a real failure and
+      // must not vanish, or the profile keeps its skeleton unexplained.
+      .catch((e: unknown) => {
+        const aborted =
+          e instanceof TypeError ||
+          (e instanceof DOMException && e.name === "AbortError");
+        if (!aborted) console.error(e);
+      });
     return () => {
       live = false;
     };
