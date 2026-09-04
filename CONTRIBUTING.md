@@ -6,6 +6,7 @@ This file covers what you need day to day. Longer chapters live under
 | Document                                                        | For                                                                        |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | [Coding guidelines](docs/dev/coding-guidelines.md)              | when to write a comment, and what never to put in one                      |
+| [Architecture rules](docs/dev/architecture-rules.md)            | the conventions the build enforces, and how to add one                     |
 | [Testing](docs/dev/testing.md)                                  | test strategy, TDD workflow, running tests, the Docker tier                |
 | [Database migrations](docs/dev/migrations.md)                   | generating migrations, resolving drizzle conflicts                         |
 | [Running multiple instances](docs/dev/multiple-instances.md)    | ports and env files when several clones share a machine                    |

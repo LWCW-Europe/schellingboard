@@ -52,6 +52,7 @@
     "@typescript-eslint/parser": "^8.68.0",
     "@vitest/coverage-v8": "^4",
     "@vitest/ui": "^4",
+    "dependency-cruiser": "^18.2.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "^16",

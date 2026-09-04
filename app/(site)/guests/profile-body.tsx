@@ -9,12 +9,8 @@ import {
   PaperAirplaneIcon,
   PhoneIcon,
 } from "@heroicons/react/20/solid";
-import type {
-  Attendee,
-  ContactType,
-  ProfilePrompt,
-} from "@/db/repositories/interfaces";
-import { CONTACT_TYPE_LABELS } from "@/model/guest";
+import type { Attendee, ProfilePrompt } from "@/db/repositories/interfaces";
+import { CONTACT_TYPE_LABELS, type ContactType } from "@/model/guest";
 import { CORE_PROMPTS } from "@/model/prompt-pool";
 import { InlineMarkdown, Markdown } from "@/app/(site)/markdown";
 import {
