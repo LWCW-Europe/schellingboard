@@ -86,26 +86,18 @@ function pulling(swipe: Swipe, ends: SwipeEnds): boolean {
 /** One card's slide between profiles: following a finger, or finishing one. */
 export type Slide =
   | { phase: "tracking"; swipe: Swipe; arming?: true }
-  | { phase: "settling"; offset: number; commit: -1 | 0 | 1 };
+  | { phase: "settling"; commit: -1 | 0 | 1 };
 
 /**
- * What a Prev/Next press means for a slide that may already be running.
- * Already headed there: nothing — restarting would snap the card backwards
- * and delay the arrival it is most of the way through. Moving otherwise:
+ * What a Prev/Next press means for a slide that may already be running:
  * retarget from wherever the card is, which the neighbours being on screen
  * allows. From rest: mount the neighbours first.
  */
 export function pressSlide(
   slide: Slide | null,
-  dir: 1 | -1,
-  width: number
-):
-  | { kind: "arrived" }
-  | { kind: "slide"; offset: number; commit: -1 | 0 | 1 }
-  | { kind: "arm" } {
-  if (slide?.phase === "settling" && slide.commit === dir)
-    return { kind: "arrived" };
-  if (slide) return { kind: "slide", offset: -dir * width, commit: dir };
+  dir: 1 | -1
+): { kind: "slide"; commit: -1 | 0 | 1 } | { kind: "arm" } {
+  if (slide) return { kind: "slide", commit: dir };
   return { kind: "arm" };
 }
 

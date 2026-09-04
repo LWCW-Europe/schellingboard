@@ -73,33 +73,32 @@ describe("profile swipe", () => {
 
   const settlingNext = {
     phase: "settling",
-    offset: -WIDTH,
     commit: 1,
   } as const;
 
-  it("lets a card already headed to the next profile arrive", () => {
-    expect(pressSlide(settlingNext, 1, WIDTH)).toEqual({ kind: "arrived" });
+  it("continues on from a settle still running instead of wasting the press", () => {
+    // The settle has already landed on its target, so a press in the same
+    // direction is the profile after it, not a repeat of a completed move.
+    expect(pressSlide(settlingNext, 1)).toEqual({ kind: "slide", commit: 1 });
   });
 
   it("reverses from wherever the card is instead of starting over", () => {
-    expect(pressSlide(settlingNext, -1, WIDTH)).toEqual({
+    expect(pressSlide(settlingNext, -1)).toEqual({
       kind: "slide",
-      offset: WIDTH,
       commit: -1,
     });
   });
 
   it("takes over from a finger still holding the card", () => {
     const held = drag([200, 300], [150, 300]);
-    expect(pressSlide({ phase: "tracking", swipe: held }, 1, WIDTH)).toEqual({
+    expect(pressSlide({ phase: "tracking", swipe: held }, 1)).toEqual({
       kind: "slide",
-      offset: -WIDTH,
       commit: 1,
     });
   });
 
   it("mounts the neighbours first when starting from rest", () => {
-    expect(pressSlide(null, 1, WIDTH)).toEqual({ kind: "arm" });
+    expect(pressSlide(null, 1)).toEqual({ kind: "arm" });
   });
 
   it("catches a settling card where it visibly is, not back at rest", () => {
