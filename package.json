@@ -21,7 +21,7 @@
     "moment-timezone": "^0.6.3",
     "nanoid": "^6.0.1",
     "next": "^16",
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^9.0.6",
     "react": "^19",
     "react-dom": "^19",
     "react-hook-form": "^7.86.0",
