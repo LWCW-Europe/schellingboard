@@ -26,6 +26,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Reading on while a profile is still sliding**: pressing Next or Prev — or swiping again — during
+  the slide now moves on another profile instead of being ignored until it lands, so reading through
+  the directory keeps up with the finger. Before, every press that arrived mid-slide was lost
 - **Event names that a site page would hide are rejected**: an event named "Guests", "Settings" or
   "Notifications" got a web address the site's own page of that name already answers, so the event
   could never be opened. Creating one now fails with the same message other reserved names give

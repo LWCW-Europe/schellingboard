@@ -14,14 +14,17 @@ import {
 } from "@heroicons/react/24/outline";
 import type { DirectoryView } from "@/app/(site)/guests/directory-view";
 import { ProfileBody } from "@/app/(site)/guests/profile-body";
-import { listHref, profileHref } from "@/app/(site)/guests/profile-nav";
+import {
+  guestIdFromPath,
+  listHref,
+  profileHref,
+} from "@/app/(site)/guests/profile-nav";
 import {
   listProfileActivity,
   type ProfileActivity,
 } from "@/app/(site)/guests/profile-activity";
 import {
   catchSwipe,
-  pressSlide,
   type Slide,
   startSwipe,
   swipeCommit,
@@ -54,20 +57,11 @@ export function ProfileModal({
   view: DirectoryView;
   currentUserId: string | null;
 }) {
+  // Which profile is on screen, ahead of the URL rather than read off it: a
+  // slide has to know where it is going while it is going there. `advanceTo`
+  // keeps the two in step, and the popstate listener below picks up the
+  // navigations that move the URL on their own.
   const [guestId, setGuestId] = useState(initialGuestId);
-  // Browser Back/Forward moves through the history, not through this state.
-  // Reading through pushes one entry per profile, so going back has to land
-  // the modal on the profile the URL names; pushState does not fire popstate,
-  // so only genuine navigations sync here.
-  useEffect(() => {
-    const match = /^\/guests\/([^/]+)\/?$/;
-    const onPop = () => {
-      const id = match.exec(window.location.pathname)?.[1];
-      if (id) setGuestId(decodeURIComponent(id));
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
 
   const { matches, everyone, listQuery } = view;
   const collection = matches.some((a) => a.id === guestId) ? matches : everyone;
@@ -128,10 +122,27 @@ export function ProfileModal({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  // A finished drag is keyed to the profile it lands on (guestId has already
-  // advanced to it) and left standing until the URL it asked for arrives:
-  // dropping it on the timer instead would snap the row past the profile it is
-  // sliding into for however many frames the router takes to catch up.
+  // Browser Back/Forward moves through the history, not through this state.
+  // Reading through pushes one entry per profile, so going back has to land the
+  // modal on the profile the URL names; pushState does not fire popstate, so
+  // only genuine navigations sync here.
+  useEffect(() => {
+    const onPop = () => {
+      const id = guestIdFromPath(window.location.pathname);
+      if (!id) return;
+      setGuestId(id);
+      // A navigation is not a slide: what was in flight belongs to the profile
+      // being left, and left standing it would play again the next time that
+      // profile came round.
+      setDrag(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // A drag belongs to the profile it lands on — guestId advances the moment
+  // the gesture is spent, not when the slide finishes — so one left over from a
+  // profile since navigated away from moves nothing.
   const drag = dragged?.guestId === guestId ? dragged : null;
 
   const onTouchStart = (e: ReactTouchEvent) => {
@@ -145,13 +156,24 @@ export function ProfileModal({
       dragged?.guestId === guestId && dragged.phase === "settling"
         ? dragged
         : null;
-    const swipe = settling ? catchSwipe(point, 0) : startSwipe(point);
+    const swipe = settling ? catchSwipe(point, rowOffset()) : startSwipe(point);
     if (!swipe) return;
     setDrag({
       guestId,
       phase: "tracking",
       swipe,
     });
+  };
+
+  // How far the card actually is from home, in px: the style declares where it
+  // is going, the computed matrix holds where the frame has got to. Positive is
+  // rightwards, so it is the travel a finger taking over inherits.
+  const rowOffset = () => {
+    const el = row.current;
+    if (!el) return 0;
+    const matrix = getComputedStyle(el).transform;
+    const tx = matrix === "none" ? 0 : new DOMMatrixReadOnly(matrix).e;
+    return tx + index * width;
   };
 
   const onTouchMove = (e: ReactTouchEvent) => {
@@ -175,8 +197,14 @@ export function ProfileModal({
     // settles — means a drag that starts again immediately here already has
     // both before and after on screen around the profile it lands on.
     const target = collection[index + commit]?.id ?? guestId;
+    // A tap or a scroll has nothing to animate, and a settle standing over the
+    // profile being read would mount its neighbours for no reason.
+    if (target === guestId && swipeOffset(dragged.swipe, ends) === 0) {
+      setDrag(null);
+      return;
+    }
     if (target !== guestId) advanceTo(target);
-    setDrag({ guestId: target, phase: "settling", commit });
+    setDrag({ guestId: target, phase: "settling" });
   };
 
   useEffect(() => {
@@ -197,48 +225,41 @@ export function ProfileModal({
 
       // The target takes over as current right away, so the neighbours are its
       // own: a drag that starts here gets both on screen, like a swipe.
-      const press = pressSlide(
-        dragged?.guestId === guestId ? dragged : null,
-        offset
-      );
-      // Already sliding: retarget from wherever the card is, which the
-      // neighbours being on screen allows. Nothing is "arrived" — the settle
-      // still running has already landed on its target, so a press in the same
-      // direction is the next profile, not a repeat of a completed one.
-      if (press.kind === "slide") {
-        advanceTo(target);
-        setDrag({
-          guestId: target,
-          phase: "settling",
-          commit: press.commit,
-        });
+      advanceTo(target);
+
+      // Mid-slide the neighbours are already mounted, so the transition simply
+      // retargets from wherever the card is. Nothing has "arrived" — the settle
+      // still running landed on its target the moment it began, so a press the
+      // same way again is the profile after it, not a repeat of a completed one.
+      if (drag) {
+        setDrag({ guestId: target, phase: "settling" });
         return;
       }
 
       // From rest they have to be mounted first: the neighbour mounts in one
-      // frame and the slide starts in the next — a settle in the same breath
-      // as the mount transitions from the pre-mount transform, so every press
-      // slides the same way. Two rAFs, not one: a single one can still beat
-      // the mounting frame's style pass. The guard keeps a stale callback from
-      // clobbering whatever — a caught card, a retarget — happened meanwhile.
-      advanceTo(target);
+      // frame, held the width away it is arriving from, and the slide home
+      // starts in the next — a settle in the same breath as the mount has no
+      // travel to transition and arrives without moving. Two rAFs, not one: a
+      // single one can still beat the mounting frame's style pass. The guard
+      // keeps a stale callback from clobbering whatever — a caught card, a
+      // retarget — happened meanwhile.
       setDrag({
         guestId: target,
         phase: "tracking",
         arming: true,
-        swipe: { startX: 0, startY: 0, axis: "x", dx: 0 },
+        swipe: { startX: 0, startY: 0, axis: "x", dx: offset * width },
       });
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           setDrag((prev) =>
             prev?.guestId === target && prev.phase === "tracking" && prev.arming
-              ? { guestId: target, phase: "settling", commit: offset }
+              ? { guestId: target, phase: "settling" }
               : prev
           );
         })
       );
     },
-    [collection, index, guestId, dragged, advanceTo]
+    [collection, index, drag, width, advanceTo]
   );
 
   useEffect(() => {
@@ -270,17 +291,21 @@ export function ProfileModal({
     };
   }, [close, goToAnimated, zoomed]);
 
-  // The neighbours are on screen only for the length of the drag or settle
-  // that needs them: mounted there, a swipe follows the finger instead of
-  // jumping, and away there is just the profile being read, so point queries
-  // on the dialog hit one card's text, not the neighbours'.
-  const sliding = drag !== null;
-  const offset =
-    sliding && drag.phase !== "settling" ? swipeOffset(drag.swipe, ends) : 0;
-  // The row is a strip of the whole collection, slid so the profile at `index`
-  // sits on screen: while a slide runs it follows a mounted predecessor, and
-  // at rest it leads the strip and the padding is what the strip starts from.
-  const shift = index * width + (sliding && ends.canPrev ? width : 0);
+  // The neighbours are on screen only for the sideways drag or the settle that
+  // needs them: mounted there, a swipe follows the finger instead of jumping,
+  // and away there is just the profile being read, so point queries on the
+  // dialog hit one card's text, not the neighbours', and a scroll or a tap
+  // renders one profile rather than three.
+  const sliding =
+    drag !== null && (drag.phase === "settling" || drag.swipe.axis === "x");
+  const offset = drag?.phase === "tracking" ? swipeOffset(drag.swipe, ends) : 0;
+  // The row is a window onto the collection, and the padding is what puts that
+  // window where it belongs: profile `first` starts `first` widths along, so
+  // every mounted profile sits at its own place in the strip whichever of them
+  // are mounted. The transform is then travel and nothing else — it stays put
+  // across the frame the window moves along in, which is the frame the settle
+  // transition starts in.
+  const first = sliding && ends.canPrev ? index - 1 : index;
 
   const position =
     index >= 0
@@ -290,9 +315,7 @@ export function ProfileModal({
       : "";
 
   const pages = sliding
-    ? Array.from({ length: 3 }, (_, i) => i - 1 + index)
-        .filter((i) => i >= 0 && i < collection.length)
-        .map((i) => collection[i])
+    ? collection.slice(first, index + 2)
     : guest
       ? [guest]
       : [];
@@ -374,13 +397,12 @@ export function ProfileModal({
               ref={row}
               className="flex min-h-0 flex-1"
               style={{
-                minWidth: collection.length * width + "px",
-                transform: `translateX(${offset - shift}px)`,
+                paddingInlineStart: `${first * width}px`,
+                transform: `translateX(${offset - index * width}px)`,
                 transition:
                   drag?.phase === "settling"
                     ? `transform ${SETTLE_MS}ms ease-out`
                     : undefined,
-                paddingInlineStart: `${index * width}px`,
               }}
             >
               {pages.map((attendee) => {
@@ -395,9 +417,10 @@ export function ProfileModal({
                     aria-hidden={!current}
                     inert={!current}
                     className="w-full shrink-0 overflow-y-auto px-4 py-6 sm:px-6"
-                    style={{
-                      maxWidth: width > 0 ? width + "px" : undefined,
-                    }}
+                    // One viewport each, so the strip's places are a width
+                    // apart. `w-full` covers the first frame, before there is a
+                    // measurement to place anything by.
+                    style={{ width: width || undefined }}
                   >
                     <ProfileBody
                       guest={attendee}

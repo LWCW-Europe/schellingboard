@@ -12,6 +12,15 @@ export function profileHref(guestId: string, listQuery: string): string {
   return listQuery ? `/guests/${guestId}?${listQuery}` : `/guests/${guestId}`;
 }
 
+/**
+ * The profile a path opens, or undefined for the list itself. `/guests/edit`
+ * has its own layout outside the directory's, so anything left here is an id.
+ */
+export function guestIdFromPath(pathname: string): string | undefined {
+  const id = /^\/guests\/([^/]+)\/?$/.exec(pathname)?.[1];
+  return id === undefined ? undefined : decodeURIComponent(id);
+}
+
 export function listHref(listQuery: string): string {
   return listQuery ? `/guests?${listQuery}` : "/guests";
 }

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   catchSwipe,
-  pressSlide,
   startSwipe,
   type Swipe,
   swipeCommit,
@@ -69,36 +68,6 @@ describe("profile swipe", () => {
     expect(swipeCommit(past, WIDTH, ends)).toBe(0);
     // The other direction is unaffected: only the missing end resists.
     expect(swipeOffset(past, BOTH_WAYS)).toBe(-300);
-  });
-
-  const settlingNext = {
-    phase: "settling",
-    commit: 1,
-  } as const;
-
-  it("continues on from a settle still running instead of wasting the press", () => {
-    // The settle has already landed on its target, so a press in the same
-    // direction is the profile after it, not a repeat of a completed move.
-    expect(pressSlide(settlingNext, 1)).toEqual({ kind: "slide", commit: 1 });
-  });
-
-  it("reverses from wherever the card is instead of starting over", () => {
-    expect(pressSlide(settlingNext, -1)).toEqual({
-      kind: "slide",
-      commit: -1,
-    });
-  });
-
-  it("takes over from a finger still holding the card", () => {
-    const held = drag([200, 300], [150, 300]);
-    expect(pressSlide({ phase: "tracking", swipe: held }, 1)).toEqual({
-      kind: "slide",
-      commit: 1,
-    });
-  });
-
-  it("mounts the neighbours first when starting from rest", () => {
-    expect(pressSlide(null, 1)).toEqual({ kind: "arm" });
   });
 
   it("catches a settling card where it visibly is, not back at rest", () => {
