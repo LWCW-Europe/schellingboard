@@ -92,6 +92,72 @@ test("replies to a profile comment and permalinks to the reply", async ({
   ).toBeVisible();
 });
 
+test("leaves a deep-linked profile scrollable back to its top", async ({
+  page,
+}) => {
+  // Short enough that the profile overflows its panel: the bug needs a profile
+  // with something to scroll.
+  await page.setViewportSize({ width: 800, height: 500 });
+  await login(page);
+  await page.goto("/guests");
+  await actAs(page, /Bob Test/i);
+
+  const profile = await openProfile(page, "Wei Chen");
+  const photo = profile.getByRole("button", {
+    name: "Enlarge photo of Wei Chen",
+  });
+  const top = (await photo.boundingBox())!.y;
+
+  await profile.getByPlaceholder("Add a comment").fill("see you in the hall");
+  // The comment renders as soon as the reloaded thread arrives, while the
+  // action that posted it is still streaming its response. The navigation below
+  // would abort that stream, which Firefox reports as an uncaught NetworkError
+  // the console guard fails on, so wait the stream out. The page's own
+  // "networkidle" has long since fired, so waitForLoadState cannot say this.
+  const posting = page.waitForResponse((r) => r.request().method() === "POST");
+  await profile.getByRole("button", { name: "Comment", exact: true }).click();
+  await expect(
+    postedComment(profile, "see you in the hall").first()
+  ).toBeVisible();
+  await (await posting).finished();
+
+  const permalink = await profile
+    .getByRole("link", { name: /^\d/ })
+    .first()
+    .getAttribute("href");
+
+  // Away first, so the permalink arrives as a fresh page load — the way it does
+  // out of a notification mail — and with the photos held open, so the comments
+  // arrive while the page is still loading. That is the window in which the
+  // browser is still trying to jump to the hash itself, which is what a slow
+  // connection buys and what makes this reproducible. Closing rather than
+  // navigating: a push changes the URL without a document load to abort.
+  await page.keyboard.press("Escape");
+  await expect(profile).toBeHidden();
+  let loadPhotos = () => {};
+  const held = new Promise<void>((resolve) => (loadPhotos = resolve));
+  await page.route(/\/(media|_next\/image)/, async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto(permalink!, { waitUntil: "commit" });
+  const opened = page.getByRole("dialog", { name: "Wei Chen" });
+  await expect(
+    postedComment(opened, "see you in the hall").first()
+  ).toBeVisible();
+  loadPhotos();
+
+  // Landing on the comment scrolls the profile down; scrolling back must reach
+  // the photo it started at. That jump used to move the boxes around the
+  // profile as well — the modal's clipped panels, which nothing can scroll
+  // back — stranding the top of the profile out of reach.
+  await page.mouse.move(400, 300);
+  await page.mouse.wheel(0, -5000);
+  await expect
+    .poll(async () => (await photo.boundingBox())?.y)
+    .toBeCloseTo(top, 0);
+});
+
 // A section that can't reach its endpoint used to sit on a "Loading
 // comments..." skeleton forever (profiles) or claim "0 comments" (sessions),
 // both of which say something untrue about the thread.

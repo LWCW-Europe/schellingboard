@@ -87,9 +87,10 @@ export function CommentsSection({
     if (!highlightedId) {
       return;
     }
-    document
-      .getElementById(`comment-${highlightedId}`)
-      ?.scrollIntoView({ block: "center" });
+    const target = document.querySelector<HTMLElement>(
+      `[data-comment="${CSS.escape(highlightedId)}"]`
+    );
+    target?.scrollIntoView({ block: "center" });
   }, [highlightedId, loaded]);
 
   if (comments === "error") {
@@ -217,7 +218,12 @@ function CommentThread({
       }`}
     >
       <div
-        id={`comment-${node.id}`}
+        // data-comment, not id="comment-…": an element the hash names is one
+        // the browser scrolls to itself, and its jump moves every box it can —
+        // the modal's clipped panels included, which nothing can scroll back.
+        // A profile opened at a comment was left stranded partway under its own
+        // header (#930). Scrolling to the comment is the effect above's job.
+        data-comment={node.id}
         className={`rounded ${depth > 0 ? "pl-3 pr-2 py-2" : "px-3 py-2"} ${
           node.id === highlightedId
             ? "relative z-10 ring-2 ring-brand-accent"
