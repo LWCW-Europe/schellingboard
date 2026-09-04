@@ -12,19 +12,19 @@ import {
   ChevronRightIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import type {
-  AttendeeCard,
-  DirectoryView,
-} from "@/app/(site)/guests/directory-view";
+import type { DirectoryView } from "@/app/(site)/guests/directory-view";
 import { ProfileBody } from "@/app/(site)/guests/profile-body";
-import { listHref, profileHref } from "@/app/(site)/guests/profile-nav";
+import {
+  guestIdFromPath,
+  listHref,
+  profileHref,
+} from "@/app/(site)/guests/profile-nav";
 import {
   listProfileActivity,
   type ProfileActivity,
 } from "@/app/(site)/guests/profile-activity";
 import {
   catchSwipe,
-  pressSlide,
   type Slide,
   startSwipe,
   swipeCommit,
@@ -36,7 +36,7 @@ import {
 /** How long the profile takes to finish a swipe the finger has let go of. */
 const SETTLE_MS = 200;
 
-type Drag = { guestId: string; width: number } & Slide;
+type Drag = { guestId: string } & Slide;
 
 /**
  * A guest's profile, read over the list it was opened from. Always a modal:
@@ -49,7 +49,7 @@ type Drag = { guestId: string; width: number } & Slide;
  * collection is never invisible state.
  */
 export function ProfileModal({
-  guestId,
+  guestId: initialGuestId,
   view,
   currentUserId,
 }: {
@@ -57,6 +57,12 @@ export function ProfileModal({
   view: DirectoryView;
   currentUserId: string | null;
 }) {
+  // Which profile is on screen, ahead of the URL rather than read off it: a
+  // slide has to know where it is going while it is going there. `advanceTo`
+  // keeps the two in step, and the popstate listener below picks up the
+  // navigations that move the URL on their own.
+  const [guestId, setGuestId] = useState(initialGuestId);
+
   const { matches, everyone, listQuery } = view;
   const collection = matches.some((a) => a.id === guestId) ? matches : everyone;
   const index = collection.findIndex((a) => a.id === guestId);
@@ -73,13 +79,15 @@ export function ProfileModal({
     canNext: index >= 0 && index < collection.length - 1,
   };
 
-  const goTo = useCallback(
-    (offset: number) => {
-      const next = collection[index + offset];
-      if (!next) return;
-      window.history.pushState(null, "", profileHref(next.id, listQuery));
+  // Moving on updates the state and the URL together: the visible profile and
+  // the one the URL names must never diverge, or a reload, share or Back lands
+  // on a different profile than the one on screen.
+  const advanceTo = useCallback(
+    (id: string) => {
+      setGuestId(id);
+      window.history.pushState(null, "", profileHref(id, listQuery));
     },
-    [collection, index, listQuery]
+    [listQuery]
   );
 
   // Pushes the list rather than going back, unlike the session and proposal
@@ -100,15 +108,42 @@ export function ProfileModal({
   const viewport = useRef<HTMLDivElement>(null);
   const row = useRef<HTMLDivElement>(null);
   const [dragged, setDrag] = useState<Drag | null>(null);
-  // A drag belongs to the profile it started on, and a finished one is left
-  // standing until the URL it asked for arrives: dropping it on the timer
-  // instead would snap back to the profile just swiped away for however many
-  // frames the router takes to catch up.
+  // The row's styling needs the viewport width even when nothing is being
+  // dragged, so it lives as state instead of riding along on each Drag.
+  const [width, setWidth] = useState(0);
+  // Measured on mount and kept live: the panel resizes with the window, and
+  // `clientWidth` is only readable off the DOM, not during render.
+  useEffect(() => {
+    const el = viewport.current;
+    if (!el) return;
+    const measure = () => setWidth(el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  // Browser Back/Forward moves through the history, not through this state.
+  // Reading through pushes one entry per profile, so going back has to land the
+  // modal on the profile the URL names; pushState does not fire popstate, so
+  // only genuine navigations sync here.
+  useEffect(() => {
+    const onPop = () => {
+      const id = guestIdFromPath(window.location.pathname);
+      if (!id) return;
+      setGuestId(id);
+      // A navigation is not a slide: what was in flight belongs to the profile
+      // being left, and left standing it would play again the next time that
+      // profile came round.
+      setDrag(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // A drag belongs to the profile it lands on — guestId advances the moment
+  // the gesture is spent, not when the slide finishes — so one left over from a
+  // profile since navigated away from moves nothing.
   const drag = dragged?.guestId === guestId ? dragged : null;
-  // …and dropped in the same breath as it does: a swipe left lying on the
-  // profile it came from settles and navigates all over again the moment
-  // anything — Prev, Back — comes back to that profile.
-  if (dragged !== null && dragged.guestId !== guestId) setDrag(null);
 
   const onTouchStart = (e: ReactTouchEvent) => {
     // A second finger is a pinch, the enlarged photo owns the gesture, and a
@@ -121,28 +156,24 @@ export function ProfileModal({
       dragged?.guestId === guestId && dragged.phase === "settling"
         ? dragged
         : null;
-    const swipe = settling
-      ? catchSwipe(point, rowOffset(settling))
-      : startSwipe(point);
+    const swipe = settling ? catchSwipe(point, rowOffset()) : startSwipe(point);
     if (!swipe) return;
     setDrag({
       guestId,
       phase: "tracking",
       swipe,
-      width: viewport.current?.clientWidth ?? 0,
     });
   };
 
-  // How far the settling card actually is, in px past the profile on screen:
-  // the style declares where it is going, the computed matrix holds where the
-  // frame has got to. The row also carries the mounted before-panel, which is
-  // layout, not travel.
-  const rowOffset = (settling: Extract<Drag, { phase: "settling" }>) => {
+  // How far the card actually is from home, in px: the style declares where it
+  // is going, the computed matrix holds where the frame has got to. Positive is
+  // rightwards, so it is the travel a finger taking over inherits.
+  const rowOffset = () => {
     const el = row.current;
     if (!el) return 0;
     const matrix = getComputedStyle(el).transform;
     const tx = matrix === "none" ? 0 : new DOMMatrixReadOnly(matrix).e;
-    return tx + (ends.canPrev ? settling.width : 0);
+    return tx + index * width;
   };
 
   const onTouchMove = (e: ReactTouchEvent) => {
@@ -159,84 +190,76 @@ export function ProfileModal({
     });
   };
 
-  const endTouch = () =>
-    setDrag((prev) => {
-      if (prev?.guestId !== guestId || prev.phase !== "tracking") return prev;
-      const commit = swipeCommit(prev.swipe, prev.width, ends);
-      const offset = -commit * prev.width;
-      // Nothing left to animate, and no transition to wait for.
-      if (swipeOffset(prev.swipe, ends) === offset) return null;
-      return { guestId, width: prev.width, phase: "settling", offset, commit };
-    });
+  const endTouch = () => {
+    if (dragged?.guestId !== guestId || dragged.phase !== "tracking") return;
+    const commit = swipeCommit(dragged.swipe, width, ends);
+    // The target runs for its own neighbours: advancing now — before the slide
+    // settles — means a drag that starts again immediately here already has
+    // both before and after on screen around the profile it lands on.
+    const target = collection[index + commit]?.id ?? guestId;
+    // A tap or a scroll has nothing to animate, and a settle standing over the
+    // profile being read would mount its neighbours for no reason.
+    if (target === guestId && swipeOffset(dragged.swipe, ends) === 0) {
+      setDrag(null);
+      return;
+    }
+    if (target !== guestId) advanceTo(target);
+    setDrag({ guestId: target, phase: "settling" });
+  };
 
   useEffect(() => {
     if (drag?.phase !== "settling") return;
     const timer = setTimeout(() => {
-      if (drag.commit && collection[index + drag.commit]) goTo(drag.commit);
-      else setDrag(null);
+      // guestId already advanced when the gesture let go; only the drag — and
+      // with it the transition tag — is spent here.
+      setDrag(null);
     }, SETTLE_MS);
     return () => clearTimeout(timer);
-  }, [drag, goTo, collection, index]);
+  }, [drag]);
 
   const goToAnimated = useCallback(
     (offset: 1 | -1) => {
       // Arrows reach the ends even though the buttons there are disabled.
-      if (!collection[index + offset]) return;
+      const target = collection[index + offset]?.id;
+      if (!target) return;
 
-      const width = viewport.current?.clientWidth ?? 0;
-      const press = pressSlide(
-        dragged?.guestId === guestId ? dragged : null,
-        offset,
-        width
-      );
-      // Already sliding there: restarting would only snap the card backwards
-      // and put off the arrival it is most of the way through.
-      if (press.kind === "arrived") return;
-      // Mid-slide the neighbours are on screen, so the transition retargets
-      // from wherever the card is right now.
-      if (press.kind === "slide") {
-        setDrag({
-          guestId,
-          width,
-          phase: "settling",
-          offset: press.offset,
-          commit: press.commit,
-        });
+      // The target takes over as current right away, so the neighbours are its
+      // own: a drag that starts here gets both on screen, like a swipe.
+      advanceTo(target);
+
+      // Mid-slide the neighbours are already mounted, so the transition simply
+      // retargets from wherever the card is. Nothing has "arrived" — the settle
+      // still running landed on its target the moment it began, so a press the
+      // same way again is the profile after it, not a repeat of a completed one.
+      if (drag) {
+        setDrag({ guestId: target, phase: "settling" });
         return;
       }
 
       // From rest they have to be mounted first: the neighbour mounts in one
-      // frame and the slide starts in the next — a settle in the same breath
-      // as the mount transitions from the pre-mount transform, so every press
-      // slides the same way. Two rAFs, not one: a single one can still beat
-      // the mounting frame's style pass. The guard keeps a stale callback from
-      // clobbering whatever — a caught card, a retarget — happened meanwhile.
+      // frame, held the width away it is arriving from, and the slide home
+      // starts in the next — a settle in the same breath as the mount has no
+      // travel to transition and arrives without moving. Two rAFs, not one: a
+      // single one can still beat the mounting frame's style pass. The guard
+      // keeps a stale callback from clobbering whatever — a caught card, a
+      // retarget — happened meanwhile.
       setDrag({
-        guestId,
+        guestId: target,
         phase: "tracking",
         arming: true,
-        swipe: { startX: 0, startY: 0, axis: "x", dx: 0 },
-        width,
+        swipe: { startX: 0, startY: 0, axis: "x", dx: offset * width },
       });
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           setDrag((prev) =>
-            prev?.guestId === guestId &&
-            prev.phase === "tracking" &&
-            prev.arming
-              ? {
-                  guestId,
-                  width,
-                  phase: "settling",
-                  offset: -offset * width,
-                  commit: offset,
-                }
+            prev?.guestId === target && prev.phase === "tracking" && prev.arming
+              ? { guestId: target, phase: "settling" }
               : prev
           );
         })
       );
     },
-    [collection, index, guestId, dragged]
+    [collection, index, drag, width, advanceTo]
   );
 
   useEffect(() => {
@@ -268,21 +291,21 @@ export function ProfileModal({
     };
   }, [close, goToAnimated, zoomed]);
 
-  // The neighbours exist only for the length of a drag: mounting them for every
-  // reader would render three profiles where one is being read, and rendering
-  // them at the threshold instead would mean the swipe jumps rather than
-  // follows the finger.
+  // The neighbours are on screen only for the sideways drag or the settle that
+  // needs them: mounted there, a swipe follows the finger instead of jumping,
+  // and away there is just the profile being read, so point queries on the
+  // dialog hit one card's text, not the neighbours', and a scroll or a tap
+  // renders one profile rather than three.
   const sliding =
     drag !== null && (drag.phase === "settling" || drag.swipe.axis === "x");
-  const before = sliding && ends.canPrev ? collection[index - 1] : null;
-  const after = sliding && ends.canNext ? collection[index + 1] : null;
-  const width = drag?.width ?? 0;
-  const offset =
-    drag === null
-      ? 0
-      : drag.phase === "settling"
-        ? drag.offset
-        : swipeOffset(drag.swipe, ends);
+  const offset = drag?.phase === "tracking" ? swipeOffset(drag.swipe, ends) : 0;
+  // The row is a window onto the collection, and the padding is what puts that
+  // window where it belongs: profile `first` starts `first` widths along, so
+  // every mounted profile sits at its own place in the strip whichever of them
+  // are mounted. The transform is then travel and nothing else — it stays put
+  // across the frame the window moves along in, which is the frame the settle
+  // transition starts in.
+  const first = sliding && ends.canPrev ? index - 1 : index;
 
   const position =
     index >= 0
@@ -290,6 +313,12 @@ export function ProfileModal({
           collection.length === 1 ? "" : "s"
         }`
       : "";
+
+  const pages = sliding
+    ? collection.slice(first, index + 2)
+    : guest
+      ? [guest]
+      : [];
 
   return (
     // items-start, not items-center: a centred panel that sizes to its content
@@ -368,41 +397,42 @@ export function ProfileModal({
               ref={row}
               className="flex min-h-0 flex-1"
               style={{
-                transform: `translateX(${(before ? -width : 0) + offset}px)`,
+                paddingInlineStart: `${first * width}px`,
+                transform: `translateX(${offset - index * width}px)`,
                 transition:
                   drag?.phase === "settling"
                     ? `transform ${SETTLE_MS}ms ease-out`
                     : undefined,
               }}
             >
-              {[before, guest, after]
-                .filter((a): a is AttendeeCard => a !== null)
-                .map((attendee) => {
-                  const current = attendee.id === guestId;
-                  return (
-                    <div
-                      key={attendee.id}
-                      ref={current ? body : undefined}
-                      // The neighbours are on screen only as the profile the
-                      // finger is reaching for: not part of the page for a
-                      // screen reader, and their links not tabbable.
-                      aria-hidden={!current}
-                      inert={!current}
-                      className="w-full shrink-0 overflow-y-auto px-4 py-6 sm:px-6"
-                    >
-                      <ProfileBody
-                        guest={attendee}
-                        isOwnProfile={currentUserId === attendee.id}
-                        isActive={current}
-                        activity={current ? activity : null}
-                        zoomed={current && zoomed}
-                        onToggleZoom={() =>
-                          setZoomedFor(zoomed ? null : guestId)
-                        }
-                      />
-                    </div>
-                  );
-                })}
+              {pages.map((attendee) => {
+                const current = attendee.id === guestId;
+                return (
+                  <div
+                    key={attendee.id}
+                    ref={current ? body : undefined}
+                    // The neighbours are on screen only as the profile the
+                    // finger is reaching for: not part of the page for a
+                    // screen reader, and their links not tabbable.
+                    aria-hidden={!current}
+                    inert={!current}
+                    className="w-full shrink-0 overflow-y-auto px-4 py-6 sm:px-6"
+                    // One viewport each, so the strip's places are a width
+                    // apart. `w-full` covers the first frame, before there is a
+                    // measurement to place anything by.
+                    style={{ width: width || undefined }}
+                  >
+                    <ProfileBody
+                      guest={attendee}
+                      isOwnProfile={currentUserId === attendee.id}
+                      isActive={current}
+                      activity={current ? activity : null}
+                      zoomed={current && zoomed}
+                      onToggleZoom={() => setZoomedFor(zoomed ? null : guestId)}
+                    />
+                  </div>
+                );
+              })}
             </div>
           ) : (
             // Not a 404: this is where a stale link from an old session or
