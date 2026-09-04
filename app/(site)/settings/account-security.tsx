@@ -164,6 +164,11 @@ export function AccountSecurity({
               {info}
             </p>
           )}
+          {error && (
+            <p role="alert" className="text-sm text-danger-fg">
+              {error}
+            </p>
+          )}
         </div>
       ) : (
         <form

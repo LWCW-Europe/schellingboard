@@ -35,6 +35,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Picking your name works however many events a site runs**: the header lists every event, and
   from about seven onwards the links crowded the name chip beside them off the row, leaving no way
   to say who you are. The links now scroll instead of pushing
+- **Account settings now says why enabling protection failed** (#716): on a site with no email set
+  up, "Enable protection" looked like it did nothing at all — the server's explanation was thrown
+  away instead of shown
 - **Opening a comment from an email no longer strands the page it lands on** (#930): a link to a
   comment on a long profile could leave the profile scrolled partway under its own header, with no
   way to scroll back up to the person's name and photo
