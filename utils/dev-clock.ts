@@ -27,10 +27,12 @@ export function parseTimeOffset(raw: string | null | undefined): number {
   if (!raw || !isDevToolsEnabled()) return 0;
   const n = Number(raw);
   if (!Number.isFinite(n)) return 0;
+  // eslint-disable-next-line no-restricted-syntax -- the offset is defined against real time
   return Number.isNaN(new Date(Date.now() + n).getTime()) ? 0 : n;
 }
 
 export function nowWithOffset(offsetMs: number): Date {
+  // eslint-disable-next-line no-restricted-syntax -- this *is* the effective clock
   return new Date(Date.now() + offsetMs);
 }
 

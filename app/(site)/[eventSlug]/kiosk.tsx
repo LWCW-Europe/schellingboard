@@ -111,7 +111,7 @@ export function KioskController() {
   useEffect(() => {
     let lastInteraction = -Infinity;
     const markInteraction = () => {
-      lastInteraction = Date.now();
+      lastInteraction = performance.now();
     };
     const interactionEvents = [
       "pointerdown",
@@ -124,7 +124,7 @@ export function KioskController() {
     }
 
     const scrollToNow = () => {
-      if (Date.now() - lastInteraction < INTERACTION_IDLE_MS) return;
+      if (performance.now() - lastInteraction < INTERACTION_IDLE_MS) return;
       const container = document.querySelector(
         '[data-testid="schedule-scroll"]'
       );

@@ -24,9 +24,8 @@ import { VotingButtons } from "@/app/(site)/[eventSlug]/proposals/voting-buttons
 import { VoteBreakdown } from "./vote-breakdown";
 import { VoteTally } from "./vote-tally";
 import type { EventInterestSummary } from "@/utils/proposal-vote-stats";
-import { DateTime } from "luxon";
 import { useLocalZone } from "@/utils/hooks";
-import { TIME_FORMAT } from "@/utils/utils";
+import { formatOptionalTime, TIME_FORMAT } from "@/utils/utils";
 import { viewSessionLinkFromElsewhere } from "../modal-nav";
 
 export function ViewProposal(props: {
@@ -173,13 +172,17 @@ export function ViewProposal(props: {
                 {...viewSessionLinkFromElsewhere(eventSlug, sessions[0].id)}
                 className="text-brand-fg underline hover:text-brand-fg-hover transition-colors"
               >
-                {DateTime.fromJSDate(sessions[0].startTime ?? new Date())
-                  .setZone(event.timezone)
-                  .toFormat("EEEE")}{" "}
+                {formatOptionalTime(
+                  sessions[0].startTime,
+                  event.timezone,
+                  "EEEE"
+                )}{" "}
                 at{" "}
-                {DateTime.fromJSDate(sessions[0].startTime ?? new Date())
-                  .setZone(event.timezone)
-                  .toFormat(TIME_FORMAT)}{" "}
+                {formatOptionalTime(
+                  sessions[0].startTime,
+                  event.timezone,
+                  TIME_FORMAT
+                )}{" "}
                 in {sessions[0].locations[0]?.name}
               </Link>
               .
@@ -194,9 +197,11 @@ export function ViewProposal(props: {
                       {...viewSessionLinkFromElsewhere(eventSlug, session.id)}
                       className="text-brand-fg underline hover:text-brand-fg-hover transition-colors"
                     >
-                      {DateTime.fromJSDate(session.startTime ?? new Date())
-                        .setZone(event.timezone)
-                        .toFormat(`EEEE ${TIME_FORMAT}`)}{" "}
+                      {formatOptionalTime(
+                        session.startTime,
+                        event.timezone,
+                        `EEEE ${TIME_FORMAT}`
+                      )}{" "}
                       in {session.locations[0]?.name}
                     </Link>
                   </li>

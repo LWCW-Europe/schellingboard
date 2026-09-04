@@ -77,7 +77,12 @@ async function matchToken(
   input: string
 ): Promise<AuthCode | null> {
   const { authCodes } = getRepositories();
-  const active = await authCodes.findActive(guestId, purpose, new Date());
+  const active = await authCodes.findActive(
+    guestId,
+    purpose,
+    // eslint-disable-next-line no-restricted-syntax -- codes expire on real time (ADR 0004): they are emailed in real time, and a forged time-override cookie must not revive a dead one
+    new Date()
+  );
   if (!active || active.attempts >= MAX_CODE_ATTEMPTS) return null;
   const candidate =
     purpose === "login" ? normalizeAuthCode(input) : input.trim();
@@ -153,6 +158,7 @@ export async function requestLoginCodeAction(
     return { ok: false, error: "Unknown user" };
   }
 
+  // eslint-disable-next-line no-restricted-syntax -- the throttle and the code's lifetime are real time by design (ADR 0004)
   const now = new Date();
   if (isEmailIssuanceBlocked(guestId, now.getTime())) {
     return { ok: false, error: TOO_MANY_EMAILS_ERROR };
@@ -229,6 +235,7 @@ export async function requestPasswordLinkAction(
     return { ok: false, error: "Unknown user" };
   }
 
+  // eslint-disable-next-line no-restricted-syntax -- the throttle and the token's lifetime are real time by design (ADR 0004)
   const now = new Date();
   if (isEmailIssuanceBlocked(guestId, now.getTime())) {
     return { ok: false, error: TOO_MANY_EMAILS_ERROR };

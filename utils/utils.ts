@@ -167,12 +167,41 @@ export function formatDuration(
  * Note: This is only used for DISPLAY purposes on existing sessions.
  */
 export function getStartTimePlusBreak(
-  session: Session,
+  startTime: Date,
   breakMinutes: number
 ): DateTime {
-  return DateTime.fromJSDate(session.startTime ?? new Date(0)).plus({
-    minutes: breakMinutes,
-  });
+  return DateTime.fromJSDate(startTime).plus({ minutes: breakMinutes });
+}
+
+/** Stands in for a session time the type allows to be absent. */
+const TIME_PLACEHOLDER = "—";
+
+/**
+ * Formats a session time that the type allows to be absent. Scheduled sessions
+ * always have times, but falling back to another instant — the current time, or
+ * the epoch — would print a plausible-looking wrong time; the placeholder is
+ * visibly not a time.
+ */
+export function formatOptionalTime(
+  time: Date | undefined,
+  timezone: string,
+  format: string
+): string {
+  if (!time) return TIME_PLACEHOLDER;
+  return DateTime.fromJSDate(time).setZone(timezone).toFormat(format);
+}
+
+/** The display counterpart of {@link getStartTimePlusBreak}. */
+export function formatStartTimePlusBreak(
+  session: Session,
+  breakMinutes: number,
+  timezone: string,
+  format: string
+): string {
+  if (!session.startTime) return TIME_PLACEHOLDER;
+  return getStartTimePlusBreak(session.startTime, breakMinutes)
+    .setZone(timezone)
+    .toFormat(format);
 }
 
 /**

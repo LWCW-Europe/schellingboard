@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { DateTime } from "luxon";
 import { useContext, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PencilIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 
 import type { Event, Guest, Session, Rsvp } from "@/db/repositories/interfaces";
-import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
+import {
+  formatOptionalTime,
+  formatStartTimePlusBreak,
+  TIME_FORMAT,
+} from "@/utils/utils";
 import { UserContext, EventContext } from "../../context";
 import { CurrentUserModal, ConfirmationModal } from "../../modals";
 import { sessionsOverlap } from "../../session_utils";
@@ -285,13 +288,13 @@ export function ViewSession(props: {
         <div className="flex gap-2">
           <span className="font-medium">Time:</span>
           <span>
-            {getStartTimePlusBreak(session, event.breakMinutes)
-              .setZone(event.timezone)
-              .toFormat(`EEEE ${TIME_FORMAT}`)}{" "}
-            -{" "}
-            {DateTime.fromJSDate(session.endTime ?? new Date())
-              .setZone(event.timezone)
-              .toFormat(TIME_FORMAT)}
+            {formatStartTimePlusBreak(
+              session,
+              event.breakMinutes,
+              event.timezone,
+              `EEEE ${TIME_FORMAT}`
+            )}{" "}
+            - {formatOptionalTime(session.endTime, event.timezone, TIME_FORMAT)}
           </span>
         </div>
         <div className="flex gap-2">

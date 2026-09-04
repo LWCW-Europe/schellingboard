@@ -93,7 +93,11 @@ export function clashesForInterval(
     endTime: end,
   };
 
-  const inEventAndOverlapping = (ses: Session) =>
+  // A type predicate, not a plain filter, so the scheduled times survive into
+  // the loops below instead of needing a non-null assertion at each use.
+  const inEventAndOverlapping = (
+    ses: Session
+  ): ses is Session & { startTime: Date; endTime: Date } =>
     ses.eventId === eventId &&
     ses.startTime != null &&
     ses.endTime != null &&
@@ -111,8 +115,8 @@ export function clashesForInterval(
         guestName: schedule.guestName,
         kind: "hosting",
         title: ses.title,
-        start: getStartTimePlusBreak(ses, breakMinutes).toISO()!,
-        end: ses.endTime!.toISOString(),
+        start: getStartTimePlusBreak(ses.startTime, breakMinutes).toISO()!,
+        end: ses.endTime.toISOString(),
       });
     }
 
@@ -124,8 +128,8 @@ export function clashesForInterval(
         guestName: schedule.guestName,
         kind: "busy",
         title: null,
-        start: getStartTimePlusBreak(ses, breakMinutes).toISO()!,
-        end: ses.endTime!.toISOString(),
+        start: getStartTimePlusBreak(ses.startTime, breakMinutes).toISO()!,
+        end: ses.endTime.toISOString(),
       });
     }
 

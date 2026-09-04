@@ -1,8 +1,11 @@
 import clsx from "clsx";
-import { DateTime } from "luxon";
 import Link from "next/link";
 import type { Session, Location } from "@/db/repositories/interfaces";
-import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
+import {
+  formatOptionalTime,
+  formatStartTimePlusBreak,
+  TIME_FORMAT,
+} from "@/utils/utils";
 import { useState, useContext } from "react";
 import { useSearchParams } from "next/navigation";
 import { UserContext, EventContext, useBreakMinutes } from "../context";
@@ -75,17 +78,20 @@ export function SessionText(props: {
         <div className="flex gap-2 text-sm text-fg-subtle">
           <div className="flex gap-1">
             <span>
-              {getStartTimePlusBreak(session, breakMinutes)
-                .setZone(timezone)
-                .toFormat("EEEE")}
+              {formatStartTimePlusBreak(
+                session,
+                breakMinutes,
+                timezone,
+                "EEEE"
+              )}
               ,{" "}
-              {getStartTimePlusBreak(session, breakMinutes)
-                .setZone(timezone)
-                .toFormat(TIME_FORMAT)}{" "}
-              -{" "}
-              {DateTime.fromJSDate(session.endTime ?? new Date())
-                .setZone(timezone)
-                .toFormat(TIME_FORMAT)}
+              {formatStartTimePlusBreak(
+                session,
+                breakMinutes,
+                timezone,
+                TIME_FORMAT
+              )}{" "}
+              - {formatOptionalTime(session.endTime, timezone, TIME_FORMAT)}
             </span>
           </div>
           •

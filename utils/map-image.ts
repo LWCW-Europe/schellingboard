@@ -62,6 +62,7 @@ export async function saveMapImage(
   await deleteMapImage();
   const filename = `map.${ext}`;
   await fs.writeFile(path.join(dir, filename), buffer);
+  // eslint-disable-next-line no-restricted-syntax -- a cache buster, not a time: it only has to differ from the last one
   return `/media/site/${filename}?v=${Date.now()}`;
 }
 

@@ -16,6 +16,7 @@ export function startNowTicker(
   offsetMs: number = 0
 ): () => void {
   const interval = setInterval(
+    // eslint-disable-next-line no-restricted-syntax -- real time plus the offset is the effective clock
     () => onTick(new Date(Date.now() + offsetMs)),
     intervalMs
   );
