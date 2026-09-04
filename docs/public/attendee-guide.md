@@ -180,6 +180,32 @@ Open a session to find the same comment section proposals have — useful for
 "which room did this move to?" and other last-minute coordination. Everything works as described under
 [Discuss a proposal](#discuss-a-proposal): threaded replies, likes, editing and deleting your own comments.
 
+## 1-on-1 meetings
+
+When the organizer has switched meetings on for the event, the schedule toolbar
+gains a **1-on-1s** link. That page is where you say when you are free to meet
+people one to one.
+
+One switch controls the whole thing:
+
+> **I'm open to 1-on-1 meetings at this event**
+
+While it is off, nobody can book you and you don't appear as bookable — it is
+the opt-out, so turning it back off and saving clears what you declared.
+
+Switching it on marks **every** slot available. Below it, each day of the event
+is listed as plain checkboxes, with **Select all** and **Clear** per day; clear
+the ones you want kept free and press **Save availability**.
+
+You don't need to clear the slots where you're hosting a session or have RSVP'd
+to one — anyone trying to book you is warned about those anyway. Clearing a slot
+here is the firm "no"; a clash is only ever a warning. Times are shown in the
+event's timezone.
+
+Slots are as long as the event's schedule increment and cover the whole of each
+day. If the organizer later changes that increment, everyone's availability is
+cleared and you are asked to choose again — the slots themselves have moved.
+
 ## Attendee directory & profiles
 
 The directory lists everyone at the event on a single page — photo and the

@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   1-on-1 meetings on, list the places you suggest people meet, and cap how many unanswered requests
   one attendee may have outstanding at a time. Meeting slots follow the event's schedule increment,
   so changing that asks attendees to choose their availability again
+- **Say when you're free to meet**: with meetings switched on, the schedule toolbar gains a
+  **1-on-1s** link where attendees turn on "I'm open to 1-on-1 meetings at this event" and clear the
+  slots they want kept free. Turning it on marks every slot free, and turning it back off clears the
+  lot — nobody can book you while it's off
 
 ### Fixed
 

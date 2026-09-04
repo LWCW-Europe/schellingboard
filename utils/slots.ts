@@ -1,6 +1,8 @@
 // Slot math for the schedule grid. Each event divides its days into slots of
 // `slotIncrementMinutes`; the grid, start-time options, and duration options
-// all derive from these helpers so they stay in agreement.
+// all derive from these helpers so they stay in agreement. 1-on-1 meeting
+// slots share this grid and its increment; utils/meeting-slots.ts derives
+// those from a day.
 
 export const SLOT_INCREMENT_OPTIONS = [15, 30, 45, 60] as const;
 
