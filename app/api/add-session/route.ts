@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
   const existingSessions = (await repos.sessions.listScheduled()).filter(
     (s) => s.eventId === input.eventId
   );
-  const sessionValid = validateSession(input, existingSessions);
+  const sessionValid = validateSession(input, existingSessions, now);
   if (sessionValid) {
     let session;
     try {

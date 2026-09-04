@@ -177,7 +177,12 @@ export function slotStart(day: Day, minutesIn: number): string {
 export async function createProposal(
   eventId: string,
   hostIds: string[],
-  opts?: { title?: string; description?: string; durationMinutes?: number }
+  opts?: {
+    title?: string;
+    description?: string;
+    durationMinutes?: number;
+    createdTime?: Date;
+  }
 ): Promise<SessionProposal> {
   const { sessionProposals } = getRepositories();
   return sessionProposals.create({
@@ -186,6 +191,7 @@ export async function createProposal(
     description: opts?.description,
     hostIds,
     durationMinutes: opts?.durationMinutes,
+    createdTime: opts?.createdTime ?? new Date(),
   });
 }
 

@@ -667,6 +667,7 @@ export type SessionProposalCreateInput = {
   description?: string;
   hostIds: string[];
   durationMinutes?: number;
+  createdTime: Date;
 };
 
 export type SessionProposalUpdateInput = {

@@ -51,6 +51,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- **The dev fake clock reaches proposal timestamps and the past-booking check**: a proposal created
+  under a time offset was stamped with real time, so it came out older than the comments on it — and
+  "a session must start in the future" was judged against real time too, letting a time-travelled
+  organizer book into their own past, or refusing a slot the interface still offered
 - The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually
   the page's largest element, so Next warned that the Largest Contentful Paint image was being
   lazy-loaded

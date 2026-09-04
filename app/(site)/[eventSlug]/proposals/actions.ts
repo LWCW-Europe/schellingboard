@@ -44,10 +44,11 @@ export async function createProposal(
   } = parseResult;
 
   try {
+    const now = await serverNow();
     // Mirrors the UI: proposals may be added during the proposal and voting
     // phases; once scheduling starts they are closed.
     const event = await getRepositories().events.findById(eventId);
-    if (!event || inSchedPhase(event, await serverNow())) {
+    if (!event || inSchedPhase(event, now)) {
       return { error: "The proposal phase is over" };
     }
 
@@ -73,6 +74,7 @@ export async function createProposal(
       description: description || undefined,
       hostIds,
       durationMinutes,
+      createdTime: now,
     });
     revalidatePath(`/${eventSlug}/proposals`);
   } catch (error) {
