@@ -823,6 +823,12 @@ export interface MeetingAvailabilityRepository {
    * switched meetings on.
    */
   listByGuestAndEvent(guestId: string, eventId: string): Promise<Date[]>;
+  /**
+   * The guests who declared one particular slot, for "who could I meet at
+   * 14:30?". Ids only: the caller already holds the attendee list it needs to
+   * turn them into people.
+   */
+  listGuestsBySlot(eventId: string, slotStart: Date): Promise<string[]>;
   /** Replaces a guest's whole declared set for the event. */
   replaceForGuest(
     guestId: string,
@@ -871,6 +877,12 @@ export interface MeetingsRepository {
    * accepted, clash detection only accepted.
    */
   listByGuestAndEvent(guestId: string, eventId: string): Promise<Meeting[]>;
+  /**
+   * Every meeting still standing in one slot, whoever it is between: what the
+   * grid's booking flow needs to know who is already taken. Matched on the
+   * slot's start, as availability rows are.
+   */
+  listLiveBySlot(eventId: string, slotStart: Date): Promise<Meeting[]>;
   /**
    * Requests this guest has sent and not heard back on, for the organizer's
    * cap. `now` bounds it: a pending request whose slot has passed is expired
