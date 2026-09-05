@@ -26,14 +26,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Ask an attendee for a 1-on-1, and answer the ones you get**: their profile gains a **Schedule a
   meeting** button — pick one of the slots they're open for, say where to meet and add a line of
   context. A slot where either of you is hosting or has RSVP'd is still bookable, with a warning;
-  only the slots they cleared are off limits. The person asked gets a notification with **Accept**
-  and **Decline**, and hears about their own clashes before they answer; the asker is told either
-  way. A request nobody answers before its slot begins simply lapses
+  only the slots they cleared are off limits. A warning about the other person says only that they
+  are already booked — never what they are doing. The person asked gets a notification with
+  **Accept** and **Decline**, and hears about their own clashes before they answer; the asker is
+  told either way. A request nobody answers before its slot begins simply lapses
 - **Your 1-on-1s on the schedule**: agreed meetings and the ones still waiting for an answer appear
   as the first column of the schedule grid, in their own time slot next to whatever they would clash
-  with. The column is yours alone — nobody else sees it, and it is left out entirely when you have
-  no meetings that day. Tapping one opens it, which is also where either of you can call it off; the
-  other is told
+  with. The column is yours alone — nobody else sees it, and it is there whenever you are open to
+  1-on-1s at all, showing the slots you are not offering as well as what is booked in them. Tapping
+  a meeting opens it, which is also where either of you can call it off; the other is told
 
 ### Fixed
 
@@ -62,6 +63,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   under a time offset was stamped with real time, so it came out older than the comments on it — and
   "a session must start in the future" was judged against real time too, letting a time-travelled
   organizer book into their own past, or refusing a slot the interface still offered
+- Seeded events come with 1-on-1s switched on, two meeting points each and a spread of attendees
+  already bookable, so a fresh database can exercise the feature without setting it up by hand
 - The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually
   the page's largest element, so Next warned that the Largest Contentful Paint image was being
   lazy-loaded
