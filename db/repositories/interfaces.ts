@@ -306,6 +306,11 @@ export type GuestPage = {
 /** A guest with information used in the attendees list */
 export type Attendee = Guest & {
   isHost: boolean;
+  /**
+   * Bookable for 1-on-1s at some event that still offers them — the whole
+   * site, not one event: the directory is global, and so is its filter.
+   */
+  meetingsOn: boolean;
 };
 
 export interface GuestsRepository {
