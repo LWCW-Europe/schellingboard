@@ -340,8 +340,9 @@ test.describe("1-on-1 meetings", () => {
 
     await page.goto("/notifications");
     await page
-      .getByRole("button", { name: new RegExp(askee) })
-      .first()
+      .getByRole("button", {
+        name: new RegExp(`${askee} accepted your 1-on-1`),
+      })
       .click();
     const fromNotification = page.getByRole("dialog", {
       name: "Meeting details",
@@ -357,7 +358,7 @@ test.describe("1-on-1 meetings", () => {
     await page.getByRole("link", { name: new RegExp(askee) }).click();
     const confirmed = page.getByRole("dialog", { name: "Meeting details" });
     await confirmed.getByRole("button", { name: "Cancel meeting" }).click();
-    await confirmed.getByRole("button", { name: "Cancel meeting" }).click();
+    await confirmed.getByRole("button", { name: "Yes, cancel it" }).click();
     await expect(confirmed.getByText(/was canceled/)).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(

@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useContext, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   cancelMeetingAction,
   respondToMeetingAction,
+  type MeetingActionResult,
 } from "@/app/actions/meetings";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/components/buttons";
+import { EventContext } from "@/app/(site)/context";
 import { clashLine } from "@/utils/meeting-clash-text";
+import { canCancel } from "@/utils/meeting-rules";
 import type { MeetingView } from "@/utils/meeting-views";
 import { dismissViewMeeting } from "./modal-nav";
 import { useMyMeetings } from "./use-meetings";
@@ -17,18 +20,6 @@ import { useMyMeetings } from "./use-meetings";
 // the shared pair in app/components/buttons.ts.
 const DANGER =
   "px-3 py-2 text-sm font-medium rounded-md text-danger-fg bg-danger-tint hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-
-/**
- * Whether this guest may call the meeting off. A confirmed one is either
- * party's to cancel; while it is pending only the requester's, since the
- * person asked has Decline instead.
- */
-function canCancel(meeting: MeetingView): boolean {
-  return (
-    meeting.status === "accepted" ||
-    (meeting.status === "pending" && meeting.role === "requester")
-  );
-}
 
 /** What has become of the request, in the words of whoever is reading. */
 function statusLine(meeting: MeetingView): string {
@@ -61,7 +52,10 @@ function statusLine(meeting: MeetingView): string {
  */
 export function MeetingModalFromUrl() {
   const meetingId = useSearchParams()?.get("viewMeeting");
-  return meetingId ? <MeetingModal meetingId={meetingId} /> : null;
+  // Keyed so a half-confirmed cancel does not carry over to the next meeting.
+  return meetingId ? (
+    <MeetingModal key={meetingId} meetingId={meetingId} />
+  ) : null;
 }
 
 /**
@@ -70,6 +64,7 @@ export function MeetingModalFromUrl() {
  */
 function MeetingModal({ meetingId }: { meetingId: string }) {
   const router = useRouter();
+  const { now } = useContext(EventContext);
   const { meetings, reload } = useMyMeetings();
   const [error, setError] = useState<string | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
@@ -93,13 +88,14 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
   // Every write ends the same way: re-read the meetings, so the modal and the
   // schedule column behind it agree, and refresh the page, since an accepted
   // meeting is a commitment other things now clash with.
-  const act = (run: () => Promise<{ ok: boolean; error?: string }>) => {
+  const act = (run: () => Promise<MeetingActionResult>) => {
     setError(null);
+    setConfirmingCancel(false);
     startAnswer(async () => {
       try {
         const result = await run();
         if (!result.ok) {
-          setError(result.error ?? "Request failed");
+          setError(result.error);
           // The refusal usually means the meeting has moved on -- answered in
           // another tab, or its slot has begun -- so re-read it rather than
           // leaving the buttons describing a request that is no longer there.
@@ -113,9 +109,6 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
       }
     });
   };
-
-  // The modal has no event to ask about; the same guard session-modal.tsx has.
-  if (!event) return null;
 
   return (
     <div
@@ -222,7 +215,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
               </div>
             )}
 
-            {canCancel(meeting) &&
+            {canCancel(meeting, now) &&
               (confirmingCancel ? (
                 <div className="flex flex-col gap-2">
                   <p className="text-sm text-fg">
@@ -237,7 +230,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                       disabled={isAnswering}
                       className={DANGER}
                     >
-                      Cancel meeting
+                      Yes, cancel it
                     </button>
                     <button
                       type="button"

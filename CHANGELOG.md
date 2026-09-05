@@ -32,9 +32,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   told either way. A request nobody answers before its slot begins simply lapses
 - **Your 1-on-1s on the schedule**: agreed meetings and the ones still waiting for an answer appear
   as the first column of the schedule grid, in their own time slot next to whatever they would clash
-  with. The column is yours alone — nobody else sees it, and it is there whenever you are open to
-  1-on-1s at all, showing the slots you are not offering as well as what is booked in them. Tapping
-  a meeting opens it, which is also where either of you can call it off; the other is told
+  with. The column is yours alone — nobody else sees it, and it is there on every day whenever you
+  take part in 1-on-1s at all, showing the slots you are not offering as well as what is booked in
+  them. Tapping a meeting opens it, which is also where either of you can call it off before it
+  starts; the other is told
 
 ### Fixed
 

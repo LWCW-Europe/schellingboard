@@ -3,30 +3,13 @@
 import clsx from "clsx";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useContext } from "react";
 
 import type { MeetingView } from "@/utils/meeting-views";
 import { meetingColumnRows } from "@/utils/meeting-column";
 import type { DayWithSessions } from "@/app/(site)/context";
-import { useSlotIncrement } from "@/app/(site)/context";
+import { EventContext, useSlotIncrement } from "@/app/(site)/context";
 import { viewMeetingLinkFromOwner } from "./modal-nav";
-
-/**
- * What the grid shows of one day: what is agreed and what is still waiting.
- * Declined, canceled and lapsed requests simply drop off it
- * (issue #392, section 1.5).
- */
-export function meetingsForDay(
-  meetings: MeetingView[],
-  day: DayWithSessions
-): MeetingView[] {
-  return meetings.filter((meeting) => {
-    if (meeting.status !== "pending" && meeting.status !== "accepted") {
-      return false;
-    }
-    const start = new Date(meeting.slotStart).getTime();
-    return start >= day.start.getTime() && start < day.end.getTime();
-  });
-}
 
 /**
  * The viewer's own 1-on-1s for one day, as the grid's first column, beside
@@ -37,19 +20,20 @@ export function MeetingsCol({
   meetings,
   availability,
   day,
-  eventSlug,
   nowOffsetPx,
 }: {
   meetings: MeetingView[];
   /** Slot starts the viewer declared themselves open for, as ISO strings. */
   availability: string[];
   day: DayWithSessions;
-  eventSlug: string;
   /** Kiosk now-line offset from the top of the slot grid; null hides it. */
   nowOffsetPx?: number | null;
 }) {
   const slotIncrement = useSlotIncrement();
   const searchParams = useSearchParams();
+  // Never missing here: the column only renders once meetings for this event
+  // have been fetched, which takes the event being in context.
+  const eventSlug = useContext(EventContext).event?.slug ?? "";
   const rows = meetingColumnRows({
     meetings,
     availability,

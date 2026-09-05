@@ -1,5 +1,34 @@
 import type { MeetingView } from "@/utils/meeting-views";
 
+const LIVE = new Set<MeetingView["status"]>(["pending", "accepted"]);
+
+/**
+ * What the grid shows of one day: what is agreed and what is still waiting.
+ * Declined, canceled and lapsed requests simply drop off it
+ * (issue #392, section 1.5).
+ */
+export function meetingsForDay(
+  meetings: MeetingView[],
+  day: { start: Date; end: Date }
+): MeetingView[] {
+  return meetings.filter((meeting) => {
+    if (!LIVE.has(meeting.status)) return false;
+    const start = new Date(meeting.slotStart).getTime();
+    return start >= day.start.getTime() && start < day.end.getTime();
+  });
+}
+
+/**
+ * Whether the viewer gets the column at all. Decided for the whole event
+ * rather than day by day, so the rooms line up from one day to the next.
+ */
+export function takesPartInMeetings(
+  meetings: MeetingView[],
+  availability: string[]
+): boolean {
+  return availability.length > 0 || meetings.some((m) => LIVE.has(m.status));
+}
+
 /**
  * One row of the schedule's 1-on-1 column: what the viewer has in that slot,
  * or why they have nothing there.
@@ -36,25 +65,30 @@ export function meetingColumnRows({
     0,
     Math.round((day.end.getTime() - day.start.getTime()) / slotMs)
   );
+  // Floored, not rounded: a meeting booked before the event's increment
+  // changed may no longer start on a row, and the row that contains it is
+  // the one that does not assert a time it does not have.
   const rowOf = (start: string) =>
-    Math.round((new Date(start).getTime() - day.start.getTime()) / slotMs) + 1;
+    Math.floor((new Date(start).getTime() - day.start.getTime()) / slotMs) + 1;
 
   const byRow = new Map<number, MeetingView[]>();
   for (const meeting of meetings) {
     const row = rowOf(meeting.slotStart);
     byRow.set(row, [...(byRow.get(row) ?? []), meeting]);
   }
-  // A meeting is one slot long -- but an event whose increment changed since
-  // can leave an older one covering more than one row.
-  const spanOf = (meeting: MeetingView) =>
-    Math.max(
+  // Measured from the row's start rather than the meeting's, so one that
+  // starts mid-row and reaches into the next covers both.
+  const spanOf = (meeting: MeetingView) => {
+    const rowStart =
+      day.start.getTime() + (rowOf(meeting.slotStart) - 1) * slotMs;
+    return Math.max(
       1,
-      Math.ceil(
-        (new Date(meeting.slotEnd).getTime() -
-          new Date(meeting.slotStart).getTime()) /
-          slotMs
-      )
+      Math.ceil((new Date(meeting.slotEnd).getTime() - rowStart) / slotMs)
     );
+  };
+  // Rows are keyed by start, so two such meetings of unequal length that
+  // overlap without sharing a row would draw over each other. Knowingly out
+  // of scope: it takes an increment change *and* two bookings athwart it.
 
   const covered = new Set<number>();
   for (const [row, atRow] of byRow) {

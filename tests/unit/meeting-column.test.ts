@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 
-import { meetingColumnRows } from "@/utils/meeting-column";
+import {
+  meetingColumnRows,
+  meetingsForDay,
+  takesPartInMeetings,
+} from "@/utils/meeting-column";
 import type { MeetingView } from "@/utils/meeting-views";
 
 const DAY = {
@@ -64,6 +68,26 @@ describe("meetingColumnRows", () => {
     expect(long).toMatchObject({ row: 1, span: 2, kind: "meetings" });
   });
 
+  // A 09:30 meeting on a grid that has since gone hourly: drawn in the row
+  // that contains it, never in a later one asserting a time it does not have.
+  it("draws a meeting off the grid in the row it falls within", () => {
+    const hourly = meetingColumnRows({
+      meetings: [meeting(30), meeting(90, { slotEnd: at(150) })],
+      availability: [],
+      day: {
+        start: DAY.start,
+        end: new Date(DAY.start.getTime() + 3 * 3600e3),
+      },
+      slotIncrement: 60,
+    });
+
+    expect(hourly.filter((r) => r.kind === "meetings")).toEqual([
+      expect.objectContaining({ row: 1, span: 1 }),
+      // 10:30 – 11:30 reaches into the 11:00 row, so it covers both.
+      expect.objectContaining({ row: 2, span: 2 }),
+    ]);
+  });
+
   it("leaves every free slot its own row, so each is bookable on its own", () => {
     const free = rows([], [at(0), at(30), at(60), at(90)]);
 
@@ -115,5 +139,44 @@ describe("meetingColumnRows", () => {
   // so it costs no width on a phone for everyone else.
   it("has no rows at all for a viewer with neither", () => {
     expect(rows([], [])).toEqual([]);
+  });
+});
+
+describe("meetingsForDay", () => {
+  const day = { start: DAY.start, end: DAY.end, sessions: [] };
+
+  it("keeps a meeting starting at the day's first instant, not its last", () => {
+    const firstAndLast = [meeting(0), meeting(120)];
+
+    expect(meetingsForDay(firstAndLast, day).map((m) => m.id)).toEqual(["m-0"]);
+  });
+
+  it("keeps what is agreed or still open, and drops the rest", () => {
+    const every = (
+      ["pending", "accepted", "declined", "canceled", "expired"] as const
+    ).map((status) => meeting(0, { id: status, status }));
+
+    expect(meetingsForDay(every, day).map((m) => m.id)).toEqual([
+      "pending",
+      "accepted",
+    ]);
+  });
+});
+
+// Whether the viewer gets the column at all -- and then on every day, so the
+// rooms line up from one day to the next.
+describe("takesPartInMeetings", () => {
+  it("is true for anyone bookable, or with a live meeting anywhere", () => {
+    expect(takesPartInMeetings([], [at(0)])).toBe(true);
+    expect(takesPartInMeetings([meeting(0, { status: "pending" })], [])).toBe(
+      true
+    );
+  });
+
+  it("is false with nothing declared and nothing live", () => {
+    expect(takesPartInMeetings([], [])).toBe(false);
+    expect(takesPartInMeetings([meeting(0, { status: "declined" })], [])).toBe(
+      false
+    );
   });
 });

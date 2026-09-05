@@ -297,7 +297,12 @@ describe("cancelMeetingAction", () => {
 
     const result = await cancelMeetingAction({ meetingId: meeting.id });
 
-    expect(result.ok).toBe(false);
+    // Not "nothing left to cancel": there is, and the real answer is which
+    // button to use.
+    expect(result).toEqual({
+      ok: false,
+      error: "You were the one asked — decline it instead",
+    });
     expect(
       (await getRepositories().meetings.findById(meeting.id))?.status
     ).toBe("pending");

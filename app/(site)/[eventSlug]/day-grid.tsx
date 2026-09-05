@@ -14,7 +14,8 @@ import { DateTime } from "luxon";
 import type { Guest, Location } from "@/db/repositories/interfaces";
 import type { DayWithSessions } from "@/app/(site)/context";
 import { EventContext, useSlotIncrement } from "@/app/(site)/context";
-import { MeetingsCol, meetingsForDay } from "./meetings-col";
+import { meetingsForDay, takesPartInMeetings } from "@/utils/meeting-column";
+import { MeetingsCol } from "./meetings-col";
 import { useMyMeetings } from "./use-meetings";
 
 // Width of the left time-axis gutter. The body rows show `HH:mm` labels and the
@@ -38,13 +39,22 @@ export function DayGrid(props: {
   const { meetings, availability } = useMyMeetings();
   // The viewer's own 1-on-1s, outside the ?loc= filter below: the column is
   // not a location, so filtering the schedule down to one room must not drop
-  // it (issue #392, section 2.6). It is there for anyone the feature is on
-  // for -- a day with nothing booked still shows which slots they are open
-  // for -- and gone entirely for everyone else, so it costs them no width on
-  // a phone.
+  // it (issue #392, section 2.6). It is there on every day for anyone taking
+  // part -- open to 1-on-1s, or with one arranged -- so the rooms line up
+  // from one day to the next, and gone entirely for everyone else, so it
+  // costs them no width on a phone.
+  //
+  // Nothing is known until the fetch lands, so the first paint is without
+  // the column and the rooms shift right when it arrives. Accepted: the
+  // schedule is a shared server render, and reserving the width for a
+  // viewer who might turn out to have nothing would shift it the other way
+  // for the many.
+  const showMeetings =
+    meetings !== null &&
+    availability !== null &&
+    takesPartInMeetings(meetings, availability);
   const myMeetings = meetings ? meetingsForDay(meetings, day) : [];
   const myAvailability = availability ?? [];
-  const showMeetings = myMeetings.length > 0 || myAvailability.length > 0;
   const locParams = searchParams?.getAll("loc");
   const locationsFromParams = locations.filter((loc) =>
     locParams?.includes(loc.name)
@@ -200,7 +210,6 @@ export function DayGrid(props: {
           meetings={myMeetings}
           availability={myAvailability}
           day={day}
-          eventSlug={event?.slug ?? ""}
           nowOffsetPx={nowOffsetPx}
         />
       )}

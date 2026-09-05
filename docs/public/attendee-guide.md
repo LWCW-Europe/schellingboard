@@ -250,13 +250,15 @@ you agreed to meet, and whether it is confirmed, waiting for your reply, or
 waiting for theirs. Each sits in its own time slot, next to whatever it would
 clash with.
 
-The column is yours alone — nobody else sees it, it stays put when you filter
-the schedule down to one room, and it isn't there at all on a day you have no
-meetings. Declined and lapsed requests drop off it.
+The column is yours alone — nobody else sees it, and it stays put when you
+filter the schedule down to one room. It is there on every day of the event
+once you take part at all — open to 1-on-1s, or with one arranged — so the
+rooms line up from day to day, and it isn't there at all otherwise. It also
+shows the slots you are not offering. Declined and lapsed requests drop off it.
 
 Tap one to open it. That is also where either of you can **cancel** a meeting
-you had agreed, or take back a request nobody has answered yet; the other
-person is told.
+you had agreed, or take back a request nobody has answered yet, up until the
+slot begins; the other person is told.
 
 ## Attendee directory & profiles
 

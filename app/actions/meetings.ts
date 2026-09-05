@@ -255,6 +255,13 @@ export async function cancelMeetingAction(
     return { ok: false, error: "That slot has already started" };
   }
 
+  if (!isRequester && meeting.status === "pending") {
+    return {
+      ok: false,
+      error: "You were the one asked — decline it instead",
+    };
+  }
+
   const from: MeetingStatus[] = isRequester
     ? ["pending", "accepted"]
     : ["accepted"];
