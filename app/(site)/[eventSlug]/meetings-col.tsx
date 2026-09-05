@@ -1,9 +1,11 @@
 "use client";
 
 import clsx from "clsx";
+import { PlusIcon } from "@heroicons/react/24/outline";
+import { DateTime } from "luxon";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 
 import type { MeetingView } from "@/utils/meeting-views";
 import { meetingColumnRows } from "@/utils/meeting-column";
@@ -12,7 +14,13 @@ import { EventContext, useSlotIncrement } from "@/app/(site)/context";
 import { clashLines } from "@/utils/meeting-clash-text";
 import { statusLine } from "@/utils/meeting-rules";
 import { viewMeetingLinkFromOwner } from "./modal-nav";
+import { BookMeeting } from "./book-meeting";
 import { Tooltip } from "./tooltip";
+
+/** "14:30", in the event's zone, for a control's accessible name. */
+function slotLabel(start: string, timezone: string): string {
+  return DateTime.fromISO(start).setZone(timezone).toFormat("HH:mm");
+}
 
 // What the block has no room for, on hover -- the pattern a session block
 // already follows. A tap still opens the modal, where all of it is anyway.
@@ -48,6 +56,7 @@ export function MeetingsCol({
   availability,
   day,
   nowOffsetPx,
+  onBooked,
 }: {
   meetings: MeetingView[];
   /** Slot starts the viewer declared themselves open for, as ISO strings. */
@@ -55,12 +64,18 @@ export function MeetingsCol({
   day: DayWithSessions;
   /** Kiosk now-line offset from the top of the slot grid; null hides it. */
   nowOffsetPx?: number | null;
+  /** Re-read the viewer's meetings, once a request has been sent. */
+  onBooked: () => void;
 }) {
   const slotIncrement = useSlotIncrement();
   const searchParams = useSearchParams();
   // Never missing here: the column only renders once meetings for this event
   // have been fetched, which takes the event being in context.
-  const eventSlug = useContext(EventContext).event?.slug ?? "";
+  const { event, now } = useContext(EventContext);
+  const eventSlug = event?.slug ?? "";
+  const timezone = event?.timezone ?? "UTC";
+  // Which slot the booking modal is open on, if any.
+  const [booking, setBooking] = useState<string | null>(null);
   const rows = meetingColumnRows({
     meetings,
     availability,
@@ -71,25 +86,37 @@ export function MeetingsCol({
   return (
     <div className="relative px-0.5">
       <div className="grid h-full auto-rows-[44px]">
-        {rows.map(({ row, span, kind, meetings: atRow }) =>
+        {rows.map(({ row, span, start, kind, meetings: atRow }) =>
           kind !== "meetings" ? (
-            <div
+            <button
               key={row}
+              type="button"
               style={{ gridRowStart: row }}
+              // A slot in the past is not bookable, and the request action
+              // refuses one anyway.
+              disabled={new Date(start) <= now}
+              onClick={() => setBooking(start)}
               // Hatched where the viewer cleared the slot: that governs who
               // may book *them*, so it is worth seeing on their own schedule —
-              // but it is no bar to arranging a 1-on-1 there themselves, and
-              // the cell stays as bookable as any other (#945).
-              title={
+              // but it is no bar to arranging a 1-on-1 there themselves, so it
+              // is as bookable as any other.
+              aria-label={
                 kind === "unavailable"
-                  ? "You are not offering this slot — you can still arrange a 1-on-1 in it"
-                  : undefined
+                  ? `Arrange a 1-on-1 at ${slotLabel(start, timezone)} — you are not offering this slot to others`
+                  : `Arrange a 1-on-1 at ${slotLabel(start, timezone)}`
               }
               className={clsx(
-                `row-span-${span} my-0.5 rounded`,
+                `row-span-${span} my-0.5 rounded border border-dashed border-line-subtle text-fg-faint`,
+                "flex items-center justify-center transition-colors",
+                "enabled:hover:border-brand-accent enabled:hover:bg-brand-tint enabled:hover:text-brand-fg",
+                "disabled:border-transparent disabled:cursor-default",
                 kind === "unavailable" && "meetings-col-blocked"
               )}
-            />
+            >
+              {new Date(start) > now && (
+                <PlusIcon className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
           ) : (
             <div
               key={row}
@@ -140,6 +167,14 @@ export function MeetingsCol({
           )
         )}
       </div>
+      {booking && event && (
+        <BookMeeting
+          eventId={event.id}
+          slotStart={booking}
+          onClose={() => setBooking(null)}
+          onBooked={onBooked}
+        />
+      )}
       {/* Each column draws its own segment of the kiosk now line; see DayGrid. */}
       {nowOffsetPx != null && (
         <div

@@ -262,6 +262,18 @@ meeting point, any clash. Tap one to open it. That is also where either of you c
 you had agreed, or take back a request nobody has answered yet, up until the
 slot begins; the other person is told.
 
+### Arrange one from the schedule
+
+Tapping an **empty slot** in that column asks the question a profile cannot:
+not "when could I meet this person" but **"who could I meet at 14:30"**. It
+lists everyone who marked that slot open — with their name as a link, so you
+can read their profile in another tab without losing your place — and says
+where anyone is already booked, without saying what they are doing. Pick one
+and the usual request form follows: where to meet, and a line of context.
+
+The slots you did not offer to others are bookable this way too. What you
+declare says who may book _you_; whom you ask, and when, is yours to decide.
+
 ## Attendee directory & profiles
 
 The directory lists everyone at the event on a single page — photo and the
@@ -271,6 +283,9 @@ opening anything.
 
 ![Searchable attendee directory with avatars, bios, and Session host badges](../screenshots/attendees.webp)
 
+- **Filters** narrow the list to session hosts, to people who have filled in a
+  profile, or to anyone **open to 1-on-1s** — at any event on the site, not
+  only this one.
 - **Search covers everything on a profile**: names, pronouns, bios, languages,
   where someone is based, prompts and answers, and any contact details they
   published. A remembered handle, a service name like "Signal", or a shared

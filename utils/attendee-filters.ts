@@ -5,6 +5,9 @@
 export const ATTENDEE_FILTERS = [
   { value: "isHost", label: "Session host" },
   { value: "hasProfile", label: "Has profile" },
+  // Anywhere, not just the event you came from: someone open to 1-on-1s is
+  // worth finding whichever of the site's events you are looking at.
+  { value: "meetingsOn", label: "Open to 1-on-1s" },
 ] as const;
 
 export type AttendeeFilter = (typeof ATTENDEE_FILTERS)[number]["value"];

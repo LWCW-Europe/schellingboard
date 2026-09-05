@@ -189,6 +189,25 @@ export class SqliteGuestsRepository implements GuestsRepository {
         .where(eq(schema.sessionHosts.guestId, schema.guests.id))
     );
 
+    // Declared availability *and* an event that still offers meetings: rows
+    // survive the organizer switching it off, and someone nobody can book is
+    // not open to 1-on-1s whatever they once declared.
+    const meetingsOnExpr = exists(
+      this.db
+        .select({ one: sql`1` })
+        .from(schema.meetingAvailability)
+        .innerJoin(
+          schema.events,
+          eq(schema.events.id, schema.meetingAvailability.eventId)
+        )
+        .where(
+          and(
+            eq(schema.meetingAvailability.guestId, schema.guests.id),
+            eq(schema.events.meetingsEnabled, true)
+          )
+        )
+    );
+
     return (
       this.db
         .select({
@@ -205,6 +224,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
           // SQLite has no boolean type; this yields 0/1 at runtime despite the
           // sql<boolean> annotation, so coerce explicitly below.
           isHost: isHostExpr,
+          meetingsOn: meetingsOnExpr,
         })
         .from(schema.guests)
         // id as tiebreaker so equal names keep a deterministic order.
@@ -215,6 +235,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
             ({
               ...row,
               isHost: Boolean(row.isHost),
+              meetingsOn: Boolean(row.meetingsOn),
               profileUpdatedAt: row.profileUpdatedAt
                 ? new Date(row.profileUpdatedAt)
                 : null,

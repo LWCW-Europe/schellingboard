@@ -73,7 +73,8 @@ export function useDirectoryView(attendees: Attendee[], now: Date) {
     const scoped = cards.filter(
       (card) =>
         (!filters.includes("isHost") || card.isHost) &&
-        (!filters.includes("hasProfile") || card.hasProfile)
+        (!filters.includes("hasProfile") || card.hasProfile) &&
+        (!filters.includes("meetingsOn") || card.meetingsOn)
     );
     return searchAttendees(scoped, query, sort);
   }, [cards, filters, query, sort]);

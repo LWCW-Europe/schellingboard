@@ -38,6 +38,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   them, and it carries a picture of its own where the rooms have theirs. Hovering a meeting shows
   what its block has no room for; tapping it opens it, which is also
   where either of you can call it off before it starts; the other is told
+- **Arrange a 1-on-1 straight from the schedule**: tapping an empty slot in your 1-on-1 column asks
+  who is free then — everyone who marked that slot open, with a link to read their profile — and
+  the request form follows on from there. It answers the question a profile can't: not "when could
+  I meet this person" but "who could I meet at 14:30". Slots you did not offer to others are
+  bookable this way too: what you declare says who may book you, not whom you may ask
+- **Find the attendees who are open to 1-on-1s**: a new filter in the attendee directory, beside
+  Session host and Has profile. It covers every event on the site, not only the one you came from
 
 ### Fixed
 

@@ -79,6 +79,21 @@ export class SqliteMeetingsRepository implements MeetingsRepository {
       .map(rowToMeeting);
   }
 
+  async listLiveBySlot(eventId: string, slotStart: Date): Promise<Meeting[]> {
+    return this.db
+      .select()
+      .from(schema.meetings)
+      .where(
+        and(
+          eq(schema.meetings.eventId, eventId),
+          eq(schema.meetings.slotStart, slotStart.toISOString()),
+          inArray(schema.meetings.status, ["pending", "accepted"])
+        )
+      )
+      .all()
+      .map(rowToMeeting);
+  }
+
   async countOpenByRequester(
     requesterId: string,
     eventId: string,
