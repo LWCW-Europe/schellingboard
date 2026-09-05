@@ -79,6 +79,9 @@ flake.nix
 flake.lock
 result*
 
+# K6 output JS
+scripts/load-test/dist/
+
 # Config file for jip, a stacked PR tool (see: https://github.com/omarkohl/jip)
 .jip.local.toml
 
@@ -99,6 +102,7 @@ www-site/
 # Dev-server config for Claude Code's preview pane -- local tooling, and the
 # command it runs depends on where node lives on the machine
 .claude/launch.json
+scripts/load-test/server-actions.json
 
 # Dependency graph rendered by `make arch-graph`.
 arch-graph.svg

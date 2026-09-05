@@ -69,6 +69,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   "now" comes from the request boundary, so the dev fake clock cannot be bypassed. See ADR 0004
 - **The dev server accepts a Cloudflare quick tunnel as an origin**, so the site can be tried
   on a phone — the way to test notifications there — without the page arriving script-less
+- k6 load tests cover the site under `make load-test`: home, and for proposals, sessions and the
+  guests directory a browse flow (readers scrolling through) and a comment flow (writing a comment,
+  sometimes a reply, through the same server actions the UI calls); plus proposals voting, session
+  RSVP and occasional guest profile-editing flows (casting/updating/rescinding votes, toggling RSVPs,
+  and saving a profile edit, through the same server-action/REST routes the UI calls). The comment
+  actions' ids are per-build, so they are regenerated from the build's manifest on every run —
+  `make load-test-prod` does the same against a production server. `make debug-load-test` runs them
+  single-VU for a quick smoke
+- The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually
+  the page's largest element, so Next warned that the Largest Contentful Paint image was being
+  lazy-loaded
 
 ## [3.5.0] - 2026-08-30
 
