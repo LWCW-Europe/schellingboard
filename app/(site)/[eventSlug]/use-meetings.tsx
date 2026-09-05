@@ -9,21 +9,24 @@ import {
   type ReactNode,
 } from "react";
 
-import type { MeetingView } from "@/utils/meeting-views";
+import type { MeetingView, MyMeetingsResponse } from "@/utils/meeting-views";
 import { EventContext, UserContext } from "../context";
 
 type MyMeetings = {
   /** Null while the answer is still on its way, so "none" and "not yet" differ. */
   meetings: MeetingView[] | null;
+  /** The slots the viewer declared themselves open for; null as above. */
+  availability: string[] | null;
   reload: () => void;
 };
 
 // Shared so a guest with nothing to fetch gets a stable value rather than a
-// new array on every render.
-const NONE: MeetingView[] = [];
+// new object on every render.
+const NONE: MyMeetingsResponse = { meetings: [], availability: [] };
 
 const MeetingsContext = createContext<MyMeetings>({
   meetings: null,
+  availability: null,
   reload: () => {},
 });
 
@@ -39,10 +42,9 @@ const MeetingsContext = createContext<MyMeetings>({
 export function MeetingsProvider({ children }: { children: ReactNode }) {
   const { event } = useContext(EventContext);
   const { user } = useContext(UserContext);
-  const [loaded, setLoaded] = useState<{
-    key: string;
-    meetings: MeetingView[];
-  } | null>(null);
+  const [loaded, setLoaded] = useState<
+    ({ key: string } & MyMeetingsResponse) | null
+  >(null);
   // Bumped by reload() to re-run the fetch below.
   const [reloads, setReloads] = useState(0);
 
@@ -56,8 +58,10 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
     if (!key) return;
     const controller = new AbortController();
     void fetch(`/api/meetings?event=${eventId}`, { signal: controller.signal })
-      .then((res) => (res.ok ? (res.json() as Promise<MeetingView[]>) : []))
-      .then((meetings) => setLoaded({ key, meetings }))
+      .then((res) =>
+        res.ok ? (res.json() as Promise<MyMeetingsResponse>) : NONE
+      )
+      .then((mine) => setLoaded({ key, ...mine }))
       // Aborted on unmount or on switching names, and the browser kills it
       // when the page goes; either way there is nobody left to tell.
       .catch(() => undefined);
@@ -69,11 +73,16 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   // Keyed rather than cleared in an effect, so switching names never shows
   // the previous guest's meetings while the new answer is in flight. With
   // nothing to fetch the answer is "none", not "not yet".
-  const meetings =
-    key === null ? NONE : loaded?.key === key ? loaded.meetings : null;
+  const mine = key === null ? NONE : loaded?.key === key ? loaded : null;
 
   return (
-    <MeetingsContext.Provider value={{ meetings, reload }}>
+    <MeetingsContext.Provider
+      value={{
+        meetings: mine?.meetings ?? null,
+        availability: mine?.availability ?? null,
+        reload,
+      }}
+    >
       {children}
     </MeetingsContext.Provider>
   );

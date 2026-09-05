@@ -35,14 +35,16 @@ export function DayGrid(props: {
   const { event, now } = useContext(EventContext);
   const timezone = event?.timezone ?? "UTC";
   const searchParams = useSearchParams();
-  const { meetings } = useMyMeetings();
+  const { meetings, availability } = useMyMeetings();
   // The viewer's own 1-on-1s, outside the ?loc= filter below: the column is
   // not a location, so filtering the schedule down to one room must not drop
-  // it (issue #392, section 2.6). Nothing to show means no column at all,
-  // rather than dead
-  // width on a phone.
+  // it (issue #392, section 2.6). It is there for anyone the feature is on
+  // for -- a day with nothing booked still shows which slots they are open
+  // for -- and gone entirely for everyone else, so it costs them no width on
+  // a phone.
   const myMeetings = meetings ? meetingsForDay(meetings, day) : [];
-  const showMeetings = myMeetings.length > 0;
+  const myAvailability = availability ?? [];
+  const showMeetings = myMeetings.length > 0 || myAvailability.length > 0;
   const locParams = searchParams?.getAll("loc");
   const locationsFromParams = locations.filter((loc) =>
     locParams?.includes(loc.name)
@@ -196,6 +198,7 @@ export function DayGrid(props: {
       {showMeetings && (
         <MeetingsCol
           meetings={myMeetings}
+          availability={myAvailability}
           day={day}
           eventSlug={event?.slug ?? ""}
           nowOffsetPx={nowOffsetPx}
