@@ -81,12 +81,16 @@ export const config = {
      *   before anyone has a cookie
      * - locations/  — the seeded room photos in public/, which the admin UI
      *   renders with the admin cookie alone (uploads live under /media)
+     * - the manifest and its icons — installing has to work before anyone
+     *   has logged in, and Safari fetches the manifest without our cookie
+     *   either way. Both are build assets naming the instance, which the
+     *   login page shows already
      *
      * This deliberately does NOT exempt paths by file extension. It used to,
      * and since media filenames are `<id>.<jpg|png|webp>` that exempted every
      * uploaded avatar, location image and site map from auth entirely — see
      * matcher's own test at tests/unit/proxy-matcher.test.ts.
      */
-    "/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-touch-icon.png|locations/).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|icon\\.svg|apple-touch-icon\\.png|manifest\\.webmanifest|icon-192\\.png|icon-512\\.png|icon-maskable-512\\.png|locations/).*)",
   ],
 };

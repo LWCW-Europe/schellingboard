@@ -12,6 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **Install it on your phone** (#317): attendees can add the site to their home screen and open it
+  like an app — its own icon, its own window, and no browser address bar taking up a line of the
+  schedule. Nothing changes for anyone who doesn't install it
 - **The schedule shows where you are in the day** (#863): a red line marks the current
   time and a "Now" button jumps to it, both while the event is running — until now the line
   was only drawn on kiosks

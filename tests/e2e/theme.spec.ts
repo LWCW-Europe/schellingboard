@@ -52,6 +52,12 @@ test("the switch is on the password gate, before anyone has logged in", async ({
   // follow `color-scheme`, which globals.css derives from the same class
   // rather than the layout setting it a second time.
   await expect(root(page)).toHaveCSS("color-scheme", "dark");
+  // The window chrome around an installed app reads the theme-color tag,
+  // which has to follow the switch too.
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+    "content",
+    "#16181d"
+  );
 
   await login(page);
   await expect(root(page)).toHaveClass(/\bdark\b/);
