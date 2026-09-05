@@ -1,0 +1,1 @@
+ALTER TABLE `meetings` ADD `cancel_note` text DEFAULT '' NOT NULL;

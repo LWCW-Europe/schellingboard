@@ -262,6 +262,12 @@ meeting point, any clash. Tap one to open it. That is also where either of you c
 you had agreed, or take back a request nobody has answered yet, up until the
 slot begins; the other person is told.
 
+You can add a line saying why. It is optional — nobody owes an explanation for
+calling something off — and it reaches the other person on the meeting itself
+rather than in the email, the same as the line of context on a request. A
+canceled 1-on-1 leaves the schedule, so their notification is how they get back
+to it.
+
 ## Attendee directory & profiles
 
 The directory lists everyone at the event on a single page — photo and the
