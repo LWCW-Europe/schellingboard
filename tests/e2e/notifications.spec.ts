@@ -38,24 +38,34 @@ test("a comment on your profile becomes a notification you can open", async ({
   await actAs(page, /Anna Kowalska/i);
   await commentOnProfile(page, "Isabella Rossi", "great to meet you");
 
+  // Isabella hosts a session other specs comment on, so this test reads its
+  // own row rather than the badge's count: unread is not hers alone.
   await actAs(page, /Isabella Rossi/i);
-  await expect(bell(page)).toHaveAccessibleName(/1 unread/);
+  await expect(bell(page)).toHaveAccessibleName(/unread/);
 
   await bell(page).click();
   await expect(
     page.getByRole("heading", { name: "Notifications" })
   ).toBeVisible();
-  const notification = page.getByRole("button", {
-    name: /Anna Kowalska commented on your profile/,
-  });
+  // .first(): a retry of this test comments a second time, and the earlier
+  // notification is still in the shared database.
+  const notification = page
+    .getByRole("button", { name: /Anna Kowalska commented on your profile/ })
+    .first();
   await expect(notification).toBeVisible();
+  const row = page
+    .getByRole("listitem")
+    .filter({ hasText: "Anna Kowalska commented on your profile" })
+    .first();
 
   // Opening it marks it read and lands on the profile it is about.
   await notification.click();
   await expect(
     page.getByRole("dialog", { name: "Isabella Rossi" })
   ).toBeVisible();
-  await expect(bell(page)).toHaveAccessibleName("Notifications");
+  await expect(row.getByRole("button", { name: "Mark as read" })).toHaveCount(
+    0
+  );
 });
 
 test("marks a notification read without opening it", async ({ page }) => {
