@@ -14,6 +14,14 @@ import { statusLine } from "@/utils/meeting-rules";
 import { viewMeetingLinkFromOwner } from "./modal-nav";
 import { Tooltip } from "./tooltip";
 
+/** The word of status a block has room for; the tooltip says the rest. */
+function blockStatus(meeting: MeetingView): string {
+  if (meeting.status === "accepted") return "confirmed";
+  return meeting.role === "recipient"
+    ? "needs your reply"
+    : "waiting for reply";
+}
+
 // What the block has no room for, on hover -- the pattern a session block
 // already follows. A tap still opens the modal, where all of it is anyway.
 function MeetingSummary({ meeting }: { meeting: MeetingView }) {
@@ -123,16 +131,26 @@ export function MeetingsCol({
                     <p className="font-medium text-xs leading-[1.15] line-clamp-1 text-fg">
                       {meeting.otherName}
                     </p>
-                    <p className="text-[10px] leading-[1.15] line-clamp-1 text-fg-muted">
-                      {meeting.meetingPoint}
-                    </p>
-                    <p className="text-[10px] leading-[1.15] text-fg-subtle">
-                      {meeting.status === "accepted"
-                        ? "confirmed"
-                        : meeting.role === "recipient"
-                          ? "needs your reply"
-                          : "waiting for reply"}
-                    </p>
+                    {span > 1 ? (
+                      <>
+                        <p className="text-[10px] leading-[1.15] line-clamp-1 text-fg-muted">
+                          {meeting.meetingPoint}
+                        </p>
+                        <p className="text-[10px] leading-[1.15] text-fg-subtle">
+                          {blockStatus(meeting)}
+                        </p>
+                      </>
+                    ) : (
+                      // One slot is a name and one more line; a third is cut
+                      // off at the border. The place and the state share it,
+                      // as a session block gives up its hosts at this height.
+                      <p className="text-[10px] leading-[1.15] line-clamp-1 text-fg-subtle">
+                        <span className="text-fg-muted">
+                          {meeting.meetingPoint}
+                        </span>{" "}
+                        · {blockStatus(meeting)}
+                      </p>
+                    )}
                   </Link>
                 </Tooltip>
               ))}
