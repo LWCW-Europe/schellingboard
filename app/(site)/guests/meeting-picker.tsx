@@ -4,13 +4,9 @@ import { useState, useTransition } from "react";
 import { Modal } from "@/app/components/modal";
 import { Input } from "@/app/input";
 import { requestMeetingAction } from "@/app/actions/meetings";
+import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/components/buttons";
 import { clashLine } from "@/utils/meeting-clash-text";
 import type { MeetingDayOption, MeetingOption } from "@/utils/meeting-options";
-
-const PRIMARY =
-  "px-3 py-2 text-sm font-medium rounded-md text-on-brand bg-brand hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-const SECONDARY =
-  "px-3 py-2 text-sm font-medium rounded-md text-fg-muted bg-surface-muted hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 
 function SlotList({
   days,
@@ -119,7 +115,7 @@ function RequestForm({
           Asked {recipientName} for {slot?.label} on {day?.label}. You&apos;ll
           hear when they answer.
         </p>
-        <button type="button" onClick={onDone} className={PRIMARY}>
+        <button type="button" onClick={onDone} className={PRIMARY_BUTTON}>
           Done
         </button>
       </div>
@@ -215,11 +211,11 @@ function RequestForm({
         <button
           type="submit"
           disabled={isSending || !slotStart || !meetingPoint.trim()}
-          className={PRIMARY}
+          className={PRIMARY_BUTTON}
         >
           {isSending ? "Sending..." : "Send request"}
         </button>
-        <button type="button" onClick={onDone} className={SECONDARY}>
+        <button type="button" onClick={onDone} className={SECONDARY_BUTTON}>
           Cancel
         </button>
       </div>
@@ -254,7 +250,7 @@ export function MeetingPicker({
           key={option.eventId}
           type="button"
           onClick={() => setOpenEventId(option.eventId)}
-          className={SECONDARY}
+          className={SECONDARY_BUTTON}
         >
           {options.length === 1
             ? "Schedule a meeting"

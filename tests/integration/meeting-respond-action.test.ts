@@ -162,6 +162,26 @@ describe("respondToMeetingAction", () => {
     ).toBe("accepted");
   });
 
+  // The pair are left holding a request either way, so the switch stops new
+  // ones rather than stranding the ones already made; the meetings page
+  // renders the modal for the same reason.
+  it("answers a request after the organizer switched meetings off", async () => {
+    const { event, meeting } = await scenario();
+    await getRepositories().events.update(event.id, {
+      meetingsEnabled: false,
+    });
+
+    const result = await respondToMeetingAction({
+      meetingId: meeting.id,
+      response: "accept",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(
+      (await getRepositories().meetings.findById(meeting.id))?.status
+    ).toBe("accepted");
+  });
+
   it("refuses a request whose slot has already started", async () => {
     const { meeting } = await scenario({ slotStart: PAST_SLOT });
 

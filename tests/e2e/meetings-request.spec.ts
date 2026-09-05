@@ -256,18 +256,60 @@ test.describe("1-on-1 meetings", () => {
     await meeting.getByRole("button", { name: "Accept" }).click();
     await expect(meeting.getByText(/Confirmed/)).toBeVisible();
 
+    // Closing it is a history replaceState rather than a navigation, which on
+    // this server-rendered page is the only thing that takes the modal away.
+    await meeting.getByRole("button", { name: "Close" }).click();
+    await expect(meeting).toBeHidden();
+
     // Answering refreshes the page behind the modal. Navigating away while
     // that RSC fetch is in flight aborts it, and Next reports the abort on the
     // console -- which the console guard fails the test for.
     await page.waitForLoadState("networkidle");
 
-    // And the asker hears back.
+    // And the asker hears back, then asks for the day's other slot.
     await page.goto("/guests");
     await actAs(page, new RegExp(asker));
     await page.getByRole("link", { name: /^Notifications/ }).click();
     await expect(
       page.getByRole("button", {
         name: new RegExp(`${askee} accepted your 1-on-1`),
+      })
+    ).toBeVisible();
+
+    await openProfile(page, askee);
+    await page.getByRole("button", { name: /schedule a meeting/i }).click();
+    const sendAgain = page.getByRole("button", { name: "Send request" });
+    await expect(sendAgain).toBeVisible();
+    await page.getByRole("button", { name: "Coffee bar" }).click();
+    await page
+      .getByRole("region", { name: DAY_HEADING })
+      .first()
+      .getByRole("button", { name: /^09:30/ })
+      .click();
+    await sendAgain.click();
+    await expect(page.getByText(new RegExp(`Asked ${askee}`))).toBeVisible();
+
+    // Declining takes no explanation, and says so in the reader's own words.
+    await page.goto("/guests");
+    await actAs(page, new RegExp(askee));
+    await page.getByRole("link", { name: /^Notifications/ }).click();
+    await page
+      .getByRole("button", {
+        name: new RegExp(`${asker} asked you for a 1-on-1`),
+      })
+      .first()
+      .click();
+    await expect(meeting).toBeVisible();
+    await meeting.getByRole("button", { name: "Decline" }).click();
+    await expect(meeting.getByText("You declined this.")).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    await page.goto("/guests");
+    await actAs(page, new RegExp(asker));
+    await page.getByRole("link", { name: /^Notifications/ }).click();
+    await expect(
+      page.getByRole("button", {
+        name: new RegExp(`${askee} declined your 1-on-1`),
       })
     ).toBeVisible();
   });

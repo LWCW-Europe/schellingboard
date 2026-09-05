@@ -1,18 +1,20 @@
 "use client";
 
-import { useContext, useEffect, useState, useTransition } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { respondToMeetingAction } from "@/app/actions/meetings";
+import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/components/buttons";
 import { clashLine } from "@/utils/meeting-clash-text";
 import type { MeetingView } from "@/utils/meeting-views";
 import { EventContext } from "../context";
 import { dismissViewMeeting } from "./modal-nav";
-
-const PRIMARY =
-  "px-3 py-2 text-sm font-medium rounded-md text-on-brand bg-brand hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
-const SECONDARY =
-  "px-3 py-2 text-sm font-medium rounded-md text-fg-muted bg-surface-muted hover:bg-surface-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 
 /** What has become of the request, in the words of whoever is reading. */
 function statusLine(meeting: MeetingView): string {
@@ -77,17 +79,26 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
   // Fetched rather than server-rendered: a meeting is private to its two
   // guests, so it has no place in the schedule's shared render
   // (issue #392, section 2.6).
+  const load = useCallback(
+    (signal?: AbortSignal) => {
+      if (!eventId) return;
+      void fetch(`/api/meetings?event=${eventId}`, { signal })
+        .then((res) => (res.ok ? (res.json() as Promise<MeetingView[]>) : []))
+        .then(setMeetings)
+        // Closing the modal aborts the request, and leaving the page has the
+        // browser kill it; either way there is nobody left to tell.
+        .catch(() => undefined);
+    },
+    [eventId]
+  );
+
+  // Keyed on the meeting too: an opener that swaps one id for another without
+  // unmounting would otherwise render the second from the first one's answer.
   useEffect(() => {
-    if (!eventId) return;
     const controller = new AbortController();
-    void fetch(`/api/meetings?event=${eventId}`, { signal: controller.signal })
-      .then((res) => (res.ok ? (res.json() as Promise<MeetingView[]>) : []))
-      .then(setMeetings)
-      // Closing the modal aborts the request, and leaving the page has the
-      // browser kill it; either way there is nobody left to tell.
-      .catch(() => undefined);
+    load(controller.signal);
     return () => controller.abort();
-  }, [eventId]);
+  }, [load, meetingId]);
 
   const meeting = meetings?.find((m) => m.id === meetingId);
 
@@ -98,6 +109,10 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
         const result = await respondToMeetingAction({ meetingId, response });
         if (!result.ok) {
           setError(result.error);
+          // Refused because the meeting has moved on -- answered in another
+          // tab, or its slot has begun -- so the buttons and the status line
+          // are describing a request that no longer exists.
+          load();
           return;
         }
         setMeetings(
@@ -119,6 +134,9 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
       }
     });
   };
+
+  // The modal has no event to ask about; the same guard session-modal.tsx has.
+  if (!event) return null;
 
   return (
     <div
@@ -199,7 +217,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                   type="button"
                   onClick={() => answer("accept")}
                   disabled={isAnswering}
-                  className={PRIMARY}
+                  className={PRIMARY_BUTTON}
                 >
                   Accept
                 </button>
@@ -210,7 +228,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                   type="button"
                   onClick={() => answer("decline")}
                   disabled={isAnswering}
-                  className={SECONDARY}
+                  className={SECONDARY_BUTTON}
                 >
                   Decline
                 </button>

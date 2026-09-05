@@ -187,6 +187,9 @@ export async function respondToMeetingAction(
   if (meeting.recipientId !== guestId) {
     return { ok: false, error: "Only the person asked can answer this" };
   }
+  // No `meetingsEnabled` check, unlike requesting one: the switch stops new
+  // requests, and a pair already holding one still have to settle it. The
+  // meetings page renders the modal for the same reason.
 
   const now = await serverNow();
   // Expiry is derived rather than swept (issue #392, section 2.4), so it is
