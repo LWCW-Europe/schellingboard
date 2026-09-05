@@ -22,7 +22,10 @@ function SlotList({
       {days.map((day) => (
         <section key={day.label} aria-label={day.label} className="mb-4">
           <h3 className="text-sm font-semibold text-fg mb-1">{day.label}</h3>
-          <ul className="flex flex-wrap gap-2">
+          {/* Fixed columns rather than a wrapping row: every label is the
+              same shape, so buttons sized to their own text came out a few
+              pixels apart and no two columns lined up. */}
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {day.slots.map((slot) => {
               const unavailable = slot.state === "unavailable";
               const isSelected = selected === slot.start;
@@ -33,7 +36,7 @@ function SlotList({
                     disabled={unavailable}
                     aria-pressed={isSelected}
                     onClick={() => onSelect(slot.start)}
-                    className={`rounded-md border px-2 py-1 text-sm transition-colors ${
+                    className={`flex h-full min-h-12 w-full flex-col items-center justify-center rounded-md border px-1 py-1 text-sm tabular-nums transition-colors ${
                       isSelected
                         ? "border-brand bg-brand text-on-brand"
                         : unavailable
@@ -43,7 +46,7 @@ function SlotList({
                             : "border-line bg-surface-raised text-fg hover:bg-surface-hover"
                     }`}
                   >
-                    {slot.label}
+                    <span className="whitespace-nowrap">{slot.label}</span>
                     {unavailable && (
                       <span className="block text-xs">Unavailable</span>
                     )}
