@@ -89,6 +89,7 @@ const OUT_OF_SCOPE_EXACT = new Set(["health"]);
 // Read-only surfaces are exempt from the invariant per CONTRIBUTING.md.
 const READ_ONLY = new Set([
   "meetings",
+  "meetings/candidates",
   "rsvps",
   "votes",
   "session/[sessionId]/comments",
