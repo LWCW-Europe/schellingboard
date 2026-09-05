@@ -6,6 +6,7 @@ import type { Attendee } from "@/db/repositories/interfaces";
 import { AttendeeList } from "@/app/(site)/guests/attendee-list";
 import { useDirectoryView } from "@/app/(site)/guests/directory-view";
 import { ProfileModal } from "@/app/(site)/guests/profile-modal";
+import { guestIdFromPath } from "@/app/(site)/guests/profile-nav";
 
 /**
  * The attendee directory, list and profile together. Both `/guests` and
@@ -23,9 +24,7 @@ export function AttendeeDirectory({
   currentUserId: string | null;
 }) {
   const view = useDirectoryView(attendees, now);
-  // `/guests/edit` has its own layout outside this one, so anything left here
-  // is a guest id.
-  const openGuestId = /^\/guests\/([^/]+)\/?$/.exec(usePathname())?.[1];
+  const openGuestId = guestIdFromPath(usePathname());
 
   // Wider than the max-w-2xl pages around it: the rows carry a name, a badge
   // and an update time. That width can reach the viewport edge between sm and
@@ -50,7 +49,7 @@ export function AttendeeDirectory({
 
       {openGuestId && (
         <ProfileModal
-          guestId={decodeURIComponent(openGuestId)}
+          guestId={openGuestId}
           view={view}
           currentUserId={currentUserId}
         />

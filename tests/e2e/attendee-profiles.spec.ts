@@ -141,6 +141,80 @@ test("a profile taller than the window scrolls", async ({ page }) => {
   await expect(contact).toBeInViewport();
 });
 
+test("slides the next profile in from beside this one, not from further out", async ({
+  page,
+}) => {
+  await login(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/guests");
+  await searchForTestGuests(page);
+
+  await page.getByRole("link", { name: "Alice Test" }).click();
+  const profile = page.getByRole("dialog");
+  const heading = profile.getByRole("heading", { level: 1 });
+  await expect(heading).toHaveText("Alice Test");
+
+  // Where each profile is, frame by frame, for the length of the slide: the
+  // travel is the whole point of it and only its endpoints survive to be
+  // asserted afterwards. Installed before the press, so no frame is missed.
+  await page.evaluate(() => {
+    const samples: [string, number][] = [];
+    Object.assign(window, { samples });
+    const until = performance.now() + 600;
+    const tick = () => {
+      for (const h of document.querySelectorAll('[role="dialog"] h1'))
+        samples.push([h.textContent ?? "", h.getBoundingClientRect().x]);
+      if (performance.now() < until) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+
+  await page.getByRole("button", { name: "Next attendee" }).click();
+  await expect(heading).toHaveText("Bob Test");
+  await page.waitForTimeout(600);
+
+  const samples = await page.evaluate(
+    () => (window as unknown as { samples: [string, number][] }).samples
+  );
+  const seen = (name: string) =>
+    samples.filter(([n]) => n === name).map(([, x]) => x);
+  const alice = seen("Alice Test");
+  const bob = seen("Bob Test");
+
+  // Bob crosses the screen rather than appearing on it, which is the whole of
+  // "slides instead of jumping"…
+  const arrived = bob[bob.length - 1];
+  expect(Math.max(...bob) - arrived).toBeGreaterThan(300);
+  // …from one width out and no further: a card that leaps a width the wrong
+  // way first and then slides twice as far back arrives all the same, with a
+  // lurch in the middle of it. Alice, going the other way, never moves right.
+  expect(Math.max(...bob) - arrived).toBeLessThanOrEqual(391);
+  expect(Math.max(...alice)).toBeLessThanOrEqual(alice[0]);
+});
+
+test("a press during a slide reads on rather than waiting for it", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/guests");
+  await searchForTestGuests(page);
+
+  await page.getByRole("link", { name: "Alice Test" }).click();
+  const profile = page.getByRole("dialog");
+  const heading = profile.getByRole("heading", { level: 1 });
+  await expect(heading).toHaveText("Alice Test");
+
+  // Two presses inside the length of one slide: reading through is quicker
+  // than the animation, and a press swallowed by the slide it interrupts loses
+  // a profile every time it happens. Long enough after the first that the slide
+  // is under way, well short of the end of it.
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(80);
+  await page.keyboard.press("ArrowRight");
+  await expect(heading).toHaveText("Charlie Test");
+  await expect(page).toHaveURL(/\/guests\/[^/?]+\?q=Test/);
+});
+
 test("escape closes the profile, and back retraces the ones read", async ({
   page,
 }) => {

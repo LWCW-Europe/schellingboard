@@ -83,31 +83,13 @@ function pulling(swipe: Swipe, ends: SwipeEnds): boolean {
   return swipe.dx < 0 ? ends.canNext : ends.canPrev;
 }
 
-/** One card's slide between profiles: following a finger, or finishing one. */
-export type Slide =
-  | { phase: "tracking"; swipe: Swipe; arming?: true }
-  | { phase: "settling"; offset: number; commit: -1 | 0 | 1 };
-
 /**
- * What a Prev/Next press means for a slide that may already be running.
- * Already headed there: nothing — restarting would snap the card backwards
- * and delay the arrival it is most of the way through. Moving otherwise:
- * retarget from wherever the card is, which the neighbours being on screen
- * allows. From rest: mount the neighbours first.
+ * One card's slide between profiles: following a finger, or finishing one.
+ * A settle has no direction of its own — the profile it lands on is current
+ * from the moment it starts, so all that is left is to come home.
  */
-export function pressSlide(
-  slide: Slide | null,
-  dir: 1 | -1,
-  width: number
-):
-  | { kind: "arrived" }
-  | { kind: "slide"; offset: number; commit: -1 | 0 | 1 }
-  | { kind: "arm" } {
-  if (slide?.phase === "settling" && slide.commit === dir)
-    return { kind: "arrived" };
-  if (slide) return { kind: "slide", offset: -dir * width, commit: dir };
-  return { kind: "arm" };
-}
+export type Slide =
+  { phase: "tracking"; swipe: Swipe; arming?: true } | { phase: "settling" };
 
 /**
  * A finger landing on a card that is settling takes the gesture over from
