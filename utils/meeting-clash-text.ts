@@ -45,3 +45,11 @@ export function clashLine(clash: MeetingClash): string {
     ? `You are hosting ${clash.title}`
     : "You are busy";
 }
+
+/**
+ * Every clash in one breath, each said once: hosting and attending the same
+ * session both read "You are hosting …", and one line of it is enough.
+ */
+export function clashLines(clashes: MeetingClash[]): string {
+  return [...new Set(clashes.map(clashLine))].join("; ");
+}
