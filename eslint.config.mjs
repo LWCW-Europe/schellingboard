@@ -34,6 +34,7 @@ export default tseslint.config(
       "test-results/**",
       ".flake-hunt/**",
       ".e2e-docker/**",
+      ".claude/worktrees/**",
     ],
   },
   ...dropTsPlugin(coreWebVitals),
