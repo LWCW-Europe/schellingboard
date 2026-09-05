@@ -69,7 +69,9 @@ export function DevToolbar() {
     // the rule does not flag.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOffset(readOffset());
+    // eslint-disable-next-line no-restricted-syntax -- the toolbar displays real time + the offset it is editing
     setNowMs(Date.now());
+    // eslint-disable-next-line no-restricted-syntax -- and keeps that display ticking
     const id = setInterval(() => setNowMs(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
@@ -129,6 +131,7 @@ export function DevToolbar() {
           onChange={(e) => {
             const target = new Date(e.target.value);
             if (!Number.isNaN(target.getTime())) {
+              // eslint-disable-next-line no-restricted-syntax -- the offset is the picked instant minus real time
               apply(target.getTime() - Date.now());
             }
           }}

@@ -141,6 +141,7 @@ export abstract class BaseImageResourceRepository<
       path.join(/*turbopackIgnore: true*/ dir, filename),
       buffer
     );
+    // eslint-disable-next-line no-restricted-syntax -- a cache buster, not a time: it only has to differ from the last one
     return `${this.getEndpoint(filename)}?v=${Date.now()}`;
   }
 

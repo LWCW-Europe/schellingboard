@@ -16,7 +16,11 @@ import {
   useSlotIncrement,
 } from "../context";
 import { sessionsOverlap } from "../session_utils";
-import { getStartTimePlusBreak, TIME_FORMAT } from "@/utils/utils";
+import {
+  formatOptionalTime,
+  formatStartTimePlusBreak,
+  TIME_FORMAT,
+} from "@/utils/utils";
 import { isBookableSlot } from "@/utils/session-bookable";
 import { LockIcon } from "../lock-icon";
 import { viewSessionLinkFromOwner } from "./modal-nav";
@@ -56,10 +60,13 @@ export function SessionBlock(props: {
     startBookings: day.startBookings?.getTime(),
     endBookings: day.endBookings?.getTime(),
   });
-  return isBookable ? (
+  // `isBookable` already implies a start time (it requires `startTime > now`),
+  // but only the explicit check narrows the optional type for the card, whose
+  // prefill link needs a real date to put in the query string.
+  return isBookable && session.startTime ? (
     <BookableSessionCard
       eventSlug={eventSlug}
-      session={session}
+      startTime={session.startTime}
       location={location}
       numSlots={numSlots}
       timezone={timezone}
@@ -89,18 +96,15 @@ export function SessionBlock(props: {
 
 export function BookableSessionCard(props: {
   location: Location;
-  session: Session;
+  startTime: Date;
   numSlots: number;
   eventSlug: string;
   timezone: string;
 }) {
-  const { numSlots, session, location, eventSlug, timezone } = props;
-  const dayParam = DateTime.fromJSDate(session.startTime ?? new Date())
-    .setZone(timezone)
-    .toFormat("yyyy-MM-dd");
-  const timeParam = DateTime.fromJSDate(session.startTime ?? new Date())
-    .setZone(timezone)
-    .toFormat("HH:mm");
+  const { numSlots, startTime, location, eventSlug, timezone } = props;
+  const start = DateTime.fromJSDate(startTime).setZone(timezone);
+  const dayParam = start.toFormat("yyyy-MM-dd");
+  const timeParam = start.toFormat("HH:mm");
   return (
     <div className={`row-span-${numSlots} my-0.5 min-h-10`}>
       <Link
@@ -176,13 +180,13 @@ function SessionInfoDisplay({
         <div className="flex gap-1">
           <ClockIcon className="h-4 w-4" />
           <span>
-            {getStartTimePlusBreak(session, breakMinutes)
-              .setZone(timezone)
-              .toFormat(TIME_FORMAT)}{" "}
-            -{" "}
-            {DateTime.fromJSDate(session.endTime ?? new Date())
-              .setZone(timezone)
-              .toFormat(TIME_FORMAT)}
+            {formatStartTimePlusBreak(
+              session,
+              breakMinutes,
+              timezone,
+              TIME_FORMAT
+            )}{" "}
+            - {formatOptionalTime(session.endTime, timezone, TIME_FORMAT)}
           </span>
         </div>
       </div>
