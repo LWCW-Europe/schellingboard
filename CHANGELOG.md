@@ -30,6 +30,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   and **Decline**, and hears about their own clashes before they answer; the asker is told either
   way. A request nobody answers before its slot begins simply lapses
 
+### Changed
+
+- **Session save confirmations clear themselves**: the message confirming a session was added,
+  updated or deleted used to stay on screen until you closed it. It now goes away on its own
+  after ten seconds, though the close button still works
+
 ### Fixed
 
 - **Event names that a site page would hide are rejected**: an event named "Guests", "Settings" or
