@@ -81,8 +81,13 @@ export function DayGrid(props: {
     <div
       className="grid bg-surface"
       style={{
+        // The 1-on-1 column is a room's width, picture and all, so it reads as
+        // one of them rather than as a margin. It keeps the lower floor for a
+        // grid that is ever squeezed rather than scrolled; today the grid
+        // always lays out at the maximum and scrolls, so this costs the rooms
+        // 80px of that scroll on a phone.
         gridTemplateColumns: `${GUTTER} ${
-          showMeetings ? "minmax(96px, 160px) " : ""
+          showMeetings ? "minmax(96px, 240px) " : ""
         }repeat(${numLocations}, minmax(120px, 240px))`,
       }}
     >
