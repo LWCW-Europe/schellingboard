@@ -16,6 +16,7 @@ import { SqliteMeetingAvailabilityRepository } from "./repositories/sqlite/meeti
 import { SqliteMeetingPointsRepository } from "./repositories/sqlite/meeting-points";
 import { SqliteMeetingsRepository } from "./repositories/sqlite/meetings";
 import { SqliteNotificationsRepository } from "./repositories/sqlite/notifications";
+import { SqlitePushRepository } from "./repositories/sqlite/push";
 import { SqliteRsvpsRepository } from "./repositories/sqlite/rsvps";
 import { SqliteSettingsRepository } from "./repositories/sqlite/settings";
 import { SqliteSessionProposalsRepository } from "./repositories/sqlite/session-proposals";
@@ -32,6 +33,7 @@ import type {
   MeetingPointsRepository,
   MeetingsRepository,
   NotificationsRepository,
+  PushRepository,
   RsvpsRepository,
   SettingsRepository,
   SessionProposalsRepository,
@@ -55,6 +57,7 @@ export type Repositories = {
   meetingAvailability: MeetingAvailabilityRepository;
   meetings: MeetingsRepository;
   notifications: NotificationsRepository;
+  push: PushRepository;
   sessions: SessionsRepository;
   rsvps: RsvpsRepository;
   settings: SettingsRepository;
@@ -81,6 +84,7 @@ function buildRepositories(sqlite: Database.Database): Repositories {
     meetingAvailability: new SqliteMeetingAvailabilityRepository(db),
     meetings: new SqliteMeetingsRepository(db),
     notifications: new SqliteNotificationsRepository(db),
+    push: new SqlitePushRepository(db),
     sessions: new SqliteSessionsRepository(db),
     rsvps: new SqliteRsvpsRepository(db),
     settings: new SqliteSettingsRepository(db),

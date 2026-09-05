@@ -15,6 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Install it on your phone** (#317): attendees can add the site to their home screen and open it
   like an app — its own icon, its own window, and no browser address bar taking up a line of the
   schedule. Nothing changes for anyone who doesn't install it
+- **Notifications on your phone** (#317): Settings has a new **Notifications on this device**
+  section that sends the notifications you already get to the phone or laptop itself, so they
+  arrive while the site is closed. Each device is turned on separately and gets all of them — the
+  email settings only govern email. On iPhone and iPad the site has to be on your home screen
+  first. Needs the site to be served over HTTPS
 - **The schedule shows where you are in the day** (#863): a red line marks the current
   time and a "Now" button jumps to it, both while the event is running — until now the line
   was only drawn on kiosks

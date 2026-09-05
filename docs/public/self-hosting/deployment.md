@@ -35,6 +35,22 @@ See [Configuration](configuration.md) for every environment variable, including
 how to set up email, and [Backup and restore](backup.md) for keeping a copy of
 your data.
 
+## Serve it over HTTPS
+
+Put the container behind a reverse proxy with a certificate. Two attendee-facing
+features only work on an `https://` address, because browsers refuse them
+anywhere else:
+
+- **Adding the site to a phone's home screen**, and with it
+- **notifications on a phone or laptop** while the site isn't open.
+
+Everything else works over plain HTTP, so a laptop on the venue's wifi is fine
+for a trial run — just not for an event people will install.
+
+Nothing needs configuring for notifications beyond the certificate: the keys
+they are signed with are generated the first time an attendee turns them on and
+kept in the database, so a restored backup keeps working.
+
 ## Administration
 
 Events, guests, locations, and content moderation are managed through the web

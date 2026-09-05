@@ -63,6 +63,13 @@ describe("proxy matcher", () => {
     }
   });
 
+  // A browser will only deliver a push to a service worker, and it fetches
+  // the worker's script without our cookie: a login page in its place takes
+  // notifications with it.
+  it("skips the service worker", () => {
+    expect(matches("/sw.js"), "/sw.js must skip the proxy").toBe(false);
+  });
+
   // The exemptions are file names, and an unescaped dot would let a route
   // that merely shares their letters slip past — the same over-matching that
   // once leaked every uploaded image.
