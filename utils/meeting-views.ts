@@ -32,6 +32,17 @@ export type MeetingView = {
 };
 
 /**
+ * What /api/meetings answers with: the viewer's own meetings, and the slots
+ * they declared themselves open for. The column draws both, so one request
+ * carries both.
+ */
+export type MyMeetingsResponse = {
+  meetings: MeetingView[];
+  /** ISO slot starts, as `meetingAvailability` stores them. */
+  availability: string[];
+};
+
+/**
  * The viewer's own 1-on-1s at an event, in every state — the caller decides
  * what to show, since the grid drops declined and expired ones while the modal
  * a notification links to must still explain them.

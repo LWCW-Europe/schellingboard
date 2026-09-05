@@ -8,6 +8,7 @@ import {
   vi,
 } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import type { ReactNode } from "react";
 
 const cookieJar = new Map<string, string>();
 
@@ -28,6 +29,21 @@ vi.mock("@/app/(site)/[eventSlug]/meetings/availability-form", () => ({
 }));
 vi.mock("@/app/(site)/[eventSlug]/meeting-modal", () => ({
   MeetingModalFromUrl: () => "MEETING_MODAL_STUB",
+}));
+// The modal reads the viewer's meetings from this provider, so where the page
+// renders it says whether it can load one at all.
+vi.mock("@/app/(site)/[eventSlug]/use-meetings", () => ({
+  MeetingsProvider: ({
+    children,
+    evenIfMeetingsAreOff,
+  }: {
+    children: ReactNode;
+    evenIfMeetingsAreOff?: boolean;
+  }) => (
+    <div data-provider-off={String(Boolean(evenIfMeetingsAreOff))}>
+      {children}
+    </div>
+  ),
 }));
 
 import { setupTestDb, resetTestDb } from "../helpers/db";
@@ -84,7 +100,12 @@ describe("the meetings page", () => {
 
     const html = await renderPage(event.slug, { viewMeeting: "any-id" });
 
-    expect(html).toMatch(/MEETING_MODAL_STUB/);
+    // Inside the provider, and told to fetch even though the event no longer
+    // offers meetings: outside one, or gated on the switch, the modal has
+    // nothing to show but "Loading...".
+    expect(html).toMatch(
+      /<div data-provider-off="true">MEETING_MODAL_STUB<\/div>/
+    );
     expect(html).not.toMatch(/AVAILABILITY_FORM_STUB/);
   });
 

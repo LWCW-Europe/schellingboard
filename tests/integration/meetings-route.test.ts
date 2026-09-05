@@ -14,7 +14,7 @@ import { createEvent, createGuest } from "../helpers/factories";
 import { GUEST_COOKIE_NAME, verifiedGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
 import { GET as meetings } from "@/app/api/meetings/route";
-import type { MeetingView } from "@/utils/meeting-views";
+import type { MyMeetingsResponse } from "@/utils/meeting-views";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
@@ -61,10 +61,26 @@ describe("the meetings endpoint", () => {
     const res = await meetings(await asGuest(event.id, recipient.id));
 
     expect(res.status).toBe(200);
-    const views = (await res.json()) as MeetingView[];
+    const { meetings: views } = (await res.json()) as MyMeetingsResponse;
     expect(views).toHaveLength(1);
     expect(views[0].otherName).toBe("Ada");
     expect(views[0].role).toBe("recipient");
+  });
+
+  // The column draws the slots the viewer cleared as well as what is booked
+  // in them, so both halves ride on the one request it makes.
+  it("serves the caller's own declared availability with them", async () => {
+    const { event, recipient } = await withPendingRequest();
+    await getRepositories().meetingAvailability.replaceForGuest(
+      recipient.id,
+      event.id,
+      [SLOT_START]
+    );
+
+    const res = await meetings(await asGuest(event.id, recipient.id));
+
+    const { availability } = (await res.json()) as MyMeetingsResponse;
+    expect(availability).toEqual([SLOT_START.toISOString()]);
   });
 
   // Meetings are as private as RSVPs, so there is no way to ask about

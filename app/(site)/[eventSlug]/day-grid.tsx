@@ -14,6 +14,9 @@ import { DateTime } from "luxon";
 import type { Guest, Location } from "@/db/repositories/interfaces";
 import type { DayWithSessions } from "@/app/(site)/context";
 import { EventContext, useSlotIncrement } from "@/app/(site)/context";
+import { meetingsForDay, takesPartInMeetings } from "@/utils/meeting-column";
+import { MeetingsCol } from "./meetings-col";
+import { useMyMeetings } from "./use-meetings";
 
 // Width of the left time-axis gutter. The body rows show `HH:mm` labels and the
 // header corner shows the day's date, so it has to fit a short date.
@@ -33,6 +36,18 @@ export function DayGrid(props: {
   const { event, now } = useContext(EventContext);
   const timezone = event?.timezone ?? "UTC";
   const searchParams = useSearchParams();
+  const { meetings, availability } = useMyMeetings();
+  // Outside the ?loc= filter below: the column is not a location, so narrowing
+  // the schedule to one room must not drop it (issue #392, section 2.6). All
+  // days or none, so the rooms line up from one day to the next -- and until
+  // the fetch lands, none: reserving the width for a viewer who turns out to
+  // have nothing would shift the grid for the many instead of the few.
+  const showMeetings =
+    meetings !== null &&
+    availability !== null &&
+    takesPartInMeetings(meetings, availability);
+  const myMeetings = meetings ? meetingsForDay(meetings, day) : [];
+  const myAvailability = availability ?? [];
   const locParams = searchParams?.getAll("loc");
   const locationsFromParams = locations.filter((loc) =>
     locParams?.includes(loc.name)
@@ -57,7 +72,14 @@ export function DayGrid(props: {
     <div
       className="grid bg-surface"
       style={{
-        gridTemplateColumns: `${GUTTER} repeat(${numLocations}, minmax(120px, 240px))`,
+        // The 1-on-1 column is a room's width, picture and all, so it reads as
+        // one of them rather than as a margin. It keeps the lower floor for a
+        // grid that is ever squeezed rather than scrolled; today the grid
+        // always lays out at the maximum and scrolls, so this costs the rooms
+        // 80px of that scroll on a phone.
+        gridTemplateColumns: `${GUTTER} ${
+          showMeetings ? "minmax(96px, 240px) " : ""
+        }repeat(${numLocations}, minmax(120px, 240px))`,
       }}
     >
       {/* Row 1 — room-name header, sticky to the top. The corner cell (where no
@@ -69,6 +91,11 @@ export function DayGrid(props: {
           {date.toFormat("MMM d")}
         </span>
       </div>
+      {showMeetings && (
+        <div className="sticky top-0 z-20 bg-surface border-b border-l border-line-subtle p-1">
+          <h3 className="font-semibold text-xs sm:text-sm">1-on-1s</h3>
+        </div>
+      )}
       {includedLocations.map((loc) => (
         <div
           key={loc.name}
@@ -106,6 +133,11 @@ export function DayGrid(props: {
       ))}
       {/* Row 2 — room description */}
       <div className="sticky top-0 z-20 bg-surface border-r border-line-subtle" />
+      {showMeetings && (
+        <div className="border-l border-line-subtle p-1">
+          <p className="text-[10px] text-fg-subtle">Only you see these</p>
+        </div>
+      )}
       {includedLocations.map((loc) => (
         <div key={loc.name} className="border-l border-line-subtle p-1">
           <p className="text-[10px] text-fg-subtle">
@@ -120,6 +152,7 @@ export function DayGrid(props: {
       {hasImages && (
         <>
           <div className="sticky left-0 z-20 bg-surface border-r border-line-subtle" />
+          {showMeetings && <div className="border-l border-line-subtle p-1" />}
           {includedLocations.map((loc, i) => (
             <div key={loc.name} className="border-l border-line-subtle p-1">
               {loc.imageUrl && (
@@ -162,6 +195,14 @@ export function DayGrid(props: {
         ))}
         {nowOffsetPx !== null && <NowLine offsetPx={nowOffsetPx} anchor />}
       </div>
+      {showMeetings && (
+        <MeetingsCol
+          meetings={myMeetings}
+          availability={myAvailability}
+          day={day}
+          nowOffsetPx={nowOffsetPx}
+        />
+      )}
       {includedLocations.map((location) => (
         <LocationCol
           key={location.name}
