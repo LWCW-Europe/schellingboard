@@ -71,7 +71,7 @@ export const validateSession = (
   session: SessionCreateInput,
   existingSessions: Session[],
   now: Date
-) => {
+): boolean => {
   const sessionStart = session.startTime ?? new Date(0);
   const sessionEnd = session.endTime ?? new Date(0);
   const sessionStartsBeforeEnds = sessionStart < sessionEnd;
@@ -88,8 +88,8 @@ export const validateSession = (
     sessionStartsBeforeEnds &&
     sessionStartsAfterNow &&
     concurrentSessions.length === 0 &&
-    session.title &&
-    session.locationIds[0] &&
-    session.hostIds[0];
+    !!session.title &&
+    !!session.locationIds[0] &&
+    !!session.hostIds[0];
   return sessionValid;
 };
