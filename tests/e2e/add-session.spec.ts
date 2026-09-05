@@ -2,7 +2,7 @@ import { test, expect } from "./helpers/fixtures";
 import { uniqueSuffix } from "./helpers/unique";
 import { login } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
-import { dismissToast, toast } from "./helpers/toast";
+import { toast } from "./helpers/toast";
 
 test("a newly added session appears on the overview and can be opened", async ({
   page,
@@ -38,10 +38,11 @@ test("a newly added session appears on the overview and can be opened", async ({
     /Your session .* has been added successfully/i
   );
 
-  // The toast stays until dismissed by hand — nothing times it out.
+  // A save confirmation is routine, so it clears itself after ten seconds —
+  // but not so soon that a reader who glanced away misses it.
   await page.waitForTimeout(3000);
   await expect(toast(page)).toBeVisible();
-  await dismissToast(page);
+  await expect(toast(page)).toHaveCount(0, { timeout: 15_000 });
 
   // The new session must be visible WITHOUT reloading (see #253).
   const newSessionLink = page.getByRole("link", { name: sessionTitle });

@@ -9,10 +9,12 @@ export function UserSelect({
   guests,
   showOnlyWhenUserSet,
   onSelect,
+  autoFocus,
 }: {
   guests: Guest[];
   showOnlyWhenUserSet?: boolean;
   onSelect?: () => void;
+  autoFocus?: boolean;
 }) {
   const { user: currentUser, switchUser, applyUser } = useContext(UserContext);
   // Set when a protected guest was picked and credentials are needed.
@@ -50,6 +52,7 @@ export function UserSelect({
           }}
           selectMany={false}
           showProtected
+          autoFocus={autoFocus}
         />
         {error && <p className="text-sm text-danger-fg">{error}</p>}
         {pendingGuest && (

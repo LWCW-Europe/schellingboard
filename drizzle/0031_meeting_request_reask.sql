@@ -1,0 +1,2 @@
+DROP INDEX `meetings_no_duplicate_request`;--> statement-breakpoint
+CREATE UNIQUE INDEX `meetings_no_duplicate_request` ON `meetings` (`event_id`,`requester_id`,`recipient_id`,`slot_start`) WHERE "meetings"."status" in ('pending', 'accepted');

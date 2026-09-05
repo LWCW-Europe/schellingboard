@@ -9,7 +9,10 @@ import { login } from "./auth";
 // already opened: that would toggle the menu shut again, and with the modal it
 // would hang outright, since the dialog's backdrop makes the chip unclickable
 // and nothing bounds a click's actionability wait.
-async function tapUntilOpen(trigger: Locator, opened: Locator): Promise<void> {
+export async function tapUntilOpen(
+  trigger: Locator,
+  opened: Locator
+): Promise<void> {
   await expect(async () => {
     if (!(await opened.isVisible())) {
       await trigger.click();

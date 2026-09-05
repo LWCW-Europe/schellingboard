@@ -55,7 +55,7 @@ export function HeaderUserSelect({ guests }: { guests: Guest[] }) {
       <label htmlFor="user-selection" className="text-fg-subtle">
         My name is:
       </label>
-      <UserSelect guests={guests} onSelect={() => setOpen(false)} />
+      <UserSelect guests={guests} onSelect={() => setOpen(false)} autoFocus />
     </Modal>
   );
 

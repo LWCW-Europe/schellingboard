@@ -157,6 +157,7 @@ function base64UrlToBytes(s: string): Uint8Array<ArrayBuffer> {
 // The scope is part of the signed payload so a cookie signed for one scope
 // (e.g. site auth) can never validate for another (e.g. admin auth).
 async function signCookieValue(scope = ""): Promise<string> {
+  // eslint-disable-next-line no-restricted-syntax -- cookie lifetime is real time: a dev clock jump must not expire live sessions (ADR 0004)
   const issuedAt = Date.now().toString();
   const payload = scope ? `${scope}.${issuedAt}` : issuedAt;
   const key = await importHmacKey("sign");
@@ -184,6 +185,7 @@ async function isSignedCookieValid(
   if (!/^\d+$/.test(timestamp)) return false;
   const issuedAt = Number(timestamp);
   if (!Number.isSafeInteger(issuedAt)) return false;
+  // eslint-disable-next-line no-restricted-syntax -- elapsed time against the real clock the cookie was stamped with
   const age = Date.now() - issuedAt;
   if (age < 0 || age > COOKIE_MAX_AGE_MS) return false;
 

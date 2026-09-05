@@ -8,22 +8,42 @@ import {
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
 import { meetingSlotsForDay } from "@/utils/meeting-slots";
+import { MeetingModalFromUrl } from "../meeting-modal";
 import { AvailabilityForm, type SlotDay } from "./availability-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function MeetingsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ eventSlug: string }>;
+  searchParams: Promise<{ viewMeeting?: string | string[] }>;
 }) {
   const { eventSlug } = await params;
   const repos = getRepositories();
   const event = await repos.events.findBySlug(eventSlug);
 
-  // The page only exists while the organizer offers meetings; the toolbar
-  // link is hidden then too, so this catches a stale link or a typed URL.
-  if (!event || !event.meetingsEnabled) notFound();
+  if (!event) notFound();
+
+  // Turning meetings off neither cancels nor deletes the requests already
+  // made, and every notification about one points here for good -- so a
+  // meeting still opens, even where there is no longer any availability to
+  // set. The toolbar link is hidden either way.
+  const { viewMeeting } = await searchParams;
+  if (!event.meetingsEnabled) {
+    if (!viewMeeting) notFound();
+    return (
+      <>
+        <PageNotice backHref={`/${eventSlug}`} backLabel="Schedule">
+          {event.name} is no longer offering 1-on-1s, so there is no
+          availability to set — but the ones already arranged are still yours to
+          settle.
+        </PageNotice>
+        <MeetingModalFromUrl />
+      </>
+    );
+  }
 
   const cookieStore = await cookies();
   const currentUser = await verifiedCurrentUser(cookieStore);
@@ -94,15 +114,20 @@ export default async function MeetingsPage({
   const offered = new Set(slotDays.flatMap((d) => d.slots.map((s) => s.start)));
 
   return (
-    <AvailabilityForm
-      eventId={event.id}
-      eventSlug={eventSlug}
-      eventName={event.name}
-      timezone={event.timezone}
-      days={slotDays}
-      declared={declared
-        .map((d) => d.toISOString())
-        .filter((start) => offered.has(start))}
-    />
+    <>
+      <AvailabilityForm
+        eventId={event.id}
+        eventSlug={eventSlug}
+        eventName={event.name}
+        timezone={event.timezone}
+        days={slotDays}
+        declared={declared
+          .map((d) => d.toISOString())
+          .filter((start) => offered.has(start))}
+      />
+      {/* Where a meeting notification lands: this page is here in every phase,
+          while the schedule only exists once scheduling starts. */}
+      <MeetingModalFromUrl />
+    </>
   );
 }

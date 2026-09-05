@@ -41,6 +41,7 @@ import {
   createProposal,
   updateProposal,
 } from "@/app/(site)/[eventSlug]/proposals/actions";
+import { TIME_OFFSET_COOKIE } from "@/utils/dev-clock";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
@@ -200,6 +201,30 @@ describe("createProposal", () => {
       event.id
     );
     expect(proposals).toHaveLength(1);
+  });
+
+  // A proposal's createdTime is shown and sorted next to the comments posted on
+  // it, and those are stamped with serverNow() — so it has to follow the same
+  // clock or a time-travelled session sees the two disagree.
+  it("stamps a proposal with the offset the dev toolbar is holding", async () => {
+    vi.stubEnv("SB_ENABLE_DEV_TOOLS", "1");
+    const event = await createEvent();
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+    cookieJar.set(TIME_OFFSET_COOKIE, String(threeDays));
+
+    const result = await createProposal({
+      eventId: event.id,
+      eventSlug: "test-event",
+      title: "Time-travelled",
+      hostIds: [],
+    });
+    expect(result).toEqual({ success: true });
+
+    const [proposal] = await getRepositories().sessionProposals.listByEvent(
+      event.id
+    );
+    const shift = proposal.createdTime.getTime() - Date.now();
+    expect(Math.abs(shift - threeDays)).toBeLessThan(60_000);
   });
 });
 

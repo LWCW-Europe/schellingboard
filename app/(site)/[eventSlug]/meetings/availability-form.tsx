@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { BackLink } from "@/app/components/back-link";
 import { saveMeetingAvailabilityAction } from "@/app/actions/meetings";
+import { PRIMARY_BUTTON } from "@/app/components/buttons";
 
 export type SlotDay = {
   /** Two days may share a date, so the id is what keys them apart. */
@@ -11,8 +12,6 @@ export type SlotDay = {
   slots: { start: string; label: string }[];
 };
 
-const BUTTON =
-  "px-3 py-2 text-sm font-medium rounded-md text-on-brand bg-brand hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
 const QUIET_BUTTON =
   "px-2 py-1 text-sm rounded-md text-fg-muted bg-surface-muted hover:bg-surface-hover transition-colors";
 
@@ -195,7 +194,7 @@ export function AvailabilityForm({
         <button
           type="submit"
           disabled={isSaving || emptyWhileOpen}
-          className={BUTTON}
+          className={PRIMARY_BUTTON}
         >
           {isSaving ? "Saving..." : "Save availability"}
         </button>

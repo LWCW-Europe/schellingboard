@@ -72,6 +72,16 @@ convert -size 180x180 xc:white /tmp/at.png -gravity center -composite public/app
 cp public/apple-touch-icon.png docs/logo/apple-touch-icon.png
 ```
 
+The PWA icons in `public/` (`icon-192.png`, `icon-512.png` and
+`icon-maskable-512.png`) come from the same mark, but a launcher crops whatever
+shape it likes out of the maskable one — so that cut is drawn smaller, well
+inside the safe area. A script rather than a one-liner, since that inset is the
+whole point:
+
+```sh
+bun scripts/pwa-icons.ts
+```
+
 ## Usage
 
 - Keep clear space around the logo of at least the height of the coral cell.

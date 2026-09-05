@@ -245,6 +245,7 @@ export function EventProvider({
   // without an override, the simulated jump under one). Restarted whenever the
   // seed changes; see startNowTicker.
   useEffect(() => {
+    // eslint-disable-next-line no-restricted-syntax -- deriving the offset needs the real clock the seed was taken against
     const offsetMs = seedMs - Date.now();
     return startNowTicker(setNow, NOW_REFRESH_INTERVAL_MS, offsetMs);
   }, [seedMs]);

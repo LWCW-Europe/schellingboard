@@ -379,10 +379,17 @@ export function ProfileModal({
         {/* touch-pan-y hands vertical scrolling to the browser and keeps
             horizontal panning — the back gesture included — for this handler.
             It has to be CSS: React listens for touchmove passively, so
-            preventDefault is not available to decide it per gesture. */}
+            preventDefault is not available to decide it per gesture.
+
+            overflow-clip, not -hidden: a hidden box is still a scroll
+            container, and Firefox credits this one with the profile's whole
+            height even though the panel inside it does the scrolling. Landing
+            on a comment then parked it partway down, where no scrollbar or
+            wheel could bring it back and the profile stayed cut off under its
+            own header (#930). A clipped box cannot hold an offset at all. */}
         <div
           ref={viewport}
-          className="flex min-h-0 flex-1 flex-col overflow-hidden touch-pan-y"
+          className="flex min-h-0 flex-1 flex-col overflow-clip touch-pan-y"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={endTouch}
@@ -484,9 +491,23 @@ function useProfileActivity(guestId: string): ProfileActivity | null {
 
   useEffect(() => {
     let live = true;
-    void listProfileActivity(guestId).then((activity) => {
-      if (live) setLoaded({ guestId, activity });
-    });
+    void listProfileActivity(guestId)
+      .then((activity) => {
+        if (live) setLoaded({ guestId, activity });
+      })
+      // Leaving the page aborts the request, and the rejection that follows is
+      // expected -- there is no profile left to report it on. A navigation
+      // tears the document down without running the cleanup below, so the
+      // abort has to be told apart by its kind rather than by `live`: fetch
+      // reports it as a TypeError ("NetworkError", "Failed to fetch"), and an
+      // explicit cancel as an AbortError. Anything else is a real failure and
+      // must not vanish, or the profile keeps its skeleton unexplained.
+      .catch((e: unknown) => {
+        const aborted =
+          e instanceof TypeError ||
+          (e instanceof DOMException && e.name === "AbortError");
+        if (!aborted) console.error(e);
+      });
     return () => {
       live = false;
     };

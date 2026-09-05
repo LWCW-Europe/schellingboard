@@ -4,27 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-> **Developers**: Remember to update [`app/release-notes.ts`](app/release-notes.ts)
-> — a sentence or two for the changes an organizer or attendee cares about.
+> **Developers**: keep entries short — see [AGENTS.md § Changelog](AGENTS.md#changelog).
+> If the change is a highlight of the coming release, it also belongs in
+> [`app/release-notes.ts`](app/release-notes.ts), which holds 3-5 of them.
 
 ## [Unreleased]
 
 ### Added
 
+- **Install it on your phone** (#317): attendees can add the site to their home screen and open it
+  like an app — its own icon, its own window, and no browser address bar taking up a line of the
+  schedule. Nothing changes for anyone who doesn't install it
+- **Notifications on your phone** (#317): Settings has a new **Notifications on this device**
+  section that sends the notifications you already get to the phone or laptop itself, so they
+  arrive while the site is closed. Each device is turned on separately and gets all of them — the
+  email settings only govern email. On iPhone and iPad the site has to be on your home screen
+  first. Needs the site to be served over HTTPS
+- **The schedule shows where you are in the day** (#863): a red line marks the current
+  time and a "Now" button jumps to it, both while the event is running — until now the line
+  was only drawn on kiosks
 - **In-app notifications** (#750): a bell in the header counts what is waiting, and the
-  notifications page lists everything newest first. Clicking one marks it read and opens what
-  happened. Everything that emails you appears here too, and the email settings now govern email
-  alone — so an event with no email set up still reaches its attendees
-- **Meetings, set up by the organizer**: an event's Config tab has a new Meetings section — switch
-  1-on-1 meetings on, list the places you suggest people meet, and cap how many unanswered requests
-  one attendee may have outstanding at a time. Meeting slots follow the event's schedule increment,
-  so changing that asks attendees to choose their availability again
-- **Say when you're free to meet**: with meetings switched on, the schedule toolbar gains a
-  **1-on-1s** link where attendees turn on "I'm open to 1-on-1 meetings at this event" and clear the
-  slots they want kept free. Turning it on marks every slot free, and turning it back off clears the
-  lot — nobody can book you while it's off
+  notifications page lists everything newest first. Anything that emails you appears here
+  too, so an event with no email set up still reaches its attendees
+- **1-on-1 meetings, set up by the organizer** (#392): an event's Config tab gains a
+  Meetings section — switch 1-on-1s on, list the places you suggest people meet, and cap
+  how many unanswered requests one attendee may have out at a time
+- **Asking an attendee for a 1-on-1** (#392): attendees mark the slots they are free for
+  on the new 1-on-1s page, ask someone from their profile, and accept or decline what they
+  are asked. Both sides are told the outcome; an unanswered request lapses at its slot
 
-### Fixed
+### Changed
 
 - **Reading on while a profile is still sliding**: pressing Next or Prev — or swiping again — during
   the slide now moves on another profile instead of being ignored until it lands, so reading through
@@ -32,18 +41,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Event names that a site page would hide are rejected**: an event named "Guests", "Settings" or
   "Notifications" got a web address the site's own page of that name already answers, so the event
   could never be opened. Creating one now fails with the same message other reserved names give
+- **Session save confirmations clear themselves** (#859): the message confirming a session
+  was added, updated or deleted now goes after ten seconds instead of waiting to be closed
 
 ### Fixed
 
-- **Picking your name works however many events a site runs**: the header lists every event, and
-  from about seven onwards the links crowded the name chip beside them off the row, leaving no way
-  to say who you are. The links now scroll instead of pushing
+- **Event names a site page would hide are rejected**: an event named "Guests", "Settings"
+  or "Notifications" got a web address the site's own page of that name answers, so the
+  event could never be opened
+- **Picking your name works however many events a site runs**: from about seven events on,
+  the header's event links crowded the name chip off the row, leaving no way to say who you
+  are. The links now scroll instead of pushing
+- **Picking your name is less fiddly** (#777): the search box is focused as soon as the
+  "My name is" box opens, and erasing what you typed no longer closes the box
+- **The password prompt names the account it is asking about** (#777): choosing a protected
+  name left a blank password box with nothing to say whose password it wanted
+- **Account settings says why enabling protection failed** (#716): on a site with no email
+  set up, "Enable protection" looked like it did nothing at all
+- **A comment opened from an email no longer strands the page it lands on** (#930): a link
+  to a comment on a long profile could leave the profile scrolled under its own header
 
 ### Internal
 
-- The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually
-  the page's largest element, so Next warned that the Largest Contentful Paint image was being
-  lazy-loaded
+- **`make arch` checks the module graph** (#965) for circular dependencies and layer
+  violations, and runs as part of `make precommit`. See `docs/dev/architecture-rules.md`
+- **Lint bans ambient clock reads** in `app/`, `db/`, `emails/`, `model/` and `utils/`:
+  "now" comes from the request boundary, so the dev fake clock cannot be bypassed. See ADR 0004
+- **The dev server accepts a Cloudflare quick tunnel as an origin**, so the site can be tried
+  on a phone — the way to test notifications there — without the page arriving script-less
 
 ## [3.5.0] - 2026-08-30
 

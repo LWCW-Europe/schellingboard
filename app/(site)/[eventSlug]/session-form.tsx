@@ -32,10 +32,14 @@ import { newEmptySession } from "../session_utils";
 import { useToast } from "../toast";
 import { buildSessionInterval } from "@/app/api/session-form-utils";
 import { revalidateEvent } from "./session-actions";
-import { detectHostClashes, type HostClash } from "./clash-actions";
+import { detectGuestClashes, type GuestClash } from "./clash-actions";
 import { MarkdownHint } from "@/app/(site)/markdown";
 import { BackLink } from "@/app/components/back-link";
 import { MarkdownTextarea } from "@/app/components/markdown-textarea";
+
+// A save confirmation is routine news, so it clears itself — but late enough
+// that someone who looked away as the page changed still catches it.
+const CONFIRMATION_MS = 10_000;
 
 interface ErrorResponse {
   error?: string;
@@ -200,7 +204,7 @@ export function SessionForm(props: {
   // Clash detection runs on the server (see clash-actions): a host's RSVP'd
   // sessions are private, so the client never receives them — the server only
   // reports that the host is "busy" for the overlapping interval.
-  const [hostClashes, setHostClashes] = useState<HostClash[]>([]);
+  const [hostClashes, setHostClashes] = useState<GuestClash[]>([]);
   const [isCheckingClashes, setIsCheckingClashes] = useState(false);
 
   const hostIdsKey = hosts.map((h) => h.id).join(",");
@@ -216,9 +220,9 @@ export function SessionForm(props: {
       }
       setIsCheckingClashes(true);
       try {
-        const clashes = await detectHostClashes({
+        const clashes = await detectGuestClashes({
           eventId: event.id,
-          hostIds: hostIdsKey.split(","),
+          guestIds: hostIdsKey.split(","),
           start: new Date(candidateStart).toISOString(),
           end: new Date(candidateEnd).toISOString(),
           excludeSessionId: sessionID ?? null,
@@ -241,8 +245,8 @@ export function SessionForm(props: {
       DateTime.fromISO(iso).setZone(timezone).toFormat(TIME_FORMAT);
     const interval = `from ${formatTime(clash.start)} to ${formatTime(clash.end)}`;
     return clash.kind === "hosting"
-      ? `${clash.hostName} is hosting ${clash.title} ${interval}`
-      : `${clash.hostName} is busy ${interval}`;
+      ? `${clash.guestName} is hosting ${clash.title} ${interval}`
+      : `${clash.guestName} is busy ${interval}`;
   });
 
   const router = useRouter();
@@ -279,7 +283,10 @@ export function SessionForm(props: {
     if (res.ok) {
       const actionType = sessionID ? "updated" : "added";
       await revalidateEvent(event.slug);
-      showToast(`Your session “${title}” has been ${actionType} successfully!`);
+      showToast(
+        `Your session “${title}” has been ${actionType} successfully!`,
+        { autoDismissMs: CONFIRMATION_MS }
+      );
       router.push(`/${event.slug}`);
       console.log(`Session ${actionType} successfully`);
     } else {
@@ -313,7 +320,9 @@ export function SessionForm(props: {
     if (res.ok) {
       console.log("Session deleted successfully");
       await revalidateEvent(event.slug);
-      showToast(`Your session “${title}” has been deleted successfully.`);
+      showToast(`Your session “${title}” has been deleted successfully.`, {
+        autoDismissMs: CONFIRMATION_MS,
+      });
       router.push(`/${event.slug}`);
     } else {
       let errorMessage = "Failed to delete session";

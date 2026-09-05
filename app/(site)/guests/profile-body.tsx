@@ -9,12 +9,8 @@ import {
   PaperAirplaneIcon,
   PhoneIcon,
 } from "@heroicons/react/20/solid";
-import type {
-  Attendee,
-  ContactType,
-  ProfilePrompt,
-} from "@/db/repositories/interfaces";
-import { CONTACT_TYPE_LABELS } from "@/model/guest";
+import type { Attendee, ProfilePrompt } from "@/db/repositories/interfaces";
+import { CONTACT_TYPE_LABELS, type ContactType } from "@/model/guest";
 import { CORE_PROMPTS } from "@/model/prompt-pool";
 import { InlineMarkdown, Markdown } from "@/app/(site)/markdown";
 import {
@@ -29,6 +25,7 @@ import {
   SessionLink,
 } from "@/app/(site)/guests/profile-link";
 import { ProfileComments } from "@/app/(site)/guests/profile-comments";
+import { MeetingPicker } from "@/app/(site)/guests/meeting-picker";
 import type { ProfileActivity } from "@/app/(site)/guests/profile-activity";
 
 /**
@@ -106,6 +103,15 @@ export function ProfileBody({
           >
             Edit profile
           </Link>
+        )}
+        {/* `activity` is null for the neighbours a swipe mounts, so this is
+            the profile being read. */}
+        {!isOwnProfile && activity && (
+          <MeetingPicker
+            recipientId={guest.id}
+            recipientName={guest.name}
+            options={activity.meetingOptions}
+          />
         )}
 
         {/* Beside the photo rather than below the prompts: languages are the

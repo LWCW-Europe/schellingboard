@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRepositories } from "@/db/container";
+import { requestNow } from "@/utils/dev-clock";
 import { requireProxyVerifiedAdmin } from "@/utils/auth";
 
 export const dynamic = "force-dynamic";
@@ -90,6 +91,7 @@ export async function POST(req: Request) {
     description: body.description?.trim() || undefined,
     hostIds,
     durationMinutes: duration ?? undefined,
+    createdTime: requestNow(req),
   });
 
   return NextResponse.json({ id: proposal.id }, { status: 201 });

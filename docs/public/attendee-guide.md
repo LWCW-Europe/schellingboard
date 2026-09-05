@@ -112,6 +112,9 @@ Proposing and voting close.
 A room name with an **ⓘ** next to it has more to say — tap it (or hover it)
 to read what the room offers: projector, whiteboard, the kind of seating.
 
+While the event is running, a red line across the grid marks the current time,
+and **"Now"** at the top of the schedule jumps straight to it.
+
 ### Put a proposal on the schedule
 
 Two ways, whichever you find first:
@@ -206,6 +209,41 @@ Slots are as long as the event's schedule increment and cover the whole of each
 day. If the organizer later changes that increment, everyone's availability is
 cleared and you are asked to choose again — the slots themselves have moved.
 
+### Ask someone for a meeting
+
+Anyone who is open to meetings has a **Schedule a meeting** button on their
+profile. It shows their slots day by day:
+
+- **Available** — tap to pick it.
+- **Busy** — one of you is hosting a session then, has RSVP'd to one, or has
+  already agreed another 1-on-1. Still bookable: you get a warning naming the
+  clash, and decide for yourselves. You are never told which session someone
+  else RSVP'd to, only that they are busy.
+- **Unavailable** — a slot they cleared. That is their decision, and the one
+  thing you can't book.
+
+Then say **where to meet** — one of the organizer's suggestions, or anywhere you
+type yourself. Nothing is reserved and no place is ever "full": a meeting point
+is just where to find each other. You can add one line of context, and that's
+the whole message — this is a request, not a chat.
+
+The organizer sets how many requests you may have waiting for an answer at once.
+Once you are at that number, wait for a reply or cancel one first.
+
+### Answering a request
+
+You'll get a notification (and an email, unless you've turned that off) with
+who, when, where and their line of context, and **Accept** or **Decline**.
+Declining takes no explanation — nobody should feel obliged.
+
+If the slot clashes with something of yours, the request says so before you
+answer: you are the one who knows whether your own session matters more. The
+person who asked was shown the same clash when they booked it.
+
+You can't change the time or the place — accept it or decline it, and let them
+ask again if it doesn't suit. Either way they are told. A request nobody answers
+before its slot begins simply lapses; nothing is held against you.
+
 ## Attendee directory & profiles
 
 The directory lists everyone at the event on a single page — photo and the
@@ -282,6 +320,20 @@ you it happened.
 - **Lost both your password and your email?** Ask an organizer to update the
   address on file; codes then go to the new one.
 
+## Install it on your phone
+
+You can add the site to your home screen and open it like an app — its own
+icon, its own window, and no address bar eating a line of the schedule.
+
+- **iPhone or iPad**: open the site in Safari, tap the Share button, then
+  **Add to Home Screen**.
+- **Android**: open it in Chrome and tap **Install app** (or **Add to Home
+  screen**) in the ⋮ menu.
+- **Desktop**: Chrome and Edge show an install icon at the right-hand end of
+  the address bar.
+
+It is the same site either way, signed in as the same name.
+
 ## Notifications
 
 The bell in the header counts what is waiting for you, and the notifications
@@ -291,6 +343,7 @@ page lists everything newest first. You'll be told when:
 - someone adds you as a co-host
 - someone comments on a proposal or session you host, or on your profile
 - someone else comments on something you commented on
+- someone asks you for a 1-on-1, or answers a request of yours
 
 **Clicking a notification marks it read and takes you straight to what
 happened.** If you'd rather clear one without opening it, use the tick beside
@@ -299,6 +352,25 @@ stays a record of the event.
 
 Notifications appear whether or not the event has email set up, and turning an
 email off (below) never hides it here.
+
+### On your phone, while the site is closed
+
+**Settings** has a **Notifications on this device** section. Turn it on and the
+same notifications reach your phone or laptop when the site isn't open.
+
+- **Each device is separate.** Turning it on on your phone doesn't turn it on on
+  your laptop.
+- **A device gets all of them.** The email settings below only decide what is
+  emailed; to stop the notifications on a device, turn it off there.
+- **On iPhone and iPad it only works once the site is
+  [on your home screen](#install-it-on-your-phone)**, opened from that icon
+  rather than a Safari tab. That is Apple's rule, not ours, and the section
+  says so until you're there.
+- **Deleting the home screen icon turns it off**, and you'll need to turn it on
+  again after adding the site back.
+- **A shared phone or laptop follows whoever turned it on last.** If someone
+  else picks their name on it, your notifications keep arriving there until
+  they open Settings, which turns them off.
 
 ## Settings
 

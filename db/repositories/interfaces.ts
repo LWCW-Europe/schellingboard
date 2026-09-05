@@ -1,3 +1,5 @@
+import type { ContactType } from "@/model/guest";
+
 // ── Shared enums ─────────────────────────────────────────────────────────────
 
 export enum VoteChoice {
@@ -177,18 +179,6 @@ type GuestPrivateInfo = {
 
 /** An answered profile prompt, e.g. { prompt: "Ask me about", answer: "…" }. */
 export type ProfilePrompt = { prompt: string; answer: string };
-
-export const CONTACT_TYPES = [
-  "email",
-  "phone",
-  "whatsapp",
-  "signal",
-  "telegram",
-  "discord",
-  "website",
-  "other",
-] as const;
-export type ContactType = (typeof CONTACT_TYPES)[number];
 
 /**
  * A public contact entry. Deliberately separate from the private system email
@@ -667,6 +657,7 @@ export type SessionProposalCreateInput = {
   description?: string;
   hostIds: string[];
   durationMinutes?: number;
+  createdTime: Date;
 };
 
 export type SessionProposalUpdateInput = {
@@ -859,6 +850,9 @@ export type Meeting = {
   respondedAt?: Date;
 };
 
+export type MeetingRequestOutcome =
+  { meeting: Meeting } | { refused: "cap" | "duplicate" };
+
 export interface MeetingsRepository {
   findById(id: string): Promise<Meeting | undefined>;
   /**
@@ -881,16 +875,21 @@ export interface MeetingsRepository {
     data: Omit<Meeting, "id" | "status" | "respondedAt">
   ): Promise<Meeting>;
   /**
-   * The cap check and the insert in one transaction, returning null when the
-   * requester is already at `cap`. Two separate awaits leave a window a double
-   * submit walks straight through — the same hazard
-   * {@link RsvpsRepository.createIfUnderCapacity} exists for.
+   * Both refusals and the insert in one transaction. Two separate awaits leave
+   * a window a double submit walks straight through — the same hazard
+   * {@link RsvpsRepository.createIfUnderCapacity} exists for, and the reason
+   * "already asked them" is decided here rather than read off a constraint
+   * violation.
+   *
+   * "duplicate" means a live request already covers that pair and slot;
+   * declined and cancelled ones do not count, so the pair can agree on a slot
+   * they had earlier passed on.
    */
-  createIfUnderCap(
+  createIfAllowed(
     data: Omit<Meeting, "id" | "status" | "respondedAt">,
     cap: number,
     now: Date
-  ): Promise<Meeting | null>;
+  ): Promise<MeetingRequestOutcome>;
   /**
    * Moves the meeting to `status`, but only from one of `from` — undefined
    * when it is in some other state, which is how a caller learns that someone
@@ -946,6 +945,43 @@ export interface NotificationsRepository {
    */
   markRead(guestId: string, id: string, readAt: Date): Promise<boolean>;
   markAllRead(guestId: string, readAt: Date): Promise<void>;
+}
+
+// ── Push notifications ────────────────────────────────────────────────────────
+
+/**
+ * One browser that has agreed to be notified. `endpoint` is the push service's
+ * address for that browser and identifies it: a device is not a guest, and a
+ * shared laptop moves to whoever turned notifications on last.
+ */
+export type PushSubscription = {
+  id: string;
+  guestId: string;
+  endpoint: string;
+  /** The browser's public key, for encrypting the payload to it. */
+  p256dh: string;
+  auth: string;
+  createdAt: Date;
+};
+
+/** The instance's application server keys, as web-push generates them. */
+export type VapidKeys = { publicKey: string; privateKey: string };
+
+export interface PushRepository {
+  listSubscriptions(guestId: string): Promise<PushSubscription[]>;
+  findSubscription(endpoint: string): Promise<PushSubscription | undefined>;
+  /**
+   * Upserts by endpoint, so re-subscribing a device never duplicates it: the
+   * row moves to `guestId` with the new keys and keeps its original createdAt.
+   */
+  saveSubscription(data: Omit<PushSubscription, "id">): Promise<void>;
+  deleteSubscription(endpoint: string): Promise<void>;
+  /**
+   * The stored VAPID pair, calling `generate` and storing the result the first
+   * time. Never regenerates: the public key is baked into every subscription
+   * already handed out, and nothing tells a browser to ask for a new one.
+   */
+  vapidKeys(generate: () => VapidKeys, now: Date): Promise<VapidKeys>;
 }
 
 // ── Images ─────────────────────────────────────────────────────────────────────

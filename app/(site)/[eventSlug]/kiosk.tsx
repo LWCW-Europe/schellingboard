@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { scrollNowLineIntoView } from "./now-line";
 
-// Kiosk mode (?kiosk=1) is for unattended large screens at the venue: a red
-// line marks the current time on the grid and is scrolled into view at
-// regular intervals. All normal interaction stays available so visitors
-// without a phone can still RSVP or add sessions from the display.
+// Kiosk mode (?kiosk=1) is for unattended large screens at the venue: the now
+// line every schedule draws is scrolled back into view at regular intervals,
+// so nobody has to touch the display for it to show what is on. All normal
+// interaction stays available so visitors without a phone can still RSVP or
+// add sessions from the display.
 
 /** How often the schedule is scrolled back to the now line. */
 const SCROLL_INTERVAL_MS = 3 * 60 * 1000;
@@ -104,14 +106,13 @@ export function KioskController() {
     };
   }, []);
 
-  // Periodically bring the now line back into view: scroll the grid — pinned
-  // below the toolbar, it is the page's only scroll surface — so the line
-  // sits a third from the top. Paused while someone is interacting with the
-  // display.
+  // Periodically bring the now line back into view, the same jump the
+  // toolbar's "Now" button makes. Paused while someone is interacting with
+  // the display.
   useEffect(() => {
     let lastInteraction = -Infinity;
     const markInteraction = () => {
-      lastInteraction = Date.now();
+      lastInteraction = performance.now();
     };
     const interactionEvents = [
       "pointerdown",
@@ -124,21 +125,8 @@ export function KioskController() {
     }
 
     const scrollToNow = () => {
-      if (Date.now() - lastInteraction < INTERACTION_IDLE_MS) return;
-      const container = document.querySelector(
-        '[data-testid="schedule-scroll"]'
-      );
-      const line = document.querySelector('[data-testid="now-line"]');
-      if (!container || !line) return;
-      const containerTop = container.getBoundingClientRect().top;
-      container.scrollTo({
-        top:
-          container.scrollTop +
-          line.getBoundingClientRect().top -
-          containerTop -
-          container.clientHeight / 3,
-        behavior: "smooth",
-      });
+      if (performance.now() - lastInteraction < INTERACTION_IDLE_MS) return;
+      scrollNowLineIntoView();
     };
 
     const initial = setTimeout(scrollToNow, INITIAL_SCROLL_DELAY_MS);

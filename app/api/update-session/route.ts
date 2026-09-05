@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
   // RSVP hard limit, so take it from the stored row instead.
   input.capacity = chosen[0].capacity;
   const existingSessions = allSessions.filter((ses) => ses.id !== params.id);
-  const sessionValid = validateSession(input, existingSessions);
+  const sessionValid = validateSession(input, existingSessions, now);
   if (sessionValid) {
     let updated;
     try {

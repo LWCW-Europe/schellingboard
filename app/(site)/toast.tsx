@@ -18,9 +18,10 @@ const ToastContext = createContext<ShowToast>(() => {});
 /**
  * Toasts survive client-side navigation because the provider lives in the site
  * layout: a page can show one and immediately `router.push` elsewhere. A
- * confirmation never expires on its own — the message is long enough that a
- * timeout would cut readers off, so dismissal is the reader's choice; short
- * hints can ask for `autoDismissMs` instead.
+ * toast stays until dismissed unless the caller asks for `autoDismissMs`: how
+ * long a message needs on screen depends on what it says, so the caller
+ * decides — a passing hint a few seconds, a routine confirmation longer, a
+ * message the reader must not miss forever.
  *
  * A message already on screen is never shown twice: repeating the action that
  * raised it (tapping one greyed-out button after another) replaces the copy

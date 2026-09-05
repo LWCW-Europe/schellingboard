@@ -9,10 +9,39 @@ import {
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
 import { requireSiteAuth } from "@/utils/action-auth";
+import { serverNow } from "@/utils/dev-clock-server";
 import { meetingSlotsForDay } from "@/utils/meeting-slots";
+import {
+  notifyMeetingOutcome,
+  notifyMeetingRequested,
+} from "@/utils/notifications";
 import type { Event } from "@/db/repositories/interfaces";
 
 export type MeetingActionResult = { ok: true } | { ok: false; error: string };
+
+// A "use server" export is a public endpoint behind site auth, so the types
+// these schemas describe are advisory: every payload is parsed rather than
+// trusted, and a malformed one comes back as a result instead of throwing.
+//
+// The lengths are the only bound on two free-text fields that are stored
+// verbatim and shown to the recipient; they are generous rather than tuned.
+const requestSchema = z.object({
+  eventId: z.string(),
+  recipientId: z.string(),
+  slotStart: z.string(),
+  meetingPoint: z.string().max(200),
+  message: z.string().max(2000).optional(),
+});
+
+const respondSchema = z.object({
+  meetingId: z.string(),
+  response: z.enum(["accept", "decline"]),
+});
+
+const availabilitySchema = z.object({
+  eventId: z.string(),
+  slotStarts: z.array(z.string()),
+});
 
 /**
  * Every slot start the event offers, as ISO strings. Deliberately not
@@ -30,13 +59,165 @@ async function eventSlotStarts(event: Event): Promise<Set<string>> {
   );
 }
 
-// A "use server" export is a public endpoint behind site auth, so the types
-// above it are advisory: the payload is parsed rather than trusted, and a
-// malformed one comes back as a result instead of throwing.
-const availabilitySchema = z.object({
-  eventId: z.string(),
-  slotStarts: z.array(z.string()),
-});
+export async function requestMeetingAction(
+  raw: z.input<typeof requestSchema>
+): Promise<MeetingActionResult> {
+  await requireSiteAuth();
+
+  const parsed = requestSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "Invalid request" };
+  const input = parsed.data;
+
+  const requesterId = await verifiedCurrentUser(await cookies());
+  if (!requesterId) {
+    return { ok: false, error: "Sign in to request a meeting" };
+  }
+  if (requesterId === input.recipientId) {
+    return { ok: false, error: "You can't book a meeting with yourself" };
+  }
+
+  // Presets are a convenience, not a constraint -- but "we'll figure it out"
+  // is not an option, so some place has to be named.
+  const meetingPoint = input.meetingPoint.trim();
+  if (!meetingPoint) {
+    return { ok: false, error: "Choose or type where to meet" };
+  }
+
+  const repos = getRepositories();
+  const event = await repos.events.findById(input.eventId);
+  if (!event) return { ok: false, error: "Event not found" };
+  if (!event.meetingsEnabled) {
+    return { ok: false, error: "Meetings are not enabled for this event" };
+  }
+
+  const attending = await repos.guests.listEventsByGuests([
+    requesterId,
+    input.recipientId,
+  ]);
+  const attends = (id: string) =>
+    attending.get(id)?.some((e) => e.id === event.id) ?? false;
+  if (!attends(requesterId)) {
+    return { ok: false, error: "You are not attending this event" };
+  }
+  if (!attends(input.recipientId)) {
+    return { ok: false, error: "They are not attending this event" };
+  }
+
+  const offered = await eventSlotStarts(event);
+  if (!offered.has(input.slotStart)) {
+    return { ok: false, error: "That slot is not available" };
+  }
+
+  // A multi-day event goes on offering yesterday's slots, and the open-request
+  // cap only counts requests still ahead -- so without this, day one stays
+  // bookable on day three and every request against it is free of the cap.
+  const now = await serverNow();
+  if (new Date(input.slotStart) <= now) {
+    return { ok: false, error: "That slot has already passed" };
+  }
+
+  // A slot they cleared is the one hard no in the feature: a clash is only a
+  // warning the requester already waved through, but this is their decision.
+  const declared = await repos.meetingAvailability.listByGuestAndEvent(
+    input.recipientId,
+    event.id
+  );
+  if (!declared.some((slot) => slot.toISOString() === input.slotStart)) {
+    return { ok: false, error: "They are not available at that time" };
+  }
+
+  // The slot's length is the event's schedule increment, never the caller's.
+  const slotStart = new Date(input.slotStart);
+  const slotEnd = new Date(
+    slotStart.getTime() + event.slotIncrementMinutes * 60 * 1000
+  );
+
+  const outcome = await repos.meetings.createIfAllowed(
+    {
+      eventId: event.id,
+      requesterId,
+      recipientId: input.recipientId,
+      slotStart,
+      slotEnd,
+      meetingPoint,
+      message: input.message?.trim() ?? "",
+      createdAt: now,
+    },
+    event.maxOpenMeetingRequests,
+    now
+  );
+  if ("refused" in outcome) {
+    return {
+      ok: false,
+      error:
+        outcome.refused === "duplicate"
+          ? "You have already asked them for that slot"
+          : `You already have ${event.maxOpenMeetingRequests} requests waiting for an answer. Wait for a reply, or cancel one first.`,
+    };
+  }
+
+  await notifyMeetingRequested({ meeting: outcome.meeting, now });
+
+  return { ok: true };
+}
+
+/**
+ * The recipient's answer to a request. Accepting has nothing to reject — no
+ * room is reserved and a clash is only ever a warning — so this is a status
+ * change plus telling the requester.
+ */
+export async function respondToMeetingAction(
+  raw: z.input<typeof respondSchema>
+): Promise<MeetingActionResult> {
+  await requireSiteAuth();
+
+  const parsed = respondSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "Invalid request" };
+  const input = parsed.data;
+
+  const guestId = await verifiedCurrentUser(await cookies());
+  if (!guestId) {
+    return { ok: false, error: "Sign in to answer a meeting request" };
+  }
+
+  const repos = getRepositories();
+  const meeting = await repos.meetings.findById(input.meetingId);
+  if (!meeting) return { ok: false, error: "Meeting not found" };
+  // Only the person asked can answer; the requester's own control is cancelling.
+  if (meeting.recipientId !== guestId) {
+    return { ok: false, error: "Only the person asked can answer this" };
+  }
+  // No `meetingsEnabled` check, unlike requesting one: the switch stops new
+  // requests, and a pair already holding one still have to settle it. The
+  // meetings page renders the modal for the same reason.
+
+  const now = await serverNow();
+  // Expiry is derived rather than swept (issue #392, section 2.4), so it is
+  // checked here: answering a request whose slot has begun would agree to a
+  // past meeting.
+  if (meeting.slotStart.getTime() <= now.getTime()) {
+    return { ok: false, error: "That slot has already started" };
+  }
+
+  const outcome = input.response === "accept" ? "accepted" : "declined";
+  const answered = await repos.meetings.updateStatus(meeting.id, outcome, now, [
+    "pending",
+  ]);
+  if (!answered) {
+    return { ok: false, error: "This request has already been answered" };
+  }
+
+  await notifyMeetingOutcome({
+    meeting: answered,
+    outcome,
+    actorId: guestId,
+    now,
+  });
+
+  const event = await repos.events.findById(meeting.eventId);
+  if (event) revalidatePath(`/${event.slug}`);
+  return { ok: true };
+}
 
 export async function saveMeetingAvailabilityAction(
   raw: z.input<typeof availabilitySchema>

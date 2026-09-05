@@ -2,6 +2,7 @@ import type { Session, Location, Guest } from "@/db/repositories/interfaces";
 import type { DayWithSessions } from "@/app/(site)/context";
 import { useSlotIncrement } from "@/app/(site)/context";
 import { SessionBlock } from "./session-block";
+import { NowLine } from "./now-line";
 import { getNumSlots } from "@/utils/slots";
 import clsx from "clsx";
 
@@ -10,7 +11,7 @@ export function LocationCol(props: {
   location: Location;
   day: DayWithSessions;
   guests: Guest[];
-  /** Kiosk now-line offset from the top of the slot grid; null hides it. */
+  /** Now-line offset from the top of the slot grid; null hides it. */
   nowOffsetPx?: number | null;
 }) {
   const { sessions, location, day, guests, nowOffsetPx } = props;
@@ -34,16 +35,10 @@ export function LocationCol(props: {
           );
         })}
       </div>
-      {/* Each column draws its own segment of the kiosk now line; together
-          with the gutter's segment (see DayGrid) they form one continuous
-          line across the day. */}
-      {nowOffsetPx != null && (
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 z-10 h-0.5 bg-danger pointer-events-none"
-          style={{ top: nowOffsetPx }}
-        />
-      )}
+      {/* Each column draws its own segment of the now line; together with the
+          gutter's segment (see DayGrid) they form one continuous line across
+          the day. */}
+      {nowOffsetPx != null && <NowLine offsetPx={nowOffsetPx} />}
     </div>
   );
 }

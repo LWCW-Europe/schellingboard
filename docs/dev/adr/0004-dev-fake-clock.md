@@ -70,6 +70,44 @@ can never be silently ignored. Callers obtain `now` from:
 - Route Handlers: `requestNow(req)`.
 - Client components: `EventContext.now`.
 
+### Enforced by lint, not by habit
+
+Threading `now` only works if nothing quietly reads an ambient clock instead, so
+`eslint.config.mjs` bans the zero-argument clock reads — `new Date()`,
+`Date.now()`, `DateTime.now()/local()/utc()` — across `app/`, `db/`, `emails/`,
+`model/` and `utils/`. Zero-argument only: `new Date(iso)` parses a value, it
+does not read a clock.
+
+Two consequences worth stating:
+
+- **Repositories never generate time.** They are inside the linted scope, so a
+  stored timestamp has to arrive as a required field on the input type
+  (`createdTime`, `readAt`, `editedTime`). A repository that reads a clock is
+  now a lint error rather than a code-review catch.
+- **`now = new Date()` defaults are caught too**, since the default is itself a
+  zero-argument `new Date()`. That is deliberate: an optional parameter makes a
+  missed call site silent, a required one makes it a compile error.
+
+Exemptions are per-line `eslint-disable-next-line no-restricted-syntax`
+comments, each carrying its own reason, rather than file-wide `ignores`: a file
+that legitimately reads the real clock in one place keeps every other line
+checked. They fall into two groups:
+
+1. The fake clock itself and the pieces that turn real time into effective time
+   (`dev-clock.ts`, `now-ticker.ts`, the toolbar, `EventProvider`'s offset).
+2. Real time by design: the auth cookie's age, auth-code expiry, and the
+   login/email throttles (`utils/auth.ts`, `utils/login-rate-limit.ts`,
+   `app/actions/user-auth.ts`), plus cache-busting `?v=` query strings. These
+   must _not_ follow the offset, or anyone who can set the `time-override`
+   cookie could jump past a lockout.
+
+**Elapsed time and idle timers** need no exemption: they measure a duration, not
+"now", so they use `performance.now()`, which is monotonic and unaffected by the
+offset. Under a `+7d` jump a faked clock would otherwise make the kiosk think it
+had been idle for a week and reset immediately.
+
+`scripts/` and `tests/` are outside the linted scope entirely.
+
 ### Reuse the existing client clock
 
 `EventContext` already carries `now`, seeded from the server and ticked forward

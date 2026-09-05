@@ -219,7 +219,6 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
 
   async create(data: SessionProposalCreateInput): Promise<SessionProposal> {
     const id = nanoid();
-    const createdTime = new Date().toISOString();
     this.db.transaction((tx) => {
       tx.insert(schema.sessionProposals)
         .values({
@@ -228,7 +227,7 @@ export class SqliteSessionProposalsRepository implements SessionProposalsReposit
           title: data.title,
           description: data.description ?? null,
           durationMinutes: data.durationMinutes ?? null,
-          createdTime,
+          createdTime: data.createdTime.toISOString(),
         })
         .run();
       for (const guestId of data.hostIds) {

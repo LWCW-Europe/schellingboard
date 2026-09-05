@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { useSearchParams } from "next/navigation";
 import { TIME_FORMAT } from "@/utils/utils";
 import { getNumSlots, getNowOffsetPx } from "@/utils/slots";
-import { useKioskMode } from "./kiosk";
+import { NowLine } from "./now-line";
 import { useContext } from "react";
 import Image from "next/image";
 import { isUnoptimized } from "@/utils/image-loader";
@@ -46,13 +46,12 @@ export function DayGrid(props: {
   const hasImages = firstImageIndex !== -1;
   const date = DateTime.fromJSDate(day.start).setZone(timezone);
 
-  // Kiosk mode: a red line across the day at the current time. `now` comes from
-  // EventContext so it honours the dev fake clock (and ticks live) rather than
-  // reading the real wall clock — time-travelling with ?dev=1 must move the
-  // line too. SSR and hydration share the server-seeded value, so they agree.
-  const nowOffsetPx = useKioskMode()
-    ? getNowOffsetPx(day, now, slotIncrement)
-    : null;
+  // A red line across the day at the current time, null on any day that isn't
+  // today. `now` comes from EventContext so it honours the dev fake clock (and
+  // ticks live) rather than reading the real wall clock — time-travelling with
+  // ?dev=1 must move the line too. SSR and hydration share the server-seeded
+  // value, so they agree.
+  const nowOffsetPx = getNowOffsetPx(day, now, slotIncrement);
 
   return (
     <div
@@ -161,14 +160,7 @@ export function DayGrid(props: {
               .toFormat(TIME_FORMAT)}
           </div>
         ))}
-        {nowOffsetPx !== null && (
-          <div
-            data-testid="now-line"
-            aria-hidden="true"
-            className="absolute inset-x-0 z-10 h-0.5 bg-danger pointer-events-none"
-            style={{ top: nowOffsetPx }}
-          />
-        )}
+        {nowOffsetPx !== null && <NowLine offsetPx={nowOffsetPx} anchor />}
       </div>
       {includedLocations.map((location) => (
         <LocationCol

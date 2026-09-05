@@ -6,6 +6,7 @@ This file covers what you need day to day. Longer chapters live under
 | Document                                                        | For                                                                        |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | [Coding guidelines](docs/dev/coding-guidelines.md)              | when to write a comment, and what never to put in one                      |
+| [Architecture rules](docs/dev/architecture-rules.md)            | the conventions the build enforces, and how to add one                     |
 | [Testing](docs/dev/testing.md)                                  | test strategy, TDD workflow, running tests, the Docker tier                |
 | [Database migrations](docs/dev/migrations.md)                   | generating migrations, resolving drizzle conflicts                         |
 | [Running multiple instances](docs/dev/multiple-instances.md)    | ports and env files when several clones share a machine                    |
@@ -269,14 +270,17 @@ Update `CHANGELOG.md` under `[Unreleased]` alongside any user-facing change.
 - `Security` — vulnerability fixes
 - `Internal` — dev-only changes (tooling, tests, refactors, CI) with no visible effect on organizers
 
-**Conventions**:
+**Conventions** (the full rules, with limits and examples, are in [AGENTS.md § Changelog](AGENTS.md#changelog)):
 
-- One bullet per change: short **bold** phrase naming the feature/area, then a plain-language explanation
+- One bullet per change, at most two lines: `- **Bold lead phrase** (#123): what changed, and — where it isn't obvious — what was wrong before`
+- Reference the GitHub issue when one exists, taken from the commit's `fixes #123` / `issue #123` footer (not the PR number in a squashed subject)
+- Several commits delivering one feature get one bullet between them
 - Order bullets within a section roughly by importance
 - Breaking changes: `> **Breaking change**: ...` blockquote at the top of the release
-- Skip internal refactors/tests unless they materially affect the dev workflow — then use `Internal`
+- Leave out rationale, implementation, edge cases and how a bug was found — those belong in the commit message, an ADR or `docs/dev/`
+- `Internal` is not a second commit history: only internal changes that are particularly valuable, disruptive or a highlight, around three per release, one line each
 
-The app carries a much shorter version of this: `app/release-notes.ts`, shown when the footer's version is clicked. Highlights are inline markdown, so they take the same **bold** lead phrase as the bullets here. Add yours as the change lands, to the first entry — the undated `"Unreleased"` one, shown like any other, since a deployment built from `main` is running exactly those changes. Finalizing the release only gives that entry its version and date — see [Releasing a new version](docs/dev/releasing.md).
+The app carries a much shorter version of this: `app/release-notes.ts`, shown when the footer's version is clicked. It holds **3-5 highlights** of the coming release — inline markdown, taking the same **bold** lead phrase as the bullets here. Add yours to the first entry — the undated `"Unreleased"` one — as the change lands, and replace a weaker highlight rather than adding a sixth. Finalizing the release gives that entry its version and date, after checking its highlights against this file — see [Releasing a new version](docs/dev/releasing.md).
 
 ## Documentation
 

@@ -3,9 +3,11 @@ import { getRepositories } from "@/db/container";
 import type {
   Comment,
   EmailSettings,
+  Meeting,
   Session,
 } from "@/db/repositories/interfaces";
 import { sendMail, type EmailMessage } from "@/utils/mailer";
+import { pushToGuest } from "@/utils/push";
 import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
 import { sessionDeletedEmail } from "@/emails/session-deleted";
@@ -15,6 +17,13 @@ import {
   commentEmail,
   commentNoticeText,
 } from "@/emails/comment";
+import {
+  type MeetingOutcome,
+  meetingOutcomeEmail,
+  meetingOutcomeNoticeText,
+  meetingRequestEmail,
+  meetingRequestNoticeText,
+} from "@/emails/meeting";
 import { getStartTimePlusBreak } from "@/utils/utils";
 
 // One line in the past tense, where it happened, and when — `at` comes from
@@ -22,10 +31,11 @@ import { getStartTimePlusBreak } from "@/utils/utils";
 // timestamp (ADR 0004).
 export type InAppNotice = { text: string; url: string; at: Date };
 
-// Tell the guest that something happened, on both channels: an in-app
-// notification always, and `message` by email iff they have opted in for
-// `setting` (see EmailSettings). Opting out of the mail is a request not to be
-// interrupted outside the app, not a request to be uninformed inside it.
+// Tell the guest that something happened, on every channel: an in-app
+// notification always, a push to each device they have turned notifications
+// on, and `message` by email iff they have opted in for `setting` (see
+// EmailSettings). Only the mail answers to the per-type setting — a device is
+// all or nothing, see ADR 0006.
 //
 // The in-app row is written first, so a mail that fails to send doesn't take
 // the notification with it.
@@ -51,11 +61,18 @@ export async function notifyGuest(
     createdAt: inApp.at,
   });
 
+  // Push carries site-relative links a service worker resolves against its
+  // own origin, so unlike the mail it works on an instance with no SITE_URL.
+  // The mail's subject is the one-line "what happened" a notification title
+  // wants.
+  await pushToGuest(guestId, { title: message.subject, ...inApp }, inApp.at);
+
   if (!guest.info.emailSettings[setting]) return;
+
   // Without a base URL an email can only carry dead links. SITE_URL is
   // required wherever SMTP is configured, so this drops nothing that could
-  // have been delivered — the in-app notification above is what such an
-  // instance runs on.
+  // have been delivered — the in-app notification and the push above are what
+  // such an instance runs on.
   if (siteUrl() === null) return;
   await sendMail({ to: guest.info.email, ...message });
 }
@@ -530,6 +547,114 @@ export async function notifyProfileCommented({
   });
 }
 
+// Tell the recipient that someone has asked them for a 1-on-1.
+//
+// Never throws: a notification failure must not make a request that was
+// stored look like it failed.
+export async function notifyMeetingRequested({
+  meeting,
+  now,
+}: {
+  meeting: Meeting;
+  now: Date;
+}): Promise<void> {
+  try {
+    const context = await meetingContext(meeting);
+    if (!context) return;
+    const { time, path } = context;
+    const requesterName = await guestName(meeting.requesterId);
+    await notifyGuest(
+      meeting.recipientId,
+      "meetingRequest",
+      meetingRequestEmail({
+        requesterName,
+        time,
+        meetingPoint: meeting.meetingPoint,
+        url: emailBase() + path,
+      }),
+      {
+        text: meetingRequestNoticeText(requesterName, time),
+        url: path,
+        at: now,
+      }
+    );
+  } catch (err) {
+    console.error("Failed to send meeting-request notification:", err);
+  }
+}
+
+// Tell the other party that a 1-on-1 was accepted, declined or canceled.
+// `actorId` is whoever answered, so they are not told about their own click —
+// either party can cancel, which is what decides who is left to tell.
+//
+// Never throws: as above, the state change is already committed.
+export async function notifyMeetingOutcome({
+  meeting,
+  outcome,
+  actorId,
+  now,
+}: {
+  meeting: Meeting;
+  outcome: MeetingOutcome;
+  actorId: string;
+  now: Date;
+}): Promise<void> {
+  try {
+    const context = await meetingContext(meeting);
+    if (!context) return;
+    const { time, path } = context;
+    const otherId =
+      actorId === meeting.requesterId
+        ? meeting.recipientId
+        : meeting.requesterId;
+    const actorName = await guestName(actorId);
+    await notifyGuest(
+      otherId,
+      "meetingResponse",
+      meetingOutcomeEmail({
+        actorName,
+        outcome,
+        time,
+        meetingPoint: meeting.meetingPoint,
+        url: emailBase() + path,
+      }),
+      {
+        text: meetingOutcomeNoticeText(actorName, outcome, time),
+        url: path,
+        at: now,
+      }
+    );
+  } catch (err) {
+    console.error("Failed to send meeting-outcome notification:", err);
+  }
+}
+
+// The event-dependent half of a meeting notification: when it is, in the
+// event's zone, and where it lives. Undefined once the event is gone, which
+// leaves nothing worth linking to.
+async function meetingContext(
+  meeting: Meeting
+): Promise<{ time: string; path: string } | undefined> {
+  const event = await getRepositories().events.findById(meeting.eventId);
+  if (!event) return undefined;
+  const start = DateTime.fromJSDate(meeting.slotStart).setZone(event.timezone);
+  const end = DateTime.fromJSDate(meeting.slotEnd).setZone(event.timezone);
+  return {
+    time: `${start.toFormat("cccc d LLLL, HH:mm")}–${end.toFormat("HH:mm")}`,
+    // The meetings page rather than the schedule: the schedule only exists in
+    // the scheduling phase, and a request made before it starts would land on
+    // a redirect to the proposals.
+    path: `/${event.slug}/meetings?viewMeeting=${meeting.id}`,
+  };
+}
+
+// A deleted guest still has a meeting to answer about, and "Someone" is a
+// better line than a crash.
+async function guestName(guestId: string): Promise<string> {
+  const guest = await getRepositories().guests.findById(guestId);
+  return guest?.name ?? "Someone";
+}
+
 // Deep link to the comment inside the proposal modal, same shape as
 // modal-nav's viewProposalLinkFromElsewhere plus the comment's anchor.
 function proposalCommentPath(
@@ -566,7 +691,9 @@ function formatSessionTime(
   breakMinutes: number
 ): string {
   if (!session.startTime || !session.endTime) return "Unscheduled";
-  const start = getStartTimePlusBreak(session, breakMinutes).setZone(timezone);
+  const start = getStartTimePlusBreak(session.startTime, breakMinutes).setZone(
+    timezone
+  );
   const end = DateTime.fromJSDate(session.endTime).setZone(timezone);
   return `${start.toFormat("cccc d LLLL, HH:mm")}–${end.toFormat("HH:mm")}`;
 }

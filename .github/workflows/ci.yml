@@ -23,6 +23,9 @@ jobs:
       - name: Lint
         run: make lint
 
+      - name: Check architecture rules
+        run: make arch
+
       - name: Validate docs links
         run: make docs-validate
 

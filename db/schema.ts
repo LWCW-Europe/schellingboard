@@ -479,12 +479,12 @@ export const meetings = sqliteTable(
     index("meetings_event_recipient_idx").on(t.eventId, t.recipientId),
     // Asking the same person for the same slot twice is a double submit, not a
     // second option: it would leave them two identical requests to answer.
-    uniqueIndex("meetings_no_duplicate_request").on(
-      t.eventId,
-      t.requesterId,
-      t.recipientId,
-      t.slotStart
-    ),
+    // Only while the first is live, though -- once it is declined or cancelled
+    // there is nothing to answer twice, and the pair may well agree on that
+    // slot after all.
+    uniqueIndex("meetings_no_duplicate_request")
+      .on(t.eventId, t.requesterId, t.recipientId, t.slotStart)
+      .where(sql`${t.status} in ('pending', 'accepted')`),
   ]
 );
 
@@ -527,3 +527,32 @@ export const notifications = sqliteTable(
     index("notifications_guest_read_idx").on(t.guestId, t.readAt),
   ]
 );
+
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: text("id").primaryKey(),
+    guestId: text("guest_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+    // One row per browser, not per guest: the endpoint the push service
+    // hands out is the device, so re-subscribing an existing one has to
+    // replace whatever it was pointing at.
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (t) => [index("push_subscriptions_guest_idx").on(t.guestId)]
+);
+
+// The instance's VAPID pair, written once on the first subscription. It lives
+// in the database rather than the environment so a self-hoster gets working
+// notifications without generating anything, and stays put once written:
+// replacing it silently invalidates every subscription already handed out.
+export const pushKeys = sqliteTable("push_keys", {
+  id: text("id").primaryKey(),
+  publicKey: text("public_key").notNull(),
+  privateKey: text("private_key").notNull(),
+  createdAt: text("created_at").notNull(),
+});

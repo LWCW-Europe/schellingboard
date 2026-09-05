@@ -83,12 +83,12 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       await import("@/app/(site)/guests/profile-activity");
     return listProfileActivity("some-guest");
   },
-  "(site)/[eventSlug]/clash-actions.ts:detectHostClashes": async () => {
-    const { detectHostClashes } =
+  "(site)/[eventSlug]/clash-actions.ts:detectGuestClashes": async () => {
+    const { detectGuestClashes } =
       await import("@/app/(site)/[eventSlug]/clash-actions");
-    return detectHostClashes({
+    return detectGuestClashes({
       eventId: "e",
-      hostIds: ["g"],
+      guestIds: ["g"],
       start: new Date().toISOString(),
       end: new Date().toISOString(),
     });
@@ -147,6 +147,19 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       await import("@/app/(site)/[eventSlug]/comment-actions");
     return deleteComment({ commentId: "c", eventSlug: "s" });
   },
+  "actions/meetings.ts:requestMeetingAction": async () => {
+    const { requestMeetingAction } = await import("@/app/actions/meetings");
+    return requestMeetingAction({
+      eventId: "e",
+      recipientId: "g",
+      slotStart: new Date().toISOString(),
+      meetingPoint: "Coffee bar",
+    });
+  },
+  "actions/meetings.ts:respondToMeetingAction": async () => {
+    const { respondToMeetingAction } = await import("@/app/actions/meetings");
+    return respondToMeetingAction({ meetingId: "m", response: "accept" });
+  },
   "actions/meetings.ts:saveMeetingAvailabilityAction": async () => {
     const { saveMeetingAvailabilityAction } =
       await import("@/app/actions/meetings");
@@ -170,6 +183,18 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
     const { markAllNotificationsReadAction } =
       await import("@/app/actions/notifications");
     return markAllNotificationsReadAction();
+  },
+  "actions/push.ts:subscribeToPushAction": async () => {
+    const { subscribeToPushAction } = await import("@/app/actions/push");
+    return subscribeToPushAction({});
+  },
+  "actions/push.ts:unsubscribeFromPushAction": async () => {
+    const { unsubscribeFromPushAction } = await import("@/app/actions/push");
+    return unsubscribeFromPushAction("https://push.example/device");
+  },
+  "actions/push.ts:pushEnabledHereAction": async () => {
+    const { pushEnabledHereAction } = await import("@/app/actions/push");
+    return pushEnabledHereAction("https://push.example/device");
   },
   "actions/settings.ts:updateEmailSettingsAction": async () => {
     const { updateEmailSettingsAction } =

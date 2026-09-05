@@ -50,6 +50,35 @@ describe("proxy matcher", () => {
     }
   });
 
+  // An install has to work before anyone can log in: Safari fetches the
+  // manifest and its icons without our cookie.
+  it("skips the manifest and its icons", () => {
+    for (const path of [
+      "/manifest.webmanifest",
+      "/icon-192.png",
+      "/icon-512.png",
+      "/icon-maskable-512.png",
+    ]) {
+      expect(matches(path), `${path} must skip the proxy`).toBe(false);
+    }
+  });
+
+  // A browser will only deliver a push to a service worker, and it fetches
+  // the worker's script without our cookie: a login page in its place takes
+  // notifications with it.
+  it("skips the service worker", () => {
+    expect(matches("/sw.js"), "/sw.js must skip the proxy").toBe(false);
+  });
+
+  // The exemptions are file names, and an unescaped dot would let a route
+  // that merely shares their letters slip past — the same over-matching that
+  // once leaked every uploaded image.
+  it("exempts the public files by their exact names", () => {
+    for (const path of ["/favicon-ico", "/iconXsvg", "/icon-192_png"]) {
+      expect(matches(path), `${path} must reach the proxy`).toBe(true);
+    }
+  });
+
   it("no longer exempts a path merely for ending in an image extension", () => {
     for (const path of ["/secret.png", "/guests/leak.webp", "/x.jpg"]) {
       expect(matches(path), `${path} must reach the proxy`).toBe(true);

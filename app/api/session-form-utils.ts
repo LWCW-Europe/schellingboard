@@ -64,14 +64,18 @@ export function prepareToInsert(
   };
 }
 
+// `now` is the effective current time (see docs/dev/adr/0004-dev-fake-clock.md),
+// required rather than defaulted so a caller cannot silently bypass the fake
+// clock and judge "in the past" against real time.
 export const validateSession = (
   session: SessionCreateInput,
-  existingSessions: Session[]
-) => {
+  existingSessions: Session[],
+  now: Date
+): boolean => {
   const sessionStart = session.startTime ?? new Date(0);
   const sessionEnd = session.endTime ?? new Date(0);
   const sessionStartsBeforeEnds = sessionStart < sessionEnd;
-  const sessionStartsAfterNow = sessionStart > new Date();
+  const sessionStartsAfterNow = sessionStart > now;
   const sessionsHere = existingSessions.filter((s) => {
     return s.locations.some((l) => l.id === session.locationIds[0]);
   });
@@ -84,8 +88,8 @@ export const validateSession = (
     sessionStartsBeforeEnds &&
     sessionStartsAfterNow &&
     concurrentSessions.length === 0 &&
-    session.title &&
-    session.locationIds[0] &&
-    session.hostIds[0];
+    !!session.title &&
+    !!session.locationIds[0] &&
+    !!session.hostIds[0];
   return sessionValid;
 };
