@@ -37,7 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   take part in 1-on-1s at all, showing the slots you are not offering as well as what is booked in
   them, and it carries a picture of its own where the rooms have theirs. Hovering a meeting shows
   what its block has no room for; tapping it opens it, which is also
-  where either of you can call it off before it starts; the other is told
+  where either of you can call it off before it starts; the other is told, and can be told why
+  — cancelling takes an optional note, which they read on the meeting itself
 
 ### Fixed
 

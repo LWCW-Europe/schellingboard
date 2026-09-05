@@ -9,6 +9,7 @@ import {
   type MeetingActionResult,
 } from "@/app/actions/meetings";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/components/buttons";
+import { Input } from "@/app/input";
 import { EventContext } from "@/app/(site)/context";
 import { clashLines } from "@/utils/meeting-clash-text";
 import { canCancel, statusLine } from "@/utils/meeting-rules";
@@ -44,6 +45,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
   const { meetings, reload } = useMyMeetings();
   const [error, setError] = useState<string | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelNote, setCancelNote] = useState("");
   const [isAnswering, startAnswer] = useTransition();
 
   // Duplication, anchor: waggHhba
@@ -67,6 +69,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
   const act = (run: () => Promise<MeetingActionResult>) => {
     setError(null);
     setConfirmingCancel(false);
+    setCancelNote("");
     startAnswer(async () => {
       try {
         const result = await run();
@@ -147,6 +150,14 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
               </p>
             )}
 
+            {/* A canceled meeting drops off the schedule column, so this modal
+                -- reached from the notification -- is where the note is read. */}
+            {meeting.cancelNote && (
+              <p className="text-sm rounded-md bg-surface-sunken p-3 text-fg">
+                {meeting.cancelNote}
+              </p>
+            )}
+
             {/* The same fact the requester was shown when they booked it, from
                 the other side: the person answering knows whether their own
                 session matters more (issue #392, section 1.4). */}
@@ -196,11 +207,29 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                   <p className="text-sm text-fg">
                     {meeting.otherName} will be told. Cancel it?
                   </p>
+                  {/* Optional, and the one place in the feature where a word
+                      of explanation is worth something: calling off something
+                      the other person had agreed to. */}
+                  <label
+                    htmlFor="cancel-note"
+                    className="text-sm font-medium text-fg-muted"
+                  >
+                    Say why, if you like (optional)
+                  </label>
+                  <Input
+                    id="cancel-note"
+                    value={cancelNote}
+                    onChange={(e) => setCancelNote(e.target.value)}
+                    placeholder="Sorry — my session moved…"
+                    className="w-full h-10"
+                  />
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() =>
-                        act(() => cancelMeetingAction({ meetingId }))
+                        act(() =>
+                          cancelMeetingAction({ meetingId, note: cancelNote })
+                        )
                       }
                       disabled={isAnswering}
                       className={DANGER}

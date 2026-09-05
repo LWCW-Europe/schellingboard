@@ -225,6 +225,13 @@
       "when": 1788511164512,
       "tag": "0031_meeting_request_reask",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1788620183689,
+      "tag": "0032_meeting_cancel_note",
+      "breakpoints": true
     }
   ]
 }
