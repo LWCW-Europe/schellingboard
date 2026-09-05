@@ -29,6 +29,7 @@ function meeting(minutesIn: number, patch?: Partial<MeetingView>): MeetingView {
     timeLabel: "09:00 – 09:30",
     meetingPoint: "Coffee bar",
     message: "",
+    cancelNote: "",
     clashes: [],
     ...patch,
   };

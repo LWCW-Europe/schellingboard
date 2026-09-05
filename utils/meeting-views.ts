@@ -27,6 +27,8 @@ export type MeetingView = {
   timeLabel: string;
   meetingPoint: string;
   message: string;
+  /** What the canceller said, if anything; empty on anything else. */
+  cancelNote: string;
   /** Either party's commitments in the slot, so both can weigh the clash. */
   clashes: MeetingClash[];
 };
@@ -110,6 +112,7 @@ export async function meetingViewsFor(
       ).toFormat("HH:mm")}`,
       meetingPoint: meeting.meetingPoint,
       message: meeting.message,
+      cancelNote: meeting.cancelNote,
       clashes: toMeetingClashes(clashes, viewerId),
     };
   });

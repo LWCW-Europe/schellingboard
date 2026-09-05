@@ -33,6 +33,7 @@ import { siteAuthenticate } from "../helpers/site-auth";
 import { createEvent, createGuest } from "../helpers/factories";
 import { GUEST_COOKIE_NAME, verifiedGuestValue } from "../helpers/guest-cookie";
 import { getRepositories } from "@/db/container";
+import { sendMail } from "@/utils/mailer";
 import {
   cancelMeetingAction,
   respondToMeetingAction,
@@ -288,6 +289,73 @@ describe("cancelMeetingAction", () => {
       requester.id
     );
     expect(notification.text).toMatch(/canceled/);
+  });
+
+  // Calling a meeting off is the one point in the feature where a word of
+  // explanation is worth something, so the note rides with the status change.
+  it("keeps the note the canceller left, trimmed", async () => {
+    const { requester, meeting } = await scenario();
+    await signIn(requester.id);
+
+    const result = await cancelMeetingAction({
+      meetingId: meeting.id,
+      note: "  sorry, my session moved  ",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(
+      (await getRepositories().meetings.findById(meeting.id))?.cancelNote
+    ).toBe("sorry, my session moved");
+  });
+
+  it("takes no note at all, as it always could", async () => {
+    const { requester, meeting } = await scenario();
+    await signIn(requester.id);
+
+    await cancelMeetingAction({ meetingId: meeting.id });
+
+    expect(
+      (await getRepositories().meetings.findById(meeting.id))?.cancelNote
+    ).toBe("");
+  });
+
+  // The note is part of the cancellation, not a message of its own: a refused
+  // cancel leaves the meeting exactly as it was.
+  it("writes no note when there is nothing left to cancel", async () => {
+    const { requester, meeting } = await scenario();
+    await signIn(requester.id);
+    await cancelMeetingAction({ meetingId: meeting.id, note: "first" });
+
+    const again = await cancelMeetingAction({
+      meetingId: meeting.id,
+      note: "second",
+    });
+
+    expect(again.ok).toBe(false);
+    expect(
+      (await getRepositories().meetings.findById(meeting.id))?.cancelNote
+    ).toBe("first");
+  });
+
+  // What guests write to each other stays in the app, the same call the
+  // request's line of context already makes (emails/meeting.tsx).
+  it("keeps the note out of the notification and the mail", async () => {
+    const { requester, recipient, meeting } = await scenario();
+    await signIn(requester.id);
+
+    await cancelMeetingAction({
+      meetingId: meeting.id,
+      note: "my session moved",
+    });
+
+    const [notification] = await getRepositories().notifications.listByGuest(
+      recipient.id
+    );
+    expect(notification.text).toMatch(/canceled/);
+    expect(notification.text).not.toMatch(/my session moved/);
+    expect(JSON.stringify(vi.mocked(sendMail).mock.calls)).not.toContain(
+      "my session moved"
+    );
   });
 
   // While it is pending, the person asked has Decline: cancelling it on the
