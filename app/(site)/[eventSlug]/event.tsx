@@ -7,8 +7,9 @@ import { useSearchParams } from "next/navigation";
 import { DayText } from "./day-text";
 import { Input } from "@/app/input";
 import { useState, useContext, useRef } from "react";
-import { EventContext } from "../context";
+import { EventContext, useSlotIncrement } from "../context";
 import { getDefaultFoldedDayIds } from "@/utils/schedule-fold";
+import { getNowOffsetPx } from "@/utils/slots";
 import { KioskController, useKioskMode } from "./kiosk";
 import { SessionModal } from "./session-modal";
 import { MeetingModalFromUrl } from "./meeting-modal";
@@ -28,6 +29,7 @@ export function EventDisplay() {
     () => new Set()
   );
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const slotIncrement = useSlotIncrement();
   useDragToPan(scrollerRef, view === "grid");
 
   if (!event) return <div>No event data available</div>;
@@ -45,7 +47,18 @@ export function EventDisplay() {
     });
   const locationsForEvent = locations;
 
-  const toolbar = <ScheduleToolbar event={event} />;
+  // "Now" only makes sense while the event is running, and only in the grid:
+  // it scrolls to the now line, which is drawn there and only on a day the
+  // current moment falls inside.
+  const nowIsOnSchedule = daysForEvent.some(
+    (day) => getNowOffsetPx(day, now, slotIncrement) !== null
+  );
+  const toolbar = (
+    <ScheduleToolbar
+      event={event}
+      showJumpToNow={view === "grid" && nowIsOnSchedule}
+    />
+  );
 
   // Both views own the viewport below the nav bar via the same fixed frame, so
   // the toolbar rests in the same spot and doesn't jump when switching views.
