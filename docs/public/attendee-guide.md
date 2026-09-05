@@ -186,15 +186,15 @@ Open a session to find the same comment section proposals have — useful for
 "which room did this move to?" and other last-minute coordination. Everything works as described under
 [Discuss a proposal](#discuss-a-proposal): threaded replies, likes, editing and deleting your own comments.
 
-## 1-on-1 meetings
+## 1-on-1s
 
-When the organizer has switched meetings on for the event, the schedule toolbar
+When the organizer has switched 1-on-1s on for the event, the schedule toolbar
 gains a **1-on-1s** link. That page is where you say when you are free to meet
 people one to one.
 
 One switch controls the whole thing:
 
-> **I'm open to 1-on-1 meetings at this event**
+> **I'm open to 1-on-1s at this event**
 
 While it is off, nobody can book you and you don't appear as bookable — it is
 the opt-out, so turning it back off and saving clears what you declared.
@@ -212,9 +212,9 @@ Slots are as long as the event's schedule increment and cover the whole of each
 day. If the organizer later changes that increment, everyone's availability is
 cleared and you are asked to choose again — the slots themselves have moved.
 
-### Ask someone for a meeting
+### Ask someone for a 1-on-1
 
-Anyone who is open to meetings has a **Schedule a meeting** button on their
+Anyone who is open to 1-on-1s has a **Schedule a 1-on-1** button on their
 profile. It shows their slots day by day:
 
 - **Available** — tap to pick it.
@@ -249,7 +249,7 @@ You can't change the time or the place — accept it or decline it, and let them
 ask again if it doesn't suit. Either way they are told. A request nobody answers
 before its slot begins simply lapses; nothing is held against you.
 
-### Your meetings on the schedule
+### Your 1-on-1s on the schedule
 
 Once the event reaches its scheduling phase, your 1-on-1s get the **first
 column of the schedule grid**, before the rooms: the other person's name, where
@@ -263,7 +263,7 @@ once you take part at all — open to 1-on-1s, or with one arranged — so the
 rooms line up from day to day, and it isn't there at all otherwise. It also
 shows the slots you are not offering. Declined and lapsed requests drop off it.
 
-Tap one to open it. That is also where either of you can **cancel** a meeting
+Tap one to open it. That is also where either of you can **cancel** a 1-on-1
 you had agreed, or take back a request nobody has answered yet, up until the
 slot begins; the other person is told.
 

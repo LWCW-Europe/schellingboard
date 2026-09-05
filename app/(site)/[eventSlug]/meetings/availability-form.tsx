@@ -94,12 +94,12 @@ export function AvailabilityForm({
   return (
     <form
       onSubmit={handleSave}
-      aria-label="1-on-1 meetings"
+      aria-label="1-on-1s"
       className="max-w-2xl mx-auto w-full px-4 sm:px-0 flex flex-col gap-6 py-8"
     >
       <BackLink href={`/${eventSlug}`}>Schedule</BackLink>
       <div>
-        <h1 className="text-3xl font-bold text-fg">1-on-1 meetings</h1>
+        <h1 className="text-3xl font-bold text-fg">1-on-1s</h1>
         <p className="text-fg-muted mt-2">{eventName}</p>
       </div>
 
@@ -116,7 +116,7 @@ export function AvailabilityForm({
           />
           <div>
             <label htmlFor="meetings-open" className="font-medium text-fg">
-              I&apos;m open to 1-on-1 meetings at this event
+              I&apos;m open to 1-on-1s at this event
             </label>
             <p className="text-sm text-fg-subtle">
               While this is off, nobody can book you and you won&apos;t appear
@@ -137,7 +137,7 @@ export function AvailabilityForm({
 
           {days.length === 0 && (
             <p className="text-fg-muted">
-              The organizer hasn&apos;t set up any days with meeting slots yet.
+              The organizer hasn&apos;t set up any days with 1-on-1 slots yet.
             </p>
           )}
 
