@@ -4,7 +4,11 @@ import { isUnoptimized } from "@/utils/image-loader";
 
 // Shipped with the app rather than uploaded per event: every event's column is
 // the same column, and an organizer has no room of their own to photograph for
-// it. 800×600, the size and 4:3 shape the room photos are held to.
+// it.
+//
+// 7:8 where a room photo is 4:3, which is what makes the header row one line:
+// this column is capped at 160px against a room's 240px (day-grid), so at 151
+// and 231 px of picture the two shapes come out the same 173px tall.
 const PICTURE = "/one-on-one.jpg";
 
 /**
@@ -17,10 +21,9 @@ export function OneOnOnePicture() {
       src={PICTURE}
       alt="Two attendees in conversation"
       unoptimized={isUnoptimized(PICTURE)}
-      className="w-full aspect-[4/3] rounded object-cover"
-      style={{ maxHeight: 200 }}
-      width={800}
-      height={600}
+      className="w-full aspect-[7/8] rounded object-cover"
+      width={700}
+      height={800}
     />
   );
 }
