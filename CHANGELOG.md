@@ -57,6 +57,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   under a time offset was stamped with real time, so it came out older than the comments on it — and
   "a session must start in the future" was judged against real time too, letting a time-travelled
   organizer book into their own past, or refusing a slot the interface still offered
+- The 1-on-1 E2E journey no longer flakes on the console guard. Answering a request refreshes the
+  page behind the modal, and the hard navigation the test made next aborted that fetch — Next then
+  logged the abort and forced a full load back to the meetings page, cancelling the navigation. The
+  test leaves by the header's Attendees link instead, which supersedes the refresh rather than
+  aborting it. The `waitForLoadState("networkidle")` it relied on was never waiting:
+  Playwright arms that event once per document load, and the modal is reached by an in-app
+  navigation
 - The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually
   the page's largest element, so Next warned that the Largest Contentful Paint image was being
   lazy-loaded

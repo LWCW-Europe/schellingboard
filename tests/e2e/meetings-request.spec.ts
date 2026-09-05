@@ -127,6 +127,25 @@ async function actAs(page: Page, name: RegExp) {
   await expect(page.getByRole("button", { name: /^Your name:/ })).toBeVisible();
 }
 
+/**
+ * Answering a request refreshes the page behind the modal, and a hard
+ * navigation started while that refresh's RSC fetch is in flight aborts it --
+ * whereupon Next logs the abort and forces a full load back to the page it was
+ * refreshing, which cancels the navigation that aborted it. Leaving by the
+ * header link is a React transition instead, so it supersedes the pending
+ * refresh rather than aborting it; rsvp.spec.ts leaves a saved admin form the
+ * same way.
+ *
+ * waitForLoadState("networkidle") is no substitute: Playwright arms
+ * networkidle once per document *load*, and the modal is reached by an in-app
+ * navigation -- so the event had long since fired, and the wait returned in a
+ * millisecond without waiting for anything at all.
+ */
+async function leaveForAttendees(page: Page) {
+  await page.getByRole("link", { name: "Attendees" }).click();
+  await expect(page.getByRole("heading", { name: "Attendees" })).toBeVisible();
+}
+
 // Each directory row is a link whose name is the whole row, so the name alone
 // never matches exactly.
 async function openProfile(page: Page, name: string) {
@@ -261,13 +280,8 @@ test.describe("1-on-1 meetings", () => {
     await meeting.getByRole("button", { name: "Close" }).click();
     await expect(meeting).toBeHidden();
 
-    // Answering refreshes the page behind the modal. Navigating away while
-    // that RSC fetch is in flight aborts it, and Next reports the abort on the
-    // console -- which the console guard fails the test for.
-    await page.waitForLoadState("networkidle");
-
     // And the asker hears back, then asks for the day's other slot.
-    await page.goto("/guests");
+    await leaveForAttendees(page);
     await actAs(page, new RegExp(asker));
     await page.getByRole("link", { name: /^Notifications/ }).click();
     await expect(
@@ -302,9 +316,10 @@ test.describe("1-on-1 meetings", () => {
     await expect(meeting).toBeVisible();
     await meeting.getByRole("button", { name: "Decline" }).click();
     await expect(meeting.getByText("You declined this.")).toBeVisible();
-    await page.waitForLoadState("networkidle");
+    await meeting.getByRole("button", { name: "Close" }).click();
+    await expect(meeting).toBeHidden();
 
-    await page.goto("/guests");
+    await leaveForAttendees(page);
     await actAs(page, new RegExp(asker));
     await page.getByRole("link", { name: /^Notifications/ }).click();
     await expect(
