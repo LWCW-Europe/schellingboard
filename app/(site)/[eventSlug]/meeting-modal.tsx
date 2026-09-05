@@ -36,7 +36,7 @@ function statusLine(meeting: MeetingView): string {
         ? "You declined this."
         : `${them} declined this.`;
     case "canceled":
-      return "This meeting was canceled.";
+      return "This 1-on-1 was canceled.";
     case "expired":
       // Nobody is at fault for an unanswered request, so it is not phrased as
       // one: the slot simply came and went (issue #392, section 1.4).
@@ -115,7 +115,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
       className="fixed inset-0 z-50 flex items-center justify-center"
       role="dialog"
       aria-modal="true"
-      aria-label="Meeting details"
+      aria-label="1-on-1 details"
     >
       <div className="fixed inset-0 bg-overlay" onClick={dismissViewMeeting} />
       <div className="relative bg-surface-raised rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto p-6">
@@ -143,7 +143,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
         {meetings === null ? (
           <p className="text-fg-muted">Loading…</p>
         ) : !meeting ? (
-          <p className="text-fg-muted">Meeting not found.</p>
+          <p className="text-fg-muted">1-on-1 not found.</p>
         ) : (
           <div className="flex flex-col gap-4">
             <h2 className="text-xl font-bold text-fg pr-8">
@@ -248,7 +248,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                   onClick={() => setConfirmingCancel(true)}
                   className={`${SECONDARY_BUTTON} self-start`}
                 >
-                  Cancel meeting
+                  Cancel 1-on-1
                 </button>
               ))}
 

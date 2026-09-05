@@ -72,10 +72,10 @@ export async function requestMeetingAction(
 
   const requesterId = await verifiedCurrentUser(await cookies());
   if (!requesterId) {
-    return { ok: false, error: "Sign in to request a meeting" };
+    return { ok: false, error: "Sign in to request a 1-on-1" };
   }
   if (requesterId === input.recipientId) {
-    return { ok: false, error: "You can't book a meeting with yourself" };
+    return { ok: false, error: "You can't book a 1-on-1 with yourself" };
   }
 
   // Presets are a convenience, not a constraint -- but "we'll figure it out"
@@ -89,7 +89,7 @@ export async function requestMeetingAction(
   const event = await repos.events.findById(input.eventId);
   if (!event) return { ok: false, error: "Event not found" };
   if (!event.meetingsEnabled) {
-    return { ok: false, error: "Meetings are not enabled for this event" };
+    return { ok: false, error: "1-on-1s are not enabled for this event" };
   }
 
   const attending = await repos.guests.listEventsByGuests([
@@ -179,12 +179,12 @@ export async function respondToMeetingAction(
 
   const guestId = await verifiedCurrentUser(await cookies());
   if (!guestId) {
-    return { ok: false, error: "Sign in to answer a meeting request" };
+    return { ok: false, error: "Sign in to answer a 1-on-1 request" };
   }
 
   const repos = getRepositories();
   const meeting = await repos.meetings.findById(input.meetingId);
-  if (!meeting) return { ok: false, error: "Meeting not found" };
+  if (!meeting) return { ok: false, error: "1-on-1 not found" };
   // Only the person asked can answer; the requester's own control is cancelling.
   if (meeting.recipientId !== guestId) {
     return { ok: false, error: "Only the person asked can answer this" };
@@ -237,15 +237,15 @@ export async function cancelMeetingAction(
 
   const guestId = await verifiedCurrentUser(await cookies());
   if (!guestId) {
-    return { ok: false, error: "Sign in to cancel a meeting" };
+    return { ok: false, error: "Sign in to cancel a 1-on-1" };
   }
 
   const repos = getRepositories();
   const meeting = await repos.meetings.findById(input.meetingId);
-  if (!meeting) return { ok: false, error: "Meeting not found" };
+  if (!meeting) return { ok: false, error: "1-on-1 not found" };
   const isRequester = meeting.requesterId === guestId;
   if (!isRequester && meeting.recipientId !== guestId) {
-    return { ok: false, error: "This isn't your meeting" };
+    return { ok: false, error: "This isn't your 1-on-1" };
   }
 
   const now = await serverNow();
@@ -316,7 +316,7 @@ export async function saveMeetingAvailabilityAction(
   const event = await repos.events.findById(input.eventId);
   if (!event) return { ok: false, error: "Event not found" };
   if (!event.meetingsEnabled) {
-    return { ok: false, error: "Meetings are not enabled for this event" };
+    return { ok: false, error: "1-on-1s are not enabled for this event" };
   }
 
   const attending = await repos.guests.listEventsByGuests([guestId]);

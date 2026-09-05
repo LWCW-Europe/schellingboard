@@ -206,9 +206,9 @@ Slots are as long as the event's schedule increment and cover the whole of each
 day. If the organizer later changes that increment, everyone's availability is
 cleared and you are asked to choose again — the slots themselves have moved.
 
-### Ask someone for a meeting
+### Ask someone for a 1-on-1
 
-Anyone who is open to meetings has a **Schedule a meeting** button on their
+Anyone who is open to 1-on-1s has a **Schedule a 1-on-1** button on their
 profile. It shows their slots day by day:
 
 - **Available** — tap to pick it.
@@ -242,7 +242,7 @@ You can't change the time or the place — accept it or decline it, and let them
 ask again if it doesn't suit. Either way they are told. A request nobody answers
 before its slot begins simply lapses; nothing is held against you.
 
-### Your meetings on the schedule
+### Your 1-on-1s on the schedule
 
 Once the event reaches its scheduling phase, your 1-on-1s get the **first
 column of the schedule grid**, before the rooms: the other person's name, where

@@ -24,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   slots they want kept free. Turning it on marks every slot free, and turning it back off clears the
   lot — nobody can book you while it's off
 - **Ask an attendee for a 1-on-1, and answer the ones you get**: their profile gains a **Schedule a
-  meeting** button — pick one of the slots they're open for, say where to meet and add a line of
+  1-on-1** button — pick one of the slots they're open for, say where to meet and add a line of
   context. A slot where either of you is hosting or has RSVP'd is still bookable, with a warning;
   only the slots they cleared are off limits. A warning about the other person says only that they
   are already booked — never what they are doing. The person asked gets a notification with

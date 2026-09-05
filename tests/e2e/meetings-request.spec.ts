@@ -211,7 +211,7 @@ test.describe("1-on-1 meetings", () => {
     await actAs(page, new RegExp(asker));
     await openProfile(page, askee);
     await expect(
-      page.getByRole("button", { name: /schedule a meeting/i })
+      page.getByRole("button", { name: /schedule a 1-on-1/i })
     ).toBeHidden();
 
     // The askee declares they are open to meetings.
@@ -229,7 +229,7 @@ test.describe("1-on-1 meetings", () => {
     await actAs(page, new RegExp(asker));
     await openProfile(page, askee);
 
-    const schedule = page.getByRole("button", { name: /schedule a meeting/i });
+    const schedule = page.getByRole("button", { name: /schedule a 1-on-1/i });
     await expect(schedule).toBeVisible();
     await schedule.click();
 
@@ -258,7 +258,7 @@ test.describe("1-on-1 meetings", () => {
       })
       .click();
 
-    const meeting = page.getByRole("dialog", { name: "Meeting details" });
+    const meeting = page.getByRole("dialog", { name: "1-on-1 details" });
     await expect(meeting).toBeVisible();
     await expect(meeting.getByText("Coffee bar")).toBeVisible();
     await meeting.getByRole("button", { name: "Accept" }).click();
@@ -292,7 +292,7 @@ test.describe("1-on-1 meetings", () => {
     ).toBeVisible();
 
     await openProfile(page, askee);
-    await page.getByRole("button", { name: /schedule a meeting/i }).click();
+    await page.getByRole("button", { name: /schedule a 1-on-1/i }).click();
     const sendAgain = page.getByRole("button", { name: "Send request" });
     await expect(sendAgain).toBeVisible();
     await page.getByRole("button", { name: "Coffee bar" }).click();
@@ -334,7 +334,7 @@ test.describe("1-on-1 meetings", () => {
     await page.goto(`/${slug}`);
     await page.getByRole("link", { name: new RegExp(askee) }).click();
     await expect(
-      page.getByRole("dialog", { name: "Meeting details" })
+      page.getByRole("dialog", { name: "1-on-1 details" })
     ).toBeVisible();
     await page.keyboard.press("Escape");
 
@@ -345,7 +345,7 @@ test.describe("1-on-1 meetings", () => {
       })
       .click();
     const fromNotification = page.getByRole("dialog", {
-      name: "Meeting details",
+      name: "1-on-1 details",
     });
     await expect(fromNotification).toBeVisible();
     await page.keyboard.press("Escape");
@@ -356,8 +356,8 @@ test.describe("1-on-1 meetings", () => {
     // Either of them can call it off from the block on the schedule.
     await page.goto(`/${slug}`);
     await page.getByRole("link", { name: new RegExp(askee) }).click();
-    const confirmed = page.getByRole("dialog", { name: "Meeting details" });
-    await confirmed.getByRole("button", { name: "Cancel meeting" }).click();
+    const confirmed = page.getByRole("dialog", { name: "1-on-1 details" });
+    await confirmed.getByRole("button", { name: "Cancel 1-on-1" }).click();
     await confirmed.getByRole("button", { name: "Yes, cancel it" }).click();
     await expect(confirmed.getByText(/was canceled/)).toBeVisible();
     await page.keyboard.press("Escape");

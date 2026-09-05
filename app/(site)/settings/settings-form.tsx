@@ -108,11 +108,11 @@ export function SettingsForm({
           </label>
           <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("meetingRequest")} />
-            someone asks me for a 1-on-1 meeting
+            someone asks me for a 1-on-1
           </label>
           <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("meetingResponse")} />a
-            1-on-1 meeting of mine is accepted, declined or canceled
+            1-on-1 of mine is accepted, declined or canceled
           </label>
         </fieldset>
 
