@@ -37,6 +37,10 @@ import { MarkdownHint } from "@/app/(site)/markdown";
 import { BackLink } from "@/app/components/back-link";
 import { MarkdownTextarea } from "@/app/components/markdown-textarea";
 
+// A save confirmation is routine news, so it clears itself — but late enough
+// that someone who looked away as the page changed still catches it.
+const CONFIRMATION_MS = 10_000;
+
 interface ErrorResponse {
   error?: string;
 }
@@ -279,7 +283,10 @@ export function SessionForm(props: {
     if (res.ok) {
       const actionType = sessionID ? "updated" : "added";
       await revalidateEvent(event.slug);
-      showToast(`Your session “${title}” has been ${actionType} successfully!`);
+      showToast(
+        `Your session “${title}” has been ${actionType} successfully!`,
+        { autoDismissMs: CONFIRMATION_MS }
+      );
       router.push(`/${event.slug}`);
       console.log(`Session ${actionType} successfully`);
     } else {
@@ -313,7 +320,9 @@ export function SessionForm(props: {
     if (res.ok) {
       console.log("Session deleted successfully");
       await revalidateEvent(event.slug);
-      showToast(`Your session “${title}” has been deleted successfully.`);
+      showToast(`Your session “${title}” has been deleted successfully.`, {
+        autoDismissMs: CONFIRMATION_MS,
+      });
       router.push(`/${event.slug}`);
     } else {
       let errorMessage = "Failed to delete session";
