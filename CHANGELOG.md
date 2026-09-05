@@ -56,6 +56,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **`make arch` checks the module graph** for circular dependencies and layer violations, using
   dependency-cruiser. It runs as part of `make precommit`; `make arch-graph` renders the dependency
   graph. See `docs/dev/architecture-rules.md`
+- The login rate limiter's map key no longer embeds a raw NUL byte, which made git and jj
+  treat `utils/login-rate-limit.ts` as a binary file: its diffs read "Binary files differ" and
+  `grep` skipped it
 - **Lint now bans ambient clock reads** in `app/`, `db/`, `emails/`, `model/` and `utils/`: "now"
   has to come from the request boundary so the dev fake clock can't be silently bypassed. Deliberate
   exceptions — the clock itself, auth expiry and throttles — are marked line by line with their
