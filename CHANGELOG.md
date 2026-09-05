@@ -61,6 +61,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   violations, and runs as part of `make precommit`. See `docs/dev/architecture-rules.md`
 - **Lint bans ambient clock reads** in `app/`, `db/`, `emails/`, `model/` and `utils/`:
   "now" comes from the request boundary, so the dev fake clock cannot be bypassed. See ADR 0004
+- **The dev server accepts a Cloudflare quick tunnel as an origin**, so the site can be tried
+  on a phone — the way to test notifications there — without the page arriving script-less
 
 ## [3.5.0] - 2026-08-30
 

@@ -6,6 +6,10 @@ const nextConfig = {
   // (`node server.js`). `next start` can't serve it and warns, so we gate it
   // behind an env var the Dockerfile sets and leave it off for local/e2e builds.
   ...(process.env.BUILD_STANDALONE === "1" ? { output: "standalone" } : {}),
+  // Trying the site on a phone means a tunnel, and the dev server refuses to
+  // serve its scripts to any origin it hasn't been told about. Only read by
+  // `next dev`; a production build ignores it.
+  allowedDevOrigins: ["*.trycloudflare.com"],
   experimental: {
     serverActions: {
       bodySizeLimit: "5mb",
