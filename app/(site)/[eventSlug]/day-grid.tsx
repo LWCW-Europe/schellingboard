@@ -16,6 +16,7 @@ import type { DayWithSessions } from "@/app/(site)/context";
 import { EventContext, useSlotIncrement } from "@/app/(site)/context";
 import { meetingsForDay, takesPartInMeetings } from "@/utils/meeting-column";
 import { MeetingsCol } from "./meetings-col";
+import { OneOnOnePicture } from "./one-on-one-picture";
 import { useMyMeetings } from "./use-meetings";
 
 // Width of the left time-axis gutter. The body rows show `HH:mm` labels and the
@@ -155,7 +156,11 @@ export function DayGrid(props: {
       {hasImages && (
         <>
           <div className="sticky left-0 z-20 bg-surface border-r border-line-subtle" />
-          {showMeetings && <div className="border-l border-line-subtle p-1" />}
+          {showMeetings && (
+            <div className="border-l border-line-subtle p-1">
+              <OneOnOnePicture />
+            </div>
+          )}
           {includedLocations.map((loc, i) => (
             <div key={loc.name} className="border-l border-line-subtle p-1">
               {loc.imageUrl && (

@@ -34,7 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   as the first column of the schedule grid, in their own time slot next to whatever they would clash
   with. The column is yours alone — nobody else sees it, and it is there on every day whenever you
   take part in 1-on-1s at all, showing the slots you are not offering as well as what is booked in
-  them. Hovering a meeting shows what its block has no room for; tapping it opens it, which is also
+  them, and it carries a picture of its own where the rooms have theirs. Hovering a meeting shows
+  what its block has no room for; tapping it opens it, which is also
   where either of you can call it off before it starts; the other is told
 
 ### Fixed
