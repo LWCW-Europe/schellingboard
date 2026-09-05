@@ -23,10 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   **1-on-1s** link where attendees turn on "I'm open to 1-on-1 meetings at this event" and clear the
   slots they want kept free. Turning it on marks every slot free, and turning it back off clears the
   lot — nobody can book you while it's off
-- **Ask someone for a 1-on-1**: an attendee's profile now offers **Schedule a meeting** for each
-  event you both attend where they are open to them. Pick one of their free slots, say where to
-  meet and add a line of context. A slot where either of you is hosting or has RSVP'd to something
-  is marked busy, but you can still book it — only slots they cleared are off limits
+- **Ask an attendee for a 1-on-1, and answer the ones you get**: their profile gains a **Schedule a
+  meeting** button — pick one of the slots they're open for, say where to meet and add a line of
+  context. A slot where either of you is hosting or has RSVP'd is still bookable, with a warning;
+  only the slots they cleared are off limits. The person asked gets a notification with **Accept**
+  and **Decline**, and hears about their own clashes before they answer; the asker is told either
+  way. A request nobody answers before its slot begins simply lapses
 
 ### Fixed
 

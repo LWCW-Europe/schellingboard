@@ -3,6 +3,7 @@ import { getRepositories } from "@/db/container";
 import type {
   Comment,
   EmailSettings,
+  Meeting,
   Session,
 } from "@/db/repositories/interfaces";
 import { sendMail, type EmailMessage } from "@/utils/mailer";
@@ -15,6 +16,13 @@ import {
   commentEmail,
   commentNoticeText,
 } from "@/emails/comment";
+import {
+  type MeetingOutcome,
+  meetingOutcomeEmail,
+  meetingOutcomeNoticeText,
+  meetingRequestEmail,
+  meetingRequestNoticeText,
+} from "@/emails/meeting";
 import { getStartTimePlusBreak } from "@/utils/utils";
 
 // One line in the past tense, where it happened, and when — `at` comes from
@@ -528,6 +536,114 @@ export async function notifyProfileCommented({
       path: `/guests/${profileId}#comment-${comment.id}`,
     });
   });
+}
+
+// Tell the recipient that someone has asked them for a 1-on-1.
+//
+// Never throws: a notification failure must not make a request that was
+// stored look like it failed.
+export async function notifyMeetingRequested({
+  meeting,
+  now,
+}: {
+  meeting: Meeting;
+  now: Date;
+}): Promise<void> {
+  try {
+    const context = await meetingContext(meeting);
+    if (!context) return;
+    const { time, path } = context;
+    const requesterName = await guestName(meeting.requesterId);
+    await notifyGuest(
+      meeting.recipientId,
+      "meetingRequest",
+      meetingRequestEmail({
+        requesterName,
+        time,
+        meetingPoint: meeting.meetingPoint,
+        url: emailBase() + path,
+      }),
+      {
+        text: meetingRequestNoticeText(requesterName, time),
+        url: path,
+        at: now,
+      }
+    );
+  } catch (err) {
+    console.error("Failed to send meeting-request notification:", err);
+  }
+}
+
+// Tell the other party that a 1-on-1 was accepted, declined or canceled.
+// `actorId` is whoever answered, so they are not told about their own click —
+// either party can cancel, which is what decides who is left to tell.
+//
+// Never throws: as above, the state change is already committed.
+export async function notifyMeetingOutcome({
+  meeting,
+  outcome,
+  actorId,
+  now,
+}: {
+  meeting: Meeting;
+  outcome: MeetingOutcome;
+  actorId: string;
+  now: Date;
+}): Promise<void> {
+  try {
+    const context = await meetingContext(meeting);
+    if (!context) return;
+    const { time, path } = context;
+    const otherId =
+      actorId === meeting.requesterId
+        ? meeting.recipientId
+        : meeting.requesterId;
+    const actorName = await guestName(actorId);
+    await notifyGuest(
+      otherId,
+      "meetingResponse",
+      meetingOutcomeEmail({
+        actorName,
+        outcome,
+        time,
+        meetingPoint: meeting.meetingPoint,
+        url: emailBase() + path,
+      }),
+      {
+        text: meetingOutcomeNoticeText(actorName, outcome, time),
+        url: path,
+        at: now,
+      }
+    );
+  } catch (err) {
+    console.error("Failed to send meeting-outcome notification:", err);
+  }
+}
+
+// The event-dependent half of a meeting notification: when it is, in the
+// event's zone, and where it lives. Undefined once the event is gone, which
+// leaves nothing worth linking to.
+async function meetingContext(
+  meeting: Meeting
+): Promise<{ time: string; path: string } | undefined> {
+  const event = await getRepositories().events.findById(meeting.eventId);
+  if (!event) return undefined;
+  const start = DateTime.fromJSDate(meeting.slotStart).setZone(event.timezone);
+  const end = DateTime.fromJSDate(meeting.slotEnd).setZone(event.timezone);
+  return {
+    time: `${start.toFormat("cccc d LLLL, HH:mm")}–${end.toFormat("HH:mm")}`,
+    // The meetings page rather than the schedule: the schedule only exists in
+    // the scheduling phase, and a request made before it starts would land on
+    // a redirect to the proposals.
+    path: `/${event.slug}/meetings?viewMeeting=${meeting.id}`,
+  };
+}
+
+// A deleted guest still has a meeting to answer about, and "Someone" is a
+// better line than a crash.
+async function guestName(guestId: string): Promise<string> {
+  const guest = await getRepositories().guests.findById(guestId);
+  return guest?.name ?? "Someone";
 }
 
 // Deep link to the comment inside the proposal modal, same shape as

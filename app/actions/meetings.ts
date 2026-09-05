@@ -11,6 +11,10 @@ import {
 import { requireSiteAuth } from "@/utils/action-auth";
 import { serverNow } from "@/utils/dev-clock-server";
 import { meetingSlotsForDay } from "@/utils/meeting-slots";
+import {
+  notifyMeetingOutcome,
+  notifyMeetingRequested,
+} from "@/utils/notifications";
 import type { Event } from "@/db/repositories/interfaces";
 
 export type MeetingActionResult = { ok: true } | { ok: false; error: string };
@@ -27,6 +31,11 @@ const requestSchema = z.object({
   slotStart: z.string(),
   meetingPoint: z.string().max(200),
   message: z.string().max(2000).optional(),
+});
+
+const respondSchema = z.object({
+  meetingId: z.string(),
+  response: z.enum(["accept", "decline"]),
 });
 
 const availabilitySchema = z.object({
@@ -147,6 +156,66 @@ export async function requestMeetingAction(
     };
   }
 
+  await notifyMeetingRequested({ meeting: outcome.meeting, now });
+
+  return { ok: true };
+}
+
+/**
+ * The recipient's answer to a request. Accepting has nothing to reject — no
+ * room is reserved and a clash is only ever a warning — so this is a status
+ * change plus telling the requester.
+ */
+export async function respondToMeetingAction(
+  raw: z.input<typeof respondSchema>
+): Promise<MeetingActionResult> {
+  await requireSiteAuth();
+
+  const parsed = respondSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "Invalid request" };
+  const input = parsed.data;
+
+  const guestId = await verifiedCurrentUser(await cookies());
+  if (!guestId) {
+    return { ok: false, error: "Sign in to answer a meeting request" };
+  }
+
+  const repos = getRepositories();
+  const meeting = await repos.meetings.findById(input.meetingId);
+  if (!meeting) return { ok: false, error: "Meeting not found" };
+  // Only the person asked can answer; the requester's own control is cancelling.
+  if (meeting.recipientId !== guestId) {
+    return { ok: false, error: "Only the person asked can answer this" };
+  }
+  // No `meetingsEnabled` check, unlike requesting one: the switch stops new
+  // requests, and a pair already holding one still have to settle it. The
+  // meetings page renders the modal for the same reason.
+
+  const now = await serverNow();
+  // Expiry is derived rather than swept (issue #392, section 2.4), so it is
+  // checked here: answering a request whose slot has begun would agree to a
+  // past meeting.
+  if (meeting.slotStart.getTime() <= now.getTime()) {
+    return { ok: false, error: "That slot has already started" };
+  }
+
+  const outcome = input.response === "accept" ? "accepted" : "declined";
+  const answered = await repos.meetings.updateStatus(meeting.id, outcome, now, [
+    "pending",
+  ]);
+  if (!answered) {
+    return { ok: false, error: "This request has already been answered" };
+  }
+
+  await notifyMeetingOutcome({
+    meeting: answered,
+    outcome,
+    actorId: guestId,
+    now,
+  });
+
+  const event = await repos.events.findById(meeting.eventId);
+  if (event) revalidatePath(`/${event.slug}`);
   return { ok: true };
 }
 

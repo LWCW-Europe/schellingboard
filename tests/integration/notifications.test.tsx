@@ -31,6 +31,8 @@ import {
   notifyProfileCommented,
   notifyProposalCommented,
   notifySessionCommented,
+  notifyMeetingOutcome,
+  notifyMeetingRequested,
   notifySessionChanged,
   notifySessionDeleted,
 } from "@/utils/notifications";
@@ -1175,6 +1177,150 @@ describe("notifyProfileCommented", () => {
 
     await expect(
       notifyProfileCommented({ profileId: owner.id, comment: posted, now: NOW })
+    ).resolves.toBeUndefined();
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+});
+
+describe("meeting notifications", () => {
+  beforeAll(() => setupTestDb());
+
+  beforeEach(() => {
+    resetTestDb();
+    vi.mocked(sendMail).mockReset();
+    vi.stubEnv("SITE_URL", "https://site.example");
+  });
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  // A pending request from Ada to Grace, half an hour at the coffee bar.
+  async function setupRequest(patch?: { timezone?: string }) {
+    const event = await createEvent({ phase: "scheduling" });
+    if (patch?.timezone) {
+      await getRepositories().events.update(event.id, {
+        timezone: patch.timezone,
+      });
+    }
+    const requester = await createGuest({
+      name: "Ada",
+      email: "ada@test.example",
+    });
+    const recipient = await createGuest({
+      name: "Grace",
+      email: "grace@test.example",
+    });
+    const meeting = await getRepositories().meetings.create({
+      eventId: event.id,
+      requesterId: requester.id,
+      recipientId: recipient.id,
+      slotStart: new Date("2026-08-02T13:00:00.000Z"),
+      slotEnd: new Date("2026-08-02T13:30:00.000Z"),
+      meetingPoint: "Coffee bar",
+      message: "the attendance model",
+      createdAt: NOW,
+    });
+    const reloaded = await getRepositories().events.findById(event.id);
+    return { event: reloaded!, requester, recipient, meeting };
+  }
+
+  it("emails the recipient when they are asked", async () => {
+    const { event, meeting } = await setupRequest();
+
+    await notifyMeetingRequested({ meeting, now: NOW });
+
+    expect(sendMail).toHaveBeenCalledOnce();
+    const message = vi.mocked(sendMail).mock.calls[0][0];
+    expect(message.to).toBe("grace@test.example");
+    expect(message.subject).toContain("Ada");
+    const html = await render(message.body);
+    expect(html).toContain("Sunday 2 August, 13:00–13:30");
+    expect(html).toContain("Coffee bar");
+    expect(html).toContain(
+      `href="https://site.example/${event.slug}/meetings?viewMeeting=${meeting.id}"`
+    );
+  });
+
+  // The line of context stays on the site, as comment text does.
+  it("leaves the requester's message out of the email", async () => {
+    const { meeting } = await setupRequest();
+
+    await notifyMeetingRequested({ meeting, now: NOW });
+
+    const html = await render(vi.mocked(sendMail).mock.calls[0][0].body);
+    expect(html).not.toContain("attendance model");
+  });
+
+  it("says the time in the event's timezone", async () => {
+    const { meeting } = await setupRequest({ timezone: "Pacific/Auckland" });
+
+    await notifyMeetingRequested({ meeting, now: NOW });
+
+    const html = await render(vi.mocked(sendMail).mock.calls[0][0].body);
+    expect(html).toContain("Monday 3 August, 01:00–01:30");
+  });
+
+  it("skips the mail for a recipient who opted out, keeping the notification", async () => {
+    const { event, meeting, recipient } = await setupRequest();
+    await getRepositories().guests.updateEmailSettings(recipient.id, {
+      ...DEFAULT_EMAIL_SETTINGS,
+      meetingRequest: false,
+    });
+
+    await notifyMeetingRequested({ meeting, now: NOW });
+
+    expect(sendMail).not.toHaveBeenCalled();
+    const [notification] = await getRepositories().notifications.listByGuest(
+      recipient.id
+    );
+    expect(notification.text).toContain("Ada");
+    expect(notification.url).toBe(
+      `/${event.slug}/meetings?viewMeeting=${meeting.id}`
+    );
+  });
+
+  it("tells the requester when the recipient answers", async () => {
+    const { meeting, requester } = await setupRequest();
+
+    await notifyMeetingOutcome({
+      meeting,
+      outcome: "accepted",
+      actorId: meeting.recipientId,
+      now: NOW,
+    });
+
+    expect(sendMail).toHaveBeenCalledOnce();
+    expect(vi.mocked(sendMail).mock.calls[0][0].to).toBe("ada@test.example");
+    const [notification] = await getRepositories().notifications.listByGuest(
+      requester.id
+    );
+    expect(notification.type).toBe("meetingResponse");
+    expect(notification.text).toContain("Grace accepted");
+  });
+
+  // Either party can cancel, so who is left to tell depends on who acted.
+  it("tells the recipient when the requester cancels", async () => {
+    const { meeting, recipient } = await setupRequest();
+
+    await notifyMeetingOutcome({
+      meeting,
+      outcome: "canceled",
+      actorId: meeting.requesterId,
+      now: NOW,
+    });
+
+    expect(vi.mocked(sendMail).mock.calls[0][0].to).toBe("grace@test.example");
+    const [notification] = await getRepositories().notifications.listByGuest(
+      recipient.id
+    );
+    expect(notification.text).toContain("Ada canceled");
+  });
+
+  it("does not throw when the event is gone", async () => {
+    const { event, meeting } = await setupRequest();
+    await getRepositories().events.delete(event.id);
+
+    await expect(
+      notifyMeetingRequested({ meeting, now: NOW })
     ).resolves.toBeUndefined();
     expect(sendMail).not.toHaveBeenCalled();
   });

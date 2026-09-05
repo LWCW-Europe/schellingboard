@@ -206,29 +206,40 @@ Slots are as long as the event's schedule increment and cover the whole of each
 day. If the organizer later changes that increment, everyone's availability is
 cleared and you are asked to choose again — the slots themselves have moved.
 
-### Ask someone for a 1-on-1
+### Ask someone for a meeting
 
-Open anyone from the [attendee directory](#attendee-directory--profiles). If
-they are open to meetings at an event you both attend, their profile has a
-**Schedule a meeting** button; if there is no button, they haven't said they are
-free for any slot that is still ahead.
+Anyone who is open to meetings has a **Schedule a meeting** button on their
+profile. It shows their slots day by day:
 
-The picker lists their slots day by day:
+- **Available** — tap to pick it.
+- **Busy** — one of you is hosting a session then, has RSVP'd to one, or has
+  already agreed another 1-on-1. Still bookable: you get a warning naming the
+  clash, and decide for yourselves. You are never told which session someone
+  else RSVP'd to, only that they are busy.
+- **Unavailable** — a slot they cleared. That is their decision, and the one
+  thing you can't book.
 
-- **Plain** — they are free, and so are you.
-- **Busy** — one of you is hosting a session, has RSVP'd to one, or has another
-  1-on-1 then. It says who and, where it isn't private, what. This is only a
-  warning: you can still pick the slot and the two of you can sort it out.
-- **Unavailable** — a slot they cleared. These can't be picked.
+Then say **where to meet** — one of the organizer's suggestions, or anywhere you
+type yourself. Nothing is reserved and no place is ever "full": a meeting point
+is just where to find each other. You can add one line of context, and that's
+the whole message — this is a request, not a chat.
 
-Then say **where to meet** — either one of the places the organizer suggested,
-or type your own — and optionally add a line about what you'd like to talk
-about. Nothing is reserved: the meeting point is just how you find each other.
+The organizer sets how many requests you may have waiting for an answer at once.
+Once you are at that number, wait for a reply or cancel one first.
 
-Press **Send request** and they hear about it. Asking the same person for the
-same slot twice isn't possible while that request is still open, and the
-organizer caps how many unanswered requests you may have out at once — if you
-hit it, wait for a reply or cancel one.
+### Answering a request
+
+You'll get a notification (and an email, unless you've turned that off) with
+who, when, where and their line of context, and **Accept** or **Decline**.
+Declining takes no explanation — nobody should feel obliged.
+
+If the slot clashes with something of yours, the request says so before you
+answer: you are the one who knows whether your own session matters more. The
+person who asked was shown the same clash when they booked it.
+
+You can't change the time or the place — accept it or decline it, and let them
+ask again if it doesn't suit. Either way they are told. A request nobody answers
+before its slot begins simply lapses; nothing is held against you.
 
 ## Attendee directory & profiles
 
@@ -315,6 +326,7 @@ page lists everything newest first. You'll be told when:
 - someone adds you as a co-host
 - someone comments on a proposal or session you host, or on your profile
 - someone else comments on something you commented on
+- someone asks you for a 1-on-1, or answers a request of yours
 
 **Clicking a notification marks it read and takes you straight to what
 happened.** If you'd rather clear one without opening it, use the tick beside
