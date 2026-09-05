@@ -212,10 +212,11 @@ Anyone who is open to meetings has a **Schedule a meeting** button on their
 profile. It shows their slots day by day:
 
 - **Available** — tap to pick it.
-- **Busy** — one of you is hosting a session then, has RSVP'd to one, or has
-  already agreed another 1-on-1. Still bookable: you get a warning naming the
-  clash, and decide for yourselves. You are never told which session someone
-  else RSVP'd to, only that they are busy.
+- **Busy** — one of you already has something at that hour: a session you are
+  hosting or have RSVP'd to, or another 1-on-1. Still bookable: you get a
+  warning and decide for yourselves. Your own clash is named, so you know what
+  you would be missing; theirs never is — you are only told they are already
+  booked.
 - **Unavailable** — a slot they cleared. That is their decision, and the one
   thing you can't book.
 

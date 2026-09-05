@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 import { getRepositories } from "@/db/container";
 import type { MeetingStatus } from "@/db/repositories/interfaces";
 import { clashesForInterval, loadGuestSchedules } from "@/utils/guest-clashes";
+import { toMeetingClash } from "@/utils/meeting-clash-text";
 import type { MeetingClash } from "@/utils/meeting-clash-text";
 
 /**
@@ -108,12 +109,7 @@ export async function meetingViewsFor(
       ).toFormat("HH:mm")}`,
       meetingPoint: meeting.meetingPoint,
       message: meeting.message,
-      clashes: clashes.map(({ guestId, guestName, kind, title }) => ({
-        guestName,
-        kind,
-        title,
-        isViewer: guestId === viewerId,
-      })),
+      clashes: clashes.map((clash) => toMeetingClash(clash, viewerId)),
     };
   });
 }

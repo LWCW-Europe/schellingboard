@@ -99,7 +99,7 @@ describe("meetingViewsFor", () => {
     expect(view.status).toBe("accepted");
   });
 
-  it("names a session either party is hosting in the slot", async () => {
+  it("names a session the viewer is hosting in the slot", async () => {
     const { event, requester, recipient } = await scenario();
     const room = await createLocation({ eventId: event.id });
     await createSession(event.id, {
