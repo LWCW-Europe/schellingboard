@@ -48,6 +48,7 @@ export const releaseNotes: ReleaseNote[] = [
       "**Notifications in the app**: a bell in the header counts what is waiting, and clicking one takes you to it. Everything that emails you appears here too, even where email is not set up.",
       "**1-on-1 meetings**: organizers switch them on for an event and suggest where to meet; attendees mark when they are free, ask someone from their profile, and accept or decline.",
       "**Picking your name works however many events a site runs**: past about seven, the header's event links crowded the name chip off the row and left no way to say who you are.",
+      '**The schedule shows where you are in the day**: a red line marks the current time while the event is running, and a "Now" button jumps to it.',
     ],
   },
   {

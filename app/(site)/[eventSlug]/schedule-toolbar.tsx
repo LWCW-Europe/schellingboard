@@ -5,6 +5,7 @@ import clsx from "clsx";
 import {
   CalendarIcon,
   ClipboardDocumentListIcon,
+  ClockIcon,
   DocumentTextIcon,
   FlagIcon,
   InformationCircleIcon,
@@ -17,14 +18,23 @@ import Link from "next/link";
 import { Modal } from "@/app/components/modal";
 import { Markdown } from "@/app/(site)/markdown";
 import { hasPhases } from "@/app/(site)/utils/events";
+import { scrollNowLineIntoView } from "./now-line";
 import type { Event } from "@/db/repositories/interfaces";
 
+const ITEM_CLASS =
+  "flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-fg-subtle hover:text-brand-fg focus:outline-none focus:ring-2 focus:ring-brand-accent";
+
 // Slim single-row (wrapping on mobile) header for the schedule views. The view
-// toggle (Grid/Text/RSVP'd) sits next to two distinct navigation links —
-// "Event details" (opens a popup with dates/description) and "Proposals". The
-// event name is intentionally omitted: the site header already shows it.
-export function ScheduleToolbar(props: { event: Event }) {
-  const { event } = props;
+// toggle (Grid/Text/RSVP'd) sits next to "Now", which jumps the grid to the
+// current time, and two distinct navigation links — "Event details" (opens a
+// popup with dates/description) and "Proposals". The event name is
+// intentionally omitted: the site header already shows it.
+export function ScheduleToolbar(props: {
+  event: Event;
+  /** Whether to offer "Now" — only while the grid has a line to jump to. */
+  showJumpToNow?: boolean;
+}) {
+  const { event, showJumpToNow } = props;
   const [detailsOpen, setDetailsOpen] = useState(false);
   return (
     // The outer div spans the (possibly horizontally overflowing) grid width;
@@ -37,27 +47,28 @@ export function ScheduleToolbar(props: { event: Event }) {
             navigation links that follow. */}
         <span className="hidden h-5 w-px bg-line-subtle sm:block" aria-hidden />
         <div className="flex items-center gap-x-4 gap-y-1">
-          <button
-            onClick={() => setDetailsOpen(true)}
-            className="flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-fg-subtle hover:text-brand-fg focus:outline-none focus:ring-2 focus:ring-brand-accent"
-          >
+          {showJumpToNow && (
+            <button
+              onClick={scrollNowLineIntoView}
+              title="Jump to the current time"
+              className={ITEM_CLASS}
+            >
+              <ClockIcon className="h-4 w-4 stroke-2" />
+              Now
+            </button>
+          )}
+          <button onClick={() => setDetailsOpen(true)} className={ITEM_CLASS}>
             <InformationCircleIcon className="h-4 w-4 stroke-2" />
             Event details
           </button>
           {hasPhases(event) && (
-            <Link
-              href={`/${event.slug}/proposals`}
-              className="flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-fg-subtle hover:text-brand-fg focus:outline-none focus:ring-2 focus:ring-brand-accent"
-            >
+            <Link href={`/${event.slug}/proposals`} className={ITEM_CLASS}>
               <ClipboardDocumentListIcon className="h-4 w-4 stroke-2" />
               Proposals
             </Link>
           )}
           {event.meetingsEnabled && (
-            <Link
-              href={`/${event.slug}/meetings`}
-              className="flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-fg-subtle hover:text-brand-fg focus:outline-none focus:ring-2 focus:ring-brand-accent"
-            >
+            <Link href={`/${event.slug}/meetings`} className={ITEM_CLASS}>
               <UserGroupIcon className="h-4 w-4 stroke-2" />
               1-on-1s
             </Link>

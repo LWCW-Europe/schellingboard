@@ -35,7 +35,7 @@ export function getNumSlots(
 }
 
 /**
- * Vertical pixel offset of `now` from the top of a day's slot grid (kiosk
+ * Vertical pixel offset of `now` from the top of a day's slot grid (the
  * now-line), or null when `now` falls outside [start, end).
  */
 export function getNowOffsetPx(

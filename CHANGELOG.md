@@ -12,6 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **The schedule shows where you are in the day** (#863): a red line marks the current
+  time and a "Now" button jumps to it, both while the event is running — until now the line
+  was only drawn on kiosks
 - **In-app notifications** (#750): a bell in the header counts what is waiting, and the
   notifications page lists everything newest first. Anything that emails you appears here
   too, so an event with no email set up still reaches its attendees

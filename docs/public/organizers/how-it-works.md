@@ -94,9 +94,10 @@ and is far from settled.
 
 ## Kiosk mode
 
-Append `?kiosk=1` to a schedule URL for an unattended screen at the venue: a
-red line marks the current time, the view auto-scrolls back to it after a
-minute of no interaction, the screen is kept awake, and the page refreshes
+Append `?kiosk=1` to a schedule URL for an unattended screen at the venue: the
+view auto-scrolls back to the red current-time line after a minute of no
+interaction (everyone else gets that line too, plus a "Now" button to jump to
+it, but no auto-scrolling), the screen is kept awake, and the page refreshes
 periodically. It stays fully interactive, and sticks as visitors browse the
 site until you turn it off with `?kiosk=0`. Add `&loc=Main+Hall` (repeatable)
 to show only specific locations — handy for a kiosk in one room, or a
