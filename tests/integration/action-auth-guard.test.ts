@@ -184,6 +184,18 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       await import("@/app/actions/notifications");
     return markAllNotificationsReadAction();
   },
+  "actions/push.ts:subscribeToPushAction": async () => {
+    const { subscribeToPushAction } = await import("@/app/actions/push");
+    return subscribeToPushAction({});
+  },
+  "actions/push.ts:unsubscribeFromPushAction": async () => {
+    const { unsubscribeFromPushAction } = await import("@/app/actions/push");
+    return unsubscribeFromPushAction("https://push.example/device");
+  },
+  "actions/push.ts:pushEnabledHereAction": async () => {
+    const { pushEnabledHereAction } = await import("@/app/actions/push");
+    return pushEnabledHereAction("https://push.example/device");
+  },
   "actions/settings.ts:updateEmailSettingsAction": async () => {
     const { updateEmailSettingsAction } =
       await import("@/app/actions/settings");

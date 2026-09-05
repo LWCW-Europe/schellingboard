@@ -72,6 +72,17 @@ export default tseslint.config(
     },
   },
   {
+    // The service worker ships to the browser as it is written. It is a
+    // worker, not a window, so `self` has no lib the type-aware rules could
+    // resolve it against — the project's tsconfig includes the file but never
+    // checks it.
+    files: ["public/sw.js"],
+    extends: [tseslint.configs.disableTypeChecked],
+    languageOptions: {
+      globals: { self: "readonly" },
+    },
+  },
+  {
     files: ["db/repositories/sqlite/*.ts"],
     rules: {
       "@typescript-eslint/require-await": "off",
