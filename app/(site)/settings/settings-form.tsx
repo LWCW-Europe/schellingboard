@@ -58,12 +58,6 @@ export function SettingsForm({
         </Link>{" "}
         is edited separately.
       </p>
-      {/* Availability is per-event, so it cannot live here -- but this is
-          where people look for it first. */}
-      <p className="text-sm text-fg-subtle">
-        Setting when you&apos;re free for 1-on-1 meetings is per event: open the
-        event and use its <strong>1-on-1s</strong> link.
-      </p>
 
       <form
         onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}

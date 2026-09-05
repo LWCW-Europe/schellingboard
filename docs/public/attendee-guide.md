@@ -182,13 +182,13 @@ Open a session to find the same comment section proposals have — useful for
 
 ## 1-on-1 meetings
 
-When the organizer has switched meetings on for the event, the schedule toolbar
-gains a **1-on-1s** link. That page is where you say when you are free to meet
-people one to one.
+Under **Settings**, every event you're attending where the organizer offers
+1-on-1s gets a panel of its own. That is where you say when you are free to
+meet people one to one.
 
 One switch controls the whole thing:
 
-> **I'm open to 1-on-1 meetings at this event**
+> **I'm open to 1-on-1s at this event**
 
 While it is off, nobody can book you and you don't appear as bookable — it is
 the opt-out, so turning it back off and saving clears what you declared.
@@ -231,7 +231,8 @@ Once you are at that number, wait for a reply or cancel one first.
 ### Answering a request
 
 You'll get a notification (and an email, unless you've turned that off) with
-who, when, where and their line of context, and **Accept** or **Decline**.
+who, when, where and their line of context, and **Accept** or **Decline**. It
+opens on the schedule, in its slot, once the event has one.
 Declining takes no explanation — nobody should feel obliged.
 
 If the slot clashes with something of yours, the request says so before you
@@ -365,6 +366,8 @@ email off (below) never hides it here.
   email only — you still see it in the app. Every email says what happened and
   links to it — session descriptions and comment text stay on the site rather
   than going out to your email provider.
+- **1-on-1s** — one panel per event you're attending that offers them, with the
+  switch and the slots you're keeping free. See [1-on-1 meetings](#1-on-1-meetings).
 - **Appearance** — System, Light or Dark, also available at the very bottom of
   every page. **System** follows your phone or laptop, so the site turns dark
   in the evening if your device does. The choice is remembered per device, not

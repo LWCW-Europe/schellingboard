@@ -19,8 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   1-on-1 meetings on, list the places you suggest people meet, and cap how many unanswered requests
   one attendee may have outstanding at a time. Meeting slots follow the event's schedule increment,
   so changing that asks attendees to choose their availability again
-- **Say when you're free to meet**: with meetings switched on, the schedule toolbar gains a
-  **1-on-1s** link where attendees turn on "I'm open to 1-on-1 meetings at this event" and clear the
+- **Say when you're free to meet**: with meetings switched on, every attendee's **Settings** page
+  gets a panel for the event where they turn on "I'm open to 1-on-1s at this event" and clear the
   slots they want kept free. Turning it on marks every slot free, and turning it back off clears the
   lot — nobody can book you while it's off
 - **Ask an attendee for a 1-on-1, and answer the ones you get**: their profile gains a **Schedule a
@@ -29,7 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   only the slots they cleared are off limits. A warning about the other person says only that they
   are already booked — never what they are doing. The person asked gets a notification with
   **Accept** and **Decline**, and hears about their own clashes before they answer; the asker is
-  told either way. A request nobody answers before its slot begins simply lapses
+  told either way. A request nobody answers before its slot begins simply lapses. Opened from a
+  notification, a 1-on-1 shows on top of the schedule once the event has one
 - **Your 1-on-1s on the schedule**: agreed meetings and the ones still waiting for an answer appear
   as the first column of the schedule grid, in their own time slot next to whatever they would clash
   with. The column is yours alone — nobody else sees it, and it is there on every day whenever you

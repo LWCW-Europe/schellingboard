@@ -49,10 +49,10 @@ export function MeetingsProvider({ children }: { children: ReactNode }) {
   const [reloads, setReloads] = useState(0);
 
   const eventId = event?.id;
-  // A kiosk with nobody picked, or an event without meetings: there is nothing
-  // this guest could have.
-  const key =
-    eventId && event?.meetingsEnabled && user ? `${eventId}:${user}` : null;
+  // A kiosk with nobody picked has nothing to fetch. An event with meetings
+  // switched off still might: a request outlives the switch, and the one its
+  // notification opens has to load.
+  const key = eventId && user ? `${eventId}:${user}` : null;
 
   useEffect(() => {
     if (!key) return;

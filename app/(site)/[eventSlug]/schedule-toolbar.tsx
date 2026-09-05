@@ -10,7 +10,6 @@ import {
   InformationCircleIcon,
   LinkIcon,
   TableCellsIcon,
-  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { DateTime } from "luxon";
 import Link from "next/link";
@@ -51,15 +50,6 @@ export function ScheduleToolbar(props: { event: Event }) {
             >
               <ClipboardDocumentListIcon className="h-4 w-4 stroke-2" />
               Proposals
-            </Link>
-          )}
-          {event.meetingsEnabled && (
-            <Link
-              href={`/${event.slug}/meetings`}
-              className="flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-fg-subtle hover:text-brand-fg focus:outline-none focus:ring-2 focus:ring-brand-accent"
-            >
-              <UserGroupIcon className="h-4 w-4 stroke-2" />
-              1-on-1s
             </Link>
           )}
         </div>

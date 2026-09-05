@@ -1,19 +1,26 @@
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
-import { DateTime } from "luxon";
+import { notFound, redirect } from "next/navigation";
 import { PageNotice } from "@/app/components/page-notice";
+import { EventPhase, getCurrentPhase } from "@/app/(site)/utils/events";
 import { getRepositories } from "@/db/container";
 import {
   unverifiedUserMessage,
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
-import { meetingSlotsForDay } from "@/utils/meeting-slots";
+import { serverNow } from "@/utils/dev-clock-server";
 import { MeetingModalFromUrl } from "../meeting-modal";
 import { MeetingsProvider } from "../use-meetings";
-import { AvailabilityForm, type SlotDay } from "./availability-form";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Where a meeting notification lands. Availability is set under Settings, so
+ * all that is left here is opening the one meeting -- and even that is handed
+ * to the schedule once there is one, where the meeting sits in its slot next
+ * to whatever it clashes with. Before the scheduling phase the schedule
+ * redirects to the proposals and would lose the meeting on the way, so until
+ * then it opens here (#952 is to settle that).
+ */
 export default async function MeetingsPage({
   params,
   searchParams,
@@ -22,112 +29,31 @@ export default async function MeetingsPage({
   searchParams: Promise<{ viewMeeting?: string | string[] }>;
 }) {
   const { eventSlug } = await params;
-  const repos = getRepositories();
-  const event = await repos.events.findBySlug(eventSlug);
-
+  const event = await getRepositories().events.findBySlug(eventSlug);
   if (!event) notFound();
 
-  // Turning meetings off neither cancels nor deletes the requests already
-  // made, and every notification about one points here for good -- so a
-  // meeting still opens, even where there is no longer any availability to
-  // set. The toolbar link is hidden either way.
   const { viewMeeting } = await searchParams;
-  if (!event.meetingsEnabled) {
-    if (!viewMeeting) notFound();
-    return (
-      <>
-        <PageNotice backHref={`/${eventSlug}`} backLabel="Schedule">
-          {event.name} is no longer offering 1-on-1s, so there is no
-          availability to set — but the ones already arranged are still yours to
-          settle.
-        </PageNotice>
-        <MeetingModalFromUrl />
-      </>
-    );
+  const meetingId = Array.isArray(viewMeeting) ? viewMeeting[0] : viewMeeting;
+  if (!meetingId) redirect(`/${eventSlug}`);
+  if (getCurrentPhase(event, await serverNow()) === EventPhase.SCHEDULING) {
+    redirect(`/${eventSlug}?viewMeeting=${encodeURIComponent(meetingId)}`);
   }
 
   const cookieStore = await cookies();
-  const currentUser = await verifiedCurrentUser(cookieStore);
-  if (!currentUser) {
+  if (!(await verifiedCurrentUser(cookieStore))) {
     return (
-      <PageNotice backHref={`/${eventSlug}`} backLabel="Schedule">
-        {await unverifiedUserMessage(
-          cookieStore,
-          "setting your meeting availability"
-        )}
+      <PageNotice backHref={`/${eventSlug}`} backLabel={event.name}>
+        {await unverifiedUserMessage(cookieStore, "opening your 1-on-1s")}
       </PageNotice>
     );
   }
-
-  // The save action refuses a non-attendee anyway; checking here too means
-  // they are told before filling the form in rather than after.
-  const attending = await repos.guests.listEventsByGuests([currentUser]);
-  if (!attending.get(currentUser)?.some((e) => e.id === event.id)) {
-    return (
-      <PageNotice backHref={`/${eventSlug}`} backLabel="Schedule">
-        You&apos;re not on the guest list for {event.name}, so you can&apos;t
-        set meeting availability here. Ask the organizer to add you.
-      </PageNotice>
-    );
-  }
-
-  const [days, declared] = await Promise.all([
-    repos.days.listByEvent(event.id),
-    repos.meetingAvailability.listByGuestAndEvent(currentUser, event.id),
-  ]);
-
-  const zoned = (date: Date) =>
-    DateTime.fromJSDate(date).setZone(event.timezone);
-
-  // Days only have to not overlap, so an event may legitimately run 09:00-12:00
-  // and 14:00-18:00 on one date: the date alone is not a unique heading, and
-  // the window disambiguates the ones that repeat.
-  const dateCounts = new Map<string, number>();
-  for (const day of days) {
-    const date = zoned(day.start).toFormat("EEE d LLL");
-    dateCounts.set(date, (dateCounts.get(date) ?? 0) + 1);
-  }
-
-  const slotDays: SlotDay[] = days
-    .map((day) => ({
-      id: day.id,
-      label:
-        (dateCounts.get(zoned(day.start).toFormat("EEE d LLL")) ?? 0) > 1
-          ? `${zoned(day.start).toFormat("EEE d LLL")}, ${zoned(
-              day.start
-            ).toFormat("HH:mm")}–${zoned(day.end).toFormat("HH:mm")}`
-          : zoned(day.start).toFormat("EEE d LLL"),
-      slots: meetingSlotsForDay(day, event.slotIncrementMinutes).map(
-        (slot) => ({
-          start: slot.start.toISOString(),
-          label: `${zoned(slot.start).toFormat("HH:mm")} – ${zoned(
-            slot.end
-          ).toFormat("HH:mm")}`,
-        })
-      ),
-    }))
-    .filter((day) => day.slots.length > 0);
-
-  // Only what the event still offers. A day shortened or deleted after someone
-  // declared leaves rows for slots the form no longer renders, and the save
-  // action refuses any it isn't offering -- so passing them through would leave
-  // the guest with a form that cannot be saved and nothing to untick.
-  const offered = new Set(slotDays.flatMap((d) => d.slots.map((s) => s.start)));
 
   return (
     <>
-      <AvailabilityForm
-        eventId={event.id}
-        eventSlug={eventSlug}
-        eventName={event.name}
-        timezone={event.timezone}
-        days={slotDays}
-        declared={declared
-          .map((d) => d.toISOString())
-          .filter((start) => offered.has(start))}
-      />
-      {/* Where a meeting notification lands: this page is here in every phase,
-          while the schedule only exists once scheduling starts. */}
+      <PageNotice backHref={`/${eventSlug}`} backLabel={event.name}>
+        Your 1-on-1s at {event.name} will sit on its schedule once scheduling
+        starts; until then, this is where one opens.
+      </PageNotice>
       <MeetingsProvider>
         <MeetingModalFromUrl />
       </MeetingsProvider>
