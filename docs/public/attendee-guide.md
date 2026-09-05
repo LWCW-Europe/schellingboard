@@ -317,6 +317,20 @@ you it happened.
 - **Lost both your password and your email?** Ask an organizer to update the
   address on file; codes then go to the new one.
 
+## Install it on your phone
+
+You can add the site to your home screen and open it like an app — its own
+icon, its own window, and no address bar eating a line of the schedule.
+
+- **iPhone or iPad**: open the site in Safari, tap the Share button, then
+  **Add to Home Screen**.
+- **Android**: open it in Chrome and tap **Install app** (or **Add to Home
+  screen**) in the ⋮ menu.
+- **Desktop**: Chrome and Edge show an install icon at the right-hand end of
+  the address bar.
+
+It is the same site either way, signed in as the same name.
+
 ## Notifications
 
 The bell in the header counts what is waiting for you, and the notifications
