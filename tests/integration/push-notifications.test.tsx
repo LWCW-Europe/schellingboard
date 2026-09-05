@@ -42,8 +42,16 @@ async function subscribe(guestId: string, endpoint: string) {
   });
 }
 
-function payloadOf(call: unknown[]): { body: string; url: string } {
-  return JSON.parse(call[1] as string) as { body: string; url: string };
+function payloadOf(call: unknown[]): {
+  title: string;
+  body: string;
+  url: string;
+} {
+  return JSON.parse(call[1] as string) as {
+    title: string;
+    body: string;
+    url: string;
+  };
 }
 
 describe("push notifications", () => {
@@ -75,6 +83,22 @@ describe("push notifications", () => {
     );
     expect(payloadOf(calls[0]).body).toBe("Your session moved");
     expect(payloadOf(calls[0]).url).toBe("/e?viewSession=s1");
+  });
+
+  // The phone already names the app the notification came from, so a title
+  // repeating the site would read "Example Weekend from Example Weekend".
+  // The email's subject line is the short "what happened" the title wants.
+  it("is titled with what happened, not with the site", async () => {
+    const guest = await createGuest({ emailSettings: { rsvpChange: true } });
+    await subscribe(guest.id, "https://push.example/phone");
+
+    await notifyGuest(guest.id, "rsvpChange", MESSAGE, IN_APP);
+
+    const payload = payloadOf(
+      vi.mocked(webpush.sendNotification).mock.calls[0]
+    );
+    expect(payload.title).toBe("Session moved");
+    expect(payload.body).toBe("Your session moved");
   });
 
   // A device is all or nothing: the per-type settings govern email alone,

@@ -63,7 +63,9 @@ export async function notifyGuest(
 
   // Push carries site-relative links a service worker resolves against its
   // own origin, so unlike the mail it works on an instance with no SITE_URL.
-  await pushToGuest(guestId, inApp);
+  // The mail's subject is the one-line "what happened" a notification title
+  // wants.
+  await pushToGuest(guestId, { title: message.subject, ...inApp });
 
   if (!guest.info.emailSettings[setting]) return;
 
