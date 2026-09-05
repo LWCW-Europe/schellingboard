@@ -58,3 +58,8 @@ export function clashLine(clash: MeetingClash): string {
     ? `You are hosting ${clash.title}`
     : `You are attending ${clash.title}`;
 }
+
+/** Every clash in one breath, each distinct line said once. */
+export function clashLines(clashes: MeetingClash[]): string {
+  return [...new Set(clashes.map(clashLine))].join("; ");
+}
