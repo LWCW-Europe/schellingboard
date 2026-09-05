@@ -158,15 +158,71 @@ Exceptions (be very conservative): pure UI/styling-only changes; refactors where
 
 ## Coding Guidelines
 
-**Comments: read [docs/dev/coding-guidelines.md](docs/dev/coding-guidelines.md#comments) before writing any.**
-The short version: comment the WHY, not the WHAT. Default to no comment. Never
-restate what the code plainly says (`// toggle the like` above `toggleLike`), and
-never add doc blocks or `@param`/`@returns` that only repeat the signature.
-Comment a line only when it looks wrong or arbitrary without the reason behind it.
+### Comments
 
-This rule **overrides consistency with the surrounding code** — if the
-neighbouring code is over-commented, do not match its density, write the sparse
-version.
+**Read [docs/dev/coding-guidelines.md](docs/dev/coding-guidelines.md#comments) before
+writing any comment.** The rule is: comment the WHY, not the WHAT. The short version,
+with the limits agents keep overshooting:
+
+**Default to zero.** Most changes should add no comments at all. Adding none is a normal,
+correct outcome — not a gap to fill. Never add a comment merely because a function is long,
+because you touched the file, or to summarise what you just wrote.
+
+**Hard limits** — limits, not targets:
+
+- **At most one comment per ~50 lines of new code**, and **two lines each, maximum**. Over
+  either limit, delete the weakest until you are under it. A longer comment needs a reason
+  a reader could not reconstruct (a subtle race, a spec constraint) and should be rare.
+- **Never narrate the blocks of a function.** `// validation`, `// Add RSVP`,
+  `// Make the actual API call`, `// Revert optimistic update on error` are all
+  forbidden: the code under them says exactly that.
+- **No doc blocks or `@param`/`@returns` that restate the signature.** TypeScript types are
+  the documentation.
+- **No section banners** (`// ---- helpers ----`), commented-out code, or notes about the
+  change you are making (`// now also handles X`, `// new in v2`) — that goes in the commit
+  message.
+- **No comment that duplicates a value or behaviour defined elsewhere** — it goes stale
+  silently.
+
+**The delete test**: cover the comment and read the code under it. If the code tells you
+the same thing, delete the comment. Apply this to every comment before you finish, and
+again before committing.
+
+This rule **overrides consistency with surrounding code**. Parts of this codebase are
+over-commented; do not match their density, write the sparse version. Removing a redundant
+comment from code you are already changing is welcome; a sweeping cleanup of untouched
+files is not.
+
+#### Examples from this codebase
+
+Bad — `app/(site)/context.tsx` narrates itself; every one of these should be deleted:
+
+```ts
+// update RSVPs optimistically      <- the function is named updateRsvp
+// Remove RSVP                      <- above rsvps.filter(...)
+// Add RSVP                         <- above setRsvps([...prevRsvps, newRsvp])
+// Make the actual API call         <- above fetch("/api/toggle-rsvp")
+// Revert optimistic update on error
+// Update existing vote / Add new vote if none exists
+```
+
+Good — each says something the code cannot (`app/api/votes/route.ts`,
+`app/api/add-vote/route.ts`, `app/(site)/guests/avatar.tsx`):
+
+```ts
+// Without an explicit no-store, browsers heuristically cache this response
+// and show stale votes after a reload.
+const NO_STORE = { headers: { "cache-control": "no-store" } };
+
+// Atomic upsert: concurrent requests for the same (guest, proposal)
+// cannot produce duplicate votes.
+await repos.votes.upsert({ proposalId, guestId, choice });
+
+// Matches the box above (h-28 = 112px, ...). Stored avatars are up to 1024px, so
+// declaring the displayed size is what keeps next/image's 2x srcset entry at a
+// thumbnail-sized rendition instead of a 640px one.
+const renderedSize = { lg: 112, md: 64, sm: 48 }[size];
+```
 
 ## Misc
 
