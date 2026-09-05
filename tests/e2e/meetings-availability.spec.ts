@@ -6,10 +6,32 @@ import { selectUser } from "./helpers/user";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
 
 test.describe("attendee meeting availability", () => {
+  // Every event this spec creates is a link in the site header, and a header
+  // long enough to push the name chip out of reach is what breaks the next
+  // spec along -- so they go again afterwards, pass or fail
+  // (meetings-request.spec.ts does the same, for the same reason).
+  const leftBehind: string[] = [];
+
+  test.afterEach(async ({ page }) => {
+    for (const eventName of leftBehind.splice(0)) {
+      await page.goto("/admin/events");
+      await page
+        .getByRole("listitem")
+        .filter({ hasText: eventName })
+        .getByRole("link", { name: "Manage" })
+        .click();
+      await page.getByRole("button", { name: "Delete event" }).click();
+      await page.getByLabel("Type the event name to confirm").fill(eventName);
+      await page.getByRole("button", { name: "Confirm delete" }).click();
+      await expect(page).toHaveURL(/\/admin\/events$/);
+    }
+  });
+
   test("declares availability, clears a slot, and opts back out", async ({
     page,
   }) => {
     const eventName = `E2E Availability ${uniqueSuffix()}`;
+    leftBehind.push(eventName);
 
     // A throwaway event of its own, so switching meetings on here can't change
     // what the other specs see on the seeded ones.
@@ -124,6 +146,7 @@ test.describe("attendee meeting availability", () => {
     page,
   }) => {
     const eventName = `E2E Not Attending ${uniqueSuffix()}`;
+    leftBehind.push(eventName);
 
     await page.goto("/admin");
     await page.getByLabel("Password").fill(ADMIN_PASSWORD);
@@ -156,11 +179,41 @@ test.describe("attendee meeting availability", () => {
     ).toBeHidden();
   });
 
+  // Its own event rather than a seeded one: those now come with 1-on-1s on,
+  // which is the state worth having by default but leaves nowhere to see the
+  // feature switched off.
   test("is not offered while the organizer keeps meetings off", async ({
     page,
   }) => {
-    await loginAndGoto(page, "/Conference-Gamma");
+    const eventName = `E2E No Meetings ${uniqueSuffix()}`;
+    leftBehind.push(eventName);
 
+    await page.goto("/admin");
+    await page.getByLabel("Password").fill(ADMIN_PASSWORD);
+    await page.getByRole("button", { name: "Access Admin" }).click();
+    await page.getByRole("button", { name: "New event" }).click();
+    await page.getByLabel("Name *").fill(eventName);
+    await page.getByLabel("Start *").fill("2026-10-01");
+    await page.getByLabel("End *").fill("2026-10-03");
+    await page.getByRole("button", { name: "Create event" }).click();
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+
+    // Meetings stay off. The schedule only exists in the scheduling phase, and
+    // that is where the toolbar this test reads lives.
+    const scheduling = page.getByRole("group", { name: "Scheduling phase" });
+    await scheduling.getByLabel("Start").fill("2026-01-01T00:00");
+    await scheduling.getByLabel("End").fill("2027-01-01T00:00");
+    await page.getByRole("button", { name: "Save phases" }).click();
+    await expect(page.getByText("Saved!").last()).toBeVisible();
+
+    await loginAndGoto(page, `/${eventName.replace(/ /g, "-")}`);
+
+    // Proposals is the control: the toolbar is there, the 1-on-1s link is not.
+    await expect(page.getByRole("link", { name: "Proposals" })).toBeVisible();
     await expect(page.getByRole("link", { name: "1-on-1s" })).toBeHidden();
   });
 });
