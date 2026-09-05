@@ -350,10 +350,17 @@ export function ProfileModal({
         {/* touch-pan-y hands vertical scrolling to the browser and keeps
             horizontal panning — the back gesture included — for this handler.
             It has to be CSS: React listens for touchmove passively, so
-            preventDefault is not available to decide it per gesture. */}
+            preventDefault is not available to decide it per gesture.
+
+            overflow-clip, not -hidden: a hidden box is still a scroll
+            container, and Firefox credits this one with the profile's whole
+            height even though the panel inside it does the scrolling. Landing
+            on a comment then parked it partway down, where no scrollbar or
+            wheel could bring it back and the profile stayed cut off under its
+            own header (#930). A clipped box cannot hold an offset at all. */}
         <div
           ref={viewport}
-          className="flex min-h-0 flex-1 flex-col overflow-hidden touch-pan-y"
+          className="flex min-h-0 flex-1 flex-col overflow-clip touch-pan-y"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={endTouch}
