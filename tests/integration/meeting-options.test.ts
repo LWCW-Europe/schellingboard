@@ -127,7 +127,9 @@ describe("meeting options on a profile", () => {
     expect(slotAt(option, SLOT_B).state).toBe("unavailable");
   });
 
-  it("marks a slot busy when they are hosting, and names the session", async () => {
+  // What they have on is theirs to tell: the requester learns the hour is
+  // taken, never with what -- not even a session they are hosting in public.
+  it("marks a slot busy without naming what they are doing", async () => {
     const { event, other } = await scenario();
     await createSession(event.id, {
       title: "Their talk",
@@ -140,8 +142,25 @@ describe("meeting options on a profile", () => {
 
     const slot = slotAt(option, SLOT_A);
     expect(slot.state).toBe("busy");
+    expect(slot.clashes[0].kind).toBe("busy");
+    expect(slot.clashes[0].title).toBeNull();
+    expect(JSON.stringify(option)).not.toContain("Their talk");
+  });
+
+  it("still names the viewer's own session to them", async () => {
+    const { event, viewer, other } = await scenario();
+    await createSession(event.id, {
+      title: "My own talk",
+      hostIds: [viewer.id],
+      startTime: new Date(SLOT_A),
+      endTime: new Date(SLOT_B),
+    });
+
+    const [option] = await listMeetingOptions(other.id);
+
+    const slot = slotAt(option, SLOT_A);
     expect(slot.clashes[0].kind).toBe("hosting");
-    expect(slot.clashes[0].title).toBe("Their talk");
+    expect(slot.clashes[0].title).toBe("My own talk");
   });
 
   it("never names a session they only RSVP'd to", async () => {

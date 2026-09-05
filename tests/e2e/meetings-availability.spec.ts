@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { uniqueSuffix } from "./helpers/unique";
 import { loginAndGoto } from "./helpers/auth";
@@ -5,11 +6,46 @@ import { selectUser } from "./helpers/user";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
 
+// Settings holds one collapsed panel per event that offers 1-on-1s, except
+// that a lone one starts open -- so look before clicking its summary.
+async function openAvailability(page: Page, eventName: string) {
+  const form = page.getByRole("form", { name: `1-on-1s at ${eventName}` });
+  const panels = page.getByRole("region", { name: "1-on-1s" });
+  await expect(panels).toBeVisible();
+  if (!(await form.isVisible())) {
+    await panels.getByText(eventName, { exact: true }).click();
+  }
+  await expect(form).toBeVisible();
+  return form;
+}
+
 test.describe("attendee meeting availability", () => {
+  // Every event this spec creates is a link in the site header, and a header
+  // long enough to push the name chip out of reach is what breaks the next
+  // spec along -- so they go again afterwards, pass or fail
+  // (meetings-request.spec.ts does the same, for the same reason).
+  const leftBehind: string[] = [];
+
+  test.afterEach(async ({ page }) => {
+    for (const eventName of leftBehind.splice(0)) {
+      await page.goto("/admin/events");
+      await page
+        .getByRole("listitem")
+        .filter({ hasText: eventName })
+        .getByRole("link", { name: "Manage" })
+        .click();
+      await page.getByRole("button", { name: "Delete event" }).click();
+      await page.getByLabel("Type the event name to confirm").fill(eventName);
+      await page.getByRole("button", { name: "Confirm delete" }).click();
+      await expect(page).toHaveURL(/\/admin\/events$/);
+    }
+  });
+
   test("declares availability, clears a slot, and opts back out", async ({
     page,
   }) => {
     const eventName = `E2E Availability ${uniqueSuffix()}`;
+    leftBehind.push(eventName);
 
     // A throwaway event of its own, so switching meetings on here can't change
     // what the other specs see on the seeded ones.
@@ -51,21 +87,20 @@ test.describe("attendee meeting availability", () => {
     await alice.click();
     await expect(alice).toBeChecked();
 
-    // Now as that attendee, reaching the page the way one would: the event in
-    // the header, then the toolbar's 1-on-1s link.
+    // Now as that attendee, reaching the form the way one would: Settings,
+    // from the name menu.
     await loginAndGoto(page, "/guests");
     await selectUser(page, /Alice Test/i);
-    await page.getByRole("link", { name: eventName }).click();
-    await page.getByRole("link", { name: "1-on-1s" }).click();
-    await expect(page).toHaveURL(/\/meetings$/);
-    const eventSlug = new URL(page.url()).pathname.split("/")[1];
+    await page.getByRole("button", { name: /your name/i }).click();
+    await page.getByRole("menuitem", { name: /settings/i }).click();
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
 
-    const form = page.getByRole("form", { name: "1-on-1 meetings" });
-    await expect(form.getByLabel(/open to 1-on-1 meetings/)).not.toBeChecked();
+    let form = await openAvailability(page, eventName);
+    await expect(form.getByLabel(/open to 1-on-1s/)).not.toBeChecked();
 
     // Switching it on marks every slot available; you clear what you want kept
     // free rather than building the set up from nothing.
-    await form.getByLabel(/open to 1-on-1 meetings/).check();
+    await form.getByLabel(/open to 1-on-1s/).check();
     await expect(form.getByText("09:00 – 09:30")).toBeVisible();
     const firstSlot = form.getByRole("listitem").first().getByRole("checkbox");
     await expect(firstSlot).toBeChecked();
@@ -75,7 +110,8 @@ test.describe("attendee meeting availability", () => {
     await expect(form.getByText("Saved!")).toBeVisible();
 
     await page.reload();
-    await expect(form.getByLabel(/open to 1-on-1 meetings/)).toBeChecked();
+    form = await openAvailability(page, eventName);
+    await expect(form.getByLabel(/open to 1-on-1s/)).toBeChecked();
     await expect(
       form.getByRole("listitem").first().getByRole("checkbox")
     ).not.toBeChecked();
@@ -105,25 +141,28 @@ test.describe("attendee meeting availability", () => {
       page.getByText(/2026-10-01T09:00 – 2026-10-01T10:00/)
     ).toBeVisible();
 
-    await page.goto(`/${eventSlug}/meetings`);
+    await page.goto("/settings");
+    form = await openAvailability(page, eventName);
     await expect(form.getByRole("listitem")).toHaveCount(2);
     await form.getByRole("button", { name: "Save availability" }).click();
     await expect(form.getByText("Saved!")).toBeVisible();
 
     // Opting back out clears the declaration entirely.
-    await form.getByLabel(/open to 1-on-1 meetings/).uncheck();
+    await form.getByLabel(/open to 1-on-1s/).uncheck();
     await form.getByRole("button", { name: "Save availability" }).click();
     await expect(form.getByText("Saved!")).toBeVisible();
     await page.reload();
-    await expect(form.getByLabel(/open to 1-on-1 meetings/)).not.toBeChecked();
+    form = await openAvailability(page, eventName);
+    await expect(form.getByLabel(/open to 1-on-1s/)).not.toBeChecked();
   });
 
-  // The save action refuses a non-attendee, but the page used to render the
-  // whole form first -- so the refusal only arrived after ticking boxes.
-  test("says so up front when you are not on the event's guest list", async ({
+  // Only events the attendee can actually be booked at get a panel; the rest
+  // of Settings is for everyone, so the section is never missing, only empty.
+  test("lists only the events you attend that offer 1-on-1s", async ({
     page,
   }) => {
-    const eventName = `E2E Not Attending ${uniqueSuffix()}`;
+    const eventName = `E2E Listed ${uniqueSuffix()}`;
+    leftBehind.push(eventName);
 
     await page.goto("/admin");
     await page.getByLabel("Password").fill(ADMIN_PASSWORD);
@@ -144,23 +183,44 @@ test.describe("attendee meeting availability", () => {
     await meetings.getByRole("button", { name: "Save meetings" }).click();
     await expect(meetings.getByText("Saved!")).toBeVisible();
 
-    // Nobody is assigned to this event, so Alice is not attending it.
-    const slug = eventName.replace(/ /g, "-");
-    await loginAndGoto(page, `/${slug}/meetings`);
+    // Nobody is assigned yet, so Alice is not attending it.
+    await loginAndGoto(page, "/guests");
     await selectUser(page, /Alice Test/i);
-    await page.goto(`/${slug}/meetings`);
+    await page.goto("/settings");
+    const panels = page.getByRole("region", { name: "1-on-1s" });
+    await expect(panels).toBeVisible();
+    await expect(panels.getByText(eventName, { exact: true })).toBeHidden();
 
-    await expect(page.getByText(/not on the guest list/i)).toBeVisible();
-    await expect(
-      page.getByRole("form", { name: "1-on-1 meetings" })
-    ).toBeHidden();
-  });
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await page.getByRole("link", { name: "Guests" }).click();
+    const alice = page
+      .getByRole("region", { name: "Guests" })
+      .getByRole("row")
+      .filter({ hasText: "Alice Test" })
+      .getByRole("checkbox", { name: /^Assign / });
+    await alice.click();
+    await expect(alice).toBeChecked();
 
-  test("is not offered while the organizer keeps meetings off", async ({
-    page,
-  }) => {
-    await loginAndGoto(page, "/Conference-Gamma");
+    await page.goto("/settings");
+    await expect(panels.getByText(eventName, { exact: true })).toBeVisible();
 
-    await expect(page.getByRole("link", { name: "1-on-1s" })).toBeHidden();
+    // Switching 1-on-1s off takes the panel away again.
+    await page.goto("/admin/events");
+    await page
+      .getByRole("listitem")
+      .filter({ hasText: eventName })
+      .getByRole("link", { name: "Manage" })
+      .click();
+    await meetings.getByLabel("Enable meetings").uncheck();
+    await meetings.getByRole("button", { name: "Save meetings" }).click();
+    await expect(meetings.getByText("Saved!")).toBeVisible();
+
+    await page.goto("/settings");
+    await expect(panels.getByText(eventName, { exact: true })).toBeHidden();
   });
 });

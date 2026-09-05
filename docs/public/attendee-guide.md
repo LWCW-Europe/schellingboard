@@ -182,13 +182,13 @@ Open a session to find the same comment section proposals have — useful for
 
 ## 1-on-1 meetings
 
-When the organizer has switched meetings on for the event, the schedule toolbar
-gains a **1-on-1s** link. That page is where you say when you are free to meet
-people one to one.
+Under **Settings**, every event you're attending where the organizer offers
+1-on-1s gets a panel of its own. That is where you say when you are free to
+meet people one to one.
 
 One switch controls the whole thing:
 
-> **I'm open to 1-on-1 meetings at this event**
+> **I'm open to 1-on-1s at this event**
 
 While it is off, nobody can book you and you don't appear as bookable — it is
 the opt-out, so turning it back off and saving clears what you declared.
@@ -206,16 +206,17 @@ Slots are as long as the event's schedule increment and cover the whole of each
 day. If the organizer later changes that increment, everyone's availability is
 cleared and you are asked to choose again — the slots themselves have moved.
 
-### Ask someone for a meeting
+### Ask someone for a 1-on-1
 
-Anyone who is open to meetings has a **Schedule a meeting** button on their
+Anyone who is open to 1-on-1s has a **Schedule a 1-on-1** button on their
 profile. It shows their slots day by day:
 
 - **Available** — tap to pick it.
-- **Busy** — one of you is hosting a session then, has RSVP'd to one, or has
-  already agreed another 1-on-1. Still bookable: you get a warning naming the
-  clash, and decide for yourselves. You are never told which session someone
-  else RSVP'd to, only that they are busy.
+- **Busy** — one of you already has something at that hour: a session you are
+  hosting or have RSVP'd to, or another 1-on-1. Still bookable: you get a
+  warning and decide for yourselves. Your own clash is named, so you know what
+  you would be missing; theirs never is — you are only told they are already
+  booked.
 - **Unavailable** — a slot they cleared. That is their decision, and the one
   thing you can't book.
 
@@ -230,7 +231,8 @@ Once you are at that number, wait for a reply or cancel one first.
 ### Answering a request
 
 You'll get a notification (and an email, unless you've turned that off) with
-who, when, where and their line of context, and **Accept** or **Decline**.
+who, when, where and their line of context, and **Accept** or **Decline**. It
+opens on the schedule, in its slot, once the event has one.
 Declining takes no explanation — nobody should feel obliged.
 
 If the slot clashes with something of yours, the request says so before you
@@ -240,6 +242,25 @@ person who asked was shown the same clash when they booked it.
 You can't change the time or the place — accept it or decline it, and let them
 ask again if it doesn't suit. Either way they are told. A request nobody answers
 before its slot begins simply lapses; nothing is held against you.
+
+### Your 1-on-1s on the schedule
+
+Once the event reaches its scheduling phase, your 1-on-1s get the **first
+column of the schedule grid**, before the rooms: the other person's name, where
+you agreed to meet, and whether it is confirmed, waiting for your reply, or
+waiting for theirs. Each sits in its own time slot, next to whatever it would
+clash with.
+
+The column is yours alone — nobody else sees it, and it stays put when you
+filter the schedule down to one room. It is there on every day of the event
+once you take part at all — open to 1-on-1s, or with one arranged — so the
+rooms line up from day to day, and it isn't there at all otherwise. It also
+shows the slots you are not offering. Declined and lapsed requests drop off it.
+
+Hovering one shows what the block has no room for — the line of context, the
+meeting point, any clash. Tap one to open it. That is also where either of you can **cancel** a meeting
+you had agreed, or take back a request nobody has answered yet, up until the
+slot begins; the other person is told.
 
 ## Attendee directory & profiles
 
@@ -345,6 +366,8 @@ email off (below) never hides it here.
   email only — you still see it in the app. Every email says what happened and
   links to it — session descriptions and comment text stay on the site rather
   than going out to your email provider.
+- **1-on-1s** — one panel per event you're attending that offers them, with the
+  switch and the slots you're keeping free. See [1-on-1 meetings](#1-on-1-meetings).
 - **Appearance** — System, Light or Dark, also available at the very bottom of
   every page. **System** follows your phone or laptop, so the site turns dark
   in the evening if your device does. The choice is remembered per device, not

@@ -5,7 +5,7 @@ import { Modal } from "@/app/components/modal";
 import { Input } from "@/app/input";
 import { requestMeetingAction } from "@/app/actions/meetings";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/components/buttons";
-import { clashLine } from "@/utils/meeting-clash-text";
+import { clashLines } from "@/utils/meeting-clash-text";
 import type { MeetingDayOption, MeetingOption } from "@/utils/meeting-options";
 
 function SlotList({
@@ -22,7 +22,10 @@ function SlotList({
       {days.map((day) => (
         <section key={day.label} aria-label={day.label} className="mb-4">
           <h3 className="text-sm font-semibold text-fg mb-1">{day.label}</h3>
-          <ul className="flex flex-wrap gap-2">
+          {/* Fixed columns rather than a wrapping row: every label is the
+              same shape, so buttons sized to their own text came out a few
+              pixels apart and no two columns lined up. */}
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {day.slots.map((slot) => {
               const unavailable = slot.state === "unavailable";
               const isSelected = selected === slot.start;
@@ -33,7 +36,7 @@ function SlotList({
                     disabled={unavailable}
                     aria-pressed={isSelected}
                     onClick={() => onSelect(slot.start)}
-                    className={`rounded-md border px-2 py-1 text-sm transition-colors ${
+                    className={`flex h-full min-h-12 w-full flex-col items-center justify-center rounded-md border px-1 py-1 text-sm tabular-nums transition-colors ${
                       isSelected
                         ? "border-brand bg-brand text-on-brand"
                         : unavailable
@@ -43,7 +46,7 @@ function SlotList({
                             : "border-line bg-surface-raised text-fg hover:bg-surface-hover"
                     }`}
                   >
-                    {slot.label}
+                    <span className="whitespace-nowrap">{slot.label}</span>
                     {unavailable && (
                       <span className="block text-xs">Unavailable</span>
                     )}
@@ -125,7 +128,7 @@ function RequestForm({
   return (
     <form onSubmit={handleSend} className="flex flex-col gap-4">
       <h2 className="text-xl font-bold text-fg">
-        Meet {recipientName}
+        1-on-1 with {recipientName}
         <span className="block text-sm font-normal text-fg-muted">
           {option.eventName}
         </span>
@@ -144,8 +147,7 @@ function RequestForm({
       {/* A clash is raised, never enforced: the pair decide for themselves. */}
       {slot?.state === "busy" && (
         <p className="text-sm rounded-md bg-warning-tint p-3 text-fg">
-          {[...new Set(slot.clashes.map(clashLine))].join("; ")} during this
-          slot — book it anyway?
+          {clashLines(slot.clashes)} during this slot — book it anyway?
         </p>
       )}
 
@@ -224,7 +226,7 @@ function RequestForm({
 }
 
 /**
- * "Schedule a meeting" on an attendee's profile — one button per event the
+ * "Schedule a 1-on-1" on an attendee's profile — one button per event the
  * pair share where meetings are on and they are bookable, so nothing shows at
  * all when there is nothing to book.
  */
@@ -253,8 +255,8 @@ export function MeetingPicker({
           className={SECONDARY_BUTTON}
         >
           {options.length === 1
-            ? "Schedule a meeting"
-            : `Schedule a meeting at ${option.eventName}`}
+            ? "Schedule a 1-on-1"
+            : `Schedule a 1-on-1 at ${option.eventName}`}
         </button>
       ))}
       {/* Opened from inside the profile modal, which is z-50: without the

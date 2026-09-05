@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 import { getRepositories } from "@/db/container";
 import type { MeetingStatus } from "@/db/repositories/interfaces";
 import { clashesForInterval, loadGuestSchedules } from "@/utils/guest-clashes";
+import { toMeetingClash } from "@/utils/meeting-clash-text";
 import type { MeetingClash } from "@/utils/meeting-clash-text";
 
 /**
@@ -28,6 +29,17 @@ export type MeetingView = {
   message: string;
   /** Either party's commitments in the slot, so both can weigh the clash. */
   clashes: MeetingClash[];
+};
+
+/**
+ * What /api/meetings answers with: the viewer's own meetings, and the slots
+ * they declared themselves open for. The column draws both, so one request
+ * carries both.
+ */
+export type MyMeetingsResponse = {
+  meetings: MeetingView[];
+  /** ISO slot starts, as `meetingAvailability` stores them. */
+  availability: string[];
 };
 
 /**
@@ -97,12 +109,7 @@ export async function meetingViewsFor(
       ).toFormat("HH:mm")}`,
       meetingPoint: meeting.meetingPoint,
       message: meeting.message,
-      clashes: clashes.map(({ guestId, guestName, kind, title }) => ({
-        guestName,
-        kind,
-        title,
-        isViewer: guestId === viewerId,
-      })),
+      clashes: clashes.map((clash) => toMeetingClash(clash, viewerId)),
     };
   });
 }

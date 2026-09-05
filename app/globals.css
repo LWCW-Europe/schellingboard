@@ -384,6 +384,21 @@ html {
   color: color-mix(in oklab, var(--loc) var(--loc-fg-mix), var(--fg));
 }
 
+/*
+ * A slot the viewer cleared in their own 1-on-1 availability. Hatched rather
+ * than filled: it is the one thing in that column nothing can be booked into,
+ * and it has to read as unavailable at a glance beside real blocks.
+ */
+@utility meetings-col-blocked {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--surface-sunken),
+    var(--surface-sunken) 5px,
+    var(--surface-muted) 5px,
+    var(--surface-muted) 10px
+  );
+}
+
 /* Admin's colour preview — the hue itself, with no text on it. */
 @utility loc-swatch {
   background-color: var(--loc);

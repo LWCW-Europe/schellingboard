@@ -58,12 +58,6 @@ export function SettingsForm({
         </Link>{" "}
         is edited separately.
       </p>
-      {/* Availability is per-event, so it cannot live here -- but this is
-          where people look for it first. */}
-      <p className="text-sm text-fg-subtle">
-        Setting when you&apos;re free for 1-on-1 meetings is per event: open the
-        event and use its <strong>1-on-1s</strong> link.
-      </p>
 
       <form
         onSubmit={(e) => form.handleSubmit(handleSubmit)(e) as never}
@@ -108,11 +102,11 @@ export function SettingsForm({
           </label>
           <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("meetingRequest")} />
-            someone asks me for a 1-on-1 meeting
+            someone asks me for a 1-on-1
           </label>
           <label className="flex items-center gap-2 text-sm text-fg-muted">
             <input type="checkbox" {...form.register("meetingResponse")} />a
-            1-on-1 meeting of mine is accepted, declined or canceled
+            1-on-1 of mine is accepted, declined or canceled
           </label>
         </fieldset>
 

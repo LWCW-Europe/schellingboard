@@ -98,6 +98,14 @@ async function meetingsEvent(page: Page, eventName: string, names: string[]) {
   await meetings.getByRole("button", { name: "Save meetings" }).click();
   await expect(meetings.getByText("Saved!")).toBeVisible();
 
+  // The 1-on-1s column lives on the schedule, which only exists once the
+  // event is in its scheduling phase.
+  const scheduling = page.getByRole("group", { name: "Scheduling phase" });
+  await scheduling.getByLabel("Start").fill("2026-01-01T00:00");
+  await scheduling.getByLabel("End").fill("2027-01-01T00:00");
+  await page.getByRole("button", { name: "Save phases" }).click();
+  await expect(page.getByText("Saved!").last()).toBeVisible();
+
   await page.getByRole("button", { name: "Add day" }).click();
   await page.getByLabel("Start *").last().fill(`${EVENT_START}T09:00`);
   await page.getByLabel("End *").last().fill(`${EVENT_START}T10:00`);
@@ -125,6 +133,19 @@ async function meetingsEvent(page: Page, eventName: string, names: string[]) {
 async function actAs(page: Page, name: RegExp) {
   await selectUser(page, name);
   await expect(page.getByRole("button", { name: /^Your name:/ })).toBeVisible();
+}
+
+// Settings holds one collapsed panel per event that offers 1-on-1s, except
+// that a lone one starts open -- so look before clicking its summary.
+async function openAvailability(page: Page, eventName: string) {
+  const form = page.getByRole("form", { name: `1-on-1s at ${eventName}` });
+  const panels = page.getByRole("region", { name: "1-on-1s" });
+  await expect(panels).toBeVisible();
+  if (!(await form.isVisible())) {
+    await panels.getByText(eventName, { exact: true }).click();
+  }
+  await expect(form).toBeVisible();
+  return form;
 }
 
 // Each directory row is a link whose name is the whole row, so the name alone
@@ -203,15 +224,16 @@ test.describe("1-on-1 meetings", () => {
     await actAs(page, new RegExp(asker));
     await openProfile(page, askee);
     await expect(
-      page.getByRole("button", { name: /schedule a meeting/i })
+      page.getByRole("button", { name: /schedule a 1-on-1/i })
     ).toBeHidden();
 
-    // The askee declares they are open to meetings.
-    await page.goto(`/${slug}/meetings`);
+    // The askee declares they are open to 1-on-1s, under Settings. The goto
+    // first: the profile modal is still up, over the header actAs needs.
+    await page.goto("/settings");
     await actAs(page, new RegExp(askee));
-    await page.goto(`/${slug}/meetings`);
-    const availability = page.getByRole("form", { name: "1-on-1 meetings" });
-    await availability.getByLabel(/open to 1-on-1 meetings/).check();
+    await page.goto("/settings");
+    const availability = await openAvailability(page, eventName);
+    await availability.getByLabel(/open to 1-on-1s/).check();
     await availability
       .getByRole("button", { name: "Save availability" })
       .click();
@@ -221,7 +243,7 @@ test.describe("1-on-1 meetings", () => {
     await actAs(page, new RegExp(asker));
     await openProfile(page, askee);
 
-    const schedule = page.getByRole("button", { name: /schedule a meeting/i });
+    const schedule = page.getByRole("button", { name: /schedule a 1-on-1/i });
     await expect(schedule).toBeVisible();
     await schedule.click();
 
@@ -250,7 +272,7 @@ test.describe("1-on-1 meetings", () => {
       })
       .click();
 
-    const meeting = page.getByRole("dialog", { name: "Meeting details" });
+    const meeting = page.getByRole("dialog", { name: "1-on-1 details" });
     await expect(meeting).toBeVisible();
     await expect(meeting.getByText("Coffee bar")).toBeVisible();
     await meeting.getByRole("button", { name: "Accept" }).click();
@@ -263,8 +285,15 @@ test.describe("1-on-1 meetings", () => {
 
     // Answering refreshes the page behind the modal. Navigating away while
     // that RSC fetch is in flight aborts it, and Next reports the abort on the
-    // console -- which the console guard fails the test for.
+    // console -- which the console guard fails the test for. The goto just
+    // below is exactly that navigation.
     await page.waitForLoadState("networkidle");
+
+    // It is on their schedule too, in a column only they can see.
+    await page.goto(`/${slug}`);
+    const column = page.getByRole("link", { name: new RegExp(asker) });
+    await expect(column).toBeVisible();
+    await expect(page.getByText("Coffee bar").first()).toBeVisible();
 
     // And the asker hears back, then asks for the day's other slot.
     await page.goto("/guests");
@@ -277,7 +306,7 @@ test.describe("1-on-1 meetings", () => {
     ).toBeVisible();
 
     await openProfile(page, askee);
-    await page.getByRole("button", { name: /schedule a meeting/i }).click();
+    await page.getByRole("button", { name: /schedule a 1-on-1/i }).click();
     const sendAgain = page.getByRole("button", { name: "Send request" });
     await expect(sendAgain).toBeVisible();
     await page.getByRole("button", { name: "Coffee bar" }).click();
@@ -312,5 +341,50 @@ test.describe("1-on-1 meetings", () => {
         name: new RegExp(`${askee} declined your 1-on-1`),
       })
     ).toBeVisible();
+
+    // Opening one from the schedule arms "dismiss by going back" (modal-nav.ts,
+    // anchor MnpjIo7Y). A meeting reached from a notification afterwards must
+    // not inherit it, or closing that one would pop back to the list.
+    await page.goto(`/${slug}`);
+    await page.getByRole("link", { name: new RegExp(askee) }).click();
+    await expect(
+      page.getByRole("dialog", { name: "1-on-1 details" })
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await page.goto("/notifications");
+    await page
+      .getByRole("button", {
+        name: new RegExp(`${askee} accepted your 1-on-1`),
+      })
+      .click();
+    const fromNotification = page.getByRole("dialog", {
+      name: "1-on-1 details",
+    });
+    await expect(fromNotification).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("heading", { name: "Notifications" })
+    ).toBeHidden();
+
+    // Either of them can call it off from the block on the schedule.
+    await page.goto(`/${slug}`);
+    await page.getByRole("link", { name: new RegExp(askee) }).click();
+    const confirmed = page.getByRole("dialog", { name: "1-on-1 details" });
+    await confirmed.getByRole("button", { name: "Cancel 1-on-1" }).click();
+    await confirmed.getByRole("button", { name: "Yes, cancel it" }).click();
+    await expect(confirmed.getByText(/was canceled/)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("link", { name: new RegExp(askee) })
+    ).toBeHidden();
+
+    // Two things are still in flight here, and afterEach navigates the moment
+    // this returns: Escape dismisses by rewriting the URL (modal-nav.ts), and
+    // cancelling refreshes the schedule behind the modal. An unfinished
+    // rewrite interrupts the teardown's own goto; an unfinished refresh is a
+    // stream aborted under it, which the console guard reports.
+    await expect(page).not.toHaveURL(/viewMeeting=/);
+    await page.waitForLoadState("networkidle");
   });
 });

@@ -15,7 +15,7 @@ import {
   notifyMeetingOutcome,
   notifyMeetingRequested,
 } from "@/utils/notifications";
-import type { Event } from "@/db/repositories/interfaces";
+import type { Event, MeetingStatus } from "@/db/repositories/interfaces";
 
 export type MeetingActionResult = { ok: true } | { ok: false; error: string };
 
@@ -37,6 +37,8 @@ const respondSchema = z.object({
   meetingId: z.string(),
   response: z.enum(["accept", "decline"]),
 });
+
+const cancelSchema = z.object({ meetingId: z.string() });
 
 const availabilitySchema = z.object({
   eventId: z.string(),
@@ -70,10 +72,10 @@ export async function requestMeetingAction(
 
   const requesterId = await verifiedCurrentUser(await cookies());
   if (!requesterId) {
-    return { ok: false, error: "Sign in to request a meeting" };
+    return { ok: false, error: "Sign in to request a 1-on-1" };
   }
   if (requesterId === input.recipientId) {
-    return { ok: false, error: "You can't book a meeting with yourself" };
+    return { ok: false, error: "You can't book a 1-on-1 with yourself" };
   }
 
   // Presets are a convenience, not a constraint -- but "we'll figure it out"
@@ -87,7 +89,7 @@ export async function requestMeetingAction(
   const event = await repos.events.findById(input.eventId);
   if (!event) return { ok: false, error: "Event not found" };
   if (!event.meetingsEnabled) {
-    return { ok: false, error: "Meetings are not enabled for this event" };
+    return { ok: false, error: "1-on-1s are not enabled for this event" };
   }
 
   const attending = await repos.guests.listEventsByGuests([
@@ -177,12 +179,12 @@ export async function respondToMeetingAction(
 
   const guestId = await verifiedCurrentUser(await cookies());
   if (!guestId) {
-    return { ok: false, error: "Sign in to answer a meeting request" };
+    return { ok: false, error: "Sign in to answer a 1-on-1 request" };
   }
 
   const repos = getRepositories();
   const meeting = await repos.meetings.findById(input.meetingId);
-  if (!meeting) return { ok: false, error: "Meeting not found" };
+  if (!meeting) return { ok: false, error: "1-on-1 not found" };
   // Only the person asked can answer; the requester's own control is cancelling.
   if (meeting.recipientId !== guestId) {
     return { ok: false, error: "Only the person asked can answer this" };
@@ -210,6 +212,72 @@ export async function respondToMeetingAction(
   await notifyMeetingOutcome({
     meeting: answered,
     outcome,
+    actorId: guestId,
+    now,
+  });
+
+  const event = await repos.events.findById(meeting.eventId);
+  if (event) revalidatePath(`/${event.slug}`);
+  return { ok: true };
+}
+
+/**
+ * Calling a meeting off. Either party may cancel one they had agreed; while it
+ * is still pending only the requester may, since the person asked has Decline
+ * — and being told "canceled" where they had declined would misdescribe it.
+ */
+export async function cancelMeetingAction(
+  raw: z.input<typeof cancelSchema>
+): Promise<MeetingActionResult> {
+  await requireSiteAuth();
+
+  const parsed = cancelSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "Invalid request" };
+  const input = parsed.data;
+
+  const guestId = await verifiedCurrentUser(await cookies());
+  if (!guestId) {
+    return { ok: false, error: "Sign in to cancel a 1-on-1" };
+  }
+
+  const repos = getRepositories();
+  const meeting = await repos.meetings.findById(input.meetingId);
+  if (!meeting) return { ok: false, error: "1-on-1 not found" };
+  const isRequester = meeting.requesterId === guestId;
+  if (!isRequester && meeting.recipientId !== guestId) {
+    return { ok: false, error: "This isn't your 1-on-1" };
+  }
+
+  const now = await serverNow();
+  // A meeting that has already begun happened or didn't; calling it off after
+  // the fact would only send its other half a notification about the past.
+  if (meeting.slotStart.getTime() <= now.getTime()) {
+    return { ok: false, error: "That slot has already started" };
+  }
+
+  if (!isRequester && meeting.status === "pending") {
+    return {
+      ok: false,
+      error: "You were the one asked — decline it instead",
+    };
+  }
+
+  const from: MeetingStatus[] = isRequester
+    ? ["pending", "accepted"]
+    : ["accepted"];
+  const canceled = await repos.meetings.updateStatus(
+    meeting.id,
+    "canceled",
+    now,
+    from
+  );
+  if (!canceled) {
+    return { ok: false, error: "There is nothing left to cancel" };
+  }
+
+  await notifyMeetingOutcome({
+    meeting: canceled,
+    outcome: "canceled",
     actorId: guestId,
     now,
   });
@@ -248,7 +316,7 @@ export async function saveMeetingAvailabilityAction(
   const event = await repos.events.findById(input.eventId);
   if (!event) return { ok: false, error: "Event not found" };
   if (!event.meetingsEnabled) {
-    return { ok: false, error: "Meetings are not enabled for this event" };
+    return { ok: false, error: "1-on-1s are not enabled for this event" };
   }
 
   const attending = await repos.guests.listEventsByGuests([guestId]);
