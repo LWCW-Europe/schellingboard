@@ -16,12 +16,59 @@ Next.js scheduling app for managing conference/event sessions with three phases:
 
 ## Changelog
 
-Update `CHANGELOG.md` under `[Unreleased]` for any user-facing change — audience is event organizers, so keep it non-technical. Dev-only changes go under `Internal`. See [CONTRIBUTING.md § Changelog](CONTRIBUTING.md#changelog) for section types and conventions.
+Update `CHANGELOG.md` under `[Unreleased]` for any user-facing change. The audience is
+event organizers and attendees, so keep it non-technical. Dev-only changes go under
+`Internal`. See [CONTRIBUTING.md § Changelog](CONTRIBUTING.md#changelog) for the section
+types.
 
-**Be brief**: a bold lead phrase plus one to three sentences. Say what changed and,
-where it isn't obvious, what was wrong before. Leave out rationale, edge cases,
-future plans and implementation detail — those belong in the docs, an ADR or the
-commit message.
+**Format**: `- **Bold lead phrase** (#123): what changed, and — only where it isn't
+obvious — what was wrong before.`
+
+**Hard limits** — limits, not targets:
+
+- One bullet per change. **Two lines of prose, ~40 words, maximum.** No sub-bullets, no
+  second paragraph. If it doesn't fit, you are explaining too much.
+- Reference the GitHub issue where one exists — `(#123)`, straight after the lead
+  phrase. Take the number from the commit's `fixes #123` / `issue #123` footer, never
+  from the PR number GitHub appends to a squashed subject. No issue, no reference.
+- Several commits that together deliver one feature get **one** bullet, not one each.
+- `Internal` is **not a second commit history** — git already has that, in more detail
+  and better indexed. It lists only internal changes that are particularly valuable,
+  disruptive, or otherwise a highlight of the release: roughly **3 entries per release,
+  one line each (~25 words)**. Everything else — test and flake fixes, refactors,
+  dependency bumps, perf tweaks, lint config, tidy-ups — gets **no entry at all**. If
+  you are unsure whether it qualifies, it doesn't.
+
+**Never in the changelog**: rationale and trade-offs; how it was implemented; file,
+function, library or framework names (outside `Internal`); edge cases; the story of how
+a bug was found; future plans; anything the lead phrase already said. Those belong in
+the commit message, an ADR or `docs/dev/`.
+
+```
+Bad  - **Interrupting a profile slide no longer restarts it**: pressing Next or Prev
+       (or swiping again) while a profile was still sliding used to snap the card back
+       to the start and replay the whole slide, putting off the arrival a little more
+       with every press. Repeated presses in the same direction now let the first slide
+       finish, a press the other way turns the card around from wherever it is, and
+       catching a sliding card with a finger picks it up where it is.
+Good - **Interrupting a profile slide no longer restarts it** (#123): pressing Next or
+       Prev mid-slide used to replay the animation from the start.
+```
+
+## In-app release notes
+
+`app/release-notes.ts` backs the footer's version button. Its first entry is the release
+being prepared, and it holds **3–5 highlights of that release — no more**.
+
+- A highlight is something a reader would want announced. If it wouldn't open a release
+  announcement, it doesn't belong: bug fixes, polish and internal work almost never do.
+- One sentence each, ~25 words, `**bold lead phrase**` first. No issue references.
+- **The list is not append-only.** Add yours when the change lands, knowing what else is
+  coming may displace it; when it is full, replace the weakest highlight rather than
+  adding a sixth.
+- Before finalizing a release, read the entry against `CHANGELOG.md` and check these
+  really are the release's most representative changes for attendees and organizers.
+  See [docs/dev/releasing.md](docs/dev/releasing.md).
 
 ## Documentation
 
