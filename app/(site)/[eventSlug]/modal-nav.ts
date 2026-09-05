@@ -105,12 +105,36 @@ export function viewProposalLinkFromElsewhere(
 export function openingModalFromRedirect() {
   sessionDismissMode = "replace";
   proposalDismissMode = "replace";
+  meetingDismissMode = "replace";
 }
 
-// Meetings have no in-place opener yet, so a meeting modal is always reached
-// by a link from elsewhere — a notification — where "back" would leave the
-// site rather than the modal.
+export function viewMeetingLinkFromOwner(
+  currentSearchParams: URLSearchParams,
+  eventSlug: string,
+  meetingId: string
+) {
+  const params = new URLSearchParams(currentSearchParams);
+  params.set("viewMeeting", meetingId);
+  const href = `/${eventSlug}?${params.toString()}`;
+  return {
+    href,
+    prefetch: false,
+    scroll: false,
+    onClick: (e: MouseEvent<HTMLAnchorElement>) => {
+      if (!isPlainLeftClick(e)) return;
+      e.preventDefault();
+      // As with the session modal: open it now, without an RSC roundtrip.
+      window.history.pushState(null, "", href);
+      meetingDismissMode = "back";
+    },
+  };
+}
+
 export function dismissViewMeeting() {
+  if (meetingDismissMode === "back") {
+    window.history.back();
+    return;
+  }
   const params = new URLSearchParams(window.location.search);
   params.delete("viewMeeting");
   const query = params.toString();
@@ -172,3 +196,6 @@ export function isPlainLeftClick(e: MouseEvent<HTMLAnchorElement>) {
 // opens, where "replace" is intended.
 let sessionDismissMode: "back" | "replace" = "replace";
 let proposalDismissMode: "back" | "replace" = "replace";
+// A meeting modal is opened in place from the schedule column, and by link
+// from a notification — where "replace" is what keeps Back on the site.
+let meetingDismissMode: "back" | "replace" = "replace";

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { requestNow } from "@/utils/dev-clock";
+import { getRepositories } from "@/db/container";
 import { meetingViewsFor } from "@/utils/meeting-views";
 
 export const dynamic = "force-dynamic";
@@ -9,9 +10,10 @@ export const dynamic = "force-dynamic";
 // go on showing a request that has since been answered.
 const NO_STORE = { headers: { "cache-control": "no-store" } };
 
-// The viewer's own 1-on-1s at an event. Always the caller's own: a guest's
-// meetings are as private as their RSVPs, so there is no id parameter to ask
-// about someone else's.
+// The viewer's own 1-on-1s at an event, and the slots they declared
+// themselves open for. Always the caller's own: a guest's meetings are as
+// private as their RSVPs, so there is no id parameter to ask about someone
+// else's.
 export async function GET(request: NextRequest) {
   const eventId = request.nextUrl.searchParams.get("event");
   if (!eventId) {
@@ -30,8 +32,18 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const [meetings, availability] = await Promise.all([
+      meetingViewsFor(guestId, eventId, requestNow(request)),
+      getRepositories().meetingAvailability.listByGuestAndEvent(
+        guestId,
+        eventId
+      ),
+    ]);
     return NextResponse.json(
-      await meetingViewsFor(guestId, eventId, requestNow(request)),
+      {
+        meetings,
+        availability: availability.map((slot) => slot.toISOString()),
+      },
       NO_STORE
     );
   } catch (error) {

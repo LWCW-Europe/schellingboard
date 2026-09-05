@@ -249,6 +249,24 @@ You can't change the time or the place — accept it or decline it, and let them
 ask again if it doesn't suit. Either way they are told. A request nobody answers
 before its slot begins simply lapses; nothing is held against you.
 
+### Your meetings on the schedule
+
+Once the event reaches its scheduling phase, your 1-on-1s get the **first
+column of the schedule grid**, before the rooms: the other person's name, where
+you agreed to meet, and whether it is confirmed, waiting for your reply, or
+waiting for theirs. Each sits in its own time slot, next to whatever it would
+clash with.
+
+The column is yours alone — nobody else sees it, and it stays put when you
+filter the schedule down to one room. It is there on every day of the event
+once you take part at all — open to 1-on-1s, or with one arranged — so the
+rooms line up from day to day, and it isn't there at all otherwise. It also
+shows the slots you are not offering. Declined and lapsed requests drop off it.
+
+Tap one to open it. That is also where either of you can **cancel** a meeting
+you had agreed, or take back a request nobody has answered yet, up until the
+slot begins; the other person is told.
+
 ## Attendee directory & profiles
 
 The directory lists everyone at the event on a single page — photo and the

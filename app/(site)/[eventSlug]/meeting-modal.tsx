@@ -1,20 +1,24 @@
 "use client";
 
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  useTransition,
-} from "react";
+import { useContext, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { respondToMeetingAction } from "@/app/actions/meetings";
-import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/components/buttons";
+import {
+  cancelMeetingAction,
+  respondToMeetingAction,
+  type MeetingActionResult,
+} from "@/app/actions/meetings";
+import {
+  DANGER_BUTTON,
+  PRIMARY_BUTTON,
+  SECONDARY_BUTTON,
+} from "@/app/components/buttons";
+import { EventContext } from "@/app/(site)/context";
 import { clashLine } from "@/utils/meeting-clash-text";
+import { canCancel } from "@/utils/meeting-rules";
 import type { MeetingView } from "@/utils/meeting-views";
-import { EventContext } from "../context";
 import { dismissViewMeeting } from "./modal-nav";
+import { useMyMeetings } from "./use-meetings";
 
 /** What has become of the request, in the words of whoever is reading. */
 function statusLine(meeting: MeetingView): string {
@@ -47,7 +51,10 @@ function statusLine(meeting: MeetingView): string {
  */
 export function MeetingModalFromUrl() {
   const meetingId = useSearchParams()?.get("viewMeeting");
-  return meetingId ? <MeetingModal meetingId={meetingId} /> : null;
+  // Keyed so a half-confirmed cancel does not carry over to the next meeting.
+  return meetingId ? (
+    <MeetingModal key={meetingId} meetingId={meetingId} />
+  ) : null;
 }
 
 /**
@@ -55,13 +62,12 @@ export function MeetingModalFromUrl() {
  * buttons.
  */
 function MeetingModal({ meetingId }: { meetingId: string }) {
-  const { event } = useContext(EventContext);
   const router = useRouter();
-  const [meetings, setMeetings] = useState<MeetingView[] | null>(null);
+  const { now } = useContext(EventContext);
+  const { meetings, reload } = useMyMeetings();
   const [error, setError] = useState<string | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [isAnswering, startAnswer] = useTransition();
-
-  const eventId = event?.id;
 
   // Duplication, anchor: waggHhba
   useEffect(() => {
@@ -76,67 +82,32 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
     };
   }, []);
 
-  // Fetched rather than server-rendered: a meeting is private to its two
-  // guests, so it has no place in the schedule's shared render
-  // (issue #392, section 2.6).
-  const load = useCallback(
-    (signal?: AbortSignal) => {
-      if (!eventId) return;
-      void fetch(`/api/meetings?event=${eventId}`, { signal })
-        .then((res) => (res.ok ? (res.json() as Promise<MeetingView[]>) : []))
-        .then(setMeetings)
-        // Closing the modal aborts the request, and leaving the page has the
-        // browser kill it; either way there is nobody left to tell.
-        .catch(() => undefined);
-    },
-    [eventId]
-  );
-
-  // Keyed on the meeting too: an opener that swaps one id for another without
-  // unmounting would otherwise render the second from the first one's answer.
-  useEffect(() => {
-    const controller = new AbortController();
-    load(controller.signal);
-    return () => controller.abort();
-  }, [load, meetingId]);
-
   const meeting = meetings?.find((m) => m.id === meetingId);
 
-  const answer = (response: "accept" | "decline") => {
+  // Every write ends the same way: re-read the meetings, so the modal and the
+  // schedule column behind it agree, and refresh the page, since an accepted
+  // meeting is a commitment other things now clash with.
+  const act = (run: () => Promise<MeetingActionResult>) => {
     setError(null);
+    setConfirmingCancel(false);
     startAnswer(async () => {
       try {
-        const result = await respondToMeetingAction({ meetingId, response });
+        const result = await run();
         if (!result.ok) {
           setError(result.error);
-          // Refused because the meeting has moved on -- answered in another
-          // tab, or its slot has begun -- so the buttons and the status line
-          // are describing a request that no longer exists.
-          load();
+          // The refusal usually means the meeting has moved on -- answered in
+          // another tab, or its slot has begun -- so re-read it rather than
+          // leaving the buttons describing a request that is no longer there.
+          reload();
           return;
         }
-        setMeetings(
-          (current) =>
-            current?.map((m) =>
-              m.id === meetingId
-                ? {
-                    ...m,
-                    status: response === "accept" ? "accepted" : "declined",
-                  }
-                : m
-            ) ?? null
-        );
-        // An accepted meeting is a commitment, so the schedule behind the
-        // modal now has one more thing in it.
+        reload();
         router.refresh();
       } catch {
         setError("Request failed");
       }
     });
   };
-
-  // The modal has no event to ask about; the same guard session-modal.tsx has.
-  if (!event) return null;
 
   return (
     <div
@@ -215,7 +186,11 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => answer("accept")}
+                  onClick={() =>
+                    act(() =>
+                      respondToMeetingAction({ meetingId, response: "accept" })
+                    )
+                  }
                   disabled={isAnswering}
                   className={PRIMARY_BUTTON}
                 >
@@ -226,7 +201,11 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                     section 1.4). */}
                 <button
                   type="button"
-                  onClick={() => answer("decline")}
+                  onClick={() =>
+                    act(() =>
+                      respondToMeetingAction({ meetingId, response: "decline" })
+                    )
+                  }
                   disabled={isAnswering}
                   className={SECONDARY_BUTTON}
                 >
@@ -234,6 +213,43 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                 </button>
               </div>
             )}
+
+            {canCancel(meeting, now) &&
+              (confirmingCancel ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-fg">
+                    {meeting.otherName} will be told. Cancel it?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        act(() => cancelMeetingAction({ meetingId }))
+                      }
+                      disabled={isAnswering}
+                      className={DANGER_BUTTON}
+                    >
+                      Yes, cancel it
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingCancel(false)}
+                      disabled={isAnswering}
+                      className={SECONDARY_BUTTON}
+                    >
+                      Keep it
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmingCancel(true)}
+                  className={`${SECONDARY_BUTTON} self-start`}
+                >
+                  Cancel meeting
+                </button>
+              ))}
 
             <p className="text-xs text-fg-subtle">
               Nothing is reserved — the meeting point is just where to find each

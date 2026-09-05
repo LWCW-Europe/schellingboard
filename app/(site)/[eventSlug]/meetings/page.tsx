@@ -9,6 +9,7 @@ import {
 } from "@/utils/acting-guest";
 import { meetingSlotsForDay } from "@/utils/meeting-slots";
 import { MeetingModalFromUrl } from "../meeting-modal";
+import { MeetingsProvider } from "../use-meetings";
 import { AvailabilityForm, type SlotDay } from "./availability-form";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,9 @@ export default async function MeetingsPage({
           availability to set — but the ones already arranged are still yours to
           settle.
         </PageNotice>
-        <MeetingModalFromUrl />
+        <MeetingsProvider evenIfMeetingsAreOff>
+          <MeetingModalFromUrl />
+        </MeetingsProvider>
       </>
     );
   }
@@ -127,7 +130,9 @@ export default async function MeetingsPage({
       />
       {/* Where a meeting notification lands: this page is here in every phase,
           while the schedule only exists once scheduling starts. */}
-      <MeetingModalFromUrl />
+      <MeetingsProvider>
+        <MeetingModalFromUrl />
+      </MeetingsProvider>
     </>
   );
 }

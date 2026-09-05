@@ -13,6 +13,7 @@ import { getNowOffsetPx } from "@/utils/slots";
 import { KioskController, useKioskMode } from "./kiosk";
 import { SessionModal } from "./session-modal";
 import { MeetingModalFromUrl } from "./meeting-modal";
+import { MeetingsProvider } from "./use-meetings";
 import type { DayWithSessions } from "../context";
 import { useDragToPan } from "./use-drag-to-pan";
 import { PullToRefresh } from "./pull-to-refresh";
@@ -165,7 +166,9 @@ export function EventDisplay() {
     );
 
   return (
-    <>
+    // The grid's 1-on-1 column and the modal it opens share one copy of the
+    // viewer's meetings, so answering one there updates the other.
+    <MeetingsProvider>
       <div
         data-schedule-frame
         className="fixed inset-x-0 top-16 bottom-0 flex flex-col bg-surface"
@@ -180,7 +183,7 @@ export function EventDisplay() {
       )}
       <MeetingModalFromUrl />
       {kiosk && <KioskController nowIsOnSchedule={nowIsOnSchedule} />}
-    </>
+    </MeetingsProvider>
   );
 }
 
