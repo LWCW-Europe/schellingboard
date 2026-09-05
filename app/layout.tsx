@@ -44,6 +44,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+// No themeColor here: it follows the theme, which can change under the
+// reader's hands, so ThemeProvider renders the tag from its own state.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,

@@ -317,6 +317,20 @@ you it happened.
 - **Lost both your password and your email?** Ask an organizer to update the
   address on file; codes then go to the new one.
 
+## Install it on your phone
+
+You can add the site to your home screen and open it like an app — its own
+icon, its own window, and no address bar eating a line of the schedule.
+
+- **iPhone or iPad**: open the site in Safari, tap the Share button, then
+  **Add to Home Screen**.
+- **Android**: open it in Chrome and tap **Install app** (or **Add to Home
+  screen**) in the ⋮ menu.
+- **Desktop**: Chrome and Edge show an install icon at the right-hand end of
+  the address bar.
+
+It is the same site either way, signed in as the same name.
+
 ## Notifications
 
 The bell in the header counts what is waiting for you, and the notifications
@@ -335,6 +349,25 @@ stays a record of the event.
 
 Notifications appear whether or not the event has email set up, and turning an
 email off (below) never hides it here.
+
+### On your phone, while the site is closed
+
+**Settings** has a **Notifications on this device** section. Turn it on and the
+same notifications reach your phone or laptop when the site isn't open.
+
+- **Each device is separate.** Turning it on on your phone doesn't turn it on on
+  your laptop.
+- **A device gets all of them.** The email settings below only decide what is
+  emailed; to stop the notifications on a device, turn it off there.
+- **On iPhone and iPad it only works once the site is
+  [on your home screen](#install-it-on-your-phone)**, opened from that icon
+  rather than a Safari tab. That is Apple's rule, not ours, and the section
+  says so until you're there.
+- **Deleting the home screen icon turns it off**, and you'll need to turn it on
+  again after adding the site back.
+- **A shared phone or laptop follows whoever turned it on last.** If someone
+  else picks their name on it, your notifications keep arriving there until
+  they open Settings, which turns them off.
 
 ## Settings
 

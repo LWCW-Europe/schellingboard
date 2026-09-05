@@ -11,6 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- **Install it on your phone** (#317): attendees can add the site to their home screen and open it
+  like an app — its own icon, its own window, and no browser address bar taking up a line of the
+  schedule. Nothing changes for anyone who doesn't install it
+- **Notifications on your phone** (#317): Settings has a new **Notifications on this device**
+  section that sends the notifications you already get to the phone or laptop itself, so they
+  arrive while the site is closed. Each device is turned on separately and gets all of them — the
+  email settings only govern email. On iPhone and iPad the site has to be on your home screen
+  first. Needs the site to be served over HTTPS
 - **In-app notifications** (#750): a bell in the header counts what is waiting, and the
   notifications page lists everything newest first. Clicking one marks it read and opens what
   happened. Everything that emails you appears here too, and the email settings now govern email
@@ -63,6 +71,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Lint and format skip Claude Code worktrees**: `make precommit` walked into
   `.claude/worktrees/`, where each worktree's `.next/` produced hundreds of ESLint parsing errors
   and Prettier rewrote another checkout's build artifacts. Both now ignore that directory
+- The dev server accepts a Cloudflare quick tunnel as an origin, so the site can be tried on a
+  phone — the way to test notifications there — without the page arriving script-less
 
 ## [3.5.0] - 2026-08-30
 

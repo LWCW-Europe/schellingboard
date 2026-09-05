@@ -5,6 +5,7 @@ import {
   THEME_COOKIE,
   THEME_COOKIE_MAX_AGE,
   themeClass,
+  themeColors,
   type Theme,
 } from "@/utils/theme";
 
@@ -39,6 +40,17 @@ export function ThemeProvider({
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
+      {/* React hoists these into <head>. The window chrome around an
+          installed app follows them, so they are rendered from the theme
+          state rather than by the layout, which only knows the cookie. */}
+      {themeColors(theme).map(({ media, color }) => (
+        <meta
+          key={media ?? color}
+          name="theme-color"
+          media={media}
+          content={color}
+        />
+      ))}
       {children}
     </ThemeContext.Provider>
   );
