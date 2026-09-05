@@ -95,6 +95,17 @@ describe("meetingColumnRows", () => {
     expect(free.map((r) => r.row)).toEqual([1, 2, 3, 4]);
   });
 
+  // Booking from the grid asks about one slot, so each row carries the instant
+  // it stands for rather than leaving the caller to re-derive it.
+  it("carries the instant each row starts at", () => {
+    expect(rows([meeting(0)], [at(30)]).map((r) => r.start)).toEqual([
+      at(0),
+      at(30),
+      at(60),
+      at(90),
+    ]);
+  });
+
   // A slot the viewer cleared is one nobody may book *them* into -- they can
   // still arrange a 1-on-1 there themselves, so it stays a row of its own
   // rather than merging into an unbookable band.
@@ -102,10 +113,10 @@ describe("meetingColumnRows", () => {
     const declared = rows([], [at(0), at(90)]);
 
     expect(declared).toEqual([
-      { row: 1, span: 1, kind: "free", meetings: [] },
-      { row: 2, span: 1, kind: "unavailable", meetings: [] },
-      { row: 3, span: 1, kind: "unavailable", meetings: [] },
-      { row: 4, span: 1, kind: "free", meetings: [] },
+      { row: 1, span: 1, start: at(0), kind: "free", meetings: [] },
+      { row: 2, span: 1, start: at(30), kind: "unavailable", meetings: [] },
+      { row: 3, span: 1, start: at(60), kind: "unavailable", meetings: [] },
+      { row: 4, span: 1, start: at(90), kind: "free", meetings: [] },
     ]);
   });
 

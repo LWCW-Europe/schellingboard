@@ -37,6 +37,8 @@ export type MeetingColumnRow = {
   /** 1-based, matching CSS grid's own row numbering. */
   row: number;
   span: number;
+  /** The slot's start as an ISO string, which is how a booking names it. */
+  start: string;
   kind: "meetings" | "unavailable" | "free";
   /** Empty unless `kind` is "meetings". */
   meetings: MeetingView[];
@@ -104,11 +106,15 @@ export function meetingColumnRows({
 
   const rows: MeetingColumnRow[] = [];
   for (let row = 1; row <= numSlots; row++) {
+    const start = new Date(
+      day.start.getTime() + (row - 1) * slotMs
+    ).toISOString();
     const atRow = byRow.get(row);
     if (atRow) {
       rows.push({
         row,
         span: Math.max(...atRow.map(spanOf)),
+        start,
         kind: "meetings",
         meetings: atRow,
       });
@@ -116,13 +122,12 @@ export function meetingColumnRows({
     }
     if (covered.has(row)) continue;
 
-    const start = new Date(day.start.getTime() + (row - 1) * slotMs);
-    const free = !declaredAnything || declared.has(start.toISOString());
+    const free = !declaredAnything || declared.has(start);
     if (free) {
-      rows.push({ row, span: 1, kind: "free", meetings: [] });
+      rows.push({ row, span: 1, start, kind: "free", meetings: [] });
       continue;
     }
-    rows.push({ row, span: 1, kind: "unavailable", meetings: [] });
+    rows.push({ row, span: 1, start, kind: "unavailable", meetings: [] });
   }
 
   // Nothing declared and nothing booked is not a column at all; the caller
