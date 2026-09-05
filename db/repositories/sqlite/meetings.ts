@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import * as schema from "../../schema";
 import type {
   Meeting,
+  MeetingCreateInput,
   MeetingRequestOutcome,
   MeetingStatus,
   MeetingsRepository,
@@ -21,6 +22,7 @@ function rowToMeeting(row: typeof schema.meetings.$inferSelect): Meeting {
     slotEnd: new Date(row.slotEnd),
     meetingPoint: row.meetingPoint,
     message: row.message,
+    cancelNote: row.cancelNote,
     status: row.status,
     createdAt: new Date(row.createdAt),
     respondedAt: row.respondedAt ? new Date(row.respondedAt) : undefined,
@@ -30,7 +32,7 @@ function rowToMeeting(row: typeof schema.meetings.$inferSelect): Meeting {
 // Instants are stored as ISO-8601 in UTC and nowhere else formatted, which is
 // what makes ordering by the text column chronological and what lets a
 // meeting's slot be compared with an availability row's.
-function toRow(data: Omit<Meeting, "id" | "status" | "respondedAt">) {
+function toRow(data: MeetingCreateInput) {
   return {
     id: nanoid(),
     eventId: data.eventId,
@@ -40,6 +42,7 @@ function toRow(data: Omit<Meeting, "id" | "status" | "respondedAt">) {
     slotEnd: data.slotEnd.toISOString(),
     meetingPoint: data.meetingPoint,
     message: data.message,
+    cancelNote: "",
     status: "pending" as const,
     createdAt: data.createdAt.toISOString(),
     respondedAt: null,
@@ -102,16 +105,14 @@ export class SqliteMeetingsRepository implements MeetingsRepository {
     return this.countOpen(this.db, requesterId, eventId, now);
   }
 
-  async create(
-    data: Omit<Meeting, "id" | "status" | "respondedAt">
-  ): Promise<Meeting> {
+  async create(data: MeetingCreateInput): Promise<Meeting> {
     const row = toRow(data);
     this.db.insert(schema.meetings).values(row).run();
     return rowToMeeting(row);
   }
 
   async createIfAllowed(
-    data: Omit<Meeting, "id" | "status" | "respondedAt">,
+    data: MeetingCreateInput,
     cap: number,
     now: Date
   ): Promise<MeetingRequestOutcome> {
@@ -130,11 +131,16 @@ export class SqliteMeetingsRepository implements MeetingsRepository {
     id: string,
     status: MeetingStatus,
     respondedAt: Date,
-    from: MeetingStatus[]
+    from: MeetingStatus[],
+    cancelNote?: string
   ): Promise<Meeting | undefined> {
     const result = this.db
       .update(schema.meetings)
-      .set({ status, respondedAt: respondedAt.toISOString() })
+      .set({
+        status,
+        respondedAt: respondedAt.toISOString(),
+        ...(cancelNote === undefined ? {} : { cancelNote }),
+      })
       .where(
         and(eq(schema.meetings.id, id), inArray(schema.meetings.status, from))
       )

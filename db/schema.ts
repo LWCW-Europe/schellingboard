@@ -463,6 +463,10 @@ export const meetings = sqliteTable(
     // organizer renames or removes a suggestion.
     meetingPoint: text("meeting_point").notNull(),
     message: text("message").notNull().default(""),
+    // What the canceller said, if anything. Its own column rather than
+    // reusing `message`: that one is the requester's line of context, and a
+    // meeting can carry both.
+    cancelNote: text("cancel_note").notNull().default(""),
     // Not "expired": a request whose slot has passed is expired by definition,
     // so it is derived on read rather than swept by a job the app has no
     // scheduler to run.

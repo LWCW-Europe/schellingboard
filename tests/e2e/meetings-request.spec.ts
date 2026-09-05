@@ -457,8 +457,16 @@ test.describe("1-on-1 meetings", () => {
     await page.getByRole("link", { name: new RegExp(askee) }).click();
     const confirmed = page.getByRole("dialog", { name: "1-on-1 details" });
     await confirmed.getByRole("button", { name: "Cancel 1-on-1" }).click();
+    await confirmed
+      .getByLabel(/Say why, if you like/)
+      .fill("sorry, my session moved");
     await confirmed.getByRole("button", { name: "Yes, cancel it" }).click();
     await expect(confirmed.getByText(/was canceled/)).toBeVisible();
+    // The note is on the meeting from here on, which is where the other one
+    // reads it too -- their notification is what takes them back to it, since
+    // a canceled 1-on-1 has left the column. That half is covered where it is
+    // cheap: meeting-views carries it, and the action stores it.
+    await expect(confirmed.getByText("sorry, my session moved")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(
       page.getByRole("link", { name: new RegExp(askee) })
