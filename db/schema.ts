@@ -479,12 +479,12 @@ export const meetings = sqliteTable(
     index("meetings_event_recipient_idx").on(t.eventId, t.recipientId),
     // Asking the same person for the same slot twice is a double submit, not a
     // second option: it would leave them two identical requests to answer.
-    uniqueIndex("meetings_no_duplicate_request").on(
-      t.eventId,
-      t.requesterId,
-      t.recipientId,
-      t.slotStart
-    ),
+    // Only while the first is live, though -- once it is declined or cancelled
+    // there is nothing to answer twice, and the pair may well agree on that
+    // slot after all.
+    uniqueIndex("meetings_no_duplicate_request")
+      .on(t.eventId, t.requesterId, t.recipientId, t.slotStart)
+      .where(sql`${t.status} in ('pending', 'accepted')`),
   ]
 );
 

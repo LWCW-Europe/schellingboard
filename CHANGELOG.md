@@ -23,15 +23,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   **1-on-1s** link where attendees turn on "I'm open to 1-on-1 meetings at this event" and clear the
   slots they want kept free. Turning it on marks every slot free, and turning it back off clears the
   lot — nobody can book you while it's off
+- **Ask someone for a 1-on-1**: an attendee's profile now offers **Schedule a meeting** for each
+  event you both attend where they are open to them. Pick one of their free slots, say where to
+  meet and add a line of context. A slot where either of you is hosting or has RSVP'd to something
+  is marked busy, but you can still book it — only slots they cleared are off limits
 
 ### Fixed
 
 - **Event names that a site page would hide are rejected**: an event named "Guests", "Settings" or
   "Notifications" got a web address the site's own page of that name already answers, so the event
   could never be opened. Creating one now fails with the same message other reserved names give
-
-### Fixed
-
 - **Picking your name works however many events a site runs**: the header lists every event, and
   from about seven onwards the links crowded the name chip beside them off the row, leaving no way
   to say who you are. The links now scroll instead of pushing

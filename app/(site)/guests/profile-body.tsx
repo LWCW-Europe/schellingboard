@@ -29,6 +29,7 @@ import {
   SessionLink,
 } from "@/app/(site)/guests/profile-link";
 import { ProfileComments } from "@/app/(site)/guests/profile-comments";
+import { MeetingPicker } from "@/app/(site)/guests/meeting-picker";
 import type { ProfileActivity } from "@/app/(site)/guests/profile-activity";
 
 /**
@@ -106,6 +107,15 @@ export function ProfileBody({
           >
             Edit profile
           </Link>
+        )}
+        {/* `activity` is null for the neighbours a swipe mounts, so this is
+            the profile being read. */}
+        {!isOwnProfile && activity && (
+          <MeetingPicker
+            recipientId={guest.id}
+            recipientName={guest.name}
+            options={activity.meetingOptions}
+          />
         )}
 
         {/* Beside the photo rather than below the prompts: languages are the

@@ -23,7 +23,7 @@ vi.mock("next/headers", () => ({
 import { setupTestDb, resetTestDb } from "../helpers/db";
 import { createEvent, createGuest, createSession } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
-import { detectHostClashes } from "@/app/(site)/[eventSlug]/clash-actions";
+import { detectGuestClashes } from "@/app/(site)/[eventSlug]/clash-actions";
 import { AUTH_COOKIE_NAME, createAuthCookie } from "@/utils/auth";
 import { GUEST_COOKIE_NAME, openGuestValue } from "../helpers/guest-cookie";
 
@@ -32,7 +32,7 @@ const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 // A host's own hosted sessions are public, so a clash may name them; the
 // sessions a host merely RSVP'd to are private, so a clash must only report
 // that they are "busy" at that time — never which session.
-describe("detectHostClashes", () => {
+describe("detectGuestClashes", () => {
   beforeAll(() => setupTestDb());
   // Clash detection reports when a host is privately busy, so it needs both
   // site auth and a guest the caller may act as; these tests are about what
@@ -61,9 +61,9 @@ describe("detectHostClashes", () => {
       endTime: T(11),
     });
 
-    const clashes = await detectHostClashes({
+    const clashes = await detectGuestClashes({
       eventId: event.id,
-      hostIds: [host.id],
+      guestIds: [host.id],
       start: T(10, 30).toISOString(),
       end: T(11, 30).toISOString(),
     });
@@ -86,9 +86,9 @@ describe("detectHostClashes", () => {
       guestId: host.id,
     });
 
-    const clashes = await detectHostClashes({
+    const clashes = await detectGuestClashes({
       eventId: event.id,
-      hostIds: [host.id],
+      guestIds: [host.id],
       start: T(10, 30).toISOString(),
       end: T(11, 30).toISOString(),
     });
@@ -109,9 +109,9 @@ describe("detectHostClashes", () => {
       endTime: T(10),
     });
 
-    const clashes = await detectHostClashes({
+    const clashes = await detectGuestClashes({
       eventId: event.id,
-      hostIds: [host.id],
+      guestIds: [host.id],
       start: T(10).toISOString(),
       end: T(11).toISOString(),
     });
@@ -129,14 +129,117 @@ describe("detectHostClashes", () => {
       endTime: T(11),
     });
 
-    const clashes = await detectHostClashes({
+    const clashes = await detectGuestClashes({
       eventId: event.id,
-      hostIds: [host.id],
+      guestIds: [host.id],
       start: T(10).toISOString(),
       end: T(11).toISOString(),
       excludeSessionId: editing.id,
     });
 
     expect(clashes).toEqual([]);
+  });
+
+  // An accepted 1-on-1 occupies the guest just as an RSVP does, and who it is
+  // with is nobody else's business -- so it reports busy with no title.
+  it("reports an accepted meeting as busy, without naming the other party", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest();
+    const other = await createGuest({ name: "Their counterpart" });
+    const meeting = await getRepositories().meetings.create({
+      eventId: event.id,
+      requesterId: other.id,
+      recipientId: guest.id,
+      slotStart: T(10),
+      slotEnd: T(10, 30),
+      meetingPoint: "Coffee bar",
+      message: "",
+      createdAt: T(9),
+    });
+    await getRepositories().meetings.updateStatus(
+      meeting.id,
+      "accepted",
+      T(9, 30),
+      ["pending"]
+    );
+
+    const clashes = await detectGuestClashes({
+      eventId: event.id,
+      guestIds: [guest.id],
+      start: T(10).toISOString(),
+      end: T(10, 30).toISOString(),
+    });
+
+    expect(clashes).toHaveLength(1);
+    expect(clashes[0].kind).toBe("busy");
+    expect(clashes[0].title).toBeNull();
+    expect(JSON.stringify(clashes)).not.toContain("Their counterpart");
+  });
+
+  // Only an agreed meeting is a commitment; the other three states are not
+  // something the guest has to be anywhere for.
+  for (const status of ["pending", "declined", "canceled"] as const) {
+    it(`ignores a meeting that is only ${status}`, async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const guest = await createGuest();
+      const other = await createGuest();
+      const repos = getRepositories();
+      const meeting = await repos.meetings.create({
+        eventId: event.id,
+        requesterId: other.id,
+        recipientId: guest.id,
+        slotStart: T(10),
+        slotEnd: T(10, 30),
+        meetingPoint: "Coffee bar",
+        message: "",
+        createdAt: T(9),
+      });
+      if (status !== "pending") {
+        await repos.meetings.updateStatus(meeting.id, status, T(9, 30), [
+          "pending",
+        ]);
+      }
+
+      const clashes = await detectGuestClashes({
+        eventId: event.id,
+        guestIds: [guest.id],
+        start: T(10).toISOString(),
+        end: T(10, 30).toISOString(),
+      });
+
+      expect(clashes).toEqual([]);
+    });
+  }
+
+  it("counts a meeting the guest requested, not only ones they received", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest();
+    const other = await createGuest();
+    const meeting = await getRepositories().meetings.create({
+      eventId: event.id,
+      requesterId: guest.id,
+      recipientId: other.id,
+      slotStart: T(10),
+      slotEnd: T(10, 30),
+      meetingPoint: "Coffee bar",
+      message: "",
+      createdAt: T(9),
+    });
+    await getRepositories().meetings.updateStatus(
+      meeting.id,
+      "accepted",
+      T(9, 30),
+      ["pending"]
+    );
+
+    const clashes = await detectGuestClashes({
+      eventId: event.id,
+      guestIds: [guest.id],
+      start: T(10, 15).toISOString(),
+      end: T(10, 45).toISOString(),
+    });
+
+    expect(clashes).toHaveLength(1);
+    expect(clashes[0].kind).toBe("busy");
   });
 });

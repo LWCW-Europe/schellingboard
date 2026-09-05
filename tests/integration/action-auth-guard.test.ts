@@ -83,12 +83,12 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       await import("@/app/(site)/guests/profile-activity");
     return listProfileActivity("some-guest");
   },
-  "(site)/[eventSlug]/clash-actions.ts:detectHostClashes": async () => {
-    const { detectHostClashes } =
+  "(site)/[eventSlug]/clash-actions.ts:detectGuestClashes": async () => {
+    const { detectGuestClashes } =
       await import("@/app/(site)/[eventSlug]/clash-actions");
-    return detectHostClashes({
+    return detectGuestClashes({
       eventId: "e",
-      hostIds: ["g"],
+      guestIds: ["g"],
       start: new Date().toISOString(),
       end: new Date().toISOString(),
     });
@@ -146,6 +146,15 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
     const { deleteComment } =
       await import("@/app/(site)/[eventSlug]/comment-actions");
     return deleteComment({ commentId: "c", eventSlug: "s" });
+  },
+  "actions/meetings.ts:requestMeetingAction": async () => {
+    const { requestMeetingAction } = await import("@/app/actions/meetings");
+    return requestMeetingAction({
+      eventId: "e",
+      recipientId: "g",
+      slotStart: new Date().toISOString(),
+      meetingPoint: "Coffee bar",
+    });
   },
   "actions/meetings.ts:saveMeetingAvailabilityAction": async () => {
     const { saveMeetingAvailabilityAction } =

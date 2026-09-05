@@ -45,7 +45,7 @@ import {
 } from "../helpers/guest-cookie";
 import { AUTH_COOKIE_NAME, createAuthCookie } from "@/utils/auth";
 import { listProfileActivity } from "@/app/(site)/guests/profile-activity";
-import { detectHostClashes } from "@/app/(site)/[eventSlug]/clash-actions";
+import { detectGuestClashes } from "@/app/(site)/[eventSlug]/clash-actions";
 import { revalidateEvent } from "@/app/(site)/[eventSlug]/session-actions";
 import { createProposal } from "@/app/(site)/[eventSlug]/proposals/actions";
 
@@ -108,13 +108,13 @@ describe("server actions require site auth", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/some-event", "layout");
   });
 
-  it("detectHostClashes refuses a caller with no site-auth cookie", async () => {
+  it("detectGuestClashes refuses a caller with no site-auth cookie", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
     await expect(
-      detectHostClashes({
+      detectGuestClashes({
         eventId: event.id,
-        hostIds: [host.id],
+        guestIds: [host.id],
         start: T(10).toISOString(),
         end: T(11).toISOString(),
       })
@@ -124,22 +124,22 @@ describe("server actions require site auth", () => {
   // The `busy` clash kind exists to keep a host's private RSVPs off the
   // client, so site auth alone is too weak a gate: it is shared with every
   // attendee. The caller must be acting as a guest in their own right.
-  it("detectHostClashes refuses a site-authenticated caller with no name selected", async () => {
+  it("detectGuestClashes refuses a site-authenticated caller with no name selected", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
     await siteAuthenticate();
 
     await expect(
-      detectHostClashes({
+      detectGuestClashes({
         eventId: event.id,
-        hostIds: [host.id],
+        guestIds: [host.id],
         start: T(10).toISOString(),
         end: T(11).toISOString(),
       })
     ).rejects.toThrow();
   });
 
-  it("detectHostClashes refuses a caller claiming a protected guest without a verified session", async () => {
+  it("detectGuestClashes refuses a caller claiming a protected guest without a verified session", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
     const caller = await createGuest({ eventId: event.id });
@@ -148,16 +148,16 @@ describe("server actions require site auth", () => {
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(caller.id));
 
     await expect(
-      detectHostClashes({
+      detectGuestClashes({
         eventId: event.id,
-        hostIds: [host.id],
+        guestIds: [host.id],
         start: T(10).toISOString(),
         end: T(11).toISOString(),
       })
     ).rejects.toThrow();
   });
 
-  it("detectHostClashes answers a verified guest", async () => {
+  it("detectGuestClashes answers a verified guest", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });
     const caller = await createGuest({ eventId: event.id });
@@ -170,9 +170,9 @@ describe("server actions require site auth", () => {
     await siteAuthenticate();
     cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(caller.id));
 
-    const clashes = await detectHostClashes({
+    const clashes = await detectGuestClashes({
       eventId: event.id,
-      hostIds: [host.id],
+      guestIds: [host.id],
       start: T(10).toISOString(),
       end: T(11).toISOString(),
     });
