@@ -4,90 +4,52 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-> **Developers**: Remember to update [`app/release-notes.ts`](app/release-notes.ts)
-> — a sentence or two for the changes an organizer or attendee cares about.
+> **Developers**: keep entries short — see [AGENTS.md § Changelog](AGENTS.md#changelog).
+> If the change is a highlight of the coming release, it also belongs in
+> [`app/release-notes.ts`](app/release-notes.ts), which holds 3-5 of them.
 
 ## [Unreleased]
 
 ### Added
 
 - **In-app notifications** (#750): a bell in the header counts what is waiting, and the
-  notifications page lists everything newest first. Clicking one marks it read and opens what
-  happened. Everything that emails you appears here too, and the email settings now govern email
-  alone — so an event with no email set up still reaches its attendees
-- **Meetings, set up by the organizer**: an event's Config tab has a new Meetings section — switch
-  1-on-1 meetings on, list the places you suggest people meet, and cap how many unanswered requests
-  one attendee may have outstanding at a time. Meeting slots follow the event's schedule increment,
-  so changing that asks attendees to choose their availability again
-- **Say when you're free to meet**: with meetings switched on, the schedule toolbar gains a
-  **1-on-1s** link where attendees turn on "I'm open to 1-on-1 meetings at this event" and clear the
-  slots they want kept free. Turning it on marks every slot free, and turning it back off clears the
-  lot — nobody can book you while it's off
-- **Ask an attendee for a 1-on-1, and answer the ones you get**: their profile gains a **Schedule a
-  meeting** button — pick one of the slots they're open for, say where to meet and add a line of
-  context. A slot where either of you is hosting or has RSVP'd is still bookable, with a warning;
-  only the slots they cleared are off limits. The person asked gets a notification with **Accept**
-  and **Decline**, and hears about their own clashes before they answer; the asker is told either
-  way. A request nobody answers before its slot begins simply lapses
+  notifications page lists everything newest first. Anything that emails you appears here
+  too, so an event with no email set up still reaches its attendees
+- **1-on-1 meetings, set up by the organizer** (#392): an event's Config tab gains a
+  Meetings section — switch 1-on-1s on, list the places you suggest people meet, and cap
+  how many unanswered requests one attendee may have out at a time
+- **Asking an attendee for a 1-on-1** (#392): attendees mark the slots they are free for
+  on the new 1-on-1s page, ask someone from their profile, and accept or decline what they
+  are asked. Both sides are told the outcome; an unanswered request lapses at its slot
 
 ### Changed
 
-- **Session save confirmations clear themselves**: the message confirming a session was added,
-  updated or deleted used to stay on screen until you closed it. It now goes away on its own
-  after ten seconds, though the close button still works
+- **Session save confirmations clear themselves** (#859): the message confirming a session
+  was added, updated or deleted now goes after ten seconds instead of waiting to be closed
 
 ### Fixed
 
-- **Event names that a site page would hide are rejected**: an event named "Guests", "Settings" or
-  "Notifications" got a web address the site's own page of that name already answers, so the event
-  could never be opened. Creating one now fails with the same message other reserved names give
-- **Picking your name works however many events a site runs**: the header lists every event, and
-  from about seven onwards the links crowded the name chip beside them off the row, leaving no way
-  to say who you are. The links now scroll instead of pushing
-- **Picking your name is less fiddly** (#777): the search box is focused as soon as the "My name is"
-  box opens, so you can type straight away, and erasing what you typed no longer closes the box on
-  you
-- **The password prompt now names the account beside the box** (#777): choosing a protected name
-  showed a "Logging in as" field only to password managers, leaving a blank password box with
-  nothing but a sentence above it to say whose password it wanted
-- **Account settings now says why enabling protection failed** (#716): on a site with no email set
-  up, "Enable protection" looked like it did nothing at all — the server's explanation was thrown
-  away instead of shown
-- **Opening a comment from an email no longer strands the page it lands on** (#930): a link to a
-  comment on a long profile could leave the profile scrolled partway under its own header, with no
-  way to scroll back up to the person's name and photo
+- **Event names a site page would hide are rejected**: an event named "Guests", "Settings"
+  or "Notifications" got a web address the site's own page of that name answers, so the
+  event could never be opened
+- **Picking your name works however many events a site runs**: from about seven events on,
+  the header's event links crowded the name chip off the row, leaving no way to say who you
+  are. The links now scroll instead of pushing
+- **Picking your name is less fiddly** (#777): the search box is focused as soon as the
+  "My name is" box opens, and erasing what you typed no longer closes the box
+- **The password prompt names the account it is asking about** (#777): choosing a protected
+  name left a blank password box with nothing to say whose password it wanted
+- **Account settings says why enabling protection failed** (#716): on a site with no email
+  set up, "Enable protection" looked like it did nothing at all
+- **A comment opened from an email no longer strands the page it lands on** (#930): a link
+  to a comment on a long profile could leave the profile scrolled under its own header
 
 ### Internal
 
-- **`make arch` checks the module graph** for circular dependencies and layer violations, using
-  dependency-cruiser. It runs as part of `make precommit`; `make arch-graph` renders the dependency
-  graph. See `docs/dev/architecture-rules.md`
-- The login rate limiter's map key no longer embeds a raw NUL byte, which made git and jj
-  treat `utils/login-rate-limit.ts` as a binary file: its diffs read "Binary files differ" and
-  `grep` skipped it
-- **Lint now bans ambient clock reads** in `app/`, `db/`, `emails/`, `model/` and `utils/`: "now"
-  has to come from the request boundary so the dev fake clock can't be silently bypassed. Deliberate
-  exceptions — the clock itself, auth expiry and throttles — are marked line by line with their
-  reason, so the rest of those files stays checked. See ADR 0004
-- Session times that the type allows to be absent now render a placeholder rather than falling back
-  to the current time or the epoch, both of which printed a plausible-looking wrong time
-- **The dev fake clock reaches proposal timestamps and the past-booking check**: a proposal created
-  under a time offset was stamped with real time, so it came out older than the comments on it — and
-  "a session must start in the future" was judged against real time too, letting a time-travelled
-  organizer book into their own past, or refusing a slot the interface still offered
-- The 1-on-1 E2E journey no longer flakes on the console guard. Answering a request refreshes the
-  page behind the modal, and the hard navigation the test made next aborted that fetch — Next then
-  logged the abort and forced a full load back to the meetings page, cancelling the navigation. The
-  test leaves by the header's Attendees link instead, which supersedes the refresh rather than
-  aborting it. The `waitForLoadState("networkidle")` it relied on was never waiting:
-  Playwright arms that event once per document load, and the modal is reached by an in-app
-  navigation
-- The first room photo on the schedule grid is loaded eagerly. It sits above the fold and is usually
-  the page's largest element, so Next warned that the Largest Contentful Paint image was being
-  lazy-loaded
-- **Lint and format skip Claude Code worktrees**: `make precommit` walked into
-  `.claude/worktrees/`, where each worktree's `.next/` produced hundreds of ESLint parsing errors
-  and Prettier rewrote another checkout's build artifacts. Both now ignore that directory
+- **`make arch` checks the module graph** (#965) for circular dependencies and layer
+  violations, and runs as part of `make precommit`. See `docs/dev/architecture-rules.md`
+- **Lint bans ambient clock reads** in `app/`, `db/`, `emails/`, `model/` and `utils/`:
+  "now" comes from the request boundary, so the dev fake clock cannot be bypassed. See ADR 0004
 
 ## [3.5.0] - 2026-08-30
 

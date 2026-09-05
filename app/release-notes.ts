@@ -1,7 +1,7 @@
-// What the footer's version button shows: a few plain sentences per recent
+// What the footer's version button shows: the 3-5 highlights of each recent
 // release, for an organizer who wants to know what changed without leaving the
-// app. Written by hand rather than derived from CHANGELOG.md, which is
-// exhaustive and far too long to read in a modal.
+// app. Written by hand rather than derived from CHANGELOG.md, which lists every
+// change and is far too long to read in a modal.
 //
 // Newest first, and one entry per release: the dates are what tells a reader
 // how old the deployment in front of them is, so a release left out makes the
@@ -12,6 +12,11 @@
 // date, written as the changes land. A deployment built from `main` is running
 // exactly those changes, so it is shown like any other entry; cutting the
 // release turns it into one by giving it its version and date.
+//
+// Highlights only, and at most five: what would open a release announcement,
+// not everything that shipped. The list is not append-only — when it is full,
+// replace the weakest highlight rather than adding a sixth, and re-read it
+// against CHANGELOG.md before finalizing the release. See AGENTS.md.
 
 export type ReleaseNote = {
   /**
@@ -41,11 +46,8 @@ export const releaseNotes: ReleaseNote[] = [
     version: "Unreleased",
     highlights: [
       "**Notifications in the app**: a bell in the header counts what is waiting, and clicking one takes you to it. Everything that emails you appears here too, even where email is not set up.",
-      "**Meetings**: an event's Config tab can switch on 1-on-1s between attendees — the places you suggest people meet, and a cap on how many unanswered requests one person may have out.",
-      "**Picking your name** works however many events a site runs: past about seven, the header's event links crowded the name chip off the row and there was no way to say who you are.",
-      "**Session save confirmations clear themselves** after ten seconds instead of waiting to be closed.",
-      "**Say when you're free**: with meetings on, attendees get a 1-on-1s page to mark which slots they're open for. Turning the switch off clears it and keeps them unbookable.",
-      "**Ask for a 1-on-1**: attendees book one of the slots someone is open for from their profile, and say where to meet. The person asked accepts or declines, warned about anything it clashes with.",
+      "**1-on-1 meetings**: organizers switch them on for an event and suggest where to meet; attendees mark when they are free, ask someone from their profile, and accept or decline.",
+      "**Picking your name works however many events a site runs**: past about seven, the header's event links crowded the name chip off the row and left no way to say who you are.",
     ],
   },
   {
