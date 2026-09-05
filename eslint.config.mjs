@@ -23,6 +23,7 @@ export default tseslint.config(
     // leave `make lint` crashing until the report is deleted.
     ignores: [
       "tailwind.config.ts",
+      ".dependency-cruiser.cjs",
       ".next/**",
       "**/*.mjs",
       ".jj/**",

@@ -1,3 +1,5 @@
+import type { ContactType } from "@/model/guest";
+
 // ── Shared enums ─────────────────────────────────────────────────────────────
 
 export enum VoteChoice {
@@ -177,18 +179,6 @@ type GuestPrivateInfo = {
 
 /** An answered profile prompt, e.g. { prompt: "Ask me about", answer: "…" }. */
 export type ProfilePrompt = { prompt: string; answer: string };
-
-export const CONTACT_TYPES = [
-  "email",
-  "phone",
-  "whatsapp",
-  "signal",
-  "telegram",
-  "discord",
-  "website",
-  "other",
-] as const;
-export type ContactType = (typeof CONTACT_TYPES)[number];
 
 /**
  * A public contact entry. Deliberately separate from the private system email

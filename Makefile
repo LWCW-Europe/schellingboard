@@ -1,4 +1,4 @@
-.PHONY: help dev mailpit build start lint typecheck lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed test-e2e-docker format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed dump-release-db install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate www
+.PHONY: help dev mailpit build start lint typecheck arch arch-graph lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed test-e2e-docker format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed dump-release-db install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate www
 
 SHELL := /usr/bin/env bash
 
@@ -24,6 +24,8 @@ help:
 	@printf "  %-28s %s\n" "make lint"               "Run linter"
 	@printf "  %-28s %s\n" "make lint-watch"         "Run linter in watch mode"
 	@printf "  %-28s %s\n" "make typecheck"          "Run TypeScript type checking"
+	@printf "  %-28s %s\n" "make arch"               "Check architecture rules (cycles, layer boundaries)"
+	@printf "  %-28s %s\n" "make arch-graph"         "Render the dependency graph to arch-graph.svg"
 	@printf "  %-28s %s\n" "make format"             "Format code"
 	@printf "  %-28s %s\n" "make format-check"       "Check code formatting"
 	@printf "\nDatabase:\n"
@@ -77,6 +79,17 @@ typecheck: install
 	bun x next typegen
 	bun x tsc --noEmit
 
+DEPCRUISE := bun x depcruise app db model utils emails tests scripts instrumentation.ts --config .dependency-cruiser.cjs
+
+# Module-graph rules (cycles, layer boundaries) — the constraints eslint can't
+# see, since it reads one file at a time. See docs/dev/architecture-rules.md.
+arch: install
+	$(DEPCRUISE) --output-type err-long
+
+# Writes a dependency graph to arch-graph.svg. Needs graphviz (`dot`).
+arch-graph: install
+	$(DEPCRUISE) --output-type dot | dot -T svg > arch-graph.svg
+
 lint-watch: install
 	watchexec -c -w app -w db -w utils -w tests "bun x eslint --fix ."
 
@@ -114,10 +127,11 @@ format: install
 format-check: install
 	bun x prettier --check .
 
-precommit: format lint typecheck test-coverage test-e2e
+precommit: format lint arch typecheck test-coverage test-e2e
 
 clean:
 	rm -rf .next
+	rm -f arch-graph.svg
 	rm -f next-env.d.ts
 	rm -f data.db data.test.db
 	rm -rf playwright-report test-results playwright-results.json .e2e-docker

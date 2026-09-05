@@ -53,6 +53,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Internal
 
+- **`make arch` checks the module graph** for circular dependencies and layer violations, using
+  dependency-cruiser. It runs as part of `make precommit`; `make arch-graph` renders the dependency
+  graph. See `docs/dev/architecture-rules.md`
 - **The dev fake clock reaches proposal timestamps and the past-booking check**: a proposal created
   under a time offset was stamped with real time, so it came out older than the comments on it — and
   "a session must start in the future" was judged against real time too, letting a time-travelled
