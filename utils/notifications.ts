@@ -7,6 +7,7 @@ import type {
   Session,
 } from "@/db/repositories/interfaces";
 import { sendMail, type EmailMessage } from "@/utils/mailer";
+import { pushToGuest } from "@/utils/push";
 import { siteUrl } from "@/utils/site-url";
 import { sessionChangedEmail } from "@/emails/session-changed";
 import { sessionDeletedEmail } from "@/emails/session-deleted";
@@ -30,10 +31,11 @@ import { getStartTimePlusBreak } from "@/utils/utils";
 // timestamp (ADR 0004).
 export type InAppNotice = { text: string; url: string; at: Date };
 
-// Tell the guest that something happened, on both channels: an in-app
-// notification always, and `message` by email iff they have opted in for
-// `setting` (see EmailSettings). Opting out of the mail is a request not to be
-// interrupted outside the app, not a request to be uninformed inside it.
+// Tell the guest that something happened, on every channel: an in-app
+// notification always, a push to each device they have turned notifications
+// on, and `message` by email iff they have opted in for `setting` (see
+// EmailSettings). Only the mail answers to the per-type setting — a device is
+// all or nothing, see ADR 0006.
 //
 // The in-app row is written first, so a mail that fails to send doesn't take
 // the notification with it.
@@ -59,11 +61,16 @@ export async function notifyGuest(
     createdAt: inApp.at,
   });
 
+  // Push carries site-relative links a service worker resolves against its
+  // own origin, so unlike the mail it works on an instance with no SITE_URL.
+  await pushToGuest(guestId, inApp);
+
   if (!guest.info.emailSettings[setting]) return;
+
   // Without a base URL an email can only carry dead links. SITE_URL is
   // required wherever SMTP is configured, so this drops nothing that could
-  // have been delivered — the in-app notification above is what such an
-  // instance runs on.
+  // have been delivered — the in-app notification and the push above are what
+  // such an instance runs on.
   if (siteUrl() === null) return;
   await sendMail({ to: guest.info.email, ...message });
 }

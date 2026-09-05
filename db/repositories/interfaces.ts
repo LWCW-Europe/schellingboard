@@ -957,6 +957,43 @@ export interface NotificationsRepository {
   markAllRead(guestId: string, readAt: Date): Promise<void>;
 }
 
+// ── Push notifications ────────────────────────────────────────────────────────
+
+/**
+ * One browser that has agreed to be notified. `endpoint` is the push service's
+ * address for that browser and identifies it: a device is not a guest, and a
+ * shared laptop moves to whoever turned notifications on last.
+ */
+export type PushSubscription = {
+  id: string;
+  guestId: string;
+  endpoint: string;
+  /** The browser's public key, for encrypting the payload to it. */
+  p256dh: string;
+  auth: string;
+  createdAt: Date;
+};
+
+/** The instance's application server keys, as web-push generates them. */
+export type VapidKeys = { publicKey: string; privateKey: string };
+
+export interface PushRepository {
+  listSubscriptions(guestId: string): Promise<PushSubscription[]>;
+  findSubscription(endpoint: string): Promise<PushSubscription | undefined>;
+  /**
+   * Upserts by endpoint, so re-subscribing a device never duplicates it: the
+   * row moves to `guestId` with the new keys and keeps its original createdAt.
+   */
+  saveSubscription(data: Omit<PushSubscription, "id">): Promise<void>;
+  deleteSubscription(endpoint: string): Promise<void>;
+  /**
+   * The stored VAPID pair, calling `generate` and storing the result the first
+   * time. Never regenerates: the public key is baked into every subscription
+   * already handed out, and nothing tells a browser to ask for a new one.
+   */
+  vapidKeys(generate: () => VapidKeys): Promise<VapidKeys>;
+}
+
 // ── Images ─────────────────────────────────────────────────────────────────────
 
 export interface ImageResourceRepository<Id> {

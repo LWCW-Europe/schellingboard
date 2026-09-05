@@ -1,4 +1,6 @@
 import { expect, test } from "./helpers/fixtures";
+import { login } from "./helpers/auth";
+import { selectUser } from "./helpers/user";
 
 // Installing happens on the login page, before anyone has a cookie: Safari
 // fetches the manifest and its icons unauthenticated, so a gate in front of
@@ -28,4 +30,23 @@ test("the app is installable before logging in", async ({ page, request }) => {
     const iconResponse = await request.get(icon.src);
     expect(iconResponse.status(), `${icon.src} must be served`).toBe(200);
   }
+});
+
+// The section is driven entirely by feature detection in an effect, so a
+// server render proves nothing about it: this is the only tier where the
+// browser answers for itself. Firefox supports push, so a fresh profile with
+// no subscription must land on the invitation to turn one on.
+test("settings offers notifications on this device", async ({ page }) => {
+  await login(page);
+  await page.goto("/settings");
+  await selectUser(page, /Anna Kowalska/i);
+  await page.goto("/settings");
+
+  const section = page.getByRole("region", {
+    name: "Notifications on this device",
+  });
+  await expect(section).toBeVisible();
+  await expect(
+    section.getByRole("button", { name: "Turn on for this device" })
+  ).toBeVisible();
 });

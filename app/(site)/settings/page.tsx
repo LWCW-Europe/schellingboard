@@ -5,8 +5,10 @@ import {
   unverifiedUserMessage,
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
+import { vapidPublicKey } from "@/utils/push";
 import { SettingsForm } from "./settings-form";
 import { AccountSecurity } from "./account-security";
+import { PushNotifications } from "./push-notifications";
 import { AppearanceSettings } from "./appearance";
 
 export default async function SettingsPage() {
@@ -39,11 +41,14 @@ export default async function SettingsPage() {
     );
   }
 
+  const publicKey = await vapidPublicKey();
+
   // Never render the stored email address here: switching the current user
   // is unauthenticated, so anyone could impersonate a guest and read it.
   return (
     <div className="flex flex-col gap-8">
       <SettingsForm emailSettings={guest.info.emailSettings} />
+      <PushNotifications publicKey={publicKey} />
       <div className="max-w-2xl mx-auto w-full px-4 sm:px-0">
         <AccountSecurity
           guestId={guest.id}
