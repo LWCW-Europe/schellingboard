@@ -55,7 +55,7 @@ export default async function MeetingsPage({
       <PageNotice backHref={`/${eventSlug}`} backLabel="Schedule">
         {await unverifiedUserMessage(
           cookieStore,
-          "setting your meeting availability"
+          "setting your 1-on-1 availability"
         )}
       </PageNotice>
     );
@@ -68,7 +68,7 @@ export default async function MeetingsPage({
     return (
       <PageNotice backHref={`/${eventSlug}`} backLabel="Schedule">
         You&apos;re not on the guest list for {event.name}, so you can&apos;t
-        set meeting availability here. Ask the organizer to add you.
+        set 1-on-1 availability here. Ask the organizer to add you.
       </PageNotice>
     );
   }

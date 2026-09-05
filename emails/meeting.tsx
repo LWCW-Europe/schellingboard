@@ -74,7 +74,7 @@ export function meetingOutcomeEmail(props: {
           </p>
         )}
         <p>
-          <a href={props.url}>View the meeting</a>
+          <a href={props.url}>View the 1-on-1</a>
         </p>
       </>
     ),

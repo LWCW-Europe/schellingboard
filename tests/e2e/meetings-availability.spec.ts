@@ -105,12 +105,12 @@ test.describe("attendee meeting availability", () => {
     await expect(page).toHaveURL(/\/meetings$/);
     const eventSlug = new URL(page.url()).pathname.split("/")[1];
 
-    const form = page.getByRole("form", { name: "1-on-1 meetings" });
-    await expect(form.getByLabel(/open to 1-on-1 meetings/)).not.toBeChecked();
+    const form = page.getByRole("form", { name: "1-on-1s" });
+    await expect(form.getByLabel(/open to 1-on-1s/)).not.toBeChecked();
 
     // Switching it on marks every slot available; you clear what you want kept
     // free rather than building the set up from nothing.
-    await form.getByLabel(/open to 1-on-1 meetings/).check();
+    await form.getByLabel(/open to 1-on-1s/).check();
     await expect(form.getByText("09:00 – 09:30")).toBeVisible();
     const firstSlot = form.getByRole("listitem").first().getByRole("checkbox");
     await expect(firstSlot).toBeChecked();
@@ -120,7 +120,7 @@ test.describe("attendee meeting availability", () => {
     await expect(form.getByText("Saved!")).toBeVisible();
 
     await page.reload();
-    await expect(form.getByLabel(/open to 1-on-1 meetings/)).toBeChecked();
+    await expect(form.getByLabel(/open to 1-on-1s/)).toBeChecked();
     await expect(
       form.getByRole("listitem").first().getByRole("checkbox")
     ).not.toBeChecked();
@@ -152,11 +152,11 @@ test.describe("attendee meeting availability", () => {
     await expect(form.getByText("Saved!")).toBeVisible();
 
     // Opting back out clears the declaration entirely.
-    await form.getByLabel(/open to 1-on-1 meetings/).uncheck();
+    await form.getByLabel(/open to 1-on-1s/).uncheck();
     await form.getByRole("button", { name: "Save availability" }).click();
     await expect(form.getByText("Saved!")).toBeVisible();
     await page.reload();
-    await expect(form.getByLabel(/open to 1-on-1 meetings/)).not.toBeChecked();
+    await expect(form.getByLabel(/open to 1-on-1s/)).not.toBeChecked();
   });
 
   // The save action refuses a non-attendee, but the page used to render the
@@ -180,9 +180,7 @@ test.describe("attendee meeting availability", () => {
     await page.goto(`/${slug}/meetings`);
 
     await expect(page.getByText(/not on the guest list/i)).toBeVisible();
-    await expect(
-      page.getByRole("form", { name: "1-on-1 meetings" })
-    ).toBeHidden();
+    await expect(page.getByRole("form", { name: "1-on-1s" })).toBeHidden();
   });
 
   test("is not offered while the organizer keeps meetings off", async ({

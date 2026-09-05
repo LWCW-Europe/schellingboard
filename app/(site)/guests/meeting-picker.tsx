@@ -128,7 +128,7 @@ function RequestForm({
   return (
     <form onSubmit={handleSend} className="flex flex-col gap-4">
       <h2 className="text-xl font-bold text-fg">
-        Meet {recipientName}
+        1-on-1 with {recipientName}
         <span className="block text-sm font-normal text-fg-muted">
           {option.eventName}
         </span>
@@ -227,7 +227,7 @@ function RequestForm({
 }
 
 /**
- * "Schedule a meeting" on an attendee's profile — one button per event the
+ * "Schedule a 1-on-1" on an attendee's profile — one button per event the
  * pair share where meetings are on and they are bookable, so nothing shows at
  * all when there is nothing to book.
  */
@@ -256,8 +256,8 @@ export function MeetingPicker({
           className={SECONDARY_BUTTON}
         >
           {options.length === 1
-            ? "Schedule a meeting"
-            : `Schedule a meeting at ${option.eventName}`}
+            ? "Schedule a 1-on-1"
+            : `Schedule a 1-on-1 at ${option.eventName}`}
         </button>
       ))}
       {/* Opened from inside the profile modal, which is z-50: without the
