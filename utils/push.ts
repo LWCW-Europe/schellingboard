@@ -45,11 +45,11 @@ export async function vapidPublicKey(now: Date): Promise<string> {
  */
 export async function pushToGuest(
   guestId: string,
-  notice: { text: string; url: string },
+  notice: { title: string; text: string; url: string },
   now: Date
 ): Promise<void> {
   try {
-    const { push, settings } = getRepositories();
+    const { push } = getRepositories();
     const subscriptions = await push.listSubscriptions(guestId);
     if (subscriptions.length === 0) return;
 
@@ -60,10 +60,10 @@ export async function pushToGuest(
       keys.privateKey
     );
 
+    // Not the site's name: the phone already labels the notification with
+    // the app it came from, so that would read "X from X".
     const payload = JSON.stringify({
-      // Whose event this is, since the notification arrives among everything
-      // else on the guest's phone.
-      title: (await settings.get()).title,
+      title: notice.title,
       body: notice.text,
       url: notice.url,
     });
