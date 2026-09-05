@@ -71,14 +71,16 @@ describe("meetingColumnRows", () => {
     expect(free.map((r) => r.row)).toEqual([1, 2, 3, 4]);
   });
 
-  // The slots the viewer cleared say why there is nothing to book there, and
-  // one band reads better than four identical cells.
-  it("merges the slots the viewer is not open for into one band", () => {
+  // A slot the viewer cleared is one nobody may book *them* into -- they can
+  // still arrange a 1-on-1 there themselves, so it stays a row of its own
+  // rather than merging into an unbookable band.
+  it("leaves each slot the viewer is not open for bookable on its own", () => {
     const declared = rows([], [at(0), at(90)]);
 
     expect(declared).toEqual([
       { row: 1, span: 1, kind: "free", meetings: [] },
-      { row: 2, span: 2, kind: "unavailable", meetings: [] },
+      { row: 2, span: 1, kind: "unavailable", meetings: [] },
+      { row: 3, span: 1, kind: "unavailable", meetings: [] },
       { row: 4, span: 1, kind: "free", meetings: [] },
     ]);
   });
@@ -89,6 +91,7 @@ describe("meetingColumnRows", () => {
     expect(mixed.map((r) => r.kind)).toEqual([
       "free",
       "meetings",
+      "unavailable",
       "unavailable",
     ]);
   });

@@ -65,20 +65,20 @@ export function MeetingsCol({
             <div
               key={row}
               style={{ gridRowStart: row }}
+              // Hatched where the viewer cleared the slot: that governs who
+              // may book *them*, so it is worth seeing on their own schedule —
+              // but it is no bar to arranging a 1-on-1 there themselves, and
+              // the cell stays as bookable as any other (#945).
+              title={
+                kind === "unavailable"
+                  ? "You are not offering this slot — you can still arrange a 1-on-1 in it"
+                  : undefined
+              }
               className={clsx(
-                `row-span-${span} my-0.5 rounded flex items-center justify-center`,
-                // The slots they cleared say why nothing can be booked there;
-                // an open one is left blank rather than inviting a booking the
-                // grid cannot make yet (#945).
+                `row-span-${span} my-0.5 rounded`,
                 kind === "unavailable" && "meetings-col-blocked"
               )}
-            >
-              {kind === "unavailable" && (
-                <span className="text-[10px] text-fg-subtle">
-                  You&apos;re not free
-                </span>
-              )}
-            </div>
+            />
           ) : (
             <div
               key={row}

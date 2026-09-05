@@ -14,9 +14,9 @@ export type MeetingColumnRow = {
 };
 
 /**
- * The column's rows for one day. Free slots stay one row each — each is
- * separately bookable — while the slots the viewer cleared merge into one
- * band, since four identical "not free" cells say nothing four times.
+ * The column's rows for one day, one per slot. Nothing merges: what the
+ * viewer cleared governs who may book *them*, and they can still arrange a
+ * 1-on-1 in it themselves, so every slot stays separately bookable (#945).
  */
 export function meetingColumnRows({
   meetings,
@@ -86,11 +86,6 @@ export function meetingColumnRows({
     const free = !declaredAnything || declared.has(start.toISOString());
     if (free) {
       rows.push({ row, span: 1, kind: "free", meetings: [] });
-      continue;
-    }
-    const last = rows[rows.length - 1];
-    if (last?.kind === "unavailable" && last.row + last.span === row) {
-      last.span += 1;
       continue;
     }
     rows.push({ row, span: 1, kind: "unavailable", meetings: [] });
