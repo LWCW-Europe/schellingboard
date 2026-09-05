@@ -5,3 +5,6 @@ tsconfig.json
 # padding would be undone on every regeneration
 docs/dev/attendance-model/attendance-2025.md
 docs/dev/attendance-model/.venv/
+
+# Claude Code worktrees carry their own .next/ and source trees
+.claude/worktrees/
