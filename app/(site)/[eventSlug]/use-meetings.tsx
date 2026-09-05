@@ -39,18 +39,7 @@ const MeetingsContext = createContext<MyMeetings>({
  * shared by everyone looking at it, and these are private to one guest
  * (issue #392, section 2.6).
  */
-export function MeetingsProvider({
-  children,
-  evenIfMeetingsAreOff = false,
-}: {
-  children: ReactNode;
-  /**
-   * A meeting outlives the organizer switching the feature off, and the
-   * notification about it still opens one — so the page that opens it asks
-   * for the viewer's meetings anyway, where the schedule's column does not.
-   */
-  evenIfMeetingsAreOff?: boolean;
-}) {
+export function MeetingsProvider({ children }: { children: ReactNode }) {
   const { event } = useContext(EventContext);
   const { user } = useContext(UserContext);
   const [loaded, setLoaded] = useState<
@@ -60,10 +49,10 @@ export function MeetingsProvider({
   const [reloads, setReloads] = useState(0);
 
   const eventId = event?.id;
-  // A kiosk with nobody picked, or an event that never offered meetings:
-  // there is nothing this guest could have.
-  const offered = event?.meetingsEnabled || evenIfMeetingsAreOff;
-  const key = eventId && offered && user ? `${eventId}:${user}` : null;
+  // A kiosk with nobody picked has nothing to fetch. An event with meetings
+  // switched off still might: a request outlives the switch, and the one its
+  // notification opens has to load.
+  const key = eventId && user ? `${eventId}:${user}` : null;
 
   useEffect(() => {
     if (!key) return;

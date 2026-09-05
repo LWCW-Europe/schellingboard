@@ -7,10 +7,15 @@ import {
 } from "@/utils/acting-guest";
 import { serverNow } from "@/utils/dev-clock-server";
 import { vapidPublicKey } from "@/utils/push";
+import {
+  availabilityFormsFor,
+  type AvailabilityFormData,
+} from "@/utils/meeting-availability-form";
 import { SettingsForm } from "./settings-form";
 import { AccountSecurity } from "./account-security";
 import { PushNotifications } from "./push-notifications";
 import { AppearanceSettings } from "./appearance";
+import { AvailabilityForm } from "./availability-form";
 
 export default async function SettingsPage() {
   const cookieStore = await cookies();
@@ -43,6 +48,7 @@ export default async function SettingsPage() {
   }
 
   const publicKey = await vapidPublicKey(await serverNow());
+  const availability = await availabilityFormsFor(guest.id, await serverNow());
 
   // Never render the stored email address here: switching the current user
   // is unauthenticated, so anyone could impersonate a guest and read it.
@@ -50,6 +56,7 @@ export default async function SettingsPage() {
     <div className="flex flex-col gap-8">
       <SettingsForm emailSettings={guest.info.emailSettings} />
       <PushNotifications publicKey={publicKey} />
+      <OneOnOneSettings forms={availability} />
       <div className="max-w-2xl mx-auto w-full px-4 sm:px-0">
         <AccountSecurity
           guestId={guest.id}
@@ -59,5 +66,44 @@ export default async function SettingsPage() {
       </div>
       <AppearanceSettings />
     </div>
+  );
+}
+
+// Availability is per event, so it is one panel per event rather than one
+// form -- collapsed, except that a lone one starts open.
+function OneOnOneSettings({ forms }: { forms: AvailabilityFormData[] }) {
+  return (
+    <section
+      aria-labelledby="one-on-ones"
+      className="max-w-2xl mx-auto w-full px-4 sm:px-0 flex flex-col gap-3"
+    >
+      <h2 id="one-on-ones" className="text-lg font-semibold">
+        1-on-1s
+      </h2>
+      <p className="text-sm text-fg-subtle">
+        When you&apos;re free to meet other attendees, event by event. Only the
+        events you&apos;re attending that offer 1-on-1s are listed.
+      </p>
+      {forms.length === 0 ? (
+        <p className="text-sm text-fg-muted">
+          None of your events offers 1-on-1s at the moment.
+        </p>
+      ) : (
+        forms.map((form) => (
+          <details
+            key={form.eventId}
+            open={forms.length === 1}
+            className="rounded-md border border-line-subtle"
+          >
+            <summary className="cursor-pointer px-4 py-3 font-medium text-fg">
+              {form.eventName}
+            </summary>
+            <div className="px-4 pb-4">
+              <AvailabilityForm {...form} />
+            </div>
+          </details>
+        ))
+      )}
+    </section>
   );
 }

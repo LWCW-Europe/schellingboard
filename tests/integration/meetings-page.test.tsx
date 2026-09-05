@@ -22,27 +22,27 @@ vi.mock("next/headers", () => ({
     }),
 }));
 
-// Both are client components — one reads router search params, the other a
-// form's own state. This test only cares which of them the page renders.
-vi.mock("@/app/(site)/[eventSlug]/meetings/availability-form", () => ({
-  AvailabilityForm: () => "AVAILABILITY_FORM_STUB",
+// Both throw for real, to abandon the render; the messages are what the
+// tests read.
+vi.mock("next/navigation", () => ({
+  redirect: (url: string) => {
+    throw new Error(`NEXT_REDIRECT;${url}`);
+  },
+  notFound: () => {
+    throw new Error("NEXT_NOT_FOUND");
+  },
 }));
+
+// A client component that reads router search params; the page only decides
+// whether to render it.
 vi.mock("@/app/(site)/[eventSlug]/meeting-modal", () => ({
   MeetingModalFromUrl: () => "MEETING_MODAL_STUB",
 }));
-// The modal reads the viewer's meetings from this provider, so where the page
-// renders it says whether it can load one at all.
+// The modal reads the viewer's meetings from this provider, so the page has to
+// render it inside one for the meeting to load at all.
 vi.mock("@/app/(site)/[eventSlug]/use-meetings", () => ({
-  MeetingsProvider: ({
-    children,
-    evenIfMeetingsAreOff,
-  }: {
-    children: ReactNode;
-    evenIfMeetingsAreOff?: boolean;
-  }) => (
-    <div data-provider-off={String(Boolean(evenIfMeetingsAreOff))}>
-      {children}
-    </div>
+  MeetingsProvider: ({ children }: { children: ReactNode }) => (
+    <div data-provider>{children}</div>
   ),
 }));
 
@@ -78,40 +78,68 @@ describe("the meetings page", () => {
 
   afterEach(() => vi.unstubAllEnvs());
 
-  async function scenario(meetingsEnabled: boolean) {
-    const event = await createEvent({ phase: "scheduling" });
+  async function scenario(opts: {
+    phase: "proposal" | "scheduling";
+    meetingsEnabled: boolean;
+  }) {
+    const event = await createEvent({ phase: opts.phase });
     await createDay(event.id);
     const guest = await createGuest({ name: "Ada", eventId: event.id });
-    await getRepositories().events.update(event.id, { meetingsEnabled });
+    await getRepositories().events.update(event.id, {
+      meetingsEnabled: opts.meetingsEnabled,
+    });
     cookieJar.set(GUEST_COOKIE_NAME, await verifiedGuestValue(guest.id));
     return { event, guest };
   }
 
-  it("offers the availability form while the organizer offers meetings", async () => {
-    const { event } = await scenario(true);
+  // Availability is set under Settings now; nothing else lived here.
+  it("sends you to the schedule when there is no meeting to open", async () => {
+    const { event } = await scenario({
+      phase: "scheduling",
+      meetingsEnabled: true,
+    });
 
-    expect(await renderPage(event.slug)).toMatch(/AVAILABILITY_FORM_STUB/);
+    await expect(renderPage(event.slug)).rejects.toThrow(
+      new RegExp(`NEXT_REDIRECT;/${event.slug}$`)
+    );
+  });
+
+  // Where a meeting notification lands: on the schedule, where the meeting
+  // sits in its slot next to whatever it clashes with.
+  it("opens a meeting on top of the schedule once scheduling has begun", async () => {
+    const { event } = await scenario({
+      phase: "scheduling",
+      meetingsEnabled: true,
+    });
+
+    await expect(
+      renderPage(event.slug, { viewMeeting: "any-id" })
+    ).rejects.toThrow(`NEXT_REDIRECT;/${event.slug}?viewMeeting=any-id`);
+  });
+
+  // Before then the schedule redirects to the proposals, and the meeting
+  // would be lost on the way.
+  it("opens a meeting here before scheduling starts", async () => {
+    const { event } = await scenario({
+      phase: "proposal",
+      meetingsEnabled: true,
+    });
+
+    expect(await renderPage(event.slug, { viewMeeting: "any-id" })).toMatch(
+      /MEETING_MODAL_STUB/
+    );
   });
 
   // A request outlives the switch: it is neither canceled nor deleted when the
   // organizer turns meetings off, and its notification points here forever.
   it("still opens a meeting once the organizer has switched meetings off", async () => {
-    const { event } = await scenario(false);
+    const { event } = await scenario({
+      phase: "proposal",
+      meetingsEnabled: false,
+    });
 
-    const html = await renderPage(event.slug, { viewMeeting: "any-id" });
-
-    // Inside the provider, and told to fetch even though the event no longer
-    // offers meetings: outside one, or gated on the switch, the modal has
-    // nothing to show but "Loading...".
-    expect(html).toMatch(
-      /<div data-provider-off="true">MEETING_MODAL_STUB<\/div>/
+    expect(await renderPage(event.slug, { viewMeeting: "any-id" })).toMatch(
+      /MEETING_MODAL_STUB/
     );
-    expect(html).not.toMatch(/AVAILABILITY_FORM_STUB/);
-  });
-
-  it("is gone with the feature when there is no meeting to open", async () => {
-    const { event } = await scenario(false);
-
-    await expect(renderPage(event.slug)).rejects.toThrow();
   });
 });
