@@ -71,6 +71,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Lint and format skip Claude Code worktrees**: `make precommit` walked into
   `.claude/worktrees/`, where each worktree's `.next/` produced hundreds of ESLint parsing errors
   and Prettier rewrote another checkout's build artifacts. Both now ignore that directory
+- The dev server accepts a Cloudflare quick tunnel as an origin, so the site can be tried on a
+  phone — the way to test notifications there — without the page arriving script-less
 
 ## [3.5.0] - 2026-08-30
 
