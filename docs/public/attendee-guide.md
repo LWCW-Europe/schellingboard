@@ -112,6 +112,9 @@ Proposing and voting close.
 A room name with an **ⓘ** next to it has more to say — tap it (or hover it)
 to read what the room offers: projector, whiteboard, the kind of seating.
 
+While the event is running, a red line across the grid marks the current time,
+and **"Now"** at the top of the schedule jumps straight to it.
+
 ### Put a proposal on the schedule
 
 Two ways, whichever you find first:
