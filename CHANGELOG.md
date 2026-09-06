@@ -64,6 +64,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   pick a name again while the comment box still let you post, and posting then failed
 - **Kiosk displays move to the current time as soon as the day starts**: a display left on
   overnight sat at the top of the schedule for up to three minutes after the first slot began
+- **A modal closed while still opening no longer gets stuck**: pressing Escape or Close before a
+  modal had finished fading in could leave it open with no way out but a reload
 
 ### Internal
 
