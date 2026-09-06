@@ -157,11 +157,6 @@ export const events = sqliteTable(
     meetingsEnabled: integer("meetings_enabled", { mode: "boolean" })
       .notNull()
       .default(false),
-    meetingSlotMinutes: integer("meeting_slot_minutes").notNull().default(30),
-    // Time-of-day bounds ("HH:mm") for 1-on-1 slots. NULL means the day's own
-    // window, so an organiser who never sets them still gets slots.
-    meetingDayStart: text("meeting_day_start"),
-    meetingDayEnd: text("meeting_day_end"),
     maxOpenMeetingRequests: integer("max_open_meeting_requests")
       .notNull()
       .default(5),
@@ -419,7 +414,7 @@ export const meetingPoints = sqliteTable(
 );
 
 // A slot a guest declared themselves free for. Slots themselves are derived
-// from the event's days and `meetingSlotMinutes` rather than stored, so these
+// from the event's days and `slotIncrementMinutes` rather than stored, so these
 // rows key on the slot's start instant: narrowing the meeting hours later
 // simply stops offering the rows that fall outside, with nothing to migrate.
 //
