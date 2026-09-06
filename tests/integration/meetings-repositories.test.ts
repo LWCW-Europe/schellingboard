@@ -17,13 +17,10 @@ describe("event meeting settings", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());
 
-  it("defaults to meetings off, 30-minute slots and no meeting-hours window", async () => {
+  it("defaults to meetings off", async () => {
     const event = await createEvent();
 
     expect(event.meetingsEnabled).toBe(false);
-    expect(event.meetingSlotMinutes).toBe(30);
-    expect(event.meetingDayStart).toBeUndefined();
-    expect(event.meetingDayEnd).toBeUndefined();
     expect(event.maxOpenMeetingRequests).toBe(5);
   });
 
@@ -33,36 +30,12 @@ describe("event meeting settings", () => {
 
     await events.update(event.id, {
       meetingsEnabled: true,
-      meetingSlotMinutes: 15,
-      meetingDayStart: "10:00",
-      meetingDayEnd: "18:00",
       maxOpenMeetingRequests: 3,
     });
 
     const reloaded = await events.findById(event.id);
     expect(reloaded?.meetingsEnabled).toBe(true);
-    expect(reloaded?.meetingSlotMinutes).toBe(15);
-    expect(reloaded?.meetingDayStart).toBe("10:00");
-    expect(reloaded?.meetingDayEnd).toBe("18:00");
     expect(reloaded?.maxOpenMeetingRequests).toBe(3);
-  });
-
-  it("clears a meeting-hours window back to the whole day", async () => {
-    const { events } = getRepositories();
-    const event = await createEvent();
-    await events.update(event.id, {
-      meetingDayStart: "10:00",
-      meetingDayEnd: "18:00",
-    });
-
-    await events.update(event.id, {
-      meetingDayStart: undefined,
-      meetingDayEnd: undefined,
-    });
-
-    const reloaded = await events.findById(event.id);
-    expect(reloaded?.meetingDayStart).toBeUndefined();
-    expect(reloaded?.meetingDayEnd).toBeUndefined();
   });
 });
 
