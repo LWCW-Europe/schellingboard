@@ -225,3 +225,50 @@ test("a full session blocks further RSVPs when the event enforces capacity", asy
     dialog.getByRole("button", { name: "RSVP", exact: true })
   ).toBeVisible();
 });
+
+test("leaving an event page while your RSVPs and votes are still loading is quiet", async ({
+  page,
+}) => {
+  await login(page);
+
+  // Picking a name starts the page's fetch of that guest's RSVPs and votes.
+  // Hold the first of each, so the reload below is certain to catch them in
+  // flight — that is where the browser kills them, and a rejection logged from
+  // there fails the console guard. On a real network it takes a slow server
+  // and an impatient visitor; here it is every run.
+  const patterns = ["**/api/rsvps?user=*", "**/api/votes?*"];
+  const { promise: held, resolve: release } = Promise.withResolvers<void>();
+  const { promise: bothHeld, resolve: holdingBoth } =
+    Promise.withResolvers<void>();
+  const heldOnce = new Set<string>();
+  for (const pattern of patterns) {
+    await page.route(pattern, async (route) => {
+      if (!heldOnce.has(pattern)) {
+        heldOnce.add(pattern);
+        if (heldOnce.size === patterns.length) holdingBoth();
+        await held;
+      }
+      // The held ones belong to a page that is gone by now, and continuing
+      // them fails; the requests after the reload are served as usual.
+      await route.continue().catch(() => undefined);
+    });
+  }
+
+  await page.goto("/Conference-Gamma");
+  await selectUser(page, /Bob Test/i);
+
+  // Reload only once both are genuinely stuck. Reloading before they were even
+  // issued would hold the reloaded page's requests instead, and the test would
+  // pass without ever killing one.
+  await bothHeld;
+  await page.reload();
+  release();
+  await expect(
+    page.getByRole("button", { name: "Your name: Bob Test" })
+  ).toBeVisible();
+
+  // The reloaded page's own fetches only land after it is interactive, and a
+  // rejection from one of them is exactly what this test is about — so let the
+  // page go quiet before the console guard reads its verdict.
+  await page.waitForLoadState("networkidle");
+});
