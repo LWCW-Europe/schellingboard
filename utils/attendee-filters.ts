@@ -5,6 +5,7 @@
 export const ATTENDEE_FILTERS = [
   { value: "isHost", label: "Session host" },
   { value: "hasProfile", label: "Has profile" },
+  { value: "openToMeetings", label: "Open to 1-on-1s" },
 ] as const;
 
 export type AttendeeFilter = (typeof ATTENDEE_FILTERS)[number]["value"];

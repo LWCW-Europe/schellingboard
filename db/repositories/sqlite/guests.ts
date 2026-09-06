@@ -2,6 +2,7 @@ import {
   and,
   eq,
   exists,
+  gt,
   inArray,
   isNotNull,
   isNull,
@@ -181,12 +182,39 @@ export class SqliteGuestsRepository implements GuestsRepository {
     return { rows, total: totalRow?.count ?? 0 };
   }
 
-  async listAttendees(): Promise<Attendee[]> {
+  async listAttendees(now: Date): Promise<Attendee[]> {
     const isHostExpr = exists(
       this.db
         .select({ one: sql`1` })
         .from(schema.sessionHosts)
         .where(eq(schema.sessionHosts.guestId, schema.guests.id))
+    );
+
+    // Someone a viewer could actually ask, not someone who once said yes:
+    // declared rows outlive the organizer's switch, the guest's place on the
+    // event, and the slots themselves.
+    const openToMeetingsExpr = exists(
+      this.db
+        .select({ one: sql`1` })
+        .from(schema.meetingAvailability)
+        .innerJoin(
+          schema.events,
+          eq(schema.events.id, schema.meetingAvailability.eventId)
+        )
+        .innerJoin(
+          schema.eventGuests,
+          and(
+            eq(schema.eventGuests.eventId, schema.meetingAvailability.eventId),
+            eq(schema.eventGuests.guestId, schema.meetingAvailability.guestId)
+          )
+        )
+        .where(
+          and(
+            eq(schema.meetingAvailability.guestId, schema.guests.id),
+            eq(schema.events.meetingsEnabled, true),
+            gt(schema.meetingAvailability.slotStart, now.toISOString())
+          )
+        )
     );
 
     return (
@@ -205,6 +233,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
           // SQLite has no boolean type; this yields 0/1 at runtime despite the
           // sql<boolean> annotation, so coerce explicitly below.
           isHost: isHostExpr,
+          openToMeetings: openToMeetingsExpr,
         })
         .from(schema.guests)
         // id as tiebreaker so equal names keep a deterministic order.
@@ -215,6 +244,7 @@ export class SqliteGuestsRepository implements GuestsRepository {
             ({
               ...row,
               isHost: Boolean(row.isHost),
+              openToMeetings: Boolean(row.openToMeetings),
               profileUpdatedAt: row.profileUpdatedAt
                 ? new Date(row.profileUpdatedAt)
                 : null,

@@ -35,6 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Asking an attendee for a 1-on-1** (#392): attendees mark the slots they are free for
   on the new 1-on-1s page, ask someone from their profile, and accept or decline what they
   are asked. Both sides are told the outcome; an unanswered request lapses at its slot
+- **Find the attendees who are open to 1-on-1s** (#945): a new filter in the attendee directory,
+  beside Session host and Has profile. It covers every event on the site, not only this one
 
 ### Changed
 

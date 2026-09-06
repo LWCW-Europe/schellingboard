@@ -21,6 +21,9 @@ describe("attendee filters", () => {
   });
 
   it("serializes in a fixed order, so the same view is always the same URL", () => {
+    expect(
+      serializeAttendeeFilters(["openToMeetings", "hasProfile", "isHost"])
+    ).toBe("isHost,hasProfile,openToMeetings");
     expect(serializeAttendeeFilters(["hasProfile", "isHost"])).toBe(
       "isHost,hasProfile"
     );

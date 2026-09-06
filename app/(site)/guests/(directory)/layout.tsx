@@ -19,8 +19,8 @@ export default async function AttendeeDirectoryLayout({
   // happen in the browser (see directory-view.ts). `listAttendees` returns
   // public profile fields only — `Attendee` has no `info`, so no email can
   // reach the client payload this way.
-  const attendees = await getRepositories().guests.listAttendees();
   const now = await serverNow();
+  const attendees = await getRepositories().guests.listAttendees(now);
   const cookieStore = await cookies();
   const currentUser = await verifiedCurrentUser(cookieStore);
 

@@ -296,6 +296,8 @@ export type GuestPage = {
 /** A guest with information used in the attendees list */
 export type Attendee = Guest & {
   isHost: boolean;
+  /** Bookable for 1-on-1s somewhere on the site — the directory is global. */
+  openToMeetings: boolean;
 };
 
 export interface GuestsRepository {
@@ -324,9 +326,10 @@ export interface GuestsRepository {
    * session), ordered by name with id tiebreaker. Search, filtering, sorting
    * and pagination all happen in memory on top of this, in the browser (see
    * app/(site)/guests/directory-view.ts): attendee counts don't warrant a SQL
-   * or persisted search index.
+   * or persisted search index. `now` bounds `openToMeetings`: availability whose
+   * slots have all passed leaves nothing anyone can book.
    */
-  listAttendees(): Promise<Attendee[]>;
+  listAttendees(now: Date): Promise<Attendee[]>;
   /**
    * Assigned events for many guests in one query, ordered by event name.
    * Every requested id is present in the result; guests without assignments

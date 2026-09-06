@@ -90,7 +90,7 @@ describe.each(dumps)("upgrading from $version", (dump) => {
 
     const allEvents = await events.list();
     expect(allEvents).not.toHaveLength(0);
-    expect(await guests.listAttendees()).not.toHaveLength(0);
+    expect(await guests.listAttendees(new Date())).not.toHaveLength(0);
 
     const proposals = (
       await Promise.all(
