@@ -279,8 +279,10 @@ test.describe("pull to refresh", () => {
     page,
   }) => {
     expect(await navigationType(page)).toBe("navigate");
+    const reloaded = page.waitForEvent("load");
     await swipe(page.getByTestId("schedule-scroll"), { by: 0, down: 220 });
-    await expect.poll(() => navigationType(page)).toBe("reload");
+    await reloaded;
+    expect(await navigationType(page)).toBe("reload");
   });
 
   test("panning the schedule never reloads it by accident", async ({
