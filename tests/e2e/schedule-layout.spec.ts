@@ -1,6 +1,9 @@
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
 import { swipe } from "./helpers/touch";
+import { selectUser } from "./helpers/user";
+import { uniqueSuffix } from "./helpers/unique";
+import { dayRadios, listboxButton } from "./helpers/session-form";
 
 // The grid view is an "app frame": below the nav bar a single scroll
 // container owns the viewport, with a slim toolbar as its first row. The
@@ -307,4 +310,88 @@ test.describe("pull to refresh", () => {
     await swipe(scroller, { by: 0, down: 220 });
     await stillThere();
   });
+});
+
+test("the grid keeps its place after a session is added from it", async ({
+  page,
+}) => {
+  // A drag, a form round trip and a re-render, on a phone-sized viewport.
+  test.slow();
+  await selectUser(page, /Alice Test/i);
+  const scroller = page.getByTestId("schedule-scroll");
+  const position = () =>
+    scroller.evaluate((el) => [
+      Math.round(el.scrollLeft),
+      Math.round(el.scrollTop),
+    ]);
+
+  // Pan well into the schedule on both axes by dragging it (see the test
+  // above); unlike wheeling, which Firefox applies asynchronously, the pan
+  // lands as soon as the mouse is released.
+  const frame = (await scroller.boundingBox())!;
+  const right = frame.x + frame.width - 40;
+  const bottom = frame.y + frame.height - 40;
+  await page.mouse.move(right, bottom);
+  await page.mouse.down();
+  await page.mouse.move(right - 240, bottom - 400, { steps: 8 });
+  await page.mouse.up();
+  const before = await position();
+  expect(before[0]).toBeGreaterThan(80);
+  expect(before[1]).toBeGreaterThan(300);
+
+  // Click a slot that is on screen: clicking one out of view would scroll it
+  // in first, and that scroll — not the reader's — is what would then be
+  // brought back. Measured in a single pass inside the page rather than a
+  // boundingBox() round trip per link, of which there are hundreds.
+  const slots = page.getByRole("link", { name: "Add session" });
+  const onScreen = await slots.evaluateAll(
+    (links, f) =>
+      links.findIndex((link) => {
+        const r = link.getBoundingClientRect();
+        return (
+          r.left >= f.x &&
+          r.top >= f.y &&
+          r.right <= f.x + f.width &&
+          r.bottom <= f.y + f.height
+        );
+      }),
+    frame
+  );
+  // Rather than falling back to the first slot, which is off screen: clicking
+  // that scrolls it in, leaving the test asserting that a scroll the reader
+  // never made was restored.
+  expect(onScreen, "no free slot lies wholly inside the grid").toBeGreaterThan(
+    -1
+  );
+  await slots.nth(onScreen).click();
+  await expect(
+    page.getByRole("heading", { name: /Add a session/i })
+  ).toBeVisible();
+  await page
+    .getByRole("textbox")
+    .first()
+    .fill(`E2E Scroll Anchor Session ${uniqueSuffix()}`);
+
+  // Book a slot reserved for this test rather than the one that was clicked:
+  // which slot the drag lands on depends on the layout, while the grid is
+  // shared with the specs that reserve slots in it (see the contract at the
+  // top of scripts/seed/data/gamma-schedule.ts). Only the click had to land on
+  // screen, so moving the booking costs the test nothing — and it keeps the
+  // new session off the stretch of grid whose scroll position is measured.
+  //
+  // 18:00 (offered as "18:10", slot plus break) on the last day: past
+  // scheduling.spec.ts's 15:00 booking in this room and its hour, and still
+  // earlier than rsvp.spec.ts's 20:00 one, whose "the other specs all book
+  // earlier" this must not break.
+  await dayRadios(page).last().check();
+  await listboxButton(page, /^Location/).click();
+  await page.getByRole("option", { name: /Workshop Room/ }).click();
+  await listboxButton(page, /^Start Time/).click();
+  await page.getByRole("option", { name: "18:10", exact: true }).click();
+
+  await page.getByRole("button", { name: "Submit" }).click();
+
+  // Back on the schedule, still looking at the same corner of it.
+  await expect(page.getByRole("button", { name: "Grid" })).toBeVisible();
+  await expect.poll(position).toEqual(before);
 });

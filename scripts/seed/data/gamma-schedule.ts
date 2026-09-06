@@ -6,6 +6,10 @@
 //   day 0: Main Hall 16:00 and Garden Terrace 09:00 (asserted free),
 //   day 2: Workshop Room from 15:00, Garden Terrace from 16:00 and Main Hall
 //          01:00 the following morning (used by tests to create sessions).
+// Two more specs book out of that day 2 Workshop Room window and must not
+// collide: rsvp.spec.ts takes 20:00, schedule-layout.spec.ts 18:00. The latter
+// clicks whichever slot the schedule happens to be scrolled to and then moves
+// the booking, so it can never take a slot another spec needs.
 // rsvp.spec.ts RSVPs Bob Test to the Opening Keynote, so nothing may run in
 // parallel to it and Bob gets no seeded RSVP there (see RSVP seeding).
 export interface GammaSessionConfig {
