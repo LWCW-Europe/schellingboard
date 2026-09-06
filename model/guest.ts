@@ -34,6 +34,8 @@ export const emailSettingsSchema = z.object({
   commentThread: z.boolean(),
   meetingRequest: z.boolean(),
   meetingResponse: z.boolean(),
+  sessionHeadsUp: z.boolean(),
+  attendeeCountReminder: z.boolean(),
 });
 
 // Length caps are sanity limits only a malicious user would hit; entry caps

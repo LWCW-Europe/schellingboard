@@ -23,6 +23,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_SECURE: ${SMTP_SECURE:-}
       SMTP_FROM: ${SMTP_FROM:-}
+      REMINDER_DISPATCH_INTERVAL_MS: ${REMINDER_DISPATCH_INTERVAL_MS:-}
     logging:
       driver: json-file
       options:

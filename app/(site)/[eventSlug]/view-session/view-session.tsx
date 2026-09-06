@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useContext, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PencilIcon } from "@heroicons/react/24/outline";
 import { CheckCircleIcon, AcademicCapIcon } from "@heroicons/react/24/solid";
 
@@ -20,6 +20,7 @@ import { LocationTag } from "../session-text";
 import { viewProposalLinkFromElsewhere } from "../modal-nav";
 import { SessionComments } from "../session-comments";
 import { Markdown } from "@/app/(site)/markdown";
+import { AttendeeCountField } from "./attendee-count-field";
 
 export function ViewSession(props: {
   session: Session;
@@ -47,6 +48,7 @@ export function ViewSession(props: {
     userBusySessions,
     rsvps: userRsvps,
     locations,
+    now,
   } = useContext(EventContext);
 
   // Reconcile session RSVPs with the current user's RSVP from context, so
@@ -66,6 +68,8 @@ export function ViewSession(props: {
   }, [rsvps, currentUser, userRsvps, session.id]);
 
   const router = useRouter();
+  // Only the follow-up email adds `record=count`; see research.md §8.
+  const searchParams = useSearchParams();
   const [isRsvping, setIsRsvping] = useState(false);
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [clashingSession, setClashingSession] = useState<Session | null>(null);
@@ -75,6 +79,10 @@ export function ViewSession(props: {
   const rsvpd = currentUser ? rsvpdForSession(session.id) : false;
   const isHost = currentUser && session.hosts.some((h) => h.id === currentUser);
   const isEditable = !!isHost && !session.adminManaged;
+  // Admin-managed sessions are included on purpose: a host records the count
+  // for a session they cannot otherwise edit (FR-007).
+  const canRecordAttendance =
+    !!isHost && !!session.endTime && session.endTime <= now;
 
   // session.numRsvps comes from localSessions, so it tracks optimistic RSVP
   // toggles; the fetched attendee list can be stale after a user switch.
@@ -328,6 +336,12 @@ export function ViewSession(props: {
           </span>
         </div>
       </div>
+      {canRecordAttendance && (
+        <AttendeeCountField
+          sessionId={session.id}
+          autoFocus={searchParams.get("record") === "count"}
+        />
+      )}
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Description</h3>
         <Markdown>{session.description}</Markdown>
