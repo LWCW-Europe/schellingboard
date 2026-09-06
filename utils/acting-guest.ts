@@ -64,6 +64,12 @@ type ReadonlyCookies = {
   get(name: string): { value: string } | undefined;
 };
 
+async function guestExists(id: string): Promise<boolean> {
+  // The cheapest existence probe the repository offers: two columns, where
+  // findById assembles the whole profile.
+  return (await getRepositories().guests.getAuthCredentials(id)) !== null;
+}
+
 /**
  * The current user id from the guest cookie, for server components and
  * actions — but null when that guest is protected and the cookie isn't a
@@ -74,11 +80,9 @@ export async function verifiedCurrentUser(
   cookieStore: ReadonlyCookies
 ): Promise<string | null> {
   const value = cookieStore.get(GUEST_COOKIE_NAME)?.value;
-  const parsed = await readGuestCookie(value);
-  if (!parsed) return null;
-  return (await isVerifiedAsGuest(parsed.guestId, value))
-    ? parsed.guestId
-    : null;
+  const guestId = await currentGuestSelection(cookieStore);
+  if (!guestId) return null;
+  return (await isVerifiedAsGuest(guestId, value)) ? guestId : null;
 }
 
 /**
@@ -86,6 +90,12 @@ export async function verifiedCurrentUser(
  * selected. Use only to tell "no name selected" apart from "a protected name
  * selected but not yet verified" — never to authorize acting as the guest
  * (use verifiedCurrentUser for that).
+ *
+ * A cookie naming a guest the database no longer has counts as no selection:
+ * it outlives the guest when an organizer deletes one, or when a development
+ * database is reseeded under the browser. The header chip already reads that
+ * state as "Select your name" — everything else has to agree, or the page
+ * keeps offering actions that die on a foreign key (#931).
  */
 export async function currentGuestSelection(
   cookieStore: ReadonlyCookies
@@ -93,7 +103,8 @@ export async function currentGuestSelection(
   const parsed = await readGuestCookie(
     cookieStore.get(GUEST_COOKIE_NAME)?.value
   );
-  return parsed?.guestId ?? null;
+  if (!parsed) return null;
+  return (await guestExists(parsed.guestId)) ? parsed.guestId : null;
 }
 
 /**

@@ -60,6 +60,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   set up, "Enable protection" looked like it did nothing at all
 - **A comment opened from an email no longer strands the page it lands on** (#930): a link
   to a comment on a long profile could leave the profile scrolled under its own header
+- **A deleted name no longer leaves you half logged in** (#931): the header asked you to
+  pick a name again while the comment box still let you post, and posting then failed
 
 ### Internal
 
