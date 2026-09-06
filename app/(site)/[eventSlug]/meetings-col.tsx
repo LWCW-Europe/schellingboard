@@ -27,7 +27,7 @@ function blockStatus(meeting: MeetingView): string {
 // already follows. A tap still opens the modal, where all of it is anyway.
 function MeetingSummary({ meeting }: { meeting: MeetingView }) {
   return (
-    <div className="p-2 space-y-1 text-left">
+    <div className="p-2 space-y-1">
       <p className="text-sm font-semibold text-fg">
         1-on-1 with {meeting.otherName}
       </p>
@@ -36,7 +36,11 @@ function MeetingSummary({ meeting }: { meeting: MeetingView }) {
       </p>
       <p className="text-xs text-fg">{statusLine(meeting)}</p>
       {meeting.message && (
-        <p className="text-xs text-fg-muted">“{meeting.message}”</p>
+        // Up to 2000 characters, and the panel has no height to
+        // spare: unclamped it pushes the clash below the fold.
+        <p className="text-xs text-fg-muted line-clamp-3">
+          “{meeting.message}”
+        </p>
       )}
       {meeting.clashes.length > 0 && (
         <p className="text-xs text-fg">
@@ -122,7 +126,7 @@ export function MeetingsCol({
                       meeting.id
                     )}
                     className={clsx(
-                      "flex-1 min-w-0 rounded px-1 py-0.5 overflow-hidden font-roboto text-left",
+                      "flex-1 min-w-0 rounded px-1 py-0.5 overflow-hidden font-roboto",
                       meeting.status === "accepted"
                         ? "bg-brand-tint border-2 border-brand-accent"
                         : // Pending reads as unfinished business, not a plan.
@@ -142,14 +146,15 @@ export function MeetingsCol({
                         </p>
                       </>
                     ) : (
-                      // One slot is a name and one more line; a third is cut
-                      // off at the border. The place and the state share it,
-                      // as a session block gives up its hosts at this height.
-                      <p className="text-[10px] leading-[1.15] line-clamp-1 text-fg-subtle">
-                        <span className="text-fg-muted">
+                      // One slot fits a name and one more line; the place gives
+                      // way first, since the state is what may want answering.
+                      <p className="flex gap-1 text-[10px] leading-[1.15] text-fg-subtle">
+                        <span className="truncate text-fg-muted">
                           {meeting.meetingPoint}
-                        </span>{" "}
-                        · {blockStatus(meeting)}
+                        </span>
+                        <span className="shrink-0">
+                          · {blockStatus(meeting)}
+                        </span>
                       </p>
                     )}
                   </Link>
