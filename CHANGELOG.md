@@ -68,6 +68,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   modal had finished fading in could leave it open with no way out but a reload
 - **Pull to refresh works on the schedule again** (#858): on a phone, pulling down from
   the top reloads it — a deliberate pull, so panning the grid never reloads by accident
+- **The schedule keeps your place** (#860): adding or editing a session, or coming back to
+  the schedule from another page, used to return you to its top-left corner
 
 ### Internal
 

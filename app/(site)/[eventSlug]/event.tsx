@@ -16,6 +16,7 @@ import { MeetingModalFromUrl } from "./meeting-modal";
 import type { DayWithSessions } from "../context";
 import { useDragToPan } from "./use-drag-to-pan";
 import { PullToRefresh } from "./pull-to-refresh";
+import { useScrollRestoration } from "./use-scroll-restoration";
 import Footer from "@/app/footer";
 
 export function EventDisplay() {
@@ -32,6 +33,8 @@ export function EventDisplay() {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const slotIncrement = useSlotIncrement();
   useDragToPan(scrollerRef, view === "grid");
+  // Per view: the grid and the text list have nothing in common to scroll to.
+  useScrollRestoration(scrollerRef, `${event?.slug ?? ""}:${view}`);
 
   if (!event) return <div>No event data available</div>;
 
