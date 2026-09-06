@@ -66,6 +66,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   overnight sat at the top of the schedule for up to three minutes after the first slot began
 - **A modal closed while still opening no longer gets stuck**: pressing Escape or Close before a
   modal had finished fading in could leave it open with no way out but a reload
+- **Pull to refresh works on the schedule again** (#858): on a phone, pulling down from
+  the top reloads it — a deliberate pull, so panning the grid never reloads by accident
 
 ### Internal
 

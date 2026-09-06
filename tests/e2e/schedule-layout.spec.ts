@@ -1,5 +1,6 @@
 import { test, expect } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
+import { swipe } from "./helpers/touch";
 
 // The grid view is an "app frame": below the nav bar a single scroll
 // container owns the viewport, with a slim toolbar as its first row. The
@@ -252,4 +253,58 @@ test("dragging the schedule pans it sideways", async ({ page }) => {
   // The toolbar's controls stick to the visible area (like the fold bars and
   // the footer) instead of scrolling out with the wide grid.
   await expect(page.getByRole("button", { name: "Grid" })).toBeInViewport();
+});
+
+// The frame locks window scrolling, which takes the browser's own
+// pull-to-refresh with it (there is no scrollable body left for the gesture to
+// attach to), so the schedule brings its own — guarded so that panning the
+// grid around never reloads by accident.
+test.describe("pull to refresh", () => {
+  test.use({ hasTouch: true });
+
+  const navigationType = (page: import("@playwright/test").Page) =>
+    page.evaluate(
+      () =>
+        (
+          performance.getEntriesByType(
+            "navigation"
+          )[0] as PerformanceNavigationTiming
+        ).type
+    );
+
+  test("a long pull down at the top of the schedule reloads it", async ({
+    page,
+  }) => {
+    expect(await navigationType(page)).toBe("navigate");
+    await swipe(page.getByTestId("schedule-scroll"), { by: 0, down: 220 });
+    await expect.poll(() => navigationType(page)).toBe("reload");
+  });
+
+  test("panning the schedule never reloads it by accident", async ({
+    page,
+  }) => {
+    const scroller = page.getByTestId("schedule-scroll");
+    const stillThere = async () => {
+      await page.waitForTimeout(200);
+      expect(await navigationType(page)).toBe("navigate");
+    };
+
+    // A nudge downwards — the start of any drag — is short of the threshold.
+    await swipe(scroller, { by: 0, down: 40 });
+    await stillThere();
+
+    // Panning sideways to see the later rooms.
+    await swipe(scroller, { by: -220 });
+    await stillThere();
+
+    // And a long pull down once the schedule is scrolled: there the gesture
+    // belongs to the schedule's own scrolling, not to a refresh.
+    await page.mouse.move(250, 400);
+    await page.mouse.wheel(0, 300);
+    await expect
+      .poll(() => scroller.evaluate((el) => el.scrollTop))
+      .toBeGreaterThan(100);
+    await swipe(scroller, { by: 0, down: 220 });
+    await stillThere();
+  });
 });
