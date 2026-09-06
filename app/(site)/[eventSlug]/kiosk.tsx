@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { scrollNowLineIntoView } from "./now-line";
 
@@ -69,7 +69,11 @@ export function useKioskMode(): boolean {
  * whole: periodic data refresh, keeping the screen awake, and scrolling the
  * schedule back to the now line.
  */
-export function KioskController() {
+export function KioskController(props: {
+  /** Whether a now line is drawn at all — false outside the event's days. */
+  nowIsOnSchedule: boolean;
+}) {
+  const { nowIsOnSchedule } = props;
   const router = useRouter();
 
   // Kiosk screens stay open for days while organizers move sessions around;
@@ -106,13 +110,13 @@ export function KioskController() {
     };
   }, []);
 
-  // Periodically bring the now line back into view, the same jump the
-  // toolbar's "Now" button makes. Paused while someone is interacting with
+  // Outside the effect below, which restarts when the now line appears: a day
+  // starting under someone's fingers must not clear how recently they touched
   // the display.
+  const lastInteraction = useRef(-Infinity);
   useEffect(() => {
-    let lastInteraction = -Infinity;
     const markInteraction = () => {
-      lastInteraction = performance.now();
+      lastInteraction.current = performance.now();
     };
     const interactionEvents = [
       "pointerdown",
@@ -123,9 +127,23 @@ export function KioskController() {
     for (const name of interactionEvents) {
       document.addEventListener(name, markInteraction, { passive: true });
     }
+    return () => {
+      for (const name of interactionEvents) {
+        document.removeEventListener(name, markInteraction);
+      }
+    };
+  }, []);
 
+  // Periodically bring the now line back into view, the same jump the
+  // toolbar's "Now" button makes. Paused while someone is interacting with
+  // the display. The cycle restarts when the line appears — the event day
+  // starting, or the dev fake clock jumping into one — so the display moves
+  // to it right away instead of at the next interval.
+  useEffect(() => {
+    if (!nowIsOnSchedule) return;
     const scrollToNow = () => {
-      if (performance.now() - lastInteraction < INTERACTION_IDLE_MS) return;
+      if (performance.now() - lastInteraction.current < INTERACTION_IDLE_MS)
+        return;
       scrollNowLineIntoView();
     };
 
@@ -134,11 +152,8 @@ export function KioskController() {
     return () => {
       clearTimeout(initial);
       clearInterval(interval);
-      for (const name of interactionEvents) {
-        document.removeEventListener(name, markInteraction);
-      }
     };
-  }, []);
+  }, [nowIsOnSchedule]);
 
   return null;
 }

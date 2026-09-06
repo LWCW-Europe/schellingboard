@@ -62,6 +62,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   to a comment on a long profile could leave the profile scrolled under its own header
 - **A deleted name no longer leaves you half logged in** (#931): the header asked you to
   pick a name again while the comment box still let you post, and posting then failed
+- **Kiosk displays move to the current time as soon as the day starts**: a display left on
+  overnight sat at the top of the schedule for up to three minutes after the first slot began
 
 ### Internal
 

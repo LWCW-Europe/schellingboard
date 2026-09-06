@@ -172,7 +172,7 @@ export function EventDisplay() {
         <SessionModal sessionId={viewSession} eventSlug={event.slug} />
       )}
       <MeetingModalFromUrl />
-      {kiosk && <KioskController />}
+      {kiosk && <KioskController nowIsOnSchedule={nowIsOnSchedule} />}
     </>
   );
 }

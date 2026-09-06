@@ -1,5 +1,10 @@
 import { test, expect } from "./helpers/fixtures";
-import { openGammaScheduleDuringEvent } from "./helpers/dev-clock";
+import { login } from "./helpers/auth";
+import {
+  duringGammaDayOne,
+  openGammaScheduleDuringEvent,
+  setDevClock,
+} from "./helpers/dev-clock";
 
 // Kiosk mode (?kiosk=1) is meant for large screens at the venue. The now line
 // itself is drawn on every schedule (see now-line.spec.ts); what kiosk mode
@@ -59,4 +64,21 @@ test("?kiosk=0 clears the cookie and leaves kiosk mode", async ({ page }) => {
   await page.goto("/Conference-Gamma");
   await page.waitForTimeout(2000);
   await expect(page.getByTestId("now-line")).not.toBeInViewport();
+});
+
+// A display that was already on before the day started has no line to scroll to
+// at load; the fake clock stands in for the day beginning under it.
+test("kiosk mode scrolls to the now line once it appears", async ({ page }) => {
+  await login(page);
+  await page.goto("/Conference-Gamma?kiosk=1&dev=1");
+
+  // The real clock is not inside any event day, so nothing is drawn yet.
+  await expect(page.getByTestId("now-line")).toHaveCount(0);
+
+  // Wait out the initial auto-scroll so it can't be what brings the line into
+  // view: the next scheduled scroll is three minutes off, well past the
+  // assertion below, so only reacting to the line appearing can satisfy it.
+  await page.waitForTimeout(2000);
+  await setDevClock(page, duringGammaDayOne);
+  await expect(page.getByTestId("now-line")).toBeInViewport();
 });
