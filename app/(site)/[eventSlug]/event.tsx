@@ -15,6 +15,7 @@ import { SessionModal } from "./session-modal";
 import { MeetingModalFromUrl } from "./meeting-modal";
 import type { DayWithSessions } from "../context";
 import { useDragToPan } from "./use-drag-to-pan";
+import { PullToRefresh } from "./pull-to-refresh";
 import Footer from "@/app/footer";
 
 export function EventDisplay() {
@@ -167,6 +168,9 @@ export function EventDisplay() {
         className="fixed inset-x-0 top-16 bottom-0 flex flex-col bg-surface"
       >
         {scheduleBody}
+        {/* Keyed on the view: each renders its own scroll surface, so the
+            gesture's listeners have to move with it. */}
+        <PullToRefresh key={view} scrollerRef={scrollerRef} />
       </div>
       {viewSession && (
         <SessionModal sessionId={viewSession} eventSlug={event.slug} />

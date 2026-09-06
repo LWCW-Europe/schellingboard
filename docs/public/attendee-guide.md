@@ -115,6 +115,9 @@ to read what the room offers: projector, whiteboard, the kind of seating.
 While the event is running, a red line across the grid marks the current time,
 and **"Now"** at the top of the schedule jumps straight to it.
 
+On a phone, pull down from the top of the schedule and let go to load the
+latest sessions.
+
 ### Put a proposal on the schedule
 
 Two ways, whichever you find first:
