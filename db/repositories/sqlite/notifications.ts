@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { nanoid } from "nanoid";
 import * as schema from "../../schema";
@@ -149,14 +149,33 @@ export class SqliteNotificationsRepository implements NotificationsRepository {
     return existing !== undefined;
   }
 
-  async markAllRead(guestId: string, readAt: Date): Promise<void> {
+  async markManyRead(
+    guestId: string,
+    ids: string[],
+    readAt: Date
+  ): Promise<void> {
+    if (ids.length === 0) return;
     this.db
       .update(schema.notifications)
       .set({ readAt: readAt.toISOString() })
       .where(
         and(
+          inArray(schema.notifications.id, ids),
           eq(schema.notifications.guestId, guestId),
           isNull(schema.notifications.readAt)
+        )
+      )
+      .run();
+  }
+
+  async deleteMany(guestId: string, ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    this.db
+      .delete(schema.notifications)
+      .where(
+        and(
+          inArray(schema.notifications.id, ids),
+          eq(schema.notifications.guestId, guestId)
         )
       )
       .run();

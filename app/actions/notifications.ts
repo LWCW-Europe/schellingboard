@@ -13,19 +13,18 @@ export type NotificationActionResult =
 
 const NO_USER = "No user is logged in";
 
-export async function markNotificationReadAction(
-  id: string
+export async function markNotificationsReadAction(
+  ids: string[]
 ): Promise<NotificationActionResult> {
   await requireSiteAuth();
   const currentUser = await verifiedCurrentUser(await cookies());
   if (!currentUser) return { ok: false, error: NO_USER };
 
-  const marked = await getRepositories().notifications.markRead(
+  await getRepositories().notifications.markManyRead(
     currentUser,
-    id,
+    ids,
     await serverNow()
   );
-  if (!marked) return { ok: false, error: "Notification not found" };
 
   // Only this page: the badge sits in a layout that reads cookies, so it is
   // never statically cached, and the caller refreshes the router anyway.
@@ -34,15 +33,14 @@ export async function markNotificationReadAction(
   return { ok: true };
 }
 
-export async function markAllNotificationsReadAction(): Promise<NotificationActionResult> {
+export async function deleteNotificationsAction(
+  ids: string[]
+): Promise<NotificationActionResult> {
   await requireSiteAuth();
   const currentUser = await verifiedCurrentUser(await cookies());
   if (!currentUser) return { ok: false, error: NO_USER };
 
-  await getRepositories().notifications.markAllRead(
-    currentUser,
-    await serverNow()
-  );
+  await getRepositories().notifications.deleteMany(currentUser, ids);
   revalidatePath("/notifications");
   return { ok: true };
 }
