@@ -127,7 +127,8 @@ describe("meeting options on a profile", () => {
     expect(slotAt(option, SLOT_B).state).toBe("unavailable");
   });
 
-  it("marks a slot busy when they are hosting, and names the session", async () => {
+  // Not even a session they are hosting in public: the hour is taken, no more.
+  it("marks a slot busy without naming what they are doing", async () => {
     const { event, other } = await scenario();
     await createSession(event.id, {
       title: "Their talk",
@@ -140,8 +141,86 @@ describe("meeting options on a profile", () => {
 
     const slot = slotAt(option, SLOT_A);
     expect(slot.state).toBe("busy");
-    expect(slot.clashes[0].kind).toBe("hosting");
-    expect(slot.clashes[0].title).toBe("Their talk");
+    expect(slot.clashes[0].kind).toBe("busy");
+    expect(slot.clashes[0].title).toBeNull();
+    expect(JSON.stringify(option)).not.toContain("Their talk");
+  });
+
+  // The warning covers either party, and the viewer's own is marked so it can
+  // say "You are hosting" rather than name the reader back to themselves.
+  it("names the viewer's own session and still marks the slot busy", async () => {
+    const { event, viewer, other } = await scenario();
+    await createSession(event.id, {
+      title: "My own talk",
+      hostIds: [viewer.id],
+      startTime: new Date(SLOT_A),
+      endTime: new Date(SLOT_B),
+    });
+
+    const [option] = await listMeetingOptions(other.id);
+
+    const slot = slotAt(option, SLOT_A);
+    expect(slot.state).toBe("busy");
+    expect(slot.clashes[0]).toEqual({
+      guestName: viewer.name,
+      kind: "hosting",
+      title: "My own talk",
+      isViewer: true,
+    });
+  });
+
+  // Your own diary is no third party's secret: you are told what you would be
+  // missing, whether you are hosting it or only going.
+  it("names a session the viewer only RSVP'd to", async () => {
+    const { event, viewer, other } = await scenario();
+    const mine = await createSession(event.id, {
+      title: "My own RSVP",
+      startTime: new Date(SLOT_A),
+      endTime: new Date(SLOT_B),
+    });
+    await getRepositories().rsvps.create({
+      sessionId: mine.id,
+      guestId: viewer.id,
+    });
+
+    const [option] = await listMeetingOptions(other.id);
+
+    const slot = slotAt(option, SLOT_A);
+    expect(slot.state).toBe("busy");
+    expect(slot.clashes[0]).toEqual({
+      guestName: viewer.name,
+      kind: "attending",
+      title: "My own RSVP",
+      isViewer: true,
+    });
+  });
+
+  it("reports the viewer's own 1-on-1 as one, not as bare busy", async () => {
+    const { event, viewer, other } = await scenario();
+    const third = await createGuest({ name: "Kai", eventId: event.id });
+    const repos = getRepositories();
+    const meeting = await repos.meetings.create({
+      eventId: event.id,
+      requesterId: viewer.id,
+      recipientId: third.id,
+      slotStart: new Date(SLOT_A),
+      slotEnd: new Date(SLOT_B),
+      meetingPoint: "Coffee bar",
+      message: "",
+      createdAt: DAY_START,
+    });
+    await repos.meetings.updateStatus(meeting.id, "accepted", DAY_START, [
+      "pending",
+    ]);
+
+    const [option] = await listMeetingOptions(other.id);
+
+    expect(slotAt(option, SLOT_A).clashes[0]).toEqual({
+      guestName: viewer.name,
+      kind: "meeting",
+      title: null,
+      isViewer: true,
+    });
   });
 
   it("never names a session they only RSVP'd to", async () => {
@@ -164,25 +243,6 @@ describe("meeting options on a profile", () => {
     expect(JSON.stringify(option)).not.toContain("Secret RSVP session");
   });
 
-  // The warning covers either party: your own clash matters to you too.
-  it("marks a slot busy when the viewer is the one with the clash", async () => {
-    const { event, viewer, other } = await scenario();
-    await createSession(event.id, {
-      title: "My own talk",
-      hostIds: [viewer.id],
-      startTime: new Date(SLOT_A),
-      endTime: new Date(SLOT_B),
-    });
-
-    const [option] = await listMeetingOptions(other.id);
-
-    const slot = slotAt(option, SLOT_A);
-    expect(slot.state).toBe("busy");
-    // Marked so the warning can say "You are hosting", not name the reader
-    // back to themselves in the third person.
-    expect(slot.clashes[0].isViewer).toBe(true);
-  });
-
   it("does not mark the other party's clash as the viewer's own", async () => {
     const { event, other } = await scenario();
     await createSession(event.id, {
@@ -195,6 +255,37 @@ describe("meeting options on a profile", () => {
     const [option] = await listMeetingOptions(other.id);
 
     expect(slotAt(option, SLOT_A).clashes[0].isViewer).toBe(false);
+  });
+
+  it("collapses everything the other party has on into one entry", async () => {
+    const { event, other } = await scenario();
+    const third = await createGuest({ name: "Kai", eventId: event.id });
+    const repos = getRepositories();
+    await createSession(event.id, {
+      title: "Their talk",
+      hostIds: [other.id],
+      startTime: new Date(SLOT_A),
+      endTime: new Date(SLOT_B),
+    });
+    const meeting = await repos.meetings.create({
+      eventId: event.id,
+      requesterId: other.id,
+      recipientId: third.id,
+      slotStart: new Date(SLOT_A),
+      slotEnd: new Date(SLOT_B),
+      meetingPoint: "Coffee bar",
+      message: "",
+      createdAt: DAY_START,
+    });
+    await repos.meetings.updateStatus(meeting.id, "accepted", DAY_START, [
+      "pending",
+    ]);
+
+    const [option] = await listMeetingOptions(other.id);
+
+    expect(slotAt(option, SLOT_A).clashes).toEqual([
+      { guestName: "Yuki", kind: "busy", title: null, isViewer: false },
+    ]);
   });
 
   it("says nothing when they are open to no slots at all", async () => {

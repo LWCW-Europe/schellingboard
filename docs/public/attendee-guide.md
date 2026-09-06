@@ -218,10 +218,11 @@ Anyone who is open to meetings has a **Schedule a meeting** button on their
 profile. It shows their slots day by day:
 
 - **Available** — tap to pick it.
-- **Busy** — one of you is hosting a session then, has RSVP'd to one, or has
-  already agreed another 1-on-1. Still bookable: you get a warning naming the
-  clash, and decide for yourselves. You are never told which session someone
-  else RSVP'd to, only that they are busy.
+- **Busy** — one of you already has something at that hour: a session you are
+  hosting or have RSVP'd to, or another 1-on-1. Still bookable: you get a
+  warning and decide for yourselves. Your own clash is named — the session, or
+  that it is another 1-on-1 — so you know what you would be missing. Theirs
+  never is: you are only told they are already booked.
 - **Unavailable** — a slot they cleared. That is their decision, and the one
   thing you can't book.
 
@@ -241,7 +242,8 @@ Declining takes no explanation — nobody should feel obliged.
 
 If the slot clashes with something of yours, the request says so before you
 answer: you are the one who knows whether your own session matters more. The
-person who asked was shown the same clash when they booked it.
+person who asked was warned about the same slot, without being told what you
+have on.
 
 You can't change the time or the place — accept it or decline it, and let them
 ask again if it doesn't suit. Either way they are told. A request nobody answers

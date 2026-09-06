@@ -199,9 +199,9 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
               </p>
             )}
 
-            {/* The same fact the requester was shown when they booked it, from
-                the other side: the person answering knows whether their own
-                session matters more (issue #392, section 1.4). */}
+            {/* The requester saw only that the slot was taken; the person
+                answering sees what it is, so they can weigh it against the
+                request (issue #392, section 1.4). */}
             {meeting.clashes.length > 0 && (
               <p className="text-sm rounded-md bg-warning-tint p-3 text-fg">
                 {[...new Set(meeting.clashes.map(clashLine))].join("; ")} during
