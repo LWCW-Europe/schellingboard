@@ -171,6 +171,25 @@ describe("meetingViewsFor", () => {
     ]);
   });
 
+  // Where the other party reads it: a canceled meeting drops off the column,
+  // so the modal a notification opens is the only place the note is seen.
+  it("carries the note the canceller left", async () => {
+    const { event, requester, recipient } = await scenario();
+    const meeting = await meetingBetween(event, requester, recipient);
+    await getRepositories().meetings.updateStatus(
+      meeting.id,
+      "canceled",
+      BEFORE,
+      ["pending"],
+      "sorry, my session moved"
+    );
+
+    const [view] = await meetingViewsFor(recipient.id, event.id, BEFORE);
+
+    expect(view.status).toBe("canceled");
+    expect(view.cancelNote).toBe("sorry, my session moved");
+  });
+
   // The same privacy rule the slot picker relies on: an RSVP is reported as
   // "busy" with no title, so one attendee never learns another's plans.
   it("reports the other party's RSVP without naming the session", async () => {

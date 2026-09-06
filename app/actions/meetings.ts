@@ -38,7 +38,10 @@ const respondSchema = z.object({
   response: z.enum(["accept", "decline"]),
 });
 
-const cancelSchema = z.object({ meetingId: z.string() });
+const cancelSchema = z.object({
+  meetingId: z.string(),
+  note: z.string().max(2000).optional(),
+});
 
 const availabilitySchema = z.object({
   eventId: z.string(),
@@ -265,11 +268,15 @@ export async function cancelMeetingAction(
   const from: MeetingStatus[] = isRequester
     ? ["pending", "accepted"]
     : ["accepted"];
+  // The note goes in with the status change rather than after it: a cancel
+  // the compare-and-set refuses is one that did not happen, and it must not
+  // leave a word about it on a meeting that still stands.
   const canceled = await repos.meetings.updateStatus(
     meeting.id,
     "canceled",
     now,
-    from
+    from,
+    input.note?.trim() ?? ""
   );
   if (!canceled) {
     return { ok: false, error: "There is nothing left to cancel" };

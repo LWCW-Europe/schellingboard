@@ -854,6 +854,8 @@ export type Meeting = {
   /** Where to meet, as agreed at request time. Never empty. */
   meetingPoint: string;
   message: string;
+  /** What the canceller said, if anything. Empty on a meeting still standing. */
+  cancelNote: string;
   status: MeetingStatus;
   createdAt: Date;
   respondedAt?: Date;
@@ -861,6 +863,16 @@ export type Meeting = {
 
 export type MeetingRequestOutcome =
   { meeting: Meeting } | { refused: "cap" | "duplicate" };
+
+/**
+ * A meeting as it is asked for. Everything a request carries; the rest of a
+ * meeting is what happens to it afterwards — its status, when it was answered,
+ * and a note from whoever called it off.
+ */
+export type MeetingCreateInput = Omit<
+  Meeting,
+  "id" | "status" | "respondedAt" | "cancelNote"
+>;
 
 export interface MeetingsRepository {
   findById(id: string): Promise<Meeting | undefined>;
@@ -886,9 +898,7 @@ export interface MeetingsRepository {
     eventId: string,
     now: Date
   ): Promise<number>;
-  create(
-    data: Omit<Meeting, "id" | "status" | "respondedAt">
-  ): Promise<Meeting>;
+  create(data: MeetingCreateInput): Promise<Meeting>;
   /**
    * Both refusals and the insert in one transaction. Two separate awaits leave
    * a window a double submit walks straight through — the same hazard
@@ -901,7 +911,7 @@ export interface MeetingsRepository {
    * they had earlier passed on.
    */
   createIfAllowed(
-    data: Omit<Meeting, "id" | "status" | "respondedAt">,
+    data: MeetingCreateInput,
     cap: number,
     now: Date
   ): Promise<MeetingRequestOutcome>;
@@ -910,11 +920,17 @@ export interface MeetingsRepository {
    * when it is in some other state, which is how a caller learns that someone
    * (a cancelling requester, a second tab) got there first.
    */
+  /**
+   * Moves the meeting, but only from one of `from` — the compare-and-set that
+   * decides which of two tabs wins. `cancelNote` rides along in the same
+   * statement, so a note is stored only where the move it explains happened.
+   */
   updateStatus(
     id: string,
     status: MeetingStatus,
     respondedAt: Date,
-    from: MeetingStatus[]
+    from: MeetingStatus[],
+    cancelNote?: string
   ): Promise<Meeting | undefined>;
 }
 
