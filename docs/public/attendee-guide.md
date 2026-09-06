@@ -186,6 +186,42 @@ Open a session to find the same comment section proposals have — useful for
 "which room did this move to?" and other last-minute coordination. Everything works as described under
 [Discuss a proposal](#discuss-a-proposal): threaded replies, likes, editing and deleting your own comments.
 
+### Record how many people came
+
+Once a session you host has finished, open it and you'll find a field asking
+**how many people attended**. Fill it in if you can — RSVPs are a promise, and
+the real number is the only record of what actually happened.
+
+- **Only that session's hosts ever see the number.** It isn't shown to
+  attendees, and any co-host can enter or change it.
+- **0 is a real answer**: the session was held and nobody came. If it never
+  happened at all, delete the session instead.
+- Leave the field empty to go back to no count at all. Nothing is lost by
+  skipping it — the field is entirely optional.
+
+The field appears only after the session's end time has passed, so there is
+nothing to fill in while you are still running it.
+
+#### Two reminders will nudge you
+
+You get two per session you host, each as a notification and — if the event has
+email — as a message to your inbox as well:
+
+- **An hour before it starts**, a heads-up naming the session, when it starts
+  and where — and asking you to count the people who turn up. Counting in the
+  room is the only way the number ends up being one.
+- **Fifteen minutes after it ends**, a follow-up with a link straight to the
+  field. If you've already recorded a count, you don't get this one at all.
+
+Move a session and the reminder that depends on the time you changed is sent
+again for the new slot: a new start time re-sends the heads-up, a new end time
+the follow-up. A small nudge of the start time doesn't, though — a heads-up you
+got in the last hour and a half already covers the new one.
+
+Each has its own switch under [Settings](#settings), so you can keep one and
+drop the other. Like every other email setting they silence the **email** only:
+both reminders still appear in your [notifications](#notifications).
+
 ## 1-on-1s
 
 Under **Settings**, every event you're attending where the organizer offers
@@ -390,6 +426,8 @@ page lists everything newest first. You'll be told when:
 - someone comments on a proposal or session you host, or on your profile
 - someone else comments on something you commented on
 - someone asks you for a 1-on-1, or answers a request of yours
+- it's time to [count how many people came](#record-how-many-people-came) to a
+  session you host
 
 **Clicking a notification marks it read and takes you straight to what
 happened.** If you'd rather clear one without opening it, use the tick beside

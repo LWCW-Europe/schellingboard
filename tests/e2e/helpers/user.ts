@@ -67,7 +67,11 @@ export async function openNameSwitcher(page: Page): Promise<Locator> {
 // guests: a protected one answers the pick with a password form instead, which
 // keeps the modal open (see user-auth.spec.ts, which drives that by hand).
 export async function selectUser(page: Page, name: string | RegExp) {
-  await openNameSwitcher(page);
+  const nameBox = await openNameSwitcher(page);
+  // The picker lists only the first 20 matching names (see SelectHosts), so a
+  // name late in the alphabet is absent until the query narrows the list.
+  // Only an exact string can be typed; a pattern has to already be in view.
+  if (typeof name === "string") await nameBox.fill(name);
   await page.getByRole("option", { name }).click();
   // Picking a name is a server round trip (selectUserAction); only once it
   // lands does the modal close and the header chip take the new name.

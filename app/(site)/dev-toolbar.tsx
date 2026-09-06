@@ -6,6 +6,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TIME_OFFSET_COOKIE } from "@/utils/dev-clock";
+import { dispatchRemindersAction } from "@/app/actions/dev-reminders";
 
 // Hydration gate: false on the server and during the first hydration pass, true
 // once mounted on the client. Mirrors the useSyncExternalStore idiom used for
@@ -57,6 +58,7 @@ export function DevToolbar() {
   );
   const [dismissed, setDismissed] = useState(false);
   const [offset, setOffset] = useState(0);
+  const [dispatched, setDispatched] = useState<string | null>(null);
   // Real wall-clock, ticked once a second so the displayed simulated time stays
   // live. Kept in state (not a render-time Date.now()) to satisfy purity rules.
   const [nowMs, setNowMs] = useState(0);
@@ -137,6 +139,32 @@ export function DevToolbar() {
           }}
         />
       </label>
+      {/* The reminder tick is off in E2E and once a minute in development, so
+          this triggers one against the simulated clock above. */}
+      <button
+        className="px-2 py-0.5 rounded border border-warning hover:bg-warning/20"
+        onClick={() => {
+          setDispatched(null);
+          void dispatchRemindersAction()
+            .then((result) =>
+              setDispatched(
+                result.ok
+                  ? `sent ${result.summary.sent} reminders`
+                  : result.error
+              )
+            )
+            // Navigating away mid-flight aborts the request; that is not a
+            // failure worth surfacing from a dev-only button.
+            .catch(() => setDispatched("dispatch interrupted"));
+        }}
+      >
+        Send due reminders
+      </button>
+      {dispatched && (
+        <span role="status" className="tabular-nums">
+          {dispatched}
+        </span>
+      )}
       <button
         className="ml-auto px-2 py-0.5 rounded border border-warning hover:bg-warning/20"
         onClick={() => setDismissed(true)}

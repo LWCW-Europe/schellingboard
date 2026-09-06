@@ -74,6 +74,16 @@ export const guests = sqliteTable(
     })
       .notNull()
       .default(true),
+    emailOnSessionHeadsUp: integer("email_on_session_heads_up", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(true),
+    emailOnAttendeeCountReminder: integer("email_on_attendee_count_reminder", {
+      mode: "boolean",
+    })
+      .notNull()
+      .default(true),
     avatarUrl: text("avatar_url"),
     // When the guest last changed a public profile field — their name counts,
     // email settings and credentials don't. NULL for profiles nobody ever
@@ -263,6 +273,11 @@ export const sessions = sqliteTable("sessions", {
   eventId: text("event_id")
     .notNull()
     .references(() => events.id, { onDelete: "cascade" }),
+  // How many people attended, recorded by a host after the session finished.
+  // Nullable with no default on purpose: NULL means "not recorded", 0 means
+  // "held, nobody came". Deliberately absent from the Session type, which is
+  // serialised to every visitor — see docs/dev/adr/0006.
+  attendeeCount: integer("attendee_count"),
 });
 
 export const sessionHosts = sqliteTable(
@@ -289,6 +304,44 @@ export const sessionLocations = sqliteTable(
       .references(() => locations.id, { onDelete: "cascade" }),
   },
   (t) => [primaryKey({ columns: [t.sessionId, t.locationId] })]
+);
+
+// Dispatch state for the two attendee-count reminders, one row per
+// (session, host, kind). The row carries the due time it was last claimed
+// for: an equal one is the idempotency check, a different one is the re-arm
+// signal after a reschedule. A reminder is delivered on two channels, so each
+// gets its own timestamp — a mail retry must not re-notify, a reschedule must
+// do both. See docs/dev/adr/0006.
+export const sessionReminders = sqliteTable(
+  "session_reminders",
+  {
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => sessions.id, { onDelete: "cascade" }),
+    guestId: text("guest_id")
+      .notNull()
+      .references(() => guests.id, { onDelete: "cascade" }),
+    // "headsUp" | "followUp"
+    kind: text("kind").notNull(),
+    dueTime: text("due_time").notNull(),
+    // The winning claim for this due time, and the only guard `claim` reads.
+    // NULL means "not spoken for": never attempted, or a failed send re-armed
+    // for retry. Stays set through every terminal state, mailed or not.
+    claimedAt: text("claimed_at"),
+    // A confirmed email. Written only by markSent, so it always means exactly
+    // "mail went out for this due time" — never the concurrency guard.
+    sentAt: text("sent_at"),
+    // Starts the 24-hour retry window; cleared on a successful send.
+    firstFailedAt: text("first_failed_at"),
+    // The in-app notification for this due time. Cleared only when a claim
+    // advances the row to a new due time, which is what re-notifies after a
+    // reschedule while leaving a mail retry alone.
+    notifiedAt: text("notified_at"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sessionId, t.guestId, t.kind] }),
+    index("session_reminders_session_idx").on(t.sessionId),
+  ]
 );
 
 export const rsvps = sqliteTable(
@@ -519,6 +572,8 @@ export const notifications = sqliteTable(
         "commentThread",
         "meetingRequest",
         "meetingResponse",
+        "sessionHeadsUp",
+        "attendeeCountReminder",
       ],
     }).notNull(),
     text: text("text").notNull(),

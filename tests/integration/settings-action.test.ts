@@ -42,11 +42,65 @@ describe("updateEmailSettingsAction", () => {
       commentThread: true,
       meetingRequest: false,
       meetingResponse: true,
+      sessionHeadsUp: false,
+      attendeeCountReminder: false,
     };
     const result = await updateEmailSettingsAction(settings);
     expect(result).toEqual({ ok: true });
     const updated = await getRepositories().guests.findById(guest.id);
     expect(updated?.info.emailSettings).toEqual(settings);
+  });
+
+  it("defaults both host reminders on and round-trips them independently", async () => {
+    const guest = await createGuest({ name: "Guest" });
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
+    const { guests } = getRepositories();
+    const reminders = async () => {
+      const settings = (await guests.findById(guest.id))?.info.emailSettings;
+      return {
+        sessionHeadsUp: settings?.sessionHeadsUp,
+        attendeeCountReminder: settings?.attendeeCountReminder,
+      };
+    };
+    expect(await reminders()).toEqual({
+      sessionHeadsUp: true,
+      attendeeCountReminder: true,
+    });
+
+    await updateEmailSettingsAction({
+      ...DEFAULT_EMAIL_SETTINGS,
+      attendeeCountReminder: false,
+    });
+    expect(await reminders()).toEqual({
+      sessionHeadsUp: true,
+      attendeeCountReminder: false,
+    });
+
+    await updateEmailSettingsAction({
+      ...DEFAULT_EMAIL_SETTINGS,
+      sessionHeadsUp: false,
+    });
+    expect(await reminders()).toEqual({
+      sessionHeadsUp: false,
+      attendeeCountReminder: true,
+    });
+  });
+
+  it("rejects a payload missing the attendee-count reminder key", async () => {
+    const guest = await createGuest({ name: "Guest" });
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
+    // The old five-key shape. A required boolean like its siblings, so a stale
+    // form is rejected rather than silently defaulted.
+    const result = await updateEmailSettingsAction({
+      rsvpChange: false,
+      hostChange: false,
+      cohostAdd: false,
+      proposalComment: false,
+      commentThread: false,
+    } as never);
+    expect(result.ok).toBe(false);
+    const unchanged = await getRepositories().guests.findById(guest.id);
+    expect(unchanged?.info.emailSettings).toEqual(DEFAULT_EMAIL_SETTINGS);
   });
 
   it("fails when no user is selected", async () => {
@@ -61,6 +115,8 @@ describe("updateEmailSettingsAction", () => {
       commentThread: false,
       meetingRequest: false,
       meetingResponse: false,
+      sessionHeadsUp: false,
+      attendeeCountReminder: false,
     });
     expect(result).toEqual({ ok: false, error: "No user is logged in" });
     const unchanged = await getRepositories().guests.findById(guest.id);
