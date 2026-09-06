@@ -73,10 +73,8 @@ export function DayGrid(props: {
     <div
       className="grid bg-surface"
       style={{
-        // The 1-on-1 column stays narrower than a room: its blocks hold a
-        // name, a place and a status, and the grid is laid out at these widths
-        // and scrolled, so every pixel it takes is one the rooms lose. Its
-        // picture is cut taller to make up the height (one-on-one-picture).
+        // The grid lays out at these widths and scrolls, so every pixel the
+        // 1-on-1 column takes is one the rooms lose.
         gridTemplateColumns: `${GUTTER} ${
           showMeetings ? "minmax(96px, 160px) " : ""
         }repeat(${numLocations}, minmax(120px, 240px))`,
