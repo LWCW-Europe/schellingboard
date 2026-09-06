@@ -169,6 +169,21 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       await import("@/app/actions/meetings");
     return saveMeetingAvailabilityAction({ eventId: "e", slotStarts: [] });
   },
+  "actions/attendee-count.ts:getAttendeeCountAction": async () => {
+    const { getAttendeeCountAction } =
+      await import("@/app/actions/attendee-count");
+    return getAttendeeCountAction("s");
+  },
+  "actions/attendee-count.ts:setAttendeeCountAction": async () => {
+    const { setAttendeeCountAction } =
+      await import("@/app/actions/attendee-count");
+    return setAttendeeCountAction("s", 1);
+  },
+  "actions/dev-reminders.ts:dispatchRemindersAction": async () => {
+    const { dispatchRemindersAction } =
+      await import("@/app/actions/dev-reminders");
+    return dispatchRemindersAction();
+  },
   "actions/profile.ts:updateProfileAction": async () => {
     const { updateProfileAction } = await import("@/app/actions/profile");
     return updateProfileAction({ name: "N" });
@@ -213,6 +228,8 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       commentThread: true,
       meetingRequest: true,
       meetingResponse: true,
+      sessionHeadsUp: true,
+      attendeeCountReminder: true,
     });
   },
   "actions/user-auth.ts:requestLoginCodeAction": async () => {

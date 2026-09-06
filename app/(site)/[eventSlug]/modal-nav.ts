@@ -165,6 +165,11 @@ export function dismissViewSession() {
   }
   const params = new URLSearchParams(window.location.search);
   params.delete("viewSession");
+  // The attendee-count follow-up's auto-focus flag belongs to the session it
+  // arrived for. viewSessionLinkFromOwner copies the current query into every
+  // session link on the schedule, so leaving it behind auto-focuses the field
+  // on every finished session opened afterwards.
+  params.delete("record");
   const query = params.toString();
   const url = query
     ? `${window.location.pathname}?${query}`

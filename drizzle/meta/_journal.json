@@ -239,6 +239,13 @@
       "when": 1788697709228,
       "tag": "0033_meeting_cancel_note",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "6",
+      "when": 1788703476668,
+      "tag": "0034_session_attendee_count",
+      "breakpoints": true
     }
   ]
 }

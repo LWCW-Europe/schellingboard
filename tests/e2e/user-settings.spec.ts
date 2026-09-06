@@ -51,7 +51,13 @@ test("header user menu reaches profile, edit profile, and settings; email prefer
       /comments on a proposal, session or profile I.ve commented on/i
     )
   ).not.toBeChecked();
+  const headsUpToggle = page.getByLabel(/hosting starts in an hour/i);
+  await expect(headsUpToggle).toBeChecked();
+  const countToggle = page.getByLabel(/record how many people attended/i);
+  await expect(countToggle).toBeChecked();
+
   await rsvpToggle.uncheck();
+  await countToggle.uncheck();
   await page.getByRole("button", { name: /^Save$/ }).click();
   await expect(page.getByText(/saved/i)).toBeVisible();
 
@@ -65,6 +71,12 @@ test("header user menu reaches profile, edit profile, and settings; email prefer
   await expect(
     page.getByLabel(/RSVP.d to changes time or location/i)
   ).not.toBeChecked();
+  await expect(
+    page.getByLabel(/record how many people attended/i)
+  ).not.toBeChecked();
+  // The two reminders have their own switches: turning one off leaves the
+  // other alone.
+  await expect(page.getByLabel(/hosting starts in an hour/i)).toBeChecked();
 });
 
 test("settings page asks to select a name when none is chosen", async ({

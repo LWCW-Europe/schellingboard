@@ -255,6 +255,26 @@ export class SqliteSessionsRepository implements SessionsRepository {
     return this.enrichSessions([row])[0];
   }
 
+  async getAttendeeCount(sessionId: string): Promise<number | null> {
+    const row = this.db
+      .select({ attendeeCount: schema.sessions.attendeeCount })
+      .from(schema.sessions)
+      .where(eq(schema.sessions.id, sessionId))
+      .get();
+    return row?.attendeeCount ?? null;
+  }
+
+  async setAttendeeCount(
+    sessionId: string,
+    count: number | null
+  ): Promise<void> {
+    this.db
+      .update(schema.sessions)
+      .set({ attendeeCount: count })
+      .where(eq(schema.sessions.id, sessionId))
+      .run();
+  }
+
   async create(data: SessionCreateInput): Promise<Session> {
     const id = nanoid();
     this.db.transaction((tx) => {

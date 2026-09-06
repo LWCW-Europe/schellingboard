@@ -26,30 +26,35 @@ export const duringGammaDayOne = DateTime.now()
 /**
  * Move the dev fake clock to `target` via the toolbar's datetime picker, then
  * wait for the simulated date to show so the override cookie is committed.
+ * The page must already carry `?dev=1`.
  */
 export async function setDevClock(page: Page, target: DateTime) {
   await expect(page.getByText("Dev clock")).toBeVisible();
+  const picker = page.getByLabel("Pick date and time");
+  const value = target.toFormat("yyyy-MM-dd'T'HH:mm");
+  // Filling in the value the picker already holds fires no change event, so
+  // the toolbar applies nothing and there is no refresh to wait for below.
+  // A test that lands on the same simulated moment twice hits exactly this —
+  // the override cookie survives the user switch in between.
+  if ((await picker.inputValue()) === value) return;
   // Applying the clock triggers a router.refresh(); a navigation started while
   // its RSC payload is still streaming aborts it, which logs an RSC-payload
   // error the console guard fails on. So wait for that very response, body and
   // all — "networkidle" is both later and less certain, since Next goes on
   // prefetching in the background. A refresh asks for RSC without the
   // prefetch header, which is what tells it apart from those prefetches.
-  const [refreshed] = await Promise.all([
-    page.waitForResponse(
-      (res) =>
-        res.ok() &&
-        res.request().headers()["rsc"] === "1" &&
-        !res.request().headers()["next-router-prefetch"]
-    ),
-    page
-      .getByLabel("Pick date and time")
-      .fill(target.toFormat("yyyy-MM-dd'T'HH:mm")),
-  ]);
-  // The toolbar prints the simulated instant in UTC; the calendar date is the
-  // same as Berlin's for a 16:00 target, so match on the date alone.
+  const refreshed = page.waitForResponse(
+    (res) =>
+      res.ok() &&
+      res.request().headers()["rsc"] === "1" &&
+      !res.request().headers()["next-router-prefetch"]
+  );
+  await picker.fill(value);
+  // The toolbar prints the simulated instant in UTC; for the afternoon targets
+  // these tests use, the calendar date is the same as Berlin's, so match on
+  // the date alone.
   await expect(page.getByText(target.toFormat("yyyy-MM-dd"))).toBeVisible();
-  await refreshed.finished();
+  await (await refreshed).finished();
 }
 
 /**
