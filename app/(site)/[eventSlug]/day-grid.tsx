@@ -16,6 +16,7 @@ import type { DayWithSessions } from "@/app/(site)/context";
 import { EventContext, useSlotIncrement } from "@/app/(site)/context";
 import { meetingsForDay, takesPartInMeetings } from "@/utils/meeting-column";
 import { MeetingsCol } from "./meetings-col";
+import { OneOnOnePicture } from "./one-on-one-picture";
 import { useMyMeetings } from "./use-meetings";
 
 // Width of the left time-axis gutter. The body rows show `HH:mm` labels and the
@@ -72,13 +73,10 @@ export function DayGrid(props: {
     <div
       className="grid bg-surface"
       style={{
-        // The 1-on-1 column is a room's width, picture and all, so it reads as
-        // one of them rather than as a margin. It keeps the lower floor for a
-        // grid that is ever squeezed rather than scrolled; today the grid
-        // always lays out at the maximum and scrolls, so this costs the rooms
-        // 80px of that scroll on a phone.
+        // The grid lays out at these widths and scrolls, so every pixel the
+        // 1-on-1 column takes is one the rooms lose.
         gridTemplateColumns: `${GUTTER} ${
-          showMeetings ? "minmax(96px, 240px) " : ""
+          showMeetings ? "minmax(96px, 160px) " : ""
         }repeat(${numLocations}, minmax(120px, 240px))`,
       }}
     >
@@ -152,7 +150,11 @@ export function DayGrid(props: {
       {hasImages && (
         <>
           <div className="sticky left-0 z-20 bg-surface border-r border-line-subtle" />
-          {showMeetings && <div className="border-l border-line-subtle p-1" />}
+          {showMeetings && (
+            <div className="border-l border-line-subtle p-1">
+              <OneOnOnePicture />
+            </div>
+          )}
           {includedLocations.map((loc, i) => (
             <div key={loc.name} className="border-l border-line-subtle p-1">
               {loc.imageUrl && (
