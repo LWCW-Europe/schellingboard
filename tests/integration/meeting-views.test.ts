@@ -99,7 +99,7 @@ describe("meetingViewsFor", () => {
     expect(view.status).toBe("accepted");
   });
 
-  it("names a session either party is hosting in the slot", async () => {
+  it("names a session the viewer is hosting in the slot", async () => {
     const { event, requester, recipient } = await scenario();
     const room = await createLocation({ eventId: event.id });
     await createSession(event.id, {
@@ -117,6 +117,54 @@ describe("meetingViewsFor", () => {
       {
         guestName: "Grace",
         kind: "hosting",
+        title: "Microservices for Dummies",
+        isViewer: true,
+      },
+    ]);
+  });
+
+  // It used to be named here too, on the grounds that the schedule shows it.
+  it("reduces a session the other party is hosting to busy", async () => {
+    const { event, requester, recipient } = await scenario();
+    const room = await createLocation({ eventId: event.id });
+    await createSession(event.id, {
+      title: "Microservices for Dummies",
+      hostIds: [requester.id],
+      locationIds: [room.id],
+      startTime: SLOT_START,
+      endTime: SLOT_END,
+    });
+    await meetingBetween(event, requester, recipient);
+
+    const [view] = await meetingViewsFor(recipient.id, event.id, BEFORE);
+
+    expect(view.clashes).toEqual([
+      { guestName: "Ada", kind: "busy", title: null, isViewer: false },
+    ]);
+    expect(JSON.stringify(view)).not.toContain("Microservices for Dummies");
+  });
+
+  it("names a session the viewer only RSVP'd to", async () => {
+    const { event, requester, recipient } = await scenario();
+    const room = await createLocation({ eventId: event.id });
+    const mine = await createSession(event.id, {
+      title: "Microservices for Dummies",
+      locationIds: [room.id],
+      startTime: SLOT_START,
+      endTime: SLOT_END,
+    });
+    await getRepositories().rsvps.create({
+      sessionId: mine.id,
+      guestId: recipient.id,
+    });
+    await meetingBetween(event, requester, recipient);
+
+    const [view] = await meetingViewsFor(recipient.id, event.id, BEFORE);
+
+    expect(view.clashes).toEqual([
+      {
+        guestName: "Grace",
+        kind: "attending",
         title: "Microservices for Dummies",
         isViewer: true,
       },

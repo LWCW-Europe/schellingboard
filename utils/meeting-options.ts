@@ -2,6 +2,7 @@ import { getRepositories } from "@/db/container";
 import { serverNow } from "@/utils/dev-clock-server";
 import { meetingSlotsForDay } from "@/utils/meeting-slots";
 import { clashesForInterval, loadGuestSchedules } from "@/utils/guest-clashes";
+import { toMeetingClashes } from "@/utils/meeting-clash-text";
 import type { MeetingClash } from "@/utils/meeting-clash-text";
 import { DateTime } from "luxon";
 import type { Event, MeetingPoint } from "@/db/repositories/interfaces";
@@ -105,18 +106,14 @@ export async function meetingOptionsFor(
           start: slot.start,
           end: slot.end,
           breakMinutes: event.breakMinutes,
+          detailFor: viewerId,
         });
         slots.push({
           start,
           label,
           // Busy is a warning, never a wall: still selectable.
           state: clashes.length > 0 ? "busy" : "available",
-          clashes: clashes.map(({ guestId, guestName, kind, title }) => ({
-            guestName,
-            kind,
-            title,
-            isViewer: guestId === viewerId,
-          })),
+          clashes: toMeetingClashes(clashes, viewerId),
         });
       }
       if (slots.length > 0) {

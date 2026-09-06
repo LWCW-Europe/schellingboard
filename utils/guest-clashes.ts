@@ -3,16 +3,14 @@ import type { Meeting, Session } from "@/db/repositories/interfaces";
 import { newEmptySession, sessionsOverlap } from "@/app/(site)/session_utils";
 import { getStartTimePlusBreak } from "./utils";
 
-// A schedule clash for one guest, computed server-side so their private RSVPs
-// and meetings never reach the client. Hosting a session is public, so those
-// clashes name the session; RSVP'd sessions and agreed 1-on-1s are private, so
-// those only report that the guest is "busy" for the overlapping interval —
-// never which session, or who the meeting is with.
+// A schedule clash for one guest, computed server-side so their RSVPs and
+// meetings never reach the client. Only `detailFor`'s RSVPs and 1-on-1s are
+// described; everyone else's collapse to "busy" with no title.
 export type GuestClash = {
   guestId: string;
   guestName: string;
-  kind: "hosting" | "busy";
-  /** Only set for hosting clashes (public); null for busy/RSVP clashes. */
+  kind: "hosting" | "attending" | "meeting" | "busy";
+  /** The session, for a hosting or attending clash; null otherwise. */
   title: string | null;
   /** ISO strings; `start` is break-adjusted for display, matching the schedule. */
   start: string;
@@ -73,6 +71,9 @@ export function clashesForInterval(
     excludeSessionId?: string | null;
     /** The meeting being examined, which must not clash with itself. */
     excludeMeetingId?: string;
+    /** Whose own diary may be described in full: an RSVP or 1-on-1 of theirs
+        is no secret from them, though it is from everyone else. */
+    detailFor?: string;
   }
 ): GuestClash[] {
   const {
@@ -82,6 +83,7 @@ export function clashesForInterval(
     breakMinutes,
     excludeSessionId,
     excludeMeetingId,
+    detailFor,
   } = opts;
 
   // sessionsOverlap skips a session whose id matches the candidate's, which is
@@ -106,6 +108,7 @@ export function clashesForInterval(
   const clashes: GuestClash[] = [];
 
   for (const schedule of schedules) {
+    const describe = schedule.guestId === detailFor;
     const hostingClashes = schedule.hosted.filter(inEventAndOverlapping);
     const hostingIds = new Set(hostingClashes.map((s) => s.id));
 
@@ -126,8 +129,8 @@ export function clashesForInterval(
       clashes.push({
         guestId: schedule.guestId,
         guestName: schedule.guestName,
-        kind: "busy",
-        title: null,
+        kind: describe ? "attending" : "busy",
+        title: describe ? ses.title : null,
         start: getStartTimePlusBreak(ses.startTime, breakMinutes).toISO()!,
         end: ses.endTime.toISOString(),
       });
@@ -148,7 +151,7 @@ export function clashesForInterval(
       clashes.push({
         guestId: schedule.guestId,
         guestName: schedule.guestName,
-        kind: "busy",
+        kind: describe ? "meeting" : "busy",
         title: null,
         start: meeting.slotStart.toISOString(),
         end: meeting.slotEnd.toISOString(),

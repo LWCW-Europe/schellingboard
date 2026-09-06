@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 import { getRepositories } from "@/db/container";
 import type { MeetingStatus } from "@/db/repositories/interfaces";
 import { clashesForInterval, loadGuestSchedules } from "@/utils/guest-clashes";
+import { toMeetingClashes } from "@/utils/meeting-clash-text";
 import type { MeetingClash } from "@/utils/meeting-clash-text";
 
 /**
@@ -76,6 +77,7 @@ export async function meetingViewsFor(
       start: meeting.slotStart,
       end: meeting.slotEnd,
       breakMinutes: event.breakMinutes,
+      detailFor: viewerId,
       // An accepted meeting counts as busy, so without this every one of them
       // would report itself as its own clash.
       excludeMeetingId: meeting.id,
@@ -97,12 +99,7 @@ export async function meetingViewsFor(
       ).toFormat("HH:mm")}`,
       meetingPoint: meeting.meetingPoint,
       message: meeting.message,
-      clashes: clashes.map(({ guestId, guestName, kind, title }) => ({
-        guestName,
-        kind,
-        title,
-        isViewer: guestId === viewerId,
-      })),
+      clashes: toMeetingClashes(clashes, viewerId),
     };
   });
 }
