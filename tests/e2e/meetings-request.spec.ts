@@ -154,6 +154,19 @@ async function leaveForAttendees(page: Page) {
   await expect(page.getByRole("heading", { name: "Attendees" })).toBeVisible();
 }
 
+// Settings holds one collapsed panel per event that offers 1-on-1s, except
+// that a lone one starts open -- so look before clicking its summary.
+async function openAvailability(page: Page, eventName: string) {
+  const form = page.getByRole("form", { name: `1-on-1s at ${eventName}` });
+  const panels = page.getByRole("region", { name: "1-on-1s" });
+  await expect(panels).toBeVisible();
+  if (!(await form.isVisible())) {
+    await panels.getByText(eventName, { exact: true }).click();
+  }
+  await expect(form).toBeVisible();
+  return form;
+}
+
 // Each directory row is a link whose name is the whole row, so the name alone
 // never matches exactly.
 async function openProfile(page: Page, name: string) {
@@ -233,11 +246,12 @@ test.describe("1-on-1 meetings", () => {
       page.getByRole("button", { name: /schedule a 1-on-1/i })
     ).toBeHidden();
 
-    // The askee declares they are open to meetings.
-    await page.goto(`/${slug}/meetings`);
+    // The askee declares they are open to 1-on-1s, under Settings. The goto
+    // first: the profile modal is still up, over the header actAs needs.
+    await page.goto("/settings");
     await actAs(page, new RegExp(askee));
-    await page.goto(`/${slug}/meetings`);
-    const availability = page.getByRole("form", { name: "1-on-1s" });
+    await page.goto("/settings");
+    const availability = await openAvailability(page, eventName);
     await availability.getByLabel(/open to 1-on-1s/).check();
     await availability
       .getByRole("button", { name: "Save availability" })
