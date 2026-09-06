@@ -73,6 +73,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   the top reloads it — a deliberate pull, so panning the grid never reloads by accident
 - **The schedule keeps your place** (#860): adding or editing a session, or coming back to
   the schedule from another page, used to return you to its top-left corner
+- **Leaving an event page while your RSVPs and votes are still loading is quiet**: the
+  browser cancels those requests on the way out, and the page used to log each as an error
 
 ### Internal
 

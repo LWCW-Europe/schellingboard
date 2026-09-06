@@ -33,6 +33,11 @@ import { startNowTicker, NOW_REFRESH_INTERVAL_MS } from "@/utils/now-ticker";
 
 export type DayWithSessions = Day & { sessions: Session[] };
 
+// Shared "none" values, so a render with nothing loaded yields the same array
+// each time instead of a fresh one.
+const NO_RSVPS: Rsvp[] = [];
+const NO_VOTES: Vote[] = [];
+
 export interface UserContextType {
   user: string | null;
   /**
@@ -113,7 +118,6 @@ export function useSlotIncrement(): number {
 
 export interface VotesContextType {
   votes: Vote[];
-  setVotes: (votes: Vote[]) => void;
   addVote: (vote: Vote) => void;
   removeVote: (proposalId: string) => void;
   updateVote: (proposalId: string, choice: Vote["choice"]) => void;
@@ -121,12 +125,10 @@ export interface VotesContextType {
   getVote: (proposalId: string) => Vote | undefined;
   proposalVoteEmoji: (proposalId: string) => string;
   proposalVoteLabel: (proposalId: string) => string;
-  isLoading: boolean;
 }
 
 export const VotesContext = createContext<VotesContextType>({
   votes: [],
-  setVotes: () => {},
   addVote: () => {},
   removeVote: () => {},
   updateVote: () => {},
@@ -134,7 +136,6 @@ export const VotesContext = createContext<VotesContextType>({
   getVote: () => undefined,
   proposalVoteEmoji: () => "",
   proposalVoteLabel: () => NO_VOTE_LABEL,
-  isLoading: false,
 });
 
 export function UserProvider({
@@ -224,7 +225,19 @@ export function EventProvider({
   // value.rsvps seeds the initial state once. The user-change effect below
   // is the only authoritative source of subsequent updates (plus optimistic
   // mutations in updateRsvp). Server-side revalidation is not used for RSVPs.
-  const [rsvps, setRsvps] = useState<Rsvp[]>(value.rsvps);
+  // Keyed by the guest they belong to, so switching names never shows the
+  // previous guest's RSVPs while the new answer is in flight, and logging out
+  // has nothing to clear.
+  const [loadedRsvps, setLoadedRsvps] = useState<{
+    user: string | null;
+    rsvps: Rsvp[];
+  }>(() => ({ user, rsvps: value.rsvps }));
+  const rsvps = loadedRsvps.user === user ? loadedRsvps.rsvps : NO_RSVPS;
+  const updateRsvps = (update: (current: Rsvp[]) => Rsvp[]) =>
+    setLoadedRsvps((prev) => ({
+      user,
+      rsvps: update(prev.user === user ? prev.rsvps : NO_RSVPS),
+    }));
   const [rsvpCountDeltas, setRsvpCountDeltas] = useState(
     () => new Map<string, number>()
   );
@@ -283,26 +296,18 @@ export function EventProvider({
     );
   }, [value.days]);
 
-  // Fetch RSVPs when user changes
   useEffect(() => {
-    const fetchUserRsvps = async () => {
-      if (user) {
-        try {
-          const response = await fetch(`/api/rsvps?user=${user}`);
-          if (response.ok) {
-            const userRsvps = (await response.json()) as Rsvp[];
-            setRsvps(userRsvps);
-          }
-        } catch (error) {
-          console.error("Error fetching user RSVPs:", error);
-        }
-      } else {
-        // Reset RSVPs when user logs out
-        setRsvps([]);
-      }
-    };
-
-    void fetchUserRsvps();
+    if (!user) return;
+    const controller = new AbortController();
+    void fetch(`/api/rsvps?user=${user}`, { signal: controller.signal })
+      .then((res) => (res.ok ? (res.json() as Promise<Rsvp[]>) : null))
+      .then((userRsvps) => {
+        if (userRsvps) setLoadedRsvps({ user, rsvps: userRsvps });
+      })
+      // Aborted on switching names, and the browser kills it when the page
+      // goes; either way there is nobody left to tell.
+      .catch(() => undefined);
+    return () => controller.abort();
   }, [user]);
 
   function userBusySessions() {
@@ -322,14 +327,19 @@ export function EventProvider({
     return rsvps.some((rsvp) => rsvp.sessionId === sessionId);
   };
 
-  // update RSVPs optimistically
   const updateRsvp = async (
     guestId: string,
     sessionId: string,
     remove: boolean
   ) => {
-    const rsvpsBeforeUpdate = rsvps;
+    const rsvpsBeforeUpdate = loadedRsvps;
     const rsvpCountDeltasBeforeUpdate = rsvpCountDeltas;
+    // A snapshot from before a name switch must not replace what has since
+    // been loaded for the new guest.
+    const revertRsvps = () =>
+      setLoadedRsvps((current) =>
+        current.user === user ? rsvpsBeforeUpdate : current
+      );
     try {
       const countChange = remove ? -1 : 1;
       setRsvpCountDeltas((old) => {
@@ -344,20 +354,17 @@ export function EventProvider({
       });
 
       if (remove) {
-        // Remove RSVP
-        setRsvps((prevRsvps) =>
+        updateRsvps((prevRsvps) =>
           prevRsvps.filter(
             (rsvp) =>
               !(rsvp.guestId === guestId && rsvp.sessionId === sessionId)
           )
         );
       } else {
-        // Add RSVP
         const newRsvp: Rsvp = { id: "", guestId, sessionId };
-        setRsvps((prevRsvps) => [...prevRsvps, newRsvp]);
+        updateRsvps((prevRsvps) => [...prevRsvps, newRsvp]);
       }
 
-      // Make the actual API call
       const response = await fetch("/api/toggle-rsvp", {
         method: "POST",
         body: JSON.stringify({
@@ -368,8 +375,7 @@ export function EventProvider({
       });
 
       if (!response.ok) {
-        // Revert optimistic update on failure
-        setRsvps(rsvpsBeforeUpdate);
+        revertRsvps();
         setRsvpCountDeltas(rsvpCountDeltasBeforeUpdate);
         const body = (await response.json().catch(() => null)) as {
           error?: string;
@@ -378,9 +384,8 @@ export function EventProvider({
       }
       return { ok: true };
     } catch (error: unknown) {
-      // Revert optimistic update on error
       console.error("Error updating RSVP:", error);
-      setRsvps(rsvpsBeforeUpdate);
+      revertRsvps();
       setRsvpCountDeltas(rsvpCountDeltasBeforeUpdate);
       return { ok: false };
     }
@@ -411,66 +416,70 @@ export function VotesProvider({
   eventSlug: string;
 }) {
   const { user } = useContext(UserContext);
-  const [votes, setVotes] = useState<Vote[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // Keyed by whose votes on which event they are, so switching names or
+  // events never shows the previous answer while the new one is in flight,
+  // and logging out has nothing to clear.
+  const key = user ? `${user}:${eventSlug}` : null;
+  const [loaded, setLoaded] = useState<{ key: string; votes: Vote[] } | null>(
+    null
+  );
+  const votes = key !== null && loaded?.key === key ? loaded.votes : NO_VOTES;
+  const updateVotes = (update: (current: Vote[]) => Vote[]) => {
+    if (key === null) return;
+    setLoaded((prev) => ({
+      key,
+      votes: update(prev?.key === key ? prev.votes : NO_VOTES),
+    }));
+  };
 
   useEffect(() => {
-    const fetchVotes = async () => {
-      if (!user) {
-        setVotes([]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const response = await fetch(votesApiUrl(user, eventSlug));
-        if (response.ok) {
-          const fetchedVotes = (await response.json()) as Vote[];
-          setVotes((prev) => {
-            // Preserve optimistic votes not yet reflected on the server
-            const optimistic = prev.filter(
-              (pv) =>
-                !fetchedVotes.some(
-                  (fv) =>
-                    fv.proposalId === pv.proposalId && fv.guestId === pv.guestId
-                )
-            );
-            return [...fetchedVotes, ...optimistic];
-          });
-        } else {
+    if (!user) return;
+    const fetchedFor = `${user}:${eventSlug}`;
+    const controller = new AbortController();
+    void fetch(votesApiUrl(user, eventSlug), { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) {
           console.error("Failed to fetch votes");
-          setVotes([]);
+          return;
         }
-      } catch (error) {
-        console.error("Error fetching votes:", error);
-        setVotes([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchVotes();
+        const fetchedVotes = (await response.json()) as Vote[];
+        setLoaded((prev) => {
+          // Preserve optimistic votes not yet reflected on the server
+          const optimistic = (
+            prev?.key === fetchedFor ? prev.votes : NO_VOTES
+          ).filter(
+            (pv) =>
+              !fetchedVotes.some(
+                (fv) =>
+                  fv.proposalId === pv.proposalId && fv.guestId === pv.guestId
+              )
+          );
+          return { key: fetchedFor, votes: [...fetchedVotes, ...optimistic] };
+        });
+      })
+      // Aborted on switching names or events, and the browser kills it when
+      // the page goes; either way there is nobody left to tell.
+      .catch(() => undefined);
+    return () => controller.abort();
   }, [user, eventSlug]);
 
   const addVote = (vote: Vote) => {
-    setVotes((prev) => {
+    updateVotes((prev) => {
       const existingIndex = prev.findIndex(
         (v) => v.proposalId === vote.proposalId && v.guestId === vote.guestId
       );
       if (existingIndex >= 0) {
-        // Update existing vote
         const newVotes = [...prev];
         newVotes[existingIndex] = vote;
         return newVotes;
       } else {
-        // Add new vote
         return [...prev, vote];
       }
     });
   };
 
   const removeVote = (proposalId: string) => {
-    setVotes((prev) =>
+    updateVotes((prev) =>
       prev.filter((v) => !(v.proposalId === proposalId && v.guestId === user))
     );
   };
@@ -478,7 +487,7 @@ export function VotesProvider({
   const updateVote = (proposalId: string, choice: Vote["choice"]) => {
     if (!user) return;
 
-    setVotes((prev) => {
+    updateVotes((prev) => {
       const existingIndex = prev.findIndex(
         (v) => v.proposalId === proposalId && v.guestId === user
       );
@@ -487,7 +496,6 @@ export function VotesProvider({
         newVotes[existingIndex] = { ...newVotes[existingIndex], choice };
         return newVotes;
       } else {
-        // Add new vote if none exists
         return [...prev, { id: "", proposalId, guestId: user, choice }];
       }
     });
@@ -513,7 +521,6 @@ export function VotesProvider({
 
   const contextValue: VotesContextType = {
     votes,
-    setVotes,
     addVote,
     removeVote,
     updateVote,
@@ -521,7 +528,6 @@ export function VotesProvider({
     getVote,
     proposalVoteEmoji,
     proposalVoteLabel,
-    isLoading,
   };
 
   return (
