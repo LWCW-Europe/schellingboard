@@ -17,3 +17,28 @@ export function canCancel(
     (meeting.status === "pending" && meeting.role === "requester")
   );
 }
+
+/** What has become of the request, in the words of whoever is reading. */
+export function statusLine(
+  meeting: Pick<MeetingView, "status" | "role" | "otherName">
+): string {
+  const them = meeting.otherName;
+  switch (meeting.status) {
+    case "pending":
+      return meeting.role === "recipient"
+        ? `${them} is waiting for your answer.`
+        : `Waiting for ${them} to answer.`;
+    case "accepted":
+      return "Confirmed — see you there.";
+    case "declined":
+      return meeting.role === "recipient"
+        ? "You declined this."
+        : `${them} declined this.`;
+    case "canceled":
+      return "This 1-on-1 was canceled.";
+    case "expired":
+      // Nobody is at fault for an unanswered request, so it is not phrased as
+      // one: the slot simply came and went (issue #392, section 1.4).
+      return "Nobody answered before the slot began.";
+  }
+}
