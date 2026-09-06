@@ -37,6 +37,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   asked. Both sides are told the outcome; an unanswered request lapses at its slot
 - **Your 1-on-1s on the schedule** (#392): the grid's first column is yours alone — agreed
   1-on-1s and open requests. Hover for what it clashes with, tap to open or cancel it
+- **Arrange a 1-on-1 straight from the schedule** (#945): tapping an empty slot in your 1-on-1
+  column lists who is free then, profile links included, and the request form follows on
 - **Find the attendees who are open to 1-on-1s** (#945): a new filter in the attendee directory,
   beside Session host and Has profile. It covers every event on the site, not only this one
 
