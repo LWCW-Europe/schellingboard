@@ -107,7 +107,7 @@ to see why:
 Once **scheduling** opens, proposals turn into real sessions on the grid.
 Proposing and voting close.
 
-![Simple scheduling grid with rooms as columns and time slots as rows](../screenshots/schedule-grid.webp)
+![Scheduling grid with rooms as columns and time slots as rows, and a first column holding the viewer's own 1-on-1s](../screenshots/schedule-grid.webp)
 
 A room name with an **ⓘ** next to it has more to say — tap it (or hover it)
 to read what the room offers: projector, whiteboard, the kind of seating.
@@ -248,6 +248,8 @@ Slots are as long as the event's schedule increment and cover the whole of each
 day. If the organizer later changes that increment, everyone's availability is
 cleared and you are asked to choose again — the slots themselves have moved.
 
+![The 1-on-1s section of Settings, with an event's panel open: the "I'm open to 1-on-1s" switch on, and a day's slots as checkboxes with some cleared](../screenshots/meetings-availability.webp)
+
 ### Ask someone for a 1-on-1
 
 Anyone who is open to 1-on-1s has a **Schedule a 1-on-1** button on their
@@ -270,6 +272,8 @@ the whole message — this is a request, not a chat.
 The organizer sets how many requests you may have waiting for an answer at once.
 Once you are at that number, wait for a reply or cancel one first.
 
+![Request form for a 1-on-1, with the day's slots marked Available, Busy or Unavailable, a choice of meeting points, and a line of context](../screenshots/meeting-request.webp)
+
 ### Answering a request
 
 You'll get a notification (and an email, unless you've turned that off) with
@@ -285,6 +289,8 @@ have on.
 You can't change the time or the place — accept it or decline it, and let them
 ask again if it doesn't suit. Either way they are told. A request nobody answers
 before its slot begins simply lapses; nothing is held against you.
+
+![A 1-on-1 request popup with when, where, the sender's line of context, a warning about a clash, and Accept and Decline buttons](../screenshots/meeting-answer.webp)
 
 ### Your 1-on-1s on the schedule
 
@@ -311,6 +317,8 @@ rather than in the email, the same as the line of context on a request. A
 canceled 1-on-1 leaves the schedule, so their notification is how they get back
 to it.
 
+![Schedule grid with a first column of the viewer's own 1-on-1s — one confirmed, one waiting for their reply, one waiting for the other person's — beside the room columns](../screenshots/meetings-schedule-column.webp)
+
 ### Arrange one from the schedule
 
 Tapping an **empty slot** in that column asks the question a profile cannot:
@@ -322,6 +330,8 @@ and the usual request form follows: where to meet, and a line of context.
 
 The slots you did not offer to others are bookable this way too. What you
 declare says who may book _you_; whom you ask, and when, is yours to decide.
+
+![Popup asking "Who's free at 14:30?", listing the attendees who marked that slot open with an Ask button each, some of them noted as already booked](../screenshots/meeting-book-from-grid.webp)
 
 ## Attendee directory & profiles
 

@@ -47,7 +47,10 @@ General setup:
 - Mobile shots: "Galaxy Note 9 / Android 7" device
 - Hide the Next.js developer tools overlay before capturing
 - Select the attendee **Hana Kobayashi** before capturing, so the "logged in
-  as" state is consistent across all screenshots
+  as" state is consistent across all screenshots. The large profile gives her
+  the 1-on-1 states the shots below need — availability with gaps in it, one
+  agreed meeting, one waiting on her and one waiting on the other person — so
+  nothing has to be arranged by hand
 - Light theme for everything except the one dark shot flagged in the checklist
   below. The theme switch is in the footer on every page; switch it back
   afterwards.
@@ -98,9 +101,14 @@ changes materially. Check off `[ ]` as you go.
 - [ ] `quick-voting.webp` — Quick Voting mode, one proposal at a time
 - [ ] `proposals-results.webp` — Proposal list in the **scheduling** phase: "Your vote" column and ❤️/⭐ vote counts (only visible once voting is over)
 - [ ] `proposal-vote-breakdown.webp` — A proposal's popup in the **scheduling** phase, showing the vote breakdown and the "expect N–M people" prediction. Open it as the host (Hana Kobayashi) of a proposal with enough votes, or the box is withheld
-- [ ] `schedule-grid.webp` — Simple scheduling grid with room photos (also used as the site hero; also regenerates `www/og-image.jpg`, see above)
+- [ ] `schedule-grid.webp` — Scheduling grid with room photos, taken at the top of day one so the viewer's own 1-on-1 column is in it (also used as the site hero and as the landing page's only 1-on-1 shot; also regenerates `www/og-image.jpg`, see above)
 - [ ] `session-details.webp` — Session detail popup (host, location, time, attendees, description)
 - [ ] `add-session.webp` — Form for adding a session directly to the schedule
+- [ ] `meetings-availability.webp` — The **1-on-1s** section of Settings with an event's panel open: the "I'm open to 1-on-1s" switch on, and a day's slots as checkboxes with some of them cleared
+- [ ] `meeting-request.webp` — The request form behind **Schedule a 1-on-1** on another attendee's profile, with a slot picked, a meeting point chosen and a line of context typed. Ahmad Karimi's profile has all three slot states (Available, Busy, Unavailable) on the event's first day
+- [ ] `meeting-answer.webp` — The 1-on-1 waiting for Hana's reply (Aisha Diallo's, 15:00 on day one), opened from her column of the grid: Accept, Decline, and the clash warning
+- [ ] `meetings-schedule-column.webp` — The scheduling grid's first column, picture and all, with Hana's own 1-on-1s in it. Scroll the grid so day one's whole afternoon is in view
+- [ ] `meeting-book-from-grid.webp` — "Who's free at …?", from the **+** on an empty slot of that column. Take it on 14:30, where the seeded attendees are bookable — most hours nobody is free, and the popup then has nothing to show
 - [ ] `attendees.webp` — Searchable attendee directory with avatars and host badges
 - [ ] `participant-profile.webp` — Participant profile page (bio, proposals, sessions they're hosting)
 - [ ] `edit-profile.webp` — Edit profile form (name, pronouns, avatar, Markdown bio)
@@ -108,6 +116,7 @@ changes materially. Check off `[ ]` as you go.
 - [ ] `kiosk-mode.webp` — Schedule grid in kiosk mode, with the red current-time line visible
 - [ ] `admin-events.webp` — Admin panel listing all events with a Manage button
 - [ ] `admin-event-settings.webp` — Admin event configuration form (name, dates, timezone, rules)
+- [ ] `admin-meetings.webp` — The **Meetings** section of the same form: 1-on-1s enabled, the suggested meeting points, and the cap on open requests
 
 ### Mobile (Galaxy Note 9)
 

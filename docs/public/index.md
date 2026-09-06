@@ -10,7 +10,7 @@ SchellingBoard is a web app for running an unconference-style event: attendees
 propose sessions, vote on the ones they want, and place them on a shared
 schedule.
 
-![Simple scheduling grid with rooms as columns and time slots as rows](../screenshots/schedule-grid.webp)
+![Scheduling grid with rooms as columns and time slots as rows, and a first column holding the viewer's own 1-on-1s](../screenshots/schedule-grid.webp)
 
 ## For attendees
 
