@@ -1,7 +1,8 @@
 "use client";
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useRef } from "react";
+import { Fragment, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useSafeLayoutEffect } from "@/utils/hooks";
 
 export function Modal(props: {
   open: boolean;
@@ -26,9 +27,36 @@ export function Modal(props: {
   } = props;
   const fakeRef = useRef(null);
 
+  // Headless UI reverses an in-flight transition, then one frame later reads
+  // which animations to wait for — a frame React can miss on a busy page, after
+  // which the leave never completes and the dialog is stuck open. So remount the
+  // transition on a flip that interrupts one, snapping instead of reversing.
+  const [generation, setGeneration] = useState(0);
+  const transitioning = useRef(false);
+  const settled = () => {
+    transitioning.current = false;
+  };
+  const previousOpen = useRef(open);
+  useSafeLayoutEffect(() => {
+    if (open === previousOpen.current) return;
+    previousOpen.current = open;
+    if (transitioning.current) {
+      transitioning.current = false;
+      setGeneration((g) => g + 1);
+    } else {
+      transitioning.current = true;
+    }
+  }, [open]);
+
   const modalContent = (
     <div>
-      <Transition.Root show={open} as={Fragment}>
+      <Transition.Root
+        key={generation}
+        show={open}
+        as={Fragment}
+        afterEnter={settled}
+        afterLeave={settled}
+      >
         <Dialog
           as="div"
           initialFocus={fakeRef}
