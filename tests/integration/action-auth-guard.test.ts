@@ -174,15 +174,15 @@ const SITE_GUARDED: Record<string, () => Promise<unknown>> = {
       await import("@/app/actions/notifications");
     return openNotificationAction("n");
   },
-  "actions/notifications.ts:markNotificationReadAction": async () => {
-    const { markNotificationReadAction } =
+  "actions/notifications.ts:markNotificationsReadAction": async () => {
+    const { markNotificationsReadAction } =
       await import("@/app/actions/notifications");
-    return markNotificationReadAction("n");
+    return markNotificationsReadAction(["n"]);
   },
-  "actions/notifications.ts:markAllNotificationsReadAction": async () => {
-    const { markAllNotificationsReadAction } =
+  "actions/notifications.ts:deleteNotificationsAction": async () => {
+    const { deleteNotificationsAction } =
       await import("@/app/actions/notifications");
-    return markAllNotificationsReadAction();
+    return deleteNotificationsAction(["n"]);
   },
   "actions/push.ts:subscribeToPushAction": async () => {
     const { subscribeToPushAction } = await import("@/app/actions/push");

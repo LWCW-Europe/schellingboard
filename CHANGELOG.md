@@ -26,6 +26,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **In-app notifications** (#750): a bell in the header counts what is waiting, and the
   notifications page lists everything newest first. Anything that emails you appears here
   too, so an event with no email set up still reaches its attendees
+- **Delete or mark read the notifications you tick** (#936): a checkbox per row and a
+  page-wide "Select all" drive Mark as read and Delete; with nothing ticked the buttons do
+  nothing, and deleting asks first because it cannot be undone
 - **1-on-1 meetings, set up by the organizer** (#392): an event's Config tab gains a
   Meetings section — switch 1-on-1s on, list the places you suggest people meet, and cap
   how many unanswered requests one attendee may have out at a time

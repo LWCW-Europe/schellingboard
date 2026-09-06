@@ -128,18 +128,48 @@ describe("notifications repository", () => {
     expect(await notifications.countUnread(guest.id)).toBe(1);
   });
 
-  it("marks everything read at once, leaving other guests alone", async () => {
+  it("marks a selection read, and only the ids the guest owns", async () => {
     const { notifications } = getRepositories();
     const guest = await createGuest();
     const other = await createGuest();
-    await notify(guest.id);
-    await notify(guest.id);
-    await notify(other.id);
+    const picked = await notify(guest.id, { text: "picked" });
+    await notify(guest.id, { text: "left alone" });
+    const theirs = await notify(other.id);
 
-    await notifications.markAllRead(guest.id, READ_AT);
+    await notifications.markManyRead(guest.id, [picked.id, theirs.id], READ_AT);
 
-    expect(await notifications.countUnread(guest.id)).toBe(0);
+    expect(await notifications.countUnread(guest.id)).toBe(1);
     expect(await notifications.countUnread(other.id)).toBe(1);
+  });
+
+  it("deletes a selection, and only the ids the guest owns", async () => {
+    const { notifications } = getRepositories();
+    const guest = await createGuest();
+    const other = await createGuest();
+    const picked = await notify(guest.id, { text: "picked" });
+    await notify(guest.id, { text: "left alone" });
+    const theirs = await notify(other.id);
+
+    await notifications.deleteMany(guest.id, [picked.id, theirs.id]);
+
+    const listed = await notifications.listByGuest(guest.id);
+    expect(listed.map((n) => n.text)).toEqual(["left alone"]);
+    expect(await notifications.countByGuest(other.id)).toBe(1);
+  });
+
+  // Both buttons are disabled with nothing ticked, but the actions are
+  // reachable without the page, so an empty selection has to be a no-op
+  // rather than an `IN ()` the database refuses.
+  it("leaves everything alone for an empty selection", async () => {
+    const { notifications } = getRepositories();
+    const guest = await createGuest();
+    await notify(guest.id);
+
+    await notifications.markManyRead(guest.id, [], READ_AT);
+    await notifications.deleteMany(guest.id, []);
+
+    expect(await notifications.countByGuest(guest.id)).toBe(1);
+    expect(await notifications.countUnread(guest.id)).toBe(1);
   });
 
   it("stores the read time it was given, not the wall clock", async () => {

@@ -36,8 +36,8 @@ import { TIME_OFFSET_COOKIE } from "@/utils/dev-clock";
 import { getRepositories } from "@/db/container";
 import { redirect } from "next/navigation";
 import {
-  markAllNotificationsReadAction,
-  markNotificationReadAction,
+  deleteNotificationsAction,
+  markNotificationsReadAction,
   openNotificationAction,
 } from "@/app/actions/notifications";
 
@@ -51,7 +51,7 @@ async function notify(guestId: string) {
   });
 }
 
-describe("markNotificationReadAction", () => {
+describe("markNotificationsReadAction", () => {
   beforeAll(() => setupTestDb());
 
   beforeEach(async () => {
@@ -60,27 +60,28 @@ describe("markNotificationReadAction", () => {
     await siteAuthenticate(cookieJar);
   });
 
-  it("marks the current user's notification read", async () => {
+  it("marks the selected notifications read, and leaves the rest unread", async () => {
     const guest = await createGuest();
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
-    const notification = await notify(guest.id);
+    const first = await notify(guest.id);
+    await notify(guest.id);
 
-    const result = await markNotificationReadAction(notification.id);
+    const result = await markNotificationsReadAction([first.id]);
 
     expect(result).toEqual({ ok: true });
-    expect(await getRepositories().notifications.countUnread(guest.id)).toBe(0);
+    expect(await getRepositories().notifications.countUnread(guest.id)).toBe(1);
   });
 
-  // The id travels in a link, so a guest could paste someone else's.
-  it("refuses another guest's notification", async () => {
+  // The ids travel to the browser, so a guest could send back someone else's.
+  it("skips another guest's notification", async () => {
     const guest = await createGuest();
     const other = await createGuest();
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(other.id));
     const notification = await notify(guest.id);
 
-    const result = await markNotificationReadAction(notification.id);
+    const result = await markNotificationsReadAction([notification.id]);
 
-    expect(result.ok).toBe(false);
+    expect(result).toEqual({ ok: true });
     expect(await getRepositories().notifications.countUnread(guest.id)).toBe(1);
   });
 
@@ -88,14 +89,14 @@ describe("markNotificationReadAction", () => {
     const guest = await createGuest();
     const notification = await notify(guest.id);
 
-    const result = await markNotificationReadAction(notification.id);
+    const result = await markNotificationsReadAction([notification.id]);
 
     expect(result.ok).toBe(false);
     expect(await getRepositories().notifications.countUnread(guest.id)).toBe(1);
   });
 });
 
-describe("markAllNotificationsReadAction", () => {
+describe("deleteNotificationsAction", () => {
   beforeAll(() => setupTestDb());
 
   beforeEach(async () => {
@@ -104,30 +105,44 @@ describe("markAllNotificationsReadAction", () => {
     await siteAuthenticate(cookieJar);
   });
 
-  it("clears the current user's unread count, and nobody else's", async () => {
+  it("deletes the selected notifications, and leaves the rest", async () => {
     const guest = await createGuest();
-    const other = await createGuest();
     cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(guest.id));
+    const first = await notify(guest.id);
     await notify(guest.id);
-    await notify(guest.id);
-    await notify(other.id);
 
-    const result = await markAllNotificationsReadAction();
+    const result = await deleteNotificationsAction([first.id]);
 
     expect(result).toEqual({ ok: true });
-    const { notifications } = getRepositories();
-    expect(await notifications.countUnread(guest.id)).toBe(0);
-    expect(await notifications.countUnread(other.id)).toBe(1);
+    expect(await getRepositories().notifications.countByGuest(guest.id)).toBe(
+      1
+    );
+  });
+
+  it("skips another guest's notification", async () => {
+    const guest = await createGuest();
+    const other = await createGuest();
+    cookieJar.set(GUEST_COOKIE_NAME, openGuestValue(other.id));
+    const notification = await notify(guest.id);
+
+    const result = await deleteNotificationsAction([notification.id]);
+
+    expect(result).toEqual({ ok: true });
+    expect(await getRepositories().notifications.countByGuest(guest.id)).toBe(
+      1
+    );
   });
 
   it("fails when no user is selected", async () => {
     const guest = await createGuest();
-    await notify(guest.id);
+    const notification = await notify(guest.id);
 
-    const result = await markAllNotificationsReadAction();
+    const result = await deleteNotificationsAction([notification.id]);
 
     expect(result.ok).toBe(false);
-    expect(await getRepositories().notifications.countUnread(guest.id)).toBe(1);
+    expect(await getRepositories().notifications.countByGuest(guest.id)).toBe(
+      1
+    );
   });
 });
 
@@ -189,7 +204,7 @@ describe("the dev fake clock reaches read timestamps", () => {
     const threeDays = 3 * 24 * 60 * 60 * 1000;
     cookieJar.set(TIME_OFFSET_COOKIE, String(threeDays));
 
-    await markNotificationReadAction(notification.id);
+    await markNotificationsReadAction([notification.id]);
 
     const [listed] = await getRepositories().notifications.listByGuest(
       guest.id

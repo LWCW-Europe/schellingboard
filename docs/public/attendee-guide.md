@@ -350,8 +350,10 @@ page lists everything newest first. You'll be told when:
 
 **Clicking a notification marks it read and takes you straight to what
 happened.** If you'd rather clear one without opening it, use the tick beside
-it, or **Mark all as read** at the top. Nothing is ever deleted, so the page
-stays a record of the event.
+it. To handle a batch, tick the ones you mean — or **Select all** for
+everything on the page — and then **Mark as read** or **Delete**. Deleting is
+permanent: the notification is gone for good, so the page keeps only what you
+choose to keep.
 
 Notifications appear whether or not the event has email set up, and turning an
 email off (below) never hides it here.

@@ -944,7 +944,15 @@ export interface NotificationsRepository {
    * timestamp. `readAt` comes from the caller so the dev fake clock reaches it.
    */
   markRead(guestId: string, id: string, readAt: Date): Promise<boolean>;
-  markAllRead(guestId: string, readAt: Date): Promise<void>;
+  /**
+   * What the notifications page's selection buttons act through. Ids that
+   * aren't `guestId`'s are skipped rather than rejected: the selection comes
+   * from a browser, so a stale or forged id must not take the whole batch
+   * down with it. An empty selection is a no-op.
+   */
+  markManyRead(guestId: string, ids: string[], readAt: Date): Promise<void>;
+  /** @see {@link markManyRead} for how ids not the guest's are treated. */
+  deleteMany(guestId: string, ids: string[]): Promise<void>;
 }
 
 // ── Push notifications ────────────────────────────────────────────────────────

@@ -47,7 +47,7 @@ export const releaseNotes: ReleaseNote[] = [
     highlights: [
       "**Install it on your phone**: add the site to your home screen and it opens like an app, in its own window with no address bar.",
       "**Notifications on your phone**: Settings can send the notifications you already get to your phone or laptop, so they arrive while the site is closed. iPhones need it on the home screen first.",
-      "**Notifications in the app**: a bell in the header counts what is waiting, and clicking one takes you to it. Everything that emails you appears here too, even where email is not set up.",
+      "**Notifications in the app**: a bell counts what is waiting, and clicking one takes you to it. Tick the ones you are done with to mark them read or delete them. No email set-up needed.",
       "**1-on-1 meetings**: organizers switch them on for an event and suggest where to meet; attendees mark when they are free, ask someone from their profile, and accept or decline.",
       '**The schedule shows where you are in the day**: a red line marks the current time while the event is running, and a "Now" button jumps to it.',
     ],

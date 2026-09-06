@@ -7,12 +7,10 @@ import {
   unverifiedUserMessage,
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
-import { openNotificationAction } from "@/app/actions/notifications";
 import { outOfRangePageRedirect, parsePage } from "@/utils/pagination";
 import { formatRelativeTime } from "@/utils/relative-time";
 import { serverNow } from "@/utils/dev-clock-server";
-import { MarkAllReadButton, MarkReadButton } from "./mark-read-buttons";
-import { OpenNotificationButton } from "./open-notification-button";
+import { NotificationList } from "./notification-list";
 
 const PAGE_SIZE = 20;
 
@@ -50,59 +48,27 @@ export default async function NotificationsPage({
     offset: (page - 1) * PAGE_SIZE,
   });
   const hasOlder = page * PAGE_SIZE < total;
-  const unread = await notifications.countUnread(currentUser);
   const now = await serverNow();
+  const rows = listed.map((notification) => ({
+    id: notification.id,
+    text: notification.text,
+    when: formatRelativeTime(notification.createdAt, now),
+    read: notification.readAt !== undefined,
+  }));
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 sm:px-0">
-      <div className="flex items-baseline justify-between gap-4">
-        <h1 className="text-2xl font-bold">Notifications</h1>
-        {unread > 0 && <MarkAllReadButton />}
-      </div>
+      <h1 className="text-2xl font-bold">Notifications</h1>
 
-      {listed.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="text-fg-muted">
           Nothing yet. When someone comments on your session or changes
           something you have RSVP&apos;d to, it will show up here.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {listed.map((notification) => (
-            <li
-              key={notification.id}
-              className={
-                notification.readAt
-                  ? "rounded-md border border-line bg-surface-raised"
-                  : "rounded-md border border-brand-accent bg-brand-tint"
-              }
-            >
-              <div className="flex items-center gap-2 p-3">
-                <form
-                  action={openNotificationAction.bind(null, notification.id)}
-                  className="min-w-0 flex-1"
-                >
-                  <OpenNotificationButton>
-                    <span
-                      className={
-                        notification.readAt
-                          ? "block text-fg-subtle"
-                          : "block font-medium"
-                      }
-                    >
-                      {notification.text}
-                    </span>
-                    <span className="block text-sm text-fg-muted">
-                      {formatRelativeTime(notification.createdAt, now)}
-                    </span>
-                  </OpenNotificationButton>
-                </form>
-                {!notification.readAt && (
-                  <MarkReadButton id={notification.id} />
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+        // Ticks are for the rows on screen, so paging away starts a fresh
+        // selection rather than carrying ids the reader can no longer see.
+        <NotificationList key={page} rows={rows} />
       )}
 
       <div className="flex justify-between">

@@ -83,6 +83,46 @@ test("marks a notification read without opening it", async ({ page }) => {
   await expect(row).toBeVisible();
 });
 
+// Freya Nielsen is nobody else's subject, so her whole list is this test's.
+test("acts on the ticked notifications and nothing else", async ({ page }) => {
+  await login(page);
+  await page.goto("/guests");
+
+  // Two different commenters, so the two rows read differently and can be
+  // told apart by name rather than by position.
+  await actAs(page, /Anna Kowalska/i);
+  await commentOnProfile(page, "Freya Nielsen", "Anna says hello");
+  await actAs(page, /Isabella Rossi/i);
+  await commentOnProfile(page, "Freya Nielsen", "Isabella says hello");
+
+  await actAs(page, /Freya Nielsen/i);
+  await bell(page).click();
+  const actions = page.getByRole("group", { name: "Notification actions" });
+
+  // With nothing ticked the buttons do nothing rather than everything.
+  await expect(
+    actions.getByRole("button", { name: "Mark as read" })
+  ).toBeDisabled();
+  await expect(actions.getByRole("button", { name: "Delete" })).toBeDisabled();
+
+  await page
+    .getByRole("checkbox", {
+      name: "Select Anna Kowalska commented on your profile",
+    })
+    .check();
+  await actions.getByRole("button", { name: "Mark as read" }).click();
+
+  // Only the ticked one was read; the other is still waiting.
+  await expect(bell(page)).toHaveAccessibleName(/1 unread/);
+
+  await actions.getByRole("checkbox", { name: "Select all" }).check();
+  await actions.getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("button", { name: "Yes" }).click();
+
+  await expect(page.getByText(/Nothing yet/)).toBeVisible();
+  await expect(bell(page)).toHaveAccessibleName("Notifications");
+});
+
 // Conference Gamma is in the scheduling phase, so only its schedule has
 // sessions. Carlos Silva hosts this one and no other spec touches either, so
 // his badge and its comment thread are this test's alone.
