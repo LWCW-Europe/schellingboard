@@ -9,6 +9,7 @@ function attendee(overrides: Partial<Attendee> & { name: string }): Attendee {
   return {
     id: `id-${++counter}`,
     isHost: false,
+    openToMeetings: false,
     info: undefined,
     ...overrides,
   };
