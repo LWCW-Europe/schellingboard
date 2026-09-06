@@ -1,3 +1,4 @@
+import { Page } from "@playwright/test";
 import { test, expect } from "./helpers/fixtures";
 import { uniqueSuffix } from "./helpers/unique";
 import { loginAndGoto } from "./helpers/auth";
@@ -5,27 +6,71 @@ import { selectUser } from "./helpers/user";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
 
+async function manage(page: Page, eventName: string) {
+  await page
+    .getByRole("listitem")
+    .filter({ hasText: eventName })
+    .getByRole("link", { name: "Manage" })
+    .click();
+}
+
+// A throwaway event, left on its admin page. Never a seeded one: those come
+// with 1-on-1s on, and switching that about would change what other specs see.
+async function createEvent(page: Page, eventName: string) {
+  await page.goto("/admin");
+  await page.getByLabel("Password").fill(ADMIN_PASSWORD);
+  await page.getByRole("button", { name: "Access Admin" }).click();
+  await expect(page).toHaveURL(/\/admin\/events$/);
+
+  // The list is server-rendered, so "New event" is clickable a moment before
+  // React attaches its handler, and a click in that window is simply dropped.
+  const nameField = page.getByLabel("Name *");
+  await expect(async () => {
+    if (!(await nameField.isVisible())) {
+      await page.getByRole("button", { name: "New event" }).click();
+    }
+    await expect(nameField).toBeVisible({ timeout: 2000 });
+  }).toPass();
+
+  await nameField.fill(eventName);
+  await page.getByLabel("Start *").fill("2026-10-01");
+  await page.getByLabel("End *").fill("2026-10-03");
+  await page.getByRole("button", { name: "Create event" }).click();
+  await manage(page, eventName);
+  // Manage is a client-side navigation; a hard goto while its RSC fetch is
+  // still in flight aborts it, and the console guard fails on that.
+  await expect(page.getByRole("form", { name: "Meetings" })).toBeVisible();
+}
+
 test.describe("attendee meeting availability", () => {
+  // Every event this spec creates is a link in the site header, and a header
+  // long enough to push the name chip out of reach is what breaks the next
+  // spec along -- so they go again afterwards, pass or fail
+  // (meetings-request.spec.ts does the same, for the same reason).
+  const leftBehind: string[] = [];
+
+  test.afterEach(async ({ page }) => {
+    if (leftBehind.length === 0) return;
+    // A test may end on an event page with its votes and RSVPs still in
+    // flight; a hard goto aborts those, and the console guard fails on it.
+    await page.waitForLoadState("networkidle");
+
+    for (const eventName of leftBehind.splice(0)) {
+      await page.goto("/admin/events");
+      await manage(page, eventName);
+      await page.getByRole("button", { name: "Delete event" }).click();
+      await page.getByLabel("Type the event name to confirm").fill(eventName);
+      await page.getByRole("button", { name: "Confirm delete" }).click();
+      await expect(page).toHaveURL(/\/admin\/events$/);
+    }
+  });
+
   test("declares availability, clears a slot, and opts back out", async ({
     page,
   }) => {
     const eventName = `E2E Availability ${uniqueSuffix()}`;
-
-    // A throwaway event of its own, so switching meetings on here can't change
-    // what the other specs see on the seeded ones.
-    await page.goto("/admin");
-    await page.getByLabel("Password").fill(ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "Access Admin" }).click();
-    await page.getByRole("button", { name: "New event" }).click();
-    await page.getByLabel("Name *").fill(eventName);
-    await page.getByLabel("Start *").fill("2026-10-01");
-    await page.getByLabel("End *").fill("2026-10-03");
-    await page.getByRole("button", { name: "Create event" }).click();
-    await page
-      .getByRole("listitem")
-      .filter({ hasText: eventName })
-      .getByRole("link", { name: "Manage" })
-      .click();
+    leftBehind.push(eventName);
+    await createEvent(page, eventName);
 
     const meetings = page.getByRole("form", { name: "Meetings" });
     await meetings.getByLabel("Enable meetings").check();
@@ -89,11 +134,7 @@ test.describe("attendee meeting availability", () => {
     // Those must not linger in the form's selection, or every later save is
     // refused for slots it never renders and the guest cannot untick.
     await page.goto("/admin/events");
-    await page
-      .getByRole("listitem")
-      .filter({ hasText: eventName })
-      .getByRole("link", { name: "Manage" })
-      .click();
+    await manage(page, eventName);
     // Scoped to Days: the event's own "End *" date sits on this page too.
     const days = page.getByRole("region", { name: "Days" });
     await days.getByRole("button", { name: /^Edit day / }).click();
@@ -124,20 +165,8 @@ test.describe("attendee meeting availability", () => {
     page,
   }) => {
     const eventName = `E2E Not Attending ${uniqueSuffix()}`;
-
-    await page.goto("/admin");
-    await page.getByLabel("Password").fill(ADMIN_PASSWORD);
-    await page.getByRole("button", { name: "Access Admin" }).click();
-    await page.getByRole("button", { name: "New event" }).click();
-    await page.getByLabel("Name *").fill(eventName);
-    await page.getByLabel("Start *").fill("2026-10-01");
-    await page.getByLabel("End *").fill("2026-10-03");
-    await page.getByRole("button", { name: "Create event" }).click();
-    await page
-      .getByRole("listitem")
-      .filter({ hasText: eventName })
-      .getByRole("link", { name: "Manage" })
-      .click();
+    leftBehind.push(eventName);
+    await createEvent(page, eventName);
 
     const meetings = page.getByRole("form", { name: "Meetings" });
     await meetings.getByLabel("Enable meetings").check();
@@ -159,8 +188,17 @@ test.describe("attendee meeting availability", () => {
   test("is not offered while the organizer keeps meetings off", async ({
     page,
   }) => {
-    await loginAndGoto(page, "/Conference-Gamma");
+    const eventName = `E2E No Meetings ${uniqueSuffix()}`;
+    leftBehind.push(eventName);
+    await createEvent(page, eventName);
 
+    await loginAndGoto(page, `/${eventName.replace(/ /g, "-")}`);
+
+    // Event details is the control: the toolbar rendered, and the 1-on-1s link
+    // is what is missing from it.
+    await expect(
+      page.getByRole("button", { name: "Event details" })
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: "1-on-1s" })).toBeHidden();
   });
 });

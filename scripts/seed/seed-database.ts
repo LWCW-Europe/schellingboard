@@ -9,6 +9,7 @@ import { DateTime } from "luxon";
 import * as schema from "@/db/schema";
 import { resolveDbPath, runMigrations } from "@/db/migrate";
 import { eventNameToSlug } from "@/utils/utils";
+import { meetingSlotsForDay } from "@/utils/meeting-slots";
 import { uploadsDir } from "@/utils/uploads-dir";
 import { VoteChoice } from "@/db/repositories/interfaces";
 import { hashUserPassword } from "@/utils/user-credentials";
@@ -32,6 +33,10 @@ import {
 } from "./data/templates";
 
 const TZ = "Europe/Berlin";
+
+// Set on the seeded events rather than left to the column default: the app
+// derives 1-on-1 slots from it, and so does the availability seeding below.
+const SLOT_INCREMENT_MINUTES = 30;
 
 // Returns a UTC Date representing the given clock time on a specific day in Berlin.
 // dayOffset is added to baseDate's Berlin calendar date before setting the time.
@@ -376,6 +381,8 @@ async function seedTestData(profile: SeedProfile) {
     timezone: TZ,
     maxSessionDuration: 120,
     breakMinutes: 10,
+    slotIncrementMinutes: SLOT_INCREMENT_MINUTES,
+    meetingsEnabled: true,
   }));
   db.insert(schema.events).values(eventRows).run();
   console.log(`  ✅ Created ${eventRows.length} events`);
@@ -424,6 +431,57 @@ async function seedTestData(profile: SeedProfile) {
   db.insert(schema.days).values(dayRows).run();
   console.log(
     `  ✅ Created ${dayRows.length} days across ${eventRows.length} events`
+  );
+
+  console.log("  🤝 Creating test 1-on-1 availability...");
+  const meetingPointRows = eventRows.flatMap((ev) =>
+    [
+      {
+        name: "Coffee bar",
+        description: "By the main staircase, open all day.",
+      },
+      {
+        name: "Garden bench",
+        description: "Behind the kitchen, weather permitting.",
+      },
+    ].map((point, index) => ({
+      id: nanoid(),
+      eventId: ev.id,
+      name: point.name,
+      description: point.description,
+      sortIndex: index,
+    }))
+  );
+  db.insert(schema.meetingPoints).values(meetingPointRows).run();
+
+  // Only every third guest, and only mid-afternoon: enough overlap that any two
+  // of them can meet, while leaving "nobody is free" a state you can still see.
+  const bookableGuests = guestRows.filter((_, index) => index % 3 === 0);
+  const availabilityRows = dayRows.flatMap((day) => {
+    const start = new Date(day.start);
+    const afternoon = (slotStart: Date) => {
+      const hoursIn =
+        (slotStart.getTime() - start.getTime()) / (60 * 60 * 1000);
+      return hoursIn >= 5 && hoursIn < 8;
+    };
+    return meetingSlotsForDay(
+      { start, end: new Date(day.end) },
+      SLOT_INCREMENT_MINUTES
+    )
+      .filter((slot) => afternoon(slot.start))
+      .flatMap((slot) =>
+        bookableGuests.map((guest) => ({
+          eventId: day.eventId,
+          guestId: guest.id,
+          slotStart: slot.start.toISOString(),
+        }))
+      );
+  });
+  insertChunked(availabilityRows, (chunk) =>
+    db.insert(schema.meetingAvailability).values(chunk)
+  );
+  console.log(
+    `  ✅ Created ${meetingPointRows.length} meeting points and ${availabilityRows.length} availability slots`
   );
 
   // Session proposals
