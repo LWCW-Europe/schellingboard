@@ -189,6 +189,23 @@ describe("proposal comments", () => {
     ).toHaveLength(0);
   });
 
+  it("tells a commenter whose guest was deleted what to do about it", async () => {
+    const { event, guest, proposal } = await setup();
+    act(guest.id);
+    await getRepositories().guests.delete(guest.id);
+
+    const result = await createComment({
+      proposalId: proposal.id,
+      eventSlug: event.slug,
+      body: "ghost",
+    });
+
+    expect("error" in result && result.error).toMatch(/select who you are/i);
+    expect(
+      await getRepositories().proposalComments.list(proposal.id)
+    ).toHaveLength(0);
+  });
+
   it("refuses to comment as a protected guest without a verified session", async () => {
     const { event, guest, proposal } = await setup();
     await getRepositories().guests.setAuthProtection(guest.id, {

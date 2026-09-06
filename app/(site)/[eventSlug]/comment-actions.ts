@@ -21,7 +21,7 @@ import {
 } from "@/utils/notifications";
 import { serverNow } from "@/utils/dev-clock-server";
 import {
-  NAME_PROTECTED_ERROR,
+  unverifiedUserMessage,
   verifiedCurrentUser,
 } from "@/utils/acting-guest";
 import { requireSiteAuth } from "@/utils/action-auth";
@@ -31,8 +31,6 @@ export type CommentActionResult =
 
 export type CommentLikeResult =
   { error: string | z.core.$ZodIssue[] } | { success: true; liked: boolean };
-
-const NO_NAME_ERROR = `Select your name before commenting — ${NAME_PROTECTED_ERROR.toLowerCase()}`;
 
 class Refusal extends Error {
   constructor(readonly payload: string | z.core.$ZodIssue[]) {
@@ -60,10 +58,11 @@ function revalidateEvent(eventSlug: string | undefined): void {
   }
 }
 
-async function requireGuest(): Promise<string> {
-  const guest = await verifiedCurrentUser(await cookies());
+async function requireGuest(task: string): Promise<string> {
+  const cookieStore = await cookies();
+  const guest = await verifiedCurrentUser(cookieStore);
   if (!guest) {
-    throw new Refusal(NO_NAME_ERROR);
+    throw new Refusal(await unverifiedUserMessage(cookieStore, task));
   }
   return guest;
 }
@@ -99,7 +98,7 @@ export async function createProposalComment(
 ): Promise<CommentActionResult> {
   await requireSiteAuth();
   try {
-    const guest = await requireGuest();
+    const guest = await requireGuest("commenting");
     const { proposalId, parentId, body, eventSlug } = await requireParsed(
       proposalCommentSchema,
       input
@@ -141,7 +140,7 @@ export async function createSessionComment(
 ): Promise<CommentActionResult> {
   await requireSiteAuth();
   try {
-    const guest = await requireGuest();
+    const guest = await requireGuest("commenting");
     const { sessionId, parentId, body } = await requireParsed(
       sessionCommentSchema,
       input
@@ -182,7 +181,7 @@ export async function createProfileComment(
 ): Promise<CommentActionResult> {
   await requireSiteAuth();
   try {
-    const guest = await requireGuest();
+    const guest = await requireGuest("commenting");
     const { profileId, parentId, body } = await requireParsed(
       profileCommentSchema,
       input
@@ -223,7 +222,7 @@ export async function updateComment(
 ): Promise<CommentActionResult> {
   await requireSiteAuth();
   try {
-    const guest = await requireGuest();
+    const guest = await requireGuest("editing your comment");
     const { commentId, body, eventSlug } = await requireParsed(
       commentUpdateSchema,
       input
@@ -250,7 +249,7 @@ export async function toggleCommentLike(
 ): Promise<CommentLikeResult> {
   await requireSiteAuth();
   try {
-    const guest = await requireGuest();
+    const guest = await requireGuest("liking a comment");
     const { commentId, eventSlug } = await requireParsed(
       commentLikeSchema,
       input
@@ -282,7 +281,7 @@ export async function deleteComment(
 ): Promise<CommentActionResult> {
   await requireSiteAuth();
   try {
-    const guest = await requireGuest();
+    const guest = await requireGuest("deleting your comment");
     const { commentId, eventSlug } = await requireParsed(
       commentDeleteSchema,
       input
