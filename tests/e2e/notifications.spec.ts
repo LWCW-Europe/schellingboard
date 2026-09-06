@@ -1,6 +1,8 @@
 import type { Page } from "@playwright/test";
+import { DateTime } from "luxon";
 import { expect, test } from "./helpers/fixtures";
 import { login } from "./helpers/auth";
+import { setDevClock } from "./helpers/dev-clock";
 import { selectUser } from "./helpers/user";
 
 // The suite shares one database, so each test notifies a different guest:
@@ -189,4 +191,91 @@ test("closing a session opened from a notification stays on the schedule", async
     page.getByRole("heading", { name: "Notifications" })
   ).toBeHidden();
   await expect(page.getByRole("link", { name: GREEN_SESSION })).toBeVisible();
+});
+
+// The attendee-count reminder reaches its host in the app, whatever the state
+// of the instance's mail configuration. Only a browser shows the rest: that it
+// lands in the notification list unread, is counted by the nav badge, and
+// opens the session with the count field ready to type into.
+//
+// Charlie Test hosts exactly two Gamma sessions that have finished by 17:00 on
+// day 1 — the opening keynote (day 0) and the React talk (day 1) — so they are
+// owed two follow-ups and no heads-up, which is dropped once a session has
+// ended.
+test.describe("attendee-count reminders", () => {
+  test.use({ timezoneId: "Europe/Berlin" });
+
+  // Gamma's days run 09:00–18:00 Berlin from today+14; 17:00 on day 1 is after
+  // both sessions and before the day folds shut.
+  const lateOnGammaDay = (day: number) =>
+    DateTime.now()
+      .setZone("Europe/Berlin")
+      .plus({ days: 14 + day })
+      .set({ hour: 17, minute: 0, second: 0, millisecond: 0 });
+
+  const KEYNOTE = /Opening Keynote/;
+  const REACT = /Building Scalable Web Applications/;
+
+  const noticeFor = (page: Page, title: RegExp) =>
+    page.getByRole("button", { name: title });
+
+  test("a host finds the reminder in their notification list and records the count", async ({
+    page,
+  }) => {
+    await login(page);
+    await page.goto("/Conference-Gamma?dev=1");
+    await selectUser(page, "Charlie Test");
+    await setDevClock(page, lateOnGammaDay(1));
+    await page.reload();
+
+    // The scheduler is off in E2E (REMINDER_DISPATCH_INTERVAL_MS=0, see
+    // docs/dev/testing.md), so the dev toolbar's button stands in for the tick
+    // a real deployment runs.
+    await page.getByRole("button", { name: "Send due reminders" }).click();
+    await expect(page.getByText(/sent \d+ reminders/)).toBeVisible();
+
+    await expect(bell(page)).toHaveAccessibleName(/unread/);
+    await bell(page).click();
+    await expect(
+      page.getByRole("heading", { name: "Notifications" })
+    ).toBeVisible();
+    await expect(noticeFor(page, KEYNOTE)).toBeVisible();
+    await expect(noticeFor(page, REACT)).toBeVisible();
+
+    // Opening it lands on the session with the cursor already in the field:
+    // one interaction to record.
+    await noticeFor(page, KEYNOTE).click();
+    const dialog = page.getByRole("dialog", { name: "Session details" });
+    await expect(dialog).toBeVisible();
+    const countInput = page.getByLabel("How many people attended?");
+    await expect(countInput).toBeFocused();
+    await countInput.fill("40");
+    await page.getByRole("button", { name: "Save attendee count" }).click();
+    await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+
+    // FR-023: recording a count settles nothing in the notification list. The
+    // reminder for the *other* session is still there, and still unread —
+    // nothing retracts, edits or auto-reads a notification after the fact.
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+
+    // The follow-up's auto-focus belongs to the session it arrived for. Left
+    // in the query it rides along into every session opened from the schedule
+    // afterwards (modal-nav copies the current params), stealing the scroll
+    // position and popping the keyboard open on a phone.
+    await page.getByRole("link", { name: REACT }).first().click();
+    await expect(dialog).toBeVisible();
+    await expect(countInput).not.toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+
+    await bell(page).click();
+    const outstanding = page
+      .getByRole("listitem")
+      .filter({ has: noticeFor(page, REACT) });
+    await expect(outstanding).toBeVisible();
+    await expect(
+      outstanding.getByRole("button", { name: "Mark as read" })
+    ).toBeVisible();
+  });
 });

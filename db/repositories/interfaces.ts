@@ -154,6 +154,14 @@ export type EmailSettings = {
   meetingRequest: boolean;
   /** A 1-on-1 the guest asked for was accepted, declined or canceled. */
   meetingResponse: boolean;
+  /** The heads-up an hour before a session the guest is hosting starts. */
+  sessionHeadsUp: boolean;
+  /**
+   * The follow-up after a session the guest is hosting ends, asking for the
+   * attendee count. Like every other key here, both of these gate the mail
+   * alone: the reminders still reach the guest in the app.
+   */
+  attendeeCountReminder: boolean;
 };
 
 export const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
@@ -168,6 +176,8 @@ export const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   // personally to the guest and is waiting on their answer.
   meetingRequest: true,
   meetingResponse: true,
+  sessionHeadsUp: true,
+  attendeeCountReminder: true,
 };
 
 type GuestPrivateInfo = {
@@ -584,6 +594,17 @@ export interface SessionsRepository {
     opts: { query?: string; limit: number; offset: number }
   ): Promise<SessionPage>;
   findById(id: string): Promise<Session | undefined>;
+  /**
+   * How many people attended, or null when nobody has recorded it (0 is a
+   * recorded value meaning "held, nobody came"). Host-only data: the caller
+   * must have already established that the requester hosts this session.
+   *
+   * Deliberately not a field of `Session`, which is serialised to every
+   * visitor by the [eventSlug] layout — see docs/dev/adr/0006.
+   */
+  getAttendeeCount(sessionId: string): Promise<number | null>;
+  /** Records, changes (a number) or clears (null) the attendee count. */
+  setAttendeeCount(sessionId: string, count: number | null): Promise<void>;
   create(data: SessionCreateInput): Promise<Session>;
   /**
    * When `hostIds` is given, any RSVPs by the session's hosts are removed
@@ -603,6 +624,110 @@ export interface SessionsRepository {
     locationIds: string[],
     excludeId?: string
   ): Promise<{ id: string; title: string } | undefined>;
+}
+
+// ── Session reminders ─────────────────────────────────────────────────────────
+
+export type ReminderKind = "headsUp" | "followUp";
+
+export type ReminderKey = {
+  sessionId: string;
+  guestId: string;
+  kind: ReminderKind;
+};
+
+/** One (session, host, kind) the dispatcher may owe a reminder for. */
+export type DueReminderCandidate = ReminderKey & {
+  dueTime: Date;
+
+  sessionTitle: string;
+  sessionStartTime: Date;
+  sessionEndTime: Date;
+  sessionLocationNames: string[];
+  /**
+   * Whether a count is already recorded — a flag, not the number. Suppressing
+   * the follow-up (FR-011) is the dispatcher's decision; the value itself is
+   * host-only and stays inside db/.
+   */
+  hasRecordedCount: boolean;
+
+  eventSlug: string;
+  eventTimezone: string;
+  eventBreakMinutes: number;
+
+  /**
+   * Null when the host has no address on file. That skips the mail only — the
+   * in-app notification still goes out and a row is still written.
+   */
+  guestEmail: string | null;
+  /**
+   * The EmailSettings key for *this* kind — `sessionHeadsUp` or
+   * `attendeeCountReminder` — which gates the **email** alone (FR-017). It has
+   * no bearing on the notification.
+   */
+  reminderOptIn: boolean;
+
+  storedDueTime: Date | null;
+  storedClaimedAt: Date | null;
+  storedNotifiedAt: Date | null;
+};
+
+export interface RemindersRepository {
+  /**
+   * Every (scheduled session with hosts × host × kind) whose reminder could
+   * be due by `now`, joined to its event, its hosts' addresses and
+   * preferences, its recorded-count flag and its stored row. Everything the
+   * dispatcher and both email templates read is on the candidate, because
+   * dispatch never queries once it starts sending. Eligibility is decided by
+   * the pure predicates in utils/reminder-schedule.ts, not by SQL.
+   */
+  listCandidates(now: Date): Promise<DueReminderCandidate[]>;
+  /**
+   * Atomically claims the reminder for `dueTime`, in one write transaction.
+   *
+   * `claimed` is false when another tick already holds it — i.e. the stored
+   * row carries the same due time with `claimedAt` set. `claimedAt` is the
+   * guard, deliberately not `sentAt`: a reminder with nothing to mail must
+   * block a second claim without ever having sent anything.
+   *
+   * `notifyOwed` says whether the in-app notification for THIS due time still
+   * has to be created. The claim clears `notifiedAt` whenever it advances the
+   * row to a new due time, so a reschedule owes a fresh notification (FR-024)
+   * while a mail retry against an unchanged due time does not (FR-016).
+   * Meaningless when `claimed` is false.
+   */
+  claim(
+    key: ReminderKey,
+    dueTime: Date,
+    now: Date
+  ): Promise<{ claimed: boolean; notifyOwed: boolean }>;
+  /** Records that the notification for the current due time exists. */
+  markNotified(key: ReminderKey, now: Date): Promise<void>;
+  /**
+   * A real email was confirmed sent: sets `sentAt`, clears `firstFailedAt`.
+   * The only writer of `sentAt`, so that column always means exactly "an email
+   * went out for this due time".
+   */
+  markSent(key: ReminderKey, now: Date): Promise<void>;
+  /**
+   * Settles the claim when there is nothing to mail — an opted-out host, no
+   * address, or an instance with no mail configured. Clears `firstFailedAt`
+   * (there is nothing to retry) and leaves `sentAt` null. `claimedAt` from the
+   * winning claim is what stops the reminder being reprocessed.
+   */
+  markSkipped(key: ReminderKey): Promise<void>;
+  /**
+   * Failed send. Sets `firstFailedAt` when unset, then either clears
+   * `claimedAt` to re-arm for the next tick, or — once the first failure is
+   * older than `abandonAfterMs` — leaves it set so the reminder is never
+   * retried again. Never touches `sentAt`: a failed send is not a sent one.
+   * Reports which happened, so the caller can log the abandonment.
+   */
+  markFailed(
+    key: ReminderKey,
+    now: Date,
+    abandonAfterMs: number
+  ): Promise<{ abandoned: boolean }>;
 }
 
 // ── RSVPs ─────────────────────────────────────────────────────────────────────

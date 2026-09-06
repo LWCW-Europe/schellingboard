@@ -49,7 +49,7 @@ export const releaseNotes: ReleaseNote[] = [
       "**Notifications on your phone**: Settings can send the notifications you already get to your phone or laptop, so they arrive while the site is closed. iPhones need it on the home screen first.",
       "**Notifications in the app**: a bell counts what is waiting, and clicking one takes you to it. Tick the ones you are done with to mark them read or delete them. No email set-up needed.",
       "**1-on-1s**: organizers switch them on and suggest where to meet; attendees mark when they are free, ask someone from their profile, accept or decline, and see them on the schedule.",
-      '**The schedule shows where you are in the day**: a red line marks the current time while the event is running, and a "Now" button jumps to it.',
+      '**Hosts can record how many people came** to a session once it has finished. Only that session\'s hosts ever see the number, and 0 is a real answer: "held, nobody came".',
     ],
   },
   {

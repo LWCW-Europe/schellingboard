@@ -43,6 +43,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   other person reads on the meeting itself
 - **Find the attendees who are open to 1-on-1s** (#945): a new filter in the attendee directory,
   beside Session host and Has profile. It covers every event on the site, not only this one
+- **Hosts can record how many people came** (#852): a finished session offers its hosts a
+  field for the real attendance figure. Only its hosts see it, and 0 means "held, nobody came"
+- **Two reminders nudge hosts to count the room** (#852): an hour before a session starts
+  and a quarter of an hour after it ends, in the app and — where email is set up — by email
 
 ### Changed
 
@@ -238,9 +242,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   fixed amount and waiting 300–500ms for it. The room-details hover retries too: under load the
   mouse could arrive before the grid had hydrated, and that first hover was simply lost
 - E2E tests settle the page before reloading it rather than after. The kiosk tests wait for the
-  dev clock's refresh to finish streaming, and the view-session test for the fetches the session
-  modal starts; a reload aborts whatever is still in flight, which logs the RSC-payload and
-  `NetworkError` failures the console guard fails on. Waiting only afterwards was too late
+  dev clock's refresh to finish streaming — a wait that now lives in
+  `tests/e2e/helpers/dev-clock.ts`, shared by every spec that time-travels — and the view-session
+  test for the fetches the session modal starts; a reload aborts whatever is still in flight, which
+  logs the RSC-payload and `NetworkError` failures the console guard fails on. Waiting only
+  afterwards was too late
 - Mail E2E tests wait for the mail they triggered by its identity instead of counting how many
   match its subject. Mailpit answers a search with the newest 50 matches and keeps only the newest
   500 messages, so once a few suite runs had filled those the count of "Set your password" mails

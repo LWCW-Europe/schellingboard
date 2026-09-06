@@ -348,6 +348,16 @@ is stable — the aim there is to measure flakiness, not to start failing on it.
   handler — so both come up green while hydration is still pending. Where the behavior under test
   lives in an effect, wait for that effect's own result before acting on it: `kiosk.spec.ts` polls
   until the `kiosk` cookie is gone before it navigates on, `helpers/user.ts` taps the chip again
+- The unattended reminder tick is off (`REMINDER_DISPATCH_INTERVAL_MS=0` in
+  `.env.test`, and in the allowlist `scripts/e2e-docker.sh` forwards to the
+  container). The seed dates every fixture relative to `new Date()`, so a live
+  tick would drop unrelated mail into the mailbox the delivery assertions
+  search, and unrelated notifications into the lists the notification tests
+  read — flaky by time of day, and worst in the Docker tier. That variable is
+  the only thing that turns the tick off: unsetting SMTP does not, since a
+  reminder is delivered in the app whether or not it can also be mailed. A
+  test that needs reminders delivered clicks **Send due reminders** on the
+  `?dev=1` toolbar, which runs one dispatch against the dev clock
 
 ## Test data
 

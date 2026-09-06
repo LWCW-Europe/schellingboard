@@ -666,8 +666,10 @@ function proposalCommentPath(
 }
 
 // Deep link to the session, same shape as modal-nav's
-// viewSessionLinkFromElsewhere.
-function sessionPath(eventSlug: string, sessionId: string) {
+// viewSessionLinkFromElsewhere (anchor MnpjIo7Y). Exported because reminder
+// dispatch builds the same link for its notification and its email: one
+// definition, not three copies.
+export function sessionPath(eventSlug: string, sessionId: string) {
   return `/${eventSlug}?viewSession=${sessionId}`;
 }
 

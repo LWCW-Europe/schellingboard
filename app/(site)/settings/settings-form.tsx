@@ -108,6 +108,18 @@ export function SettingsForm({
             <input type="checkbox" {...form.register("meetingResponse")} />a
             1-on-1 of mine is accepted, declined or canceled
           </label>
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
+            <input type="checkbox" {...form.register("sessionHeadsUp")} />a
+            session I&rsquo;m hosting starts in an hour
+          </label>
+          <label className="flex items-center gap-2 text-sm text-fg-muted">
+            <input
+              type="checkbox"
+              {...form.register("attendeeCountReminder")}
+            />
+            a session I&rsquo;m hosting ended a quarter of an hour ago, so I can
+            record how many people attended
+          </label>
         </fieldset>
 
         {form.formState.errors.root && (
