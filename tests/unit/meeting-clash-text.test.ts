@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { clashLine, toMeetingClashes } from "@/utils/meeting-clash-text";
+import {
+  clashLine,
+  clashLines,
+  toMeetingClashes,
+  type MeetingClash,
+} from "@/utils/meeting-clash-text";
 
 describe("toMeetingClashes", () => {
   const hosting = {
@@ -98,5 +103,23 @@ describe("clashLine", () => {
         isViewer: true,
       })
     ).toBe("You are busy");
+  });
+});
+
+describe("clashLines", () => {
+  it("says each distinct line once, in order", () => {
+    const theirs: MeetingClash = {
+      isViewer: false,
+      guestName: "Yuki",
+      kind: "busy",
+      title: null,
+    };
+    expect(
+      clashLines([
+        { isViewer: true, guestName: "Me", kind: "hosting", title: "Talk" },
+        theirs,
+        theirs,
+      ])
+    ).toBe("You are hosting Talk; Yuki is already booked");
   });
 });
