@@ -263,9 +263,10 @@ once you take part at all — open to 1-on-1s, or with one arranged — so the
 rooms line up from day to day, and it isn't there at all otherwise. It also
 shows the slots you are not offering. Declined and lapsed requests drop off it.
 
-Tap one to open it. That is also where either of you can **cancel** a 1-on-1
-you had agreed, or take back a request nobody has answered yet, up until the
-slot begins; the other person is told.
+Hovering one shows what the block has no room for — the time, their line of
+context, and anything it clashes with. Tap one to open it. That is also where
+either of you can **cancel** a 1-on-1 you had agreed, or take back a request
+nobody has answered yet, up until the slot begins; the other person is told.
 
 ## Attendee directory & profiles
 

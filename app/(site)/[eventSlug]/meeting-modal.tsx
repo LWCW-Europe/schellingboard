@@ -14,34 +14,10 @@ import {
   SECONDARY_BUTTON,
 } from "@/app/components/buttons";
 import { EventContext } from "@/app/(site)/context";
-import { clashLine } from "@/utils/meeting-clash-text";
-import { canCancel } from "@/utils/meeting-rules";
-import type { MeetingView } from "@/utils/meeting-views";
+import { clashLines } from "@/utils/meeting-clash-text";
+import { canCancel, statusLine } from "@/utils/meeting-rules";
 import { dismissViewMeeting } from "./modal-nav";
 import { useMyMeetings } from "./use-meetings";
-
-/** What has become of the request, in the words of whoever is reading. */
-function statusLine(meeting: MeetingView): string {
-  const them = meeting.otherName;
-  switch (meeting.status) {
-    case "pending":
-      return meeting.role === "recipient"
-        ? `${them} is waiting for your answer.`
-        : `Waiting for ${them} to answer.`;
-    case "accepted":
-      return "Confirmed — see you there.";
-    case "declined":
-      return meeting.role === "recipient"
-        ? "You declined this."
-        : `${them} declined this.`;
-    case "canceled":
-      return "This 1-on-1 was canceled.";
-    case "expired":
-      // Nobody is at fault for an unanswered request, so it is not phrased as
-      // one: the slot simply came and went (issue #392, section 1.4).
-      return "Nobody answered before the slot began.";
-  }
-}
 
 /**
  * The meeting modal wherever `?viewMeeting=` can be opened — the meetings page
@@ -175,8 +151,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                 request (issue #392, section 1.4). */}
             {meeting.clashes.length > 0 && (
               <p className="text-sm rounded-md bg-warning-tint p-3 text-fg">
-                {[...new Set(meeting.clashes.map(clashLine))].join("; ")} during
-                this slot.
+                {clashLines(meeting.clashes)} during this slot.
               </p>
             )}
 

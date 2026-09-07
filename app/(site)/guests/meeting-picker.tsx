@@ -5,7 +5,7 @@ import { Modal } from "@/app/components/modal";
 import { Input } from "@/app/input";
 import { requestMeetingAction } from "@/app/actions/meetings";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/components/buttons";
-import { clashLine } from "@/utils/meeting-clash-text";
+import { clashLines } from "@/utils/meeting-clash-text";
 import type { MeetingDayOption, MeetingOption } from "@/utils/meeting-options";
 
 function SlotList({
@@ -147,8 +147,7 @@ function RequestForm({
       {/* A clash is raised, never enforced: the pair decide for themselves. */}
       {slot?.state === "busy" && (
         <p className="text-sm rounded-md bg-warning-tint p-3 text-fg">
-          {[...new Set(slot.clashes.map(clashLine))].join("; ")} during this
-          slot — book it anyway?
+          {clashLines(slot.clashes)} during this slot — book it anyway?
         </p>
       )}
 
