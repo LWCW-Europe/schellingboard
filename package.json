@@ -24,7 +24,7 @@
     "nodemailer": "^9.0.6",
     "react": "^19",
     "react-dom": "^19",
-    "react-hook-form": "^7.86.0",
+    "react-hook-form": "^7.87.0",
     "react-markdown": "^10.1.0",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
@@ -33,7 +33,7 @@
     "turndown": "^7.2.4",
     "unified": "^11.0.5",
     "web-push": "^3.6.7",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@docmd/core": "^0.9.4",
@@ -61,7 +61,7 @@
     "postcss": "^8.5.26",
     "prettier": "3.9.6",
     "tailwindcss": "^4.3.3",
-    "tsx": "^4.23.12",
+    "tsx": "^4.23.13",
     "typescript": "^6",
     "typescript-eslint": "^8.68.0",
     "vitest": "^4"
