@@ -276,7 +276,7 @@ export const sessions = sqliteTable("sessions", {
   // How many people attended, recorded by a host after the session finished.
   // Nullable with no default on purpose: NULL means "not recorded", 0 means
   // "held, nobody came". Deliberately absent from the Session type, which is
-  // serialised to every visitor — see docs/dev/adr/0006.
+  // serialised to every visitor — see docs/dev/adr/0007.
   attendeeCount: integer("attendee_count"),
 });
 
@@ -311,7 +311,7 @@ export const sessionLocations = sqliteTable(
 // for: an equal one is the idempotency check, a different one is the re-arm
 // signal after a reschedule. A reminder is delivered on two channels, so each
 // gets its own timestamp — a mail retry must not re-notify, a reschedule must
-// do both. See docs/dev/adr/0006.
+// do both. See docs/dev/adr/0007.
 export const sessionReminders = sqliteTable(
   "session_reminders",
   {

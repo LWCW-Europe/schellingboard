@@ -1,6 +1,9 @@
 import { DateTime } from "luxon";
 import { getRepositories } from "@/db/container";
-import type { DueReminderCandidate } from "@/db/repositories/interfaces";
+import type {
+  DueReminderCandidate,
+  ReminderKey,
+} from "@/db/repositories/interfaces";
 import { isMailerConfigured, sendMail } from "@/utils/mailer";
 import { sessionPath } from "@/utils/notifications";
 import { siteUrl } from "@/utils/site-url";
@@ -49,6 +52,33 @@ export async function dispatchDueReminders(
 
   const { notifications, reminders } = getRepositories();
   const base = siteUrl();
+
+  // Re-arms the reminder for the next tick, or gives up on it once the first
+  // failure is 24 hours old. Both delivery channels share it: one host's
+  // failure must not cost the others theirs, whichever channel it was on.
+  async function recordFailure(
+    key: ReminderKey,
+    candidate: DueReminderCandidate,
+    err: unknown
+  ): Promise<void> {
+    const { abandoned } = await reminders.markFailed(
+      key,
+      now,
+      ABANDON_AFTER_MS
+    );
+    if (!abandoned) {
+      summary.failed += 1;
+      return;
+    }
+    summary.abandoned += 1;
+    // Names the session and the kind only: a recipient's address is personal
+    // data and never belongs in a log (FR-016).
+    console.error(
+      `Abandoning ${candidate.kind} reminder for session ${candidate.sessionId} after ${ABANDON_AFTER_HOURS}h of failures:`,
+      err
+    );
+  }
+
   for (const candidate of await reminders.listCandidates(now)) {
     if (!eligible(candidate, now)) {
       summary.skipped += 1;
@@ -59,29 +89,51 @@ export async function dispatchDueReminders(
       guestId: candidate.guestId,
       kind: candidate.kind,
     };
-    const { claimed, notifyOwed } = await reminders.claim(
-      key,
-      candidate.dueTime,
-      now
-    );
+
+    // listCandidates snapshots the run up front and each send takes seconds,
+    // so a session or host deleted inside that window fails a foreign key
+    // here. The claim wrote nothing, so there is nothing to re-arm.
+    let claimed: boolean;
+    let notifyOwed: boolean;
+    try {
+      ({ claimed, notifyOwed } = await reminders.claim(
+        key,
+        candidate.dueTime,
+        now
+      ));
+    } catch (err) {
+      console.error(
+        `Could not claim the ${candidate.kind} reminder for session ${candidate.sessionId}:`,
+        err
+      );
+      summary.skipped += 1;
+      continue;
+    }
     if (!claimed) {
       summary.skipped += 1;
       continue;
     }
 
     if (notifyOwed) {
-      await notifications.create({
-        guestId: candidate.guestId,
-        type:
-          candidate.kind === "headsUp"
-            ? "sessionHeadsUp"
-            : "attendeeCountReminder",
-        text: reminderNoticeText(candidate.kind, candidate.sessionTitle),
-        url: recordPath(candidate),
-        createdAt: now,
-      });
-      await reminders.markNotified(key, now);
-      summary.notified += 1;
+      try {
+        await notifications.create({
+          guestId: candidate.guestId,
+          type:
+            candidate.kind === "headsUp"
+              ? "sessionHeadsUp"
+              : "attendeeCountReminder",
+          text: reminderNoticeText(candidate.kind, candidate.sessionTitle),
+          url: recordPath(candidate),
+          createdAt: now,
+        });
+        await reminders.markNotified(key, now);
+        summary.notified += 1;
+      } catch (err) {
+        // Unnotified but claimed would settle the reminder having delivered
+        // nothing, on either channel, for good.
+        await recordFailure(key, candidate, err);
+        continue;
+      }
     }
 
     // Nothing to mail is not a failure and has nothing to retry: the claim
@@ -104,23 +156,7 @@ export async function dispatchDueReminders(
       await reminders.markSent(key, now);
       summary.sent += 1;
     } catch (err) {
-      // One host's mail server refusing must not cost the others theirs.
-      const { abandoned } = await reminders.markFailed(
-        key,
-        now,
-        ABANDON_AFTER_MS
-      );
-      if (abandoned) {
-        summary.abandoned += 1;
-        // Names the session and the kind only: a recipient's address is
-        // personal data and never belongs in a log (FR-016).
-        console.error(
-          `Abandoning ${candidate.kind} reminder for session ${candidate.sessionId} after ${ABANDON_AFTER_HOURS}h of failures:`,
-          err
-        );
-      } else {
-        summary.failed += 1;
-      }
+      await recordFailure(key, candidate, err);
     }
   }
   return summary;
@@ -134,6 +170,7 @@ function eligible(candidate: DueReminderCandidate, now: Date): boolean {
         endTime: candidate.sessionEndTime,
         breakMinutes: candidate.eventBreakMinutes,
         storedDueTime: candidate.storedDueTime,
+        storedClaimedAt: candidate.storedClaimedAt,
         alreadyNotifiedHost: candidate.storedNotifiedAt !== null,
       })
     : followUpEligible({

@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // FR-005/FR-020: a recorded attendee count is host-only. The enforcement is
 // structural — `attendeeCount` is absent from the `Session` type, which the
-// event layout serialises into every visitor's browser (docs/dev/adr/0006).
+// event layout serialises into every visitor's browser (docs/dev/adr/0007).
 // "Structurally impossible" is a claim a test should hold, not something a
 // reviewer has to remember, so this pins both payloads that carry sessions:
 // the attendee-facing event layout and the admin session list.

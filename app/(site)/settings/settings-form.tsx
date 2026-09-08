@@ -117,8 +117,8 @@ export function SettingsForm({
               type="checkbox"
               {...form.register("attendeeCountReminder")}
             />
-            a session I&rsquo;m hosting ended a quarter of an hour ago, so I can
-            record how many people attended
+            a session I&rsquo;m hosting has ended, so I can record how many
+            people attended
           </label>
         </fieldset>
 

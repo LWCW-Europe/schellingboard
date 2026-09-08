@@ -1,4 +1,4 @@
-# ADR 0006: Attendee count storage and in-process reminder dispatch
+# ADR 0007: Attendee count storage and in-process reminder dispatch
 
 - **Status:** Accepted
 - **Date:** 2026-08-25, amended 2026-09-02 (see [Amendment](#amendment-2026-09-02--the-in-app-channel))

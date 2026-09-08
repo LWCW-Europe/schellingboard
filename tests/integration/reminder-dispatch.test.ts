@@ -496,6 +496,23 @@ describe("dispatchDueReminders", () => {
       expect(recipients()).toEqual([SECOND]);
     });
 
+    // The heads-up has a retry window too — a short one, closing when the
+    // session ends (FR-013) rather than after 24 hours.
+    it("retries a failed heads-up while the session is still to come", async () => {
+      const { second } = await twoHostSession();
+      failFor(SECOND);
+      await dispatchDueReminders(HEADS_UP_AT);
+
+      vi.mocked(sendMail).mockReset();
+      const summary = await dispatchDueReminders(
+        new Date("2026-09-01T09:20:00Z")
+      );
+
+      expect(summary.sent).toBe(1);
+      expect(recipients()).toEqual([SECOND]);
+      expect(await reminderNotices(second.id)).toHaveLength(1);
+    });
+
     it("retries a reminder whose first failure is under 24 hours old", async () => {
       await twoHostSession();
       failFor(SECOND);
@@ -531,6 +548,76 @@ describe("dispatchDueReminders", () => {
       expect((await dispatchDueReminders(later(FOLLOW_UP_AT, 26))).sent).toBe(
         0
       );
+    });
+  });
+
+  // listCandidates snapshots the whole run up front and each send takes
+  // seconds, so a host or a session deleted inside that window fails the
+  // foreign key on a write the loop is already committed to.
+  describe("when a host is deleted mid-run", () => {
+    const FK = new Error("FOREIGN KEY constraint failed");
+
+    /** Fails the notification write for one host until `stop()` is called. */
+    function failNotificationFor(guestId: string) {
+      const { notifications } = getRepositories();
+      const create = notifications.create.bind(notifications);
+      let failing = true;
+      vi.spyOn(notifications, "create").mockImplementation((input) =>
+        failing && input.guestId === guestId
+          ? Promise.reject(FK)
+          : create(input)
+      );
+      return () => {
+        failing = false;
+      };
+    }
+
+    it("still reminds the hosts behind them", async () => {
+      const { first, second } = await twoHostSession();
+      failNotificationFor(first.id);
+
+      const summary = await dispatchDueReminders(FOLLOW_UP_AT);
+
+      expect(summary.notified).toBe(1);
+      expect(summary.failed).toBe(1);
+      expect(await reminderNotices(second.id)).toHaveLength(1);
+      expect(recipients()).toEqual([SECOND]);
+    });
+
+    it("leaves the reminder owed rather than settling it unsent", async () => {
+      const { first } = await twoHostSession();
+      const stop = failNotificationFor(first.id);
+      await dispatchDueReminders(FOLLOW_UP_AT);
+      expect(await reminderNotices(first.id)).toHaveLength(0);
+
+      stop();
+      vi.mocked(sendMail).mockReset();
+      const summary = await dispatchDueReminders(later(FOLLOW_UP_AT, 1));
+
+      expect(summary.notified).toBe(1);
+      expect(await reminderNotices(first.id)).toHaveLength(1);
+      expect(recipients()).toEqual([FIRST]);
+    });
+
+    it("still reminds the hosts behind them when the claim itself throws", async () => {
+      const { first, second } = await twoHostSession();
+      const { reminders } = getRepositories();
+      const claim = reminders.claim.bind(reminders);
+      vi.spyOn(reminders, "claim")
+        .mockImplementationOnce(() => Promise.reject(FK))
+        .mockImplementation(claim);
+      const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const summary = await dispatchDueReminders(FOLLOW_UP_AT);
+
+      // Which host loses their claim depends on the candidate order; that one
+      // host is the whole cost is what matters.
+      expect(summary.notified).toBe(1);
+      expect([
+        ...(await reminderNotices(first.id)),
+        ...(await reminderNotices(second.id)),
+      ]).toHaveLength(1);
+      expect(logged).toHaveBeenCalled();
     });
   });
 });
