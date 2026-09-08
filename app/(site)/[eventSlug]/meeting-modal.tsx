@@ -13,6 +13,7 @@ import {
   PRIMARY_BUTTON,
   SECONDARY_BUTTON,
 } from "@/app/components/buttons";
+import { Input } from "@/app/input";
 import { EventContext } from "@/app/(site)/context";
 import { clashLines } from "@/utils/meeting-clash-text";
 import { canCancel, statusLine } from "@/utils/meeting-rules";
@@ -43,6 +44,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
   const { meetings, reload } = useMyMeetings();
   const [error, setError] = useState<string | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelNote, setCancelNote] = useState("");
   const [isAnswering, startAnswer] = useTransition();
 
   // Duplication, anchor: waggHhba
@@ -66,6 +68,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
   const act = (run: () => Promise<MeetingActionResult>) => {
     setError(null);
     setConfirmingCancel(false);
+    setCancelNote("");
     startAnswer(async () => {
       try {
         const result = await run();
@@ -146,6 +149,17 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
               </p>
             )}
 
+            {/* A canceled meeting leaves the column, so this modal is where the
+                note is read -- named, since the message above is a box like it. */}
+            {meeting.cancelNote && (
+              <p className="text-sm rounded-md bg-surface-sunken p-3 text-fg">
+                <span className="font-medium text-fg-muted">
+                  Why it was called off:{" "}
+                </span>
+                {meeting.cancelNote}
+              </p>
+            )}
+
             {/* The requester saw only that the slot was taken; the person
                 answering sees what it is, so they can weigh it against the
                 request (issue #392, section 1.4). */}
@@ -195,11 +209,28 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                   <p className="text-sm text-fg">
                     {meeting.otherName} will be told. Cancel it?
                   </p>
+                  <div className="flex flex-col gap-1">
+                    <label
+                      htmlFor="cancel-note"
+                      className="text-sm font-medium text-fg-muted"
+                    >
+                      Say why, if you like (optional)
+                    </label>
+                    <Input
+                      id="cancel-note"
+                      value={cancelNote}
+                      onChange={(e) => setCancelNote(e.target.value)}
+                      placeholder="Sorry — my session moved…"
+                      className="w-full h-10"
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() =>
-                        act(() => cancelMeetingAction({ meetingId }))
+                        act(() =>
+                          cancelMeetingAction({ meetingId, note: cancelNote })
+                        )
                       }
                       disabled={isAnswering}
                       className={DANGER_BUTTON}

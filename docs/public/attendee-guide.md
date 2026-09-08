@@ -269,6 +269,12 @@ context, and anything it clashes with. Tap one to open it. That is also where
 either of you can **cancel** a 1-on-1 you had agreed, or take back a request
 nobody has answered yet, up until the slot begins; the other person is told.
 
+You can add a line saying why. It is optional — nobody owes an explanation for
+calling something off — and it reaches the other person on the meeting itself
+rather than in the email, the same as the line of context on a request. A
+canceled 1-on-1 leaves the schedule, so their notification is how they get back
+to it.
+
 ### Arrange one from the schedule
 
 Tapping an **empty slot** in that column asks the question a profile cannot:
