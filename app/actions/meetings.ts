@@ -339,6 +339,6 @@ export async function saveMeetingAvailabilityAction(
     declared.map((slot) => new Date(slot))
   );
 
-  revalidatePath(`/${event.slug}/meetings`);
+  revalidatePath("/settings");
   return { ok: true };
 }

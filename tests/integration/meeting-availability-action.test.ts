@@ -89,6 +89,22 @@ describe("saveMeetingAvailabilityAction", () => {
     expect(saved.map((d) => d.toISOString())).toEqual([SLOT_1, SLOT_3]);
   });
 
+  // Settings is where the form is rendered; the event's own pages never show
+  // the declaration back.
+  it("refreshes the settings page it was saved from", async () => {
+    const { revalidatePath } = await import("next/cache");
+    const event = await meetingsEvent();
+    const guest = await createGuest({ eventId: event.id });
+    await signIn(guest.id);
+
+    await saveMeetingAvailabilityAction({
+      eventId: event.id,
+      slotStarts: [SLOT_1],
+    });
+
+    expect(revalidatePath).toHaveBeenCalledWith("/settings");
+  });
+
   it("replaces the previous set rather than adding to it", async () => {
     const event = await meetingsEvent();
     const guest = await createGuest({ eventId: event.id });

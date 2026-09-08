@@ -3,6 +3,7 @@ import { test, expect } from "./helpers/fixtures";
 import { uniqueSuffix } from "./helpers/unique";
 import { loginAndGoto } from "./helpers/auth";
 import { selectUser } from "./helpers/user";
+import { openAvailability } from "./helpers/meetings";
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admintest";
 
@@ -233,11 +234,12 @@ test.describe("1-on-1 meetings", () => {
       page.getByRole("button", { name: /schedule a 1-on-1/i })
     ).toBeHidden();
 
-    // The askee declares they are open to meetings.
-    await page.goto(`/${slug}/meetings`);
+    // The askee declares they are open to 1-on-1s, under Settings. The goto
+    // first: the profile modal is still up, over the header actAs needs.
+    await page.goto("/settings");
     await actAs(page, new RegExp(askee));
-    await page.goto(`/${slug}/meetings`);
-    const availability = page.getByRole("form", { name: "1-on-1s" });
+    await page.goto("/settings");
+    const availability = await openAvailability(page, eventName);
     await availability.getByLabel(/open to 1-on-1s/).check();
     await availability
       .getByRole("button", { name: "Save availability" })
