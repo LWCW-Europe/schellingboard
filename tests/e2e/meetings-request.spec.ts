@@ -20,6 +20,8 @@ const isoDay = (offsetDays: number) => {
 const EVENT_START = isoDay(30);
 const EVENT_END = isoDay(32);
 
+const POINT_DESCRIPTION = "By the main staircase, open all day.";
+
 /** How the picker heads that day's slots: luxon's "EEE d LLL". */
 const DAY_HEADING = new RegExp(
   new Date(`${EVENT_START}T09:00:00Z`).toLocaleDateString("en-GB", {
@@ -95,6 +97,7 @@ async function meetingsEvent(page: Page, eventName: string, names: string[]) {
   await meetings.getByLabel("Enable meetings").check();
   await meetings.getByRole("button", { name: /add meeting point/i }).click();
   await meetings.getByLabel("Name *").fill("Coffee bar");
+  await meetings.getByLabel("Description").fill(POINT_DESCRIPTION);
   await meetings.getByRole("button", { name: /add meeting point/i }).click();
   await meetings.getByRole("button", { name: "Save meetings" }).click();
   await expect(meetings.getByText("Saved!")).toBeVisible();
@@ -262,8 +265,16 @@ test.describe("1-on-1 meetings", () => {
     await expect(
       picker.getByRole("heading", { name: new RegExp(`1-on-1 with ${askee}`) })
     ).toBeVisible();
+    // A meeting point's description is already allowed for, so picking one
+    // fills the space instead of pushing the rest of the form down under the
+    // pointer that is on its way to Send.
+    const send = picker.getByRole("button", { name: "Send request" });
+    const sendBefore = await send.boundingBox();
     await picker.getByRole("button", { name: "Coffee bar" }).click();
-    await picker.getByRole("button", { name: "Send request" }).click();
+    await expect(picker.getByText(POINT_DESCRIPTION)).toBeVisible();
+    expect((await send.boundingBox())?.y).toBe(sendBefore?.y);
+
+    await send.click();
     await expect(picker.getByText(new RegExp(`Asked ${askee}`))).toBeVisible();
     await picker.getByRole("button", { name: "Done" }).click();
 
