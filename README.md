@@ -19,6 +19,7 @@ This is a public open-source fork of [rachelweinberg12/scheduling-app](https://g
 - **Session proposals** — attendees submit and browse session ideas
 - **Voting** — attendees express interest (interested / maybe / skip) before the schedule is set
 - **Scheduling board** — place sessions on a time/location grid
+- **1-on-1s** — attendees mark when they are free and book short meetings with each other
 - **Event phases** — proposal, voting, and scheduling phases with configurable date ranges
 - **Multi-event support** — host multiple events from one deployment
 - **Kiosk mode** — append `?kiosk=1` to a schedule URL for large screens at the venue: a red line marks the current time, the schedule auto-scrolls to it and refreshes periodically, and the screen is kept awake. The schedule stays fully interactive. Kiosk mode sticks across navigation once set — turn it off with `?kiosk=0`. Combine with `loc` filters (e.g. `?kiosk=1&loc=Main+Hall`) to show only some rooms.

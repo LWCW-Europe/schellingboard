@@ -105,7 +105,7 @@ changes materially. Check off `[ ]` as you go.
 - [ ] `session-details.webp` — Session detail popup (host, location, time, attendees, description)
 - [ ] `add-session.webp` — Form for adding a session directly to the schedule
 - [ ] `meetings-availability.webp` — The **1-on-1s** section of Settings with an event's panel open: the "I'm open to 1-on-1s" switch on, and a day's slots as checkboxes with some of them cleared
-- [ ] `meeting-request.webp` — The request form behind **Schedule a 1-on-1** on another attendee's profile, with a slot picked, a meeting point chosen and a line of context typed. Ahmad Karimi's profile has all three slot states (Available, Busy, Unavailable) on the event's first day
+- [ ] `meeting-request.webp` — The request form behind **Schedule a 1-on-1** on another attendee's profile, with a slot picked, a meeting point chosen and a line of context typed. Ahmad Karimi's profile has slots to offer on the event's first day: the afternoon he declared reads **Busy**, because Hana is in a session for all of it, and the rest of the day is **Unavailable**
 - [ ] `meeting-answer.webp` — The 1-on-1 waiting for Hana's reply (Aisha Diallo's, 15:00 on day one), opened from her column of the grid: Accept, Decline, and the clash warning
 - [ ] `meetings-schedule-column.webp` — The scheduling grid's first column, picture and all, with Hana's own 1-on-1s in it. Scroll the grid so day one's whole afternoon is in view
 - [ ] `meeting-book-from-grid.webp` — "Who's free at …?", from the **+** on an empty slot of that column. Take it on 14:30, where the seeded attendees are bookable — most hours nobody is free, and the popup then has nothing to show

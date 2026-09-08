@@ -272,7 +272,7 @@ the whole message — this is a request, not a chat.
 The organizer sets how many requests you may have waiting for an answer at once.
 Once you are at that number, wait for a reply or cancel one first.
 
-![Request form for a 1-on-1, with the day's slots marked Available, Busy or Unavailable, a choice of meeting points, and a line of context](../screenshots/meeting-request.webp)
+![Request form for a 1-on-1, with the day's slots — one picked, the rest marked Busy or Unavailable — a choice of meeting points, and a line of context](../screenshots/meeting-request.webp)
 
 ### Answering a request
 

@@ -460,7 +460,12 @@ async function seedTestData(profile: SeedProfile) {
 
   // Only every third guest, and only mid-afternoon: enough overlap that any two
   // of them can meet, while leaving "nobody is free" a state you can still see.
-  const bookableGuests = guestRows.filter((_, index) => index % 3 === 0);
+  // The screenshot guest is held back from it because she declares her own,
+  // wider day below -- two sources for one guest would collide on the primary
+  // key the moment her index fell on a multiple of three.
+  const bookableGuests = guestRows.filter(
+    (guest, index) => index % 3 === 0 && guest.name !== SCREENSHOT_GUEST
+  );
   const availabilityRows = dayRows.flatMap((day) => {
     const start = new Date(day.start);
     const afternoon = (slotStart: Date) => {
@@ -483,9 +488,9 @@ async function seedTestData(profile: SeedProfile) {
   });
   // A wider day than the shared afternoon, with gaps in it: the screenshot
   // guest's own availability is one of the shots. Large profile only, so the
-  // E2E suite keeps every seeded guest unbookable.
+  // small fixture the E2E suite pins on keeps the availability it had.
   if (profile === "large") {
-    const screenshotGuest = guestRows.find((g) => g.name === SCREENSHOT_GUEST)!;
+    const screenshotGuestId = guestIdByName(SCREENSHOT_GUEST);
     for (const day of dayRows) {
       const start = new Date(day.start);
       for (const slot of meetingSlotsForDay(
@@ -498,7 +503,7 @@ async function seedTestData(profile: SeedProfile) {
         if (hoursIn < 1 || hoursIn >= 8.5 || overLunch) continue;
         availabilityRows.push({
           eventId: day.eventId,
-          guestId: screenshotGuest.id,
+          guestId: screenshotGuestId,
           slotStart: slot.start.toISOString(),
         });
       }
@@ -1006,7 +1011,9 @@ async function seedTestData(profile: SeedProfile) {
   console.log(`  ✅ Created ${rsvpRows.length} RSVPs`);
 
   // One 1-on-1 of each state for the screenshot guest's column of Gamma's
-  // grid, in the afternoon the others here are bookable.
+  // grid, in the afternoon the others here are bookable. Curated partners
+  // only: bulk guests are named by the generator's RNG, so pinning one here
+  // would break the seed the day bulk.ts's name lists change.
   if (profile === "large") {
     console.log("  🤝 Creating test 1-on-1s...");
     const screenshotGuestId = guestIdByName(SCREENSHOT_GUEST);
@@ -1027,11 +1034,11 @@ async function seedTestData(profile: SeedProfile) {
     });
     const meetingRows = [
       {
-        other: "Aiko Yoon",
+        other: "Rafael Souza",
         role: "requester" as const,
         ...slotAt(14, 0),
         meetingPoint: "Coffee bar",
-        message: "Would love to hear how you run your birdwatching walks.",
+        message: "Would love to hear how you mentor the juniors on your team.",
         status: "accepted" as const,
       },
       {
@@ -1043,7 +1050,7 @@ async function seedTestData(profile: SeedProfile) {
         status: "pending" as const,
       },
       {
-        other: "Anders Pereira",
+        other: "Wei Chen",
         role: "requester" as const,
         ...slotAt(16, 0),
         meetingPoint: "Coffee bar",
