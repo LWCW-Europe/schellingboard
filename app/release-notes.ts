@@ -43,10 +43,11 @@ export const SHOWN_RELEASES = 3;
 
 export const releaseNotes: ReleaseNote[] = [
   {
-    version: "Unreleased",
+    version: "3.6.0",
+    date: "2026-09-08",
     highlights: [
-      "**Install it on your phone**: add the site to your home screen and it opens like an app, in its own window with no address bar.",
-      "**Notifications on your phone**: Settings can send the notifications you already get to your phone or laptop, so they arrive while the site is closed. iPhones need it on the home screen first.",
+      "**Install it on your phone, with notifications**: add the site to your home screen to open it like an app, and get your notifications there even when it's closed.",
+      '**See where you are in the day**: a red line marks the current time on the schedule, and a "Now" button jumps to it, while the event is running.',
       "**Notifications in the app**: a bell counts what is waiting, and clicking one takes you to it. Tick the ones you are done with to mark them read or delete them. No email set-up needed.",
       "**1-on-1s**: organizers switch them on and suggest where to meet; attendees mark when they are free, ask from a profile or an empty slot on the schedule, and accept or decline.",
       '**Hosts can record how many people came** to a session once it has finished. Only that session\'s hosts ever see the number, and 0 is a real answer: "held, nobody came".',
