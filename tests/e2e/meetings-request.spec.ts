@@ -207,6 +207,74 @@ test.describe("1-on-1 meetings", () => {
     }
   });
 
+  // The other direction: the grid knows the time and asks who is free, which
+  // is the only route that does not start from knowing who you want to meet.
+  test("books a 1-on-1 from the schedule's own column", async ({ page }) => {
+    test.slow();
+
+    const unique = uniqueSuffix();
+    const eventName = `E2E Grid ${unique}`;
+    const asker = `Grid Asker ${unique}`;
+    const askee = `Grid Askee ${unique}`;
+    await createGuests(page, [asker, askee]);
+    leftBehind.guests.push(asker, askee);
+    await meetingsEvent(page, eventName, [asker, askee]);
+    leftBehind.events.push(eventName);
+    const slug = eventName.replace(/ /g, "-");
+
+    // The askee is bookable; the asker is not, which is what makes the column
+    // theirs to book *from* rather than to be booked in.
+    await loginAndGoto(page, "/settings");
+    await actAs(page, new RegExp(askee));
+    await page.goto("/settings");
+    const availability = await openAvailability(page, eventName);
+    await availability.getByLabel(/open to 1-on-1s/).check();
+    await availability
+      .getByRole("button", { name: "Save availability" })
+      .click();
+    await expect(availability.getByText("Saved!")).toBeVisible();
+
+    // The asker keeps 09:00 off their own offer, so it is hatched on their
+    // column: what you declare says who may book *you*, not whom you may ask.
+    await actAs(page, new RegExp(asker));
+    await page.goto("/settings");
+    const mine = await openAvailability(page, eventName);
+    await mine.getByLabel(/open to 1-on-1s/).check();
+    await mine.getByRole("listitem").first().getByRole("checkbox").uncheck();
+    await mine.getByRole("button", { name: "Save availability" }).click();
+    await expect(mine.getByText("Saved!")).toBeVisible();
+
+    await page.goto(`/${slug}`);
+    // The slot they did not offer, which is still a slot they can book in.
+    await page
+      .getByRole("button", {
+        name: /^Arrange a 1-on-1 at 09:00 — you are not offering/,
+      })
+      .first()
+      .click();
+
+    const picker = page.getByRole("dialog");
+    await expect(
+      picker.getByRole("heading", { name: /Who's free at 09:00/ })
+    ).toBeVisible();
+    await picker.getByRole("button", { name: `Ask ${askee}` }).click();
+
+    await expect(
+      picker.getByRole("heading", { name: new RegExp(`1-on-1 with ${askee}`) })
+    ).toBeVisible();
+    await picker.getByRole("button", { name: "Coffee bar" }).click();
+    await picker.getByRole("button", { name: "Send request" }).click();
+    await expect(picker.getByText(new RegExp(`Asked ${askee}`))).toBeVisible();
+    await picker.getByRole("button", { name: "Done" }).click();
+
+    // The column behind it is already showing the request, without a reload.
+    await expect(
+      page.getByRole("link", { name: new RegExp(askee) })
+    ).toBeVisible();
+    await expect(page.getByText("waiting for reply").first()).toBeVisible();
+    await page.waitForLoadState("networkidle");
+  });
+
   test("books a slot the other attendee declared, and gets an answer", async ({
     page,
   }) => {

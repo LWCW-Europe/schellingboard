@@ -16,6 +16,7 @@ import {
   DEFAULT_EMAIL_SETTINGS,
   type CompleteGuest,
   type EmailSettings,
+  type EventAttendee,
   type EventGuestPage,
   type Guest,
   type GuestAuthCredentials,
@@ -251,6 +252,34 @@ export class SqliteGuestsRepository implements GuestsRepository {
             }) as Attendee
         )
     );
+  }
+
+  async listAttendeesByEvent(eventId: string): Promise<EventAttendee[]> {
+    return this.db
+      .select({
+        id: schema.guests.id,
+        name: schema.guests.name,
+        avatarUrl: schema.guests.avatarUrl,
+        pronouns: schema.guests.pronouns,
+        basedIn: schema.guests.basedIn,
+        // Site-wide, as in listAttendees: hosting is a fact about the person,
+        // not about the event whose list they are being read into.
+        isHost: exists(
+          this.db
+            .select({ one: sql`1` })
+            .from(schema.sessionHosts)
+            .where(eq(schema.sessionHosts.guestId, schema.guests.id))
+        ),
+      })
+      .from(schema.guests)
+      .innerJoin(
+        schema.eventGuests,
+        eq(schema.eventGuests.guestId, schema.guests.id)
+      )
+      .where(eq(schema.eventGuests.eventId, eventId))
+      .orderBy(sql`${schema.guests.name} collate nocase`, schema.guests.id)
+      .all()
+      .map((row) => ({ ...row, isHost: Boolean(row.isHost) }));
   }
 
   async listEventsByGuests(

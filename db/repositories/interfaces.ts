@@ -300,6 +300,16 @@ export type Attendee = Guest & {
   openToMeetings: boolean;
 };
 
+/**
+ * A guest as one event's list of people shows them. `Attendee`'s
+ * `openToMeetings` is absent on purpose: it is a site-wide question, and
+ * probing it for everyone is most of what makes that query expensive.
+ */
+export type EventAttendee = Pick<
+  Guest,
+  "id" | "name" | "avatarUrl" | "pronouns" | "basedIn"
+> & { isHost: boolean };
+
 export interface GuestsRepository {
   /**
    * Every guest with basic public fields only — no extended profile
@@ -330,6 +340,12 @@ export interface GuestsRepository {
    * slots have all passed leaves nothing anyone can book.
    */
   listAttendees(now: Date): Promise<Attendee[]>;
+  /**
+   * One event's guests, with the profile fields a list of people shows. Scoped
+   * where `listAttendees` is global: a screen describing one event's slot has
+   * no use for a scan of every guest on the site.
+   */
+  listAttendeesByEvent(eventId: string): Promise<EventAttendee[]>;
   /**
    * Assigned events for many guests in one query, ordered by event name.
    * Every requested id is present in the result; guests without assignments
@@ -816,6 +832,12 @@ export interface MeetingAvailabilityRepository {
    * switched meetings on.
    */
   listByGuestAndEvent(guestId: string, eventId: string): Promise<Date[]>;
+  /**
+   * The guests who declared one particular slot, for "who could I meet at
+   * 14:30?". Ids only: the caller already holds the attendee list it needs to
+   * turn them into people.
+   */
+  listGuestsBySlot(eventId: string, slotStart: Date): Promise<string[]>;
   /** Replaces a guest's whole declared set for the event. */
   replaceForGuest(
     guestId: string,
@@ -864,6 +886,12 @@ export interface MeetingsRepository {
    * accepted, clash detection only accepted.
    */
   listByGuestAndEvent(guestId: string, eventId: string): Promise<Meeting[]>;
+  /**
+   * Every meeting still standing in one slot, whoever it is between: what the
+   * grid's booking flow needs to know who is already taken. Matched on the
+   * slot's start, as availability rows are.
+   */
+  listLiveBySlot(eventId: string, slotStart: Date): Promise<Meeting[]>;
   /**
    * Requests this guest has sent and not heard back on, for the organizer's
    * cap. `now` bounds it: a pending request whose slot has passed is expired

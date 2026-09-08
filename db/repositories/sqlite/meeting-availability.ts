@@ -23,6 +23,20 @@ export class SqliteMeetingAvailabilityRepository implements MeetingAvailabilityR
       .map((row) => new Date(row.slotStart));
   }
 
+  async listGuestsBySlot(eventId: string, slotStart: Date): Promise<string[]> {
+    return this.db
+      .select({ guestId: schema.meetingAvailability.guestId })
+      .from(schema.meetingAvailability)
+      .where(
+        and(
+          eq(schema.meetingAvailability.eventId, eventId),
+          eq(schema.meetingAvailability.slotStart, slotStart.toISOString())
+        )
+      )
+      .all()
+      .map((row) => row.guestId);
+  }
+
   // Delete-then-insert in one transaction: the form submits the whole set, so
   // a partial write would leave a guest bookable at slots they just cleared.
   async replaceForGuest(

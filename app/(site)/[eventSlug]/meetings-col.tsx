@@ -1,9 +1,11 @@
 "use client";
 
 import clsx from "clsx";
+import { PlusIcon } from "@heroicons/react/24/outline";
+import { DateTime } from "luxon";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 
 import type { MeetingView } from "@/utils/meeting-views";
 import { meetingColumnRows } from "@/utils/meeting-column";
@@ -13,6 +15,7 @@ import { clashLines } from "@/utils/meeting-clash-text";
 import { statusLine } from "@/utils/meeting-rules";
 import { viewMeetingLinkFromOwner } from "./modal-nav";
 import { NowLine } from "./now-line";
+import { BookMeeting } from "./book-meeting";
 import { Tooltip } from "./tooltip";
 
 /** The word of status a block has room for; the tooltip says the rest. */
@@ -21,6 +24,66 @@ function blockStatus(meeting: MeetingView): string {
   return meeting.role === "recipient"
     ? "needs your reply"
     : "waiting for reply";
+}
+
+/** "14:30", in the event's zone, for a control's accessible name. */
+function slotLabel(start: string, timezone: string): string {
+  return DateTime.fromISO(start).setZone(timezone).toFormat("HH:mm");
+}
+
+/**
+ * An empty slot of the column, which is a control while it is still ahead.
+ * Once it is past it is plain scenery: the request action refuses a slot that
+ * has begun, so offering it -- even greyed out -- would promise nothing.
+ */
+function SlotCell({
+  row,
+  span,
+  start,
+  blocked,
+  bookable,
+  timezone,
+  onBook,
+}: {
+  row: number;
+  span: number;
+  start: string;
+  /** The viewer cleared this slot, so nobody may book *them* into it. */
+  blocked: boolean;
+  bookable: boolean;
+  timezone: string;
+  onBook: () => void;
+}) {
+  const shape = clsx(
+    `row-span-${span} my-0.5 flex items-center justify-center rounded`,
+    blocked && "meetings-col-blocked"
+  );
+
+  if (!bookable) {
+    return <div style={{ gridRowStart: row }} className={shape} />;
+  }
+
+  return (
+    <button
+      type="button"
+      style={{ gridRowStart: row }}
+      onClick={onBook}
+      // Hatching says who may book *them*; it is no bar to arranging a 1-on-1
+      // there themselves, so the slot stays as bookable as any other.
+      aria-label={
+        blocked
+          ? `Arrange a 1-on-1 at ${slotLabel(start, timezone)} — you are not offering this slot to others`
+          : `Arrange a 1-on-1 at ${slotLabel(start, timezone)}`
+      }
+      className={clsx(
+        shape,
+        "border border-dashed border-line-subtle text-fg-faint transition-colors",
+        "hover:border-brand-accent hover:bg-brand-tint hover:text-brand-fg"
+      )}
+    >
+      <PlusIcon className="h-4 w-4" aria-hidden="true" />
+    </button>
+  );
 }
 
 // What the block has no room for, on hover -- the pattern a session block
@@ -61,6 +124,7 @@ export function MeetingsCol({
   availability,
   day,
   nowOffsetPx,
+  onBooked,
 }: {
   meetings: MeetingView[];
   /** Slot starts the viewer declared themselves open for, as ISO strings. */
@@ -68,12 +132,18 @@ export function MeetingsCol({
   day: DayWithSessions;
   /** Now-line offset from the top of the slot grid; null hides it. */
   nowOffsetPx?: number | null;
+  /** Re-read the viewer's meetings, once a request has been sent. */
+  onBooked: () => void;
 }) {
   const slotIncrement = useSlotIncrement();
   const searchParams = useSearchParams();
   // Never missing here: the column only renders once meetings for this event
   // have been fetched, which takes the event being in context.
-  const eventSlug = useContext(EventContext).event?.slug ?? "";
+  const { event, now } = useContext(EventContext);
+  const eventSlug = event?.slug ?? "";
+  const timezone = event?.timezone ?? "UTC";
+  // Which slot the booking modal is open on, if any.
+  const [booking, setBooking] = useState<string | null>(null);
   const rows = meetingColumnRows({
     meetings,
     availability,
@@ -84,24 +154,17 @@ export function MeetingsCol({
   return (
     <div className="relative px-0.5">
       <div className="grid h-full auto-rows-[44px]">
-        {rows.map(({ row, span, kind, meetings: atRow }) =>
+        {rows.map(({ row, span, start, kind, meetings: atRow }) =>
           kind !== "meetings" ? (
-            <div
+            <SlotCell
               key={row}
-              style={{ gridRowStart: row }}
-              // Hatched where the viewer cleared the slot: that governs who
-              // may book *them*, so it is worth seeing on their own schedule —
-              // but it is no bar to arranging a 1-on-1 there themselves, and
-              // the cell stays as bookable as any other (#945).
-              title={
-                kind === "unavailable"
-                  ? "You are not offering this slot — you can still arrange a 1-on-1 in it"
-                  : undefined
-              }
-              className={clsx(
-                `row-span-${span} my-0.5 rounded`,
-                kind === "unavailable" && "meetings-col-blocked"
-              )}
+              row={row}
+              span={span}
+              start={start}
+              blocked={kind === "unavailable"}
+              bookable={new Date(start) > now}
+              timezone={timezone}
+              onBook={() => setBooking(start)}
             />
           ) : (
             <div
@@ -164,6 +227,14 @@ export function MeetingsCol({
           )
         )}
       </div>
+      {booking && event && (
+        <BookMeeting
+          eventId={event.id}
+          slotStart={booking}
+          onClose={() => setBooking(null)}
+          onBooked={onBooked}
+        />
+      )}
       {/* Each column draws its own segment of the now line; see DayGrid. */}
       {nowOffsetPx != null && <NowLine offsetPx={nowOffsetPx} />}
     </div>

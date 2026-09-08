@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { Modal } from "@/app/components/modal";
-import { Input } from "@/app/input";
 import { requestMeetingAction } from "@/app/actions/meetings";
 import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/components/buttons";
+import { MeetingRequestFields } from "@/app/components/meeting-request-fields";
 import { clashLines } from "@/utils/meeting-clash-text";
 import type { MeetingDayOption, MeetingOption } from "@/utils/meeting-options";
 
@@ -86,10 +86,6 @@ function RequestForm({
     d.slots.some((s) => s.start === slotStart)
   );
   const slot = day?.slots.find((s) => s.start === slotStart);
-  const selectedPoint = option.meetingPoints.find(
-    (p) => p.name === meetingPoint
-  );
-
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!slotStart) return;
@@ -151,76 +147,16 @@ function RequestForm({
         </p>
       )}
 
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-fg-muted">Where to meet</span>
-        {option.meetingPoints.length > 0 && (
-          <ul className="flex flex-wrap gap-2 mb-1">
-            {option.meetingPoints.map((point) => (
-              <li key={point.id}>
-                <button
-                  type="button"
-                  aria-pressed={meetingPoint === point.name}
-                  onClick={() => setMeetingPoint(point.name)}
-                  className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                    meetingPoint === point.name
-                      ? "border-brand bg-brand text-on-brand"
-                      : "border-line bg-surface-raised text-fg hover:bg-surface-hover"
-                  }`}
-                >
-                  {point.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {/* Below the chips rather than a title= on them: a tooltip is the one
-            place a touch user never reaches, and the description is how the
-            organizer says where the place actually is. */}
-        {selectedPoint?.description && (
-          <p className="mb-1 text-xs text-fg-muted">
-            {selectedPoint.description}
-          </p>
-        )}
-        <Input
-          value={meetingPoint}
-          onChange={(e) => setMeetingPoint(e.target.value)}
-          aria-label="Where to meet"
-          placeholder="or type somewhere else"
-          className="w-full h-10"
-        />
-        <p className="text-xs text-fg-subtle">
-          Nothing is reserved — this is just where to find each other.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="meeting-message"
-          className="text-sm font-medium text-fg-muted"
-        >
-          Add a line of context (optional)
-        </label>
-        <Input
-          id="meeting-message"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Would love to talk about…"
-          className="w-full h-10"
-        />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={isSending || !slotStart || !meetingPoint.trim()}
-          className={PRIMARY_BUTTON}
-        >
-          {isSending ? "Sending..." : "Send request"}
-        </button>
-        <button type="button" onClick={onDone} className={SECONDARY_BUTTON}>
-          Cancel
-        </button>
-      </div>
+      <MeetingRequestFields
+        meetingPoints={option.meetingPoints}
+        meetingPoint={meetingPoint}
+        onMeetingPoint={setMeetingPoint}
+        message={message}
+        onMessage={setMessage}
+        isSending={isSending}
+        submitDisabled={!slotStart}
+        onCancel={onDone}
+      />
     </form>
   );
 }

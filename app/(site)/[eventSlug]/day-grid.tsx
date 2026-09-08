@@ -37,7 +37,7 @@ export function DayGrid(props: {
   const { event, now } = useContext(EventContext);
   const timezone = event?.timezone ?? "UTC";
   const searchParams = useSearchParams();
-  const { meetings, availability } = useMyMeetings();
+  const { meetings, availability, reload } = useMyMeetings();
   // Outside the ?loc= filter below: the column is not a location, so narrowing
   // the schedule to one room must not drop it (issue #392, section 2.6). All
   // days or none, so the rooms line up from one day to the next -- and until
@@ -203,6 +203,7 @@ export function DayGrid(props: {
           availability={myAvailability}
           day={day}
           nowOffsetPx={nowOffsetPx}
+          onBooked={reload}
         />
       )}
       {includedLocations.map((location) => (
