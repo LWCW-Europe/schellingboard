@@ -82,8 +82,8 @@ export async function meetingCandidatesFor(
       repos.meetings.listLiveBySlot(eventId, start),
     ]);
 
-  // Someone the viewer is already meeting then cannot be asked again -- the
-  // request would be refused as a duplicate -- so they are not offered.
+  // Nobody already paired with the viewer here: asking again is refused as a
+  // duplicate, and asking back across their open request only crosses it.
   const withViewer = new Set(
     live
       .filter((m) => m.requesterId === viewerId || m.recipientId === viewerId)

@@ -31,6 +31,61 @@ function slotLabel(start: string, timezone: string): string {
   return DateTime.fromISO(start).setZone(timezone).toFormat("HH:mm");
 }
 
+/**
+ * An empty slot of the column, which is a control while it is still ahead.
+ * Once it is past it is plain scenery: the request action refuses a slot that
+ * has begun, so offering it -- even greyed out -- would promise nothing.
+ */
+function SlotCell({
+  row,
+  span,
+  start,
+  blocked,
+  bookable,
+  timezone,
+  onBook,
+}: {
+  row: number;
+  span: number;
+  start: string;
+  /** The viewer cleared this slot, so nobody may book *them* into it. */
+  blocked: boolean;
+  bookable: boolean;
+  timezone: string;
+  onBook: () => void;
+}) {
+  const shape = clsx(
+    `row-span-${span} my-0.5 flex items-center justify-center rounded`,
+    blocked && "meetings-col-blocked"
+  );
+
+  if (!bookable) {
+    return <div style={{ gridRowStart: row }} className={shape} />;
+  }
+
+  return (
+    <button
+      type="button"
+      style={{ gridRowStart: row }}
+      onClick={onBook}
+      // Hatching says who may book *them*; it is no bar to arranging a 1-on-1
+      // there themselves, so the slot stays as bookable as any other.
+      aria-label={
+        blocked
+          ? `Arrange a 1-on-1 at ${slotLabel(start, timezone)} — you are not offering this slot to others`
+          : `Arrange a 1-on-1 at ${slotLabel(start, timezone)}`
+      }
+      className={clsx(
+        shape,
+        "border border-dashed border-line-subtle text-fg-faint transition-colors",
+        "hover:border-brand-accent hover:bg-brand-tint hover:text-brand-fg"
+      )}
+    >
+      <PlusIcon className="h-4 w-4" aria-hidden="true" />
+    </button>
+  );
+}
+
 // What the block has no room for, on hover -- the pattern a session block
 // already follows. A tap still opens the modal, where all of it is anyway.
 function MeetingSummary({ meeting }: { meeting: MeetingView }) {
@@ -101,35 +156,16 @@ export function MeetingsCol({
       <div className="grid h-full auto-rows-[44px]">
         {rows.map(({ row, span, start, kind, meetings: atRow }) =>
           kind !== "meetings" ? (
-            <button
+            <SlotCell
               key={row}
-              type="button"
-              style={{ gridRowStart: row }}
-              // A slot in the past is not bookable, and the request action
-              // refuses one anyway.
-              disabled={new Date(start) <= now}
-              onClick={() => setBooking(start)}
-              // Hatched where the viewer cleared the slot: that governs who
-              // may book *them*, so it is worth seeing on their own schedule —
-              // but it is no bar to arranging a 1-on-1 there themselves, so it
-              // is as bookable as any other.
-              aria-label={
-                kind === "unavailable"
-                  ? `Arrange a 1-on-1 at ${slotLabel(start, timezone)} — you are not offering this slot to others`
-                  : `Arrange a 1-on-1 at ${slotLabel(start, timezone)}`
-              }
-              className={clsx(
-                `row-span-${span} my-0.5 rounded border border-dashed border-line-subtle text-fg-faint`,
-                "flex items-center justify-center transition-colors",
-                "enabled:hover:border-brand-accent enabled:hover:bg-brand-tint enabled:hover:text-brand-fg",
-                "disabled:border-transparent disabled:cursor-default",
-                kind === "unavailable" && "meetings-col-blocked"
-              )}
-            >
-              {new Date(start) > now && (
-                <PlusIcon className="h-4 w-4" aria-hidden="true" />
-              )}
-            </button>
+              row={row}
+              span={span}
+              start={start}
+              blocked={kind === "unavailable"}
+              bookable={new Date(start) > now}
+              timezone={timezone}
+              onBook={() => setBooking(start)}
+            />
           ) : (
             <div
               key={row}

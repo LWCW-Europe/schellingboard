@@ -15,6 +15,14 @@ import type {
 } from "@/utils/meeting-candidates";
 
 /**
+ * Why there is no list to show: the slot is not one this viewer can book at
+ * all, or the answer never arrived. Two different sentences — telling someone
+ * the slot is gone when the network dropped sends them looking for a booking
+ * nobody made.
+ */
+type Failure = "gone" | "failed";
+
+/**
  * Booking a 1-on-1 from the schedule: the slot is known, the person is not.
  * Two steps in one modal — who is free then, and the usual request form —
  * which is the profile picker's flow with its two questions the other way
@@ -32,7 +40,7 @@ export function BookMeeting({
   /** Told once a request is sent, so the column can show it straight away. */
   onBooked: () => void;
 }) {
-  const [found, setFound] = useState<MeetingCandidates | null | "none">(null);
+  const [found, setFound] = useState<MeetingCandidates | null | Failure>(null);
   const [chosen, setChosen] = useState<MeetingCandidate | null>(null);
 
   useEffect(() => {
@@ -43,12 +51,20 @@ export function BookMeeting({
       )}`,
       { signal: controller.signal }
     )
-      .then<MeetingCandidates | "none">((res) =>
-        res.ok ? (res.json() as Promise<MeetingCandidates>) : "none"
+      .then<MeetingCandidates | Failure>((res) =>
+        res.ok
+          ? (res.json() as Promise<MeetingCandidates>)
+          : res.status === 404
+            ? "gone"
+            : "failed"
       )
       .then(setFound)
-      // Closing the modal aborts the request; there is nobody left to tell.
-      .catch(() => undefined);
+      .catch(() => {
+        // Closing the modal aborts the request; there is nobody left to tell.
+        // Anything else has to end the spinner, or the modal never leaves it —
+        // and with no close button of its own, that traps the reader.
+        if (!controller.signal.aborted) setFound("failed");
+      });
     return () => controller.abort();
   }, [eventId, slotStart]);
 
@@ -63,9 +79,13 @@ export function BookMeeting({
     >
       {found === null ? (
         <p className="text-fg-muted">Loading…</p>
-      ) : found === "none" ? (
+      ) : found === "gone" || found === "failed" ? (
         <div className="flex flex-col gap-4">
-          <p className="text-fg">That slot is no longer open for 1-on-1s.</p>
+          <p className="text-fg">
+            {found === "gone"
+              ? "That slot is no longer open for 1-on-1s."
+              : "Couldn't load who is free then. Try the slot again."}
+          </p>
           <button type="button" onClick={onClose} className={PRIMARY_BUTTON}>
             Close
           </button>
