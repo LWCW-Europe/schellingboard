@@ -21,6 +21,11 @@ import { ReactNode, useRef, useState } from "react";
 
 // See https://floating-ui.com/docs/react-dom
 
+// The schedule grid is wall-to-wall triggers, so opening on mouseenter fires a
+// panel at every block the cursor crosses. Open only once the pointer has come
+// to rest on one.
+const REST_MS = 500;
+
 export function Tooltip(props: {
   content?: ReactNode;
   children: ReactNode;
@@ -79,6 +84,7 @@ export function Tooltip(props: {
       // touch also fires a synthetic hover, and a panel opened by that hover
       // is not one useClick will close, so the next tap does nothing.
       mouseOnly: noTap || toggleable,
+      restMs: REST_MS,
       handleClose: hasSafePolygon ? safePolygon({ buffer: -0.5 }) : null,
     }),
     useFocus(context, { enabled: !!toggleable }),

@@ -219,14 +219,15 @@ test.describe("on a wide screen", () => {
     const details = roomDetails(page);
     const roomName = page.getByRole("button", { name: "Main Hall" }).first();
     // Hovering once is not enough: under load the mouse can arrive before the
-    // grid has hydrated, and a mouseenter nobody is listening for yet is
+    // grid has hydrated, and a pointer event nobody is listening for yet is
     // simply lost — the cursor then rests on the name with no panel to show
     // for it. Leave and come back until one lands. Re-hovering is safe; unlike
-    // the tap above it doesn't toggle.
+    // the tap above it doesn't toggle. The timeout clears the panel's own rest
+    // delay with room to spare.
     await expect(async () => {
       await page.mouse.move(0, 400);
       await roomName.hover();
-      await expect(details).toContainText(MAIN_HALL_DETAIL, { timeout: 1000 });
+      await expect(details).toContainText(MAIN_HALL_DETAIL, { timeout: 3000 });
     }).toPass();
 
     await page.mouse.move(0, 400);
