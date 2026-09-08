@@ -234,18 +234,22 @@ test.describe("1-on-1 meetings", () => {
       .click();
     await expect(availability.getByText("Saved!")).toBeVisible();
 
-    // The asker declares nothing, so their column is all "not offering" -- and
-    // every slot of it is still a slot they can arrange a 1-on-1 in.
+    // The asker keeps 09:00 off their own offer, so it is hatched on their
+    // column: what you declare says who may book *you*, not whom you may ask.
     await actAs(page, new RegExp(asker));
     await page.goto("/settings");
     const mine = await openAvailability(page, eventName);
     await mine.getByLabel(/open to 1-on-1s/).check();
+    await mine.getByRole("listitem").first().getByRole("checkbox").uncheck();
     await mine.getByRole("button", { name: "Save availability" }).click();
     await expect(mine.getByText("Saved!")).toBeVisible();
 
     await page.goto(`/${slug}`);
+    // The slot they did not offer, which is still a slot they can book in.
     await page
-      .getByRole("button", { name: /^Arrange a 1-on-1 at 09:00/ })
+      .getByRole("button", {
+        name: /^Arrange a 1-on-1 at 09:00 — you are not offering/,
+      })
       .first()
       .click();
 
@@ -253,11 +257,7 @@ test.describe("1-on-1 meetings", () => {
     await expect(
       picker.getByRole("heading", { name: /Who's free at 09:00/ })
     ).toBeVisible();
-    await picker
-      .getByRole("listitem")
-      .filter({ hasText: askee })
-      .getByRole("button", { name: "Ask" })
-      .click();
+    await picker.getByRole("button", { name: `Ask ${askee}` }).click();
 
     await expect(
       picker.getByRole("heading", { name: new RegExp(`1-on-1 with ${askee}`) })

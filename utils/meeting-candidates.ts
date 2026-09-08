@@ -73,14 +73,12 @@ export async function meetingCandidatesFor(
   );
   if (!slot) return null;
 
-  const [declaredIds, eventGuests, attendees, meetingPoints, live] =
-    await Promise.all([
-      repos.meetingAvailability.listGuestsBySlot(eventId, start),
-      repos.guests.listByEvent(eventId),
-      repos.guests.listAttendees(now),
-      repos.meetingPoints.listByEvent(eventId),
-      repos.meetings.listLiveBySlot(eventId, start),
-    ]);
+  const [declaredIds, eventGuests, meetingPoints, live] = await Promise.all([
+    repos.meetingAvailability.listGuestsBySlot(eventId, start),
+    repos.guests.listAttendeesByEvent(eventId),
+    repos.meetingPoints.listByEvent(eventId),
+    repos.meetings.listLiveBySlot(eventId, start),
+  ]);
 
   // Nobody already paired with the viewer here: asking again is refused as a
   // duplicate, and asking back across their open request only crosses it.
@@ -115,14 +113,13 @@ export async function meetingCandidatesFor(
     ...[...rsvps.values()].flatMap((list) => list.map((r) => r.guestId)),
   ]);
 
-  const attendee = new Map(attendees.map((a) => [a.id, a]));
-  const onGuestList = new Set(eventGuests.map((g) => g.id));
+  // Keyed by the event's own guest list, so an availability row that outlived
+  // its owner's place on the event finds nobody to describe.
+  const onGuestList = new Map(eventGuests.map((g) => [g.id, g]));
   const candidates: MeetingCandidate[] = declaredIds
-    .filter(
-      (id) => id !== viewerId && onGuestList.has(id) && !withViewer.has(id)
-    )
+    .filter((id) => id !== viewerId && !withViewer.has(id))
     .flatMap((id) => {
-      const guest = attendee.get(id);
+      const guest = onGuestList.get(id);
       if (!guest) return [];
       return [
         {

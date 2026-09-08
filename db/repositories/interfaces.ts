@@ -300,6 +300,16 @@ export type Attendee = Guest & {
   openToMeetings: boolean;
 };
 
+/**
+ * A guest as one event's list of people shows them. `Attendee`'s
+ * `openToMeetings` is absent on purpose: it is a site-wide question, and
+ * probing it for everyone is most of what makes that query expensive.
+ */
+export type EventAttendee = Pick<
+  Guest,
+  "id" | "name" | "avatarUrl" | "pronouns" | "basedIn"
+> & { isHost: boolean };
+
 export interface GuestsRepository {
   /**
    * Every guest with basic public fields only — no extended profile
@@ -330,6 +340,12 @@ export interface GuestsRepository {
    * slots have all passed leaves nothing anyone can book.
    */
   listAttendees(now: Date): Promise<Attendee[]>;
+  /**
+   * One event's guests, with the profile fields a list of people shows. Scoped
+   * where `listAttendees` is global: a screen describing one event's slot has
+   * no use for a scan of every guest on the site.
+   */
+  listAttendeesByEvent(eventId: string): Promise<EventAttendee[]>;
   /**
    * Assigned events for many guests in one query, ordered by event name.
    * Every requested id is present in the result; guests without assignments

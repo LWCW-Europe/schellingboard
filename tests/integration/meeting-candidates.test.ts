@@ -181,6 +181,48 @@ describe("meetingCandidatesFor", () => {
     ]);
   });
 
+  // The list is people, not ids: what it says about them has to survive
+  // whichever query supplies it.
+  it("describes each candidate the way a list of people shows them", async () => {
+    const { event, viewer, grace } = await scenario();
+    await getRepositories().guests.updateProfile(
+      grace.id,
+      {
+        name: "Grace",
+        aboutMe: null,
+        avatarUrl: "/uploads/grace.webp",
+        pronouns: "she/her",
+        basedIn: "Lisbon",
+        prompts: null,
+        languages: null,
+        contacts: null,
+      },
+      BEFORE
+    );
+    // Elsewhere in the day: the host pill is a fact about the person, and
+    // must not turn into the busy flag.
+    await createSession(event.id, {
+      title: "Their other talk",
+      hostIds: [grace.id],
+      startTime: new Date("2026-10-01T11:00:00.000Z"),
+      endTime: new Date("2026-10-01T11:30:00.000Z"),
+    });
+
+    const found = await meetingCandidatesFor(viewer.id, event.id, SLOT, BEFORE);
+
+    expect(found?.candidates).toEqual([
+      {
+        id: grace.id,
+        name: "Grace",
+        pronouns: "she/her",
+        basedIn: "Lisbon",
+        avatarUrl: "/uploads/grace.webp",
+        isHost: true,
+        busy: false,
+      },
+    ]);
+  });
+
   it("carries what the request form needs beside the people", async () => {
     const { event, viewer } = await scenario();
     await getRepositories().meetingPoints.create({

@@ -187,9 +187,12 @@ function CandidateStep({
                   </span>
                 )}
               </div>
+              {/* Named, not just "Ask": a rotor or a voice command sees a
+                  column of buttons, and a long list makes them all alike. */}
               <button
                 type="button"
                 onClick={() => onPick(candidate)}
+                aria-label={`Ask ${candidate.name}`}
                 className={SECONDARY_BUTTON}
               >
                 Ask
