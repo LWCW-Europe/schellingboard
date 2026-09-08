@@ -42,6 +42,11 @@ const SLOT_INCREMENT_MINUTES = 30;
 // profile gives her the 1-on-1s to photograph (docs/screenshots/README.md).
 const SCREENSHOT_GUEST = "Hana Kobayashi";
 
+// The attendee whose Gamma morning is crowded with 1-on-1s, for
+// tests/e2e/meetings-column.spec.ts. Nothing else acts as her: those meetings
+// give her a column that shifts the rooms of every schedule she looks at.
+const PARALLEL_GUEST = "Zanele Khumalo";
+
 // Returns a UTC Date representing the given clock time on a specific day in Berlin.
 // dayOffset is added to baseDate's Berlin calendar date before setting the time.
 function berlinTime(
@@ -1010,68 +1015,116 @@ async function seedTestData(profile: SeedProfile) {
   insertChunked(rsvpRows, (chunk) => db.insert(schema.rsvps).values(chunk));
   console.log(`  ✅ Created ${rsvpRows.length} RSVPs`);
 
-  // One 1-on-1 of each state for the screenshot guest's column of Gamma's
-  // grid, in the afternoon the others here are bookable. Curated partners
-  // only: bulk guests are named by the generator's RNG, so pinning one here
-  // would break the seed the day bulk.ts's name lists change.
-  if (profile === "large") {
-    console.log("  🤝 Creating test 1-on-1s...");
-    const screenshotGuestId = guestIdByName(SCREENSHOT_GUEST);
-    const gammaDayOne = dayRows.find((d) => d.eventId === gammaEvent.id)!;
-    const slotAt = (hour: number, minute: number) => ({
-      slotStart: berlinTime(
-        new Date(gammaDayOne.start),
-        0,
-        hour,
-        minute
-      ).toISOString(),
-      slotEnd: berlinTime(
-        new Date(gammaDayOne.start),
-        0,
-        hour,
-        minute + SLOT_INCREMENT_MINUTES
-      ).toISOString(),
-    });
-    const meetingRows = [
-      {
-        other: "Rafael Souza",
-        role: "requester" as const,
-        ...slotAt(14, 0),
-        meetingPoint: "Coffee bar",
-        message: "Would love to hear how you mentor the juniors on your team.",
-        status: "accepted" as const,
-      },
-      {
-        other: "Aisha Diallo",
-        role: "recipient" as const,
-        ...slotAt(15, 0),
-        meetingPoint: "Garden bench",
-        message: "Could we compare notes on multilingual research?",
-        status: "pending" as const,
-      },
-      {
-        other: "Wei Chen",
-        role: "requester" as const,
-        ...slotAt(16, 0),
-        meetingPoint: "Coffee bar",
-        message: "Happy to swap documentation war stories.",
-        status: "pending" as const,
-      },
-    ].map(({ other, role, status, ...rest }) => ({
+  // 1-on-1s on Gamma's grid, for the one event in its scheduling phase.
+  // Curated partners only: bulk guests are named by the generator's RNG, so
+  // pinning one here would break the seed the day bulk.ts's name lists change.
+  console.log("  🤝 Creating test 1-on-1s...");
+  const gammaDayOne = dayRows.find((d) => d.eventId === gammaEvent.id)!;
+  const slotAt = (hour: number, minute: number) => ({
+    slotStart: berlinTime(
+      new Date(gammaDayOne.start),
+      0,
+      hour,
+      minute
+    ).toISOString(),
+    slotEnd: berlinTime(
+      new Date(gammaDayOne.start),
+      0,
+      hour,
+      minute + SLOT_INCREMENT_MINUTES
+    ).toISOString(),
+  });
+  type SeededMeeting = {
+    other: string;
+    role: "requester" | "recipient";
+    status: "accepted" | "pending";
+    slotStart: string;
+    slotEnd: string;
+    meetingPoint: string;
+    message: string;
+  };
+  const meetingsOf = (guestName: string, rows: SeededMeeting[]) =>
+    rows.map(({ other, role, status, ...rest }) => ({
       id: nanoid(),
       eventId: gammaEvent.id,
       requesterId:
-        role === "requester" ? screenshotGuestId : guestIdByName(other),
+        role === "requester" ? guestIdByName(guestName) : guestIdByName(other),
       recipientId:
-        role === "requester" ? guestIdByName(other) : screenshotGuestId,
+        role === "requester" ? guestIdByName(other) : guestIdByName(guestName),
       status,
       createdAt: new Date().toISOString(),
       respondedAt: status === "accepted" ? new Date().toISOString() : null,
       ...rest,
     }));
-    db.insert(schema.meetings).values(meetingRows).run();
-    console.log(`  ✅ Created ${meetingRows.length} 1-on-1s`);
-  }
+
+  // Two people wanting one slot, and four wanting the next: what the schedule
+  // column stacks, and what it has to collapse into a list. On a guest nothing
+  // else seeds, since it gives her a 1-on-1 column on every Gamma day.
+  const parallelRows = meetingsOf(PARALLEL_GUEST, [
+    {
+      other: "Leilani Kahale",
+      role: "recipient",
+      status: "accepted",
+      ...slotAt(10, 0),
+      meetingPoint: "Coffee bar",
+      message: "Container queries, and where they still bite.",
+    },
+    {
+      other: "Samuel Adeyemi",
+      role: "recipient",
+      status: "pending",
+      ...slotAt(10, 0),
+      meetingPoint: "Garden bench",
+      message: "Could I steal you for the same half hour?",
+    },
+    ...(["Marta Horvat", "Dmitri Volkov", "Chiara Bianchi"] as const).map(
+      (other) => ({
+        other,
+        role: "recipient" as const,
+        status: "pending" as const,
+        ...slotAt(11, 0),
+        meetingPoint: "Coffee bar",
+        message: "Free at eleven?",
+      })
+    ),
+  ]);
+
+  // One of each state for the screenshot guest's column, in the afternoon the
+  // others here are bookable (docs/screenshots/README.md).
+  const screenshotRows =
+    profile === "large"
+      ? meetingsOf(SCREENSHOT_GUEST, [
+          {
+            other: "Rafael Souza",
+            role: "requester",
+            status: "accepted",
+            ...slotAt(14, 0),
+            meetingPoint: "Coffee bar",
+            message:
+              "Would love to hear how you mentor the juniors on your team.",
+          },
+          {
+            other: "Aisha Diallo",
+            role: "recipient",
+            status: "pending",
+            ...slotAt(15, 0),
+            meetingPoint: "Garden bench",
+            message: "Could we compare notes on multilingual research?",
+          },
+          {
+            other: "Wei Chen",
+            role: "requester",
+            status: "pending",
+            ...slotAt(16, 0),
+            meetingPoint: "Coffee bar",
+            message: "Happy to swap documentation war stories.",
+          },
+        ])
+      : [];
+
+  const meetingRows = [...parallelRows, ...screenshotRows];
+  db.insert(schema.meetings).values(meetingRows).run();
+  console.log(`  ✅ Created ${meetingRows.length} 1-on-1s`);
 
   console.log("✅ Test data seeded successfully");
 }

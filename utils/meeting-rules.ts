@@ -1,3 +1,5 @@
+import { DateTime } from "luxon";
+
 import type { MeetingView } from "@/utils/meeting-views";
 
 /**
@@ -16,6 +18,42 @@ export function canCancel(
     meeting.status === "accepted" ||
     (meeting.status === "pending" && meeting.role === "requester")
   );
+}
+
+/**
+ * The span a block of 1-on-1s covers, shaped like a meeting's own `timeLabel`.
+ * Meetings that overlap without sharing a start share a block, so the first
+ * one's time is not the block's.
+ */
+export function blockTimeLabel(
+  meetings: Pick<MeetingView, "slotStart" | "slotEnd">[],
+  timezone: string
+): string {
+  const clock = (iso: string) =>
+    DateTime.fromISO(iso).setZone(timezone).toFormat("HH:mm");
+  const starts = meetings.map((m) => m.slotStart).sort();
+  const ends = meetings.map((m) => m.slotEnd).sort();
+  return `${clock(starts[0])} – ${clock(ends[ends.length - 1])}`;
+}
+
+/**
+ * The one line a slot of several 1-on-1s has room for under its count. What is
+ * waiting on the reader comes first: it is the only part they can act on.
+ */
+export function slotSummaryLine(
+  meetings: Pick<MeetingView, "status" | "role">[]
+): string {
+  const pending = meetings.filter((m) => m.status === "pending");
+  const yours = pending.filter((m) => m.role === "recipient").length;
+  if (yours > 0) {
+    return yours === 1 ? "1 needs your reply" : `${yours} need your reply`;
+  }
+  if (pending.length > 0) {
+    return pending.length === 1
+      ? "1 waiting for reply"
+      : `${pending.length} waiting for reply`;
+  }
+  return "all confirmed";
 }
 
 /** What has become of the request, in the words of whoever is reading. */
