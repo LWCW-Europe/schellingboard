@@ -60,6 +60,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Picking a meeting spot no longer shifts the 1-on-1 form**: the spot's description
+  appeared only once it was picked, pushing the rest of the form down under your finger
 - **Event names a site page would hide are rejected**: an event named "Guests", "Settings"
   or "Notifications" got a web address the site's own page of that name answers, so the
   event could never be opened

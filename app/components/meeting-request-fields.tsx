@@ -32,7 +32,7 @@ export function MeetingRequestFields({
   onCancel: () => void;
   cancelLabel?: string;
 }) {
-  const selectedPoint = meetingPoints.find((p) => p.name === meetingPoint);
+  const describedPoints = meetingPoints.filter((p) => p.description);
 
   return (
     <>
@@ -58,13 +58,22 @@ export function MeetingRequestFields({
             ))}
           </ul>
         )}
-        {/* Below the chips rather than a title= on them: a tooltip is the one
-            place a touch user never reaches, and the description is how the
-            organizer says where the place actually is. */}
-        {selectedPoint?.description && (
-          <p className="mb-1 text-xs text-fg-muted">
-            {selectedPoint.description}
-          </p>
+        {/* Not a title= on the chips: a tooltip is the one place a touch user
+            never reaches. All descriptions share one grid cell, so the box is
+            already as tall as the longest and a chip can't push the form down. */}
+        {describedPoints.length > 0 && (
+          <div className="mb-1 grid">
+            {describedPoints.map((point) => (
+              <p
+                key={point.id}
+                className={`col-start-1 row-start-1 text-xs text-fg-muted ${
+                  point.name === meetingPoint ? "" : "invisible"
+                }`}
+              >
+                {point.description}
+              </p>
+            ))}
+          </div>
         )}
         <Input
           value={meetingPoint}
