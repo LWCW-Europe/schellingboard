@@ -73,7 +73,7 @@ export function WhatsNew({ className }: { className?: string }) {
         zIndex="z-50"
         maxWidth="sm:max-w-2xl"
       >
-        <Dialog.Title className="text-lg font-semibold text-fg">
+        <Dialog.Title className="pr-8 text-lg font-semibold text-fg">
           What&apos;s new
         </Dialog.Title>
         <p className="mt-1 text-sm text-fg-subtle">

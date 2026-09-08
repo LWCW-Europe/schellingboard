@@ -57,6 +57,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   was added, updated or deleted now goes after ten seconds instead of waiting to be closed
 - **Schedule details wait until you stop moving**: the pop-up on a session, 1-on-1 or room name
   now appears once the mouse rests on it, instead of at every block the cursor crosses on its way
+- **Every pop-up closes the same way**: a small × in the top right corner. Some used to end
+  instead in a full-width button that looked like the thing to press next
 
 ### Fixed
 

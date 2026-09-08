@@ -2,13 +2,13 @@
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ModalCloseButton } from "@/app/components/modal-close-button";
 import { useSafeLayoutEffect } from "@/utils/hooks";
 
 export function Modal(props: {
   open: boolean;
   setOpen: (value: boolean) => void;
   children: React.ReactNode;
-  hideClose?: boolean;
   zIndex?: string;
   portal?: boolean; // Explicitly control portaling behavior
   // Passed rather than merged into the panel's classes: two max-width
@@ -20,7 +20,6 @@ export function Modal(props: {
     open,
     setOpen,
     children,
-    hideClose,
     zIndex = "z-10",
     portal = false,
     maxWidth = "sm:max-w-lg",
@@ -89,18 +88,13 @@ export function Modal(props: {
                 <Dialog.Panel
                   className={`relative mb-10 transform overflow-visible rounded-lg bg-surface-raised px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full ${maxWidth} sm:p-6`}
                 >
+                  {/* Overlays the panel's top right corner, so children whose
+                      first line reaches that far need a pr-8 of their own. */}
+                  <ModalCloseButton
+                    onClick={() => setOpen(false)}
+                    className="absolute right-3 top-3 z-10"
+                  />
                   {children}
-                  {!hideClose && (
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm px-4 py-2 bg-brand text-base font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent sm:text-sm"
-                        onClick={() => setOpen(false)}
-                      >
-                        Close
-                      </button>
-                    </div>
-                  )}
                 </Dialog.Panel>
               </Transition.Child>
             </div>

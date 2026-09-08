@@ -61,8 +61,6 @@ export function BookMeeting({
       .then(setFound)
       .catch(() => {
         // Closing the modal aborts the request; there is nobody left to tell.
-        // Anything else has to end the spinner, or the modal never leaves it —
-        // and with no close button of its own, that traps the reader.
         if (!controller.signal.aborted) setFound("failed");
       });
     return () => controller.abort();
@@ -75,21 +73,15 @@ export function BookMeeting({
       zIndex="z-[60]"
       portal
       maxWidth="sm:max-w-2xl"
-      hideClose
     >
       {found === null ? (
         <p className="text-fg-muted">Loading…</p>
       ) : found === "gone" || found === "failed" ? (
-        <div className="flex flex-col gap-4">
-          <p className="text-fg">
-            {found === "gone"
-              ? "That slot is no longer open for 1-on-1s."
-              : "Couldn't load who is free then. Try the slot again."}
-          </p>
-          <button type="button" onClick={onClose} className={PRIMARY_BUTTON}>
-            Close
-          </button>
-        </div>
+        <p className="pr-8 text-fg">
+          {found === "gone"
+            ? "That slot is no longer open for 1-on-1s."
+            : "Couldn't load who is free then. Try the slot again."}
+        </p>
       ) : chosen ? (
         <RequestStep
           eventId={eventId}
@@ -101,7 +93,7 @@ export function BookMeeting({
           onClose={onClose}
         />
       ) : (
-        <CandidateStep found={found} onPick={setChosen} onClose={onClose} />
+        <CandidateStep found={found} onPick={setChosen} />
       )}
     </Modal>
   );
@@ -110,15 +102,13 @@ export function BookMeeting({
 function CandidateStep({
   found,
   onPick,
-  onClose,
 }: {
   found: MeetingCandidates;
   onPick: (candidate: MeetingCandidate) => void;
-  onClose: () => void;
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <div className="pr-8">
         <h2 className="text-xl font-bold text-fg">
           Who&apos;s free at {found.slotLabel.split(" – ")[0]}?
         </h2>
@@ -206,14 +196,6 @@ function CandidateStep({
         Only people who marked this slot free are listed. Nobody is told you
         looked.
       </p>
-
-      <button
-        type="button"
-        onClick={onClose}
-        className={`${SECONDARY_BUTTON} self-start`}
-      >
-        Close
-      </button>
     </div>
   );
 }
@@ -268,20 +250,22 @@ function RequestStep({
   if (sent) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-fg">
+        <p className="pr-8 text-fg">
           Asked {candidate.name} for {found.slotLabel} on {found.dayLabel}.
           You&apos;ll hear when they answer.
         </p>
-        <button type="button" onClick={onClose} className={PRIMARY_BUTTON}>
-          Done
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={onClose} className={PRIMARY_BUTTON}>
+            Done
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSend} className="flex flex-col gap-4">
-      <h2 className="text-xl font-bold text-fg">
+      <h2 className="pr-8 text-xl font-bold text-fg">
         1-on-1 with {candidate.name}
         <span className="block text-sm font-normal text-fg-muted">
           {found.dayLabel}, {found.slotLabel}

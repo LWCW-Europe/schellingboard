@@ -82,7 +82,7 @@ function EventDetails(props: { event: Event }) {
   const multipleDays = event.start.getTime() !== event.end.getTime();
   return (
     <div className="max-h-[70dvh] overflow-y-auto">
-      <h2 className="text-lg font-bold text-fg">{event.name}</h2>
+      <h2 className="pr-8 text-lg font-bold text-fg">{event.name}</h2>
       <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium text-fg-subtle">
         <span className="flex items-center gap-1">
           <CalendarIcon className="h-4 w-4 stroke-2" />

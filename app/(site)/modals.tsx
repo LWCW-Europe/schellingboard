@@ -3,6 +3,7 @@ import { useContext, useState } from "react";
 import Image from "next/image";
 import { MapIcon } from "@heroicons/react/24/outline";
 import { Modal } from "@/app/components/modal";
+import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "@/app/components/buttons";
 import { UserSelect } from "./user-select";
 import { UserContext } from "./context";
 import type { Guest } from "@/db/repositories/interfaces";
@@ -67,14 +68,8 @@ export function CurrentUserModal(props: {
     close();
   };
   return (
-    <Modal
-      open={open}
-      setOpen={close}
-      hideClose={!!user}
-      zIndex={zIndex}
-      portal={portal}
-    >
-      {sessionInfoDisplay}
+    <Modal open={open} setOpen={close} zIndex={zIndex} portal={portal}>
+      <div className="pr-8">{sessionInfoDisplay}</div>
       {
         <div className="mt-2">
           <span className="text-fg-subtle">RSVPing as...</span>
@@ -82,10 +77,10 @@ export function CurrentUserModal(props: {
         </div>
       }
       {user && (
-        <div className="relative inline-block group">
+        <div className="relative mt-4 inline-block group">
           <button
             type="button"
-            className="inline-flex justify-center w-full rounded-md border border-transparent shadow-sm disabled:bg-surface-hover disabled:text-fg-subtle px-4 py-2 bg-brand text-base font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent sm:text-sm mt-4"
+            className={PRIMARY_BUTTON}
             onClick={onClickHandler}
             disabled={isDisabled}
           >
@@ -126,19 +121,19 @@ export function ConfirmDeletionModal(props: {
       >
         Delete
       </button>
-      <Modal open={open} setOpen={setOpen} hideClose={true}>
-        <p>Delete {itemName}?</p>
-        <div className="mt-4">
+      <Modal open={open} setOpen={setOpen}>
+        <p className="pr-8">Delete {itemName}?</p>
+        <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-brand font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent"
+            className={PRIMARY_BUTTON}
             onClick={() => void clickHandler()}
           >
             Yes
           </button>
           <button
             type="button"
-            className="ml-4 rounded-md border border-line-strong shadow-sm px-6 py-2 bg-surface-raised font-medium text-fg hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-line"
+            className={SECONDARY_BUTTON}
             onClick={() => setOpen(false)}
           >
             No
@@ -164,27 +159,17 @@ export function ConfirmationModal(props: {
   };
   return (
     <>
-      <Modal
-        open={open}
-        setOpen={close}
-        hideClose={true}
-        zIndex={zIndex}
-        portal={portal}
-      >
-        <p>{message}</p>
-        <div className="mt-4">
+      <Modal open={open} setOpen={close} zIndex={zIndex} portal={portal}>
+        <p className="pr-8">{message}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-brand font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent"
+            className={PRIMARY_BUTTON}
             onClick={clickHandler}
           >
             Yes
           </button>
-          <button
-            type="button"
-            className="ml-4 rounded-md border border-line-strong shadow-sm px-6 py-2 bg-surface-raised font-medium text-fg hover:bg-surface-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-line"
-            onClick={close}
-          >
+          <button type="button" className={SECONDARY_BUTTON} onClick={close}>
             No
           </button>
         </div>
@@ -202,20 +187,12 @@ export function AlertModal(props: {
 }) {
   const { open, close, message, zIndex, portal } = props;
   return (
-    <Modal
-      open={open}
-      setOpen={close}
-      hideClose={true}
-      zIndex={zIndex}
-      portal={portal}
-    >
-      <p role="alert">{message}</p>
+    <Modal open={open} setOpen={close} zIndex={zIndex} portal={portal}>
+      <p role="alert" className="pr-8">
+        {message}
+      </p>
       <div className="mt-4">
-        <button
-          type="button"
-          className="rounded-md border border-transparent shadow-sm px-6 py-2 bg-brand font-medium text-on-brand hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-accent"
-          onClick={close}
-        >
+        <button type="button" className={PRIMARY_BUTTON} onClick={close}>
           OK
         </button>
       </div>

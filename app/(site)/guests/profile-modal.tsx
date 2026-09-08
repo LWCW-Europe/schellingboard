@@ -7,11 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ModalCloseButton } from "@/app/components/modal-close-button";
 import type { DirectoryView } from "@/app/(site)/guests/directory-view";
 import { ProfileBody } from "@/app/(site)/guests/profile-body";
 import {
@@ -366,14 +363,7 @@ export function ProfileModal({
             <span className="hidden sm:inline">Next</span>
             <ChevronRightIcon className="h-5 w-5 stroke-2" aria-hidden="true" />
           </NavButton>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={close}
-            className="rounded-md p-1.5 text-fg-subtle hover:bg-surface-sunken hover:text-fg-muted"
-          >
-            <XMarkIcon className="h-6 w-6 stroke-2" aria-hidden="true" />
-          </button>
+          <ModalCloseButton onClick={close} />
         </div>
 
         {/* touch-pan-y hands vertical scrolling to the browser and keeps

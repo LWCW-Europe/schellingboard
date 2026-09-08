@@ -110,20 +110,22 @@ function RequestForm({
   if (sent) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-fg">
+        <p className="pr-8 text-fg">
           Asked {recipientName} for {slot?.label} on {day?.label}. You&apos;ll
           hear when they answer.
         </p>
-        <button type="button" onClick={onDone} className={PRIMARY_BUTTON}>
-          Done
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={onDone} className={PRIMARY_BUTTON}>
+            Done
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSend} className="flex flex-col gap-4">
-      <h2 className="text-xl font-bold text-fg">
+      <h2 className="pr-8 text-xl font-bold text-fg">
         1-on-1 with {recipientName}
         <span className="block text-sm font-normal text-fg-muted">
           {option.eventName}
@@ -203,7 +205,6 @@ export function MeetingPicker({
         zIndex="z-[60]"
         portal
         maxWidth="sm:max-w-2xl"
-        hideClose
       >
         {open && (
           <RequestForm

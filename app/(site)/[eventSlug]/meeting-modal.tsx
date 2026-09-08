@@ -14,6 +14,7 @@ import {
   SECONDARY_BUTTON,
 } from "@/app/components/buttons";
 import { Input } from "@/app/input";
+import { ModalCloseButton } from "@/app/components/modal-close-button";
 import { EventContext } from "@/app/(site)/context";
 import { clashLines } from "@/utils/meeting-clash-text";
 import { canCancel, statusLine } from "@/utils/meeting-rules";
@@ -97,26 +98,10 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
     >
       <div className="fixed inset-0 bg-overlay" onClick={dismissViewMeeting} />
       <div className="relative bg-surface-raised rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto p-6">
-        <button
+        <ModalCloseButton
           onClick={dismissViewMeeting}
-          className="absolute top-4 right-4 text-fg-subtle hover:text-fg-muted"
-          aria-label="Close"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+          className="absolute right-3 top-3 z-10"
+        />
 
         {meetings === null ? (
           <p className="text-fg-muted">Loading…</p>
