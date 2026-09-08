@@ -82,13 +82,6 @@ export type Event = {
   icon?: string | null;
   /** Whether attendees can book 1-on-1 meetings with each other. */
   meetingsEnabled: boolean;
-  meetingSlotMinutes: number;
-  /**
-   * Time-of-day bounds ("HH:mm") for 1-on-1 slots. Undefined means the day's
-   * own window.
-   */
-  meetingDayStart?: string;
-  meetingDayEnd?: string;
   /** How many unanswered requests one attendee may have outstanding. */
   maxOpenMeetingRequests: number;
 };
@@ -100,11 +93,7 @@ export type Event = {
  */
 export type EventMeetingSettings = Pick<
   Event,
-  | "meetingsEnabled"
-  | "meetingSlotMinutes"
-  | "meetingDayStart"
-  | "meetingDayEnd"
-  | "maxOpenMeetingRequests"
+  "meetingsEnabled" | "maxOpenMeetingRequests"
 >;
 
 export interface EventsRepository {

@@ -246,6 +246,13 @@
       "when": 1788703476668,
       "tag": "0034_session_attendee_count",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "6",
+      "when": 1788768341579,
+      "tag": "0035_drop_obsolete_meeting_settings",
+      "breakpoints": true
     }
   ]
 }
