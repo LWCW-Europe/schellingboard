@@ -468,8 +468,8 @@ export const meetingPoints = sqliteTable(
 
 // A slot a guest declared themselves free for. Slots themselves are derived
 // from the event's days and `slotIncrementMinutes` rather than stored, so these
-// rows key on the slot's start instant: narrowing the meeting hours later
-// simply stops offering the rows that fall outside, with nothing to migrate.
+// rows key on the slot's start instant: shortening a day later simply stops
+// offering the rows that fall outside, with nothing to migrate.
 //
 // Only availability is recorded here. Whether the guest is *also* free of
 // sessions at that slot is computed when someone tries to book them, so an

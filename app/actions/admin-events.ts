@@ -39,10 +39,8 @@ function parseDate(value: string | undefined): Date | undefined {
 }
 
 // Phase dates and the meeting settings are deliberately excluded: they are
-// managed only by updateEventPhasesAction and the admin Meetings section.
-// Excluding them is what keeps a basic-info save from touching them — and for
-// the nullable meeting-hours pair it is required, since events.update tests
-// those with `in` and would NULL them out if the keys were present at all.
+// managed only by updateEventPhasesAction and the admin Meetings section, so
+// leaving them out is what keeps a basic-info save from touching them.
 type ParsedEvent = Omit<
   Event,
   | "id"

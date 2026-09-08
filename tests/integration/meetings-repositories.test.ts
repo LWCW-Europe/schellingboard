@@ -17,7 +17,7 @@ describe("event meeting settings", () => {
   beforeAll(() => setupTestDb());
   beforeEach(() => resetTestDb());
 
-  it("defaults to meetings off", async () => {
+  it("defaults to meetings off and five open requests", async () => {
     const event = await createEvent();
 
     expect(event.meetingsEnabled).toBe(false);
