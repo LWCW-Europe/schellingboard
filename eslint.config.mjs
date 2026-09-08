@@ -52,6 +52,7 @@ export default tseslint.config(
       ".jj/**",
       "site/**",
       "coverage/**",
+      "scripts/load-test/dist/**",
       "docs/dev/attendance-model/.venv/**",
       "playwright-report/**",
       "blob-report/**",
