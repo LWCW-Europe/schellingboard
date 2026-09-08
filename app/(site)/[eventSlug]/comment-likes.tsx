@@ -121,7 +121,7 @@ export function CommentLikes({
 
       {showingLikers && (
         <Modal open setOpen={setShowingLikers} zIndex="z-[60]" portal>
-          <Dialog.Title className="text-base font-semibold text-fg">
+          <Dialog.Title className="pr-8 text-base font-semibold text-fg">
             Liked by
           </Dialog.Title>
           <ul className="mt-3 max-h-72 overflow-y-auto text-sm">

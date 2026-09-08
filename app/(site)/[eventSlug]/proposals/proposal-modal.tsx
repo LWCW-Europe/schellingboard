@@ -3,6 +3,7 @@
 import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+import { ModalCloseButton } from "@/app/components/modal-close-button";
 import type {
   Comment,
   Event,
@@ -56,26 +57,10 @@ export function ProposalModal({
     >
       <div className="fixed inset-0 bg-overlay" onClick={onDismiss} />
       <div className="relative bg-surface-raised rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <button
+        <ModalCloseButton
           onClick={onDismiss}
-          className="absolute top-4 right-4 text-fg-subtle hover:text-fg-muted"
-          aria-label="Close"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+          className="absolute right-3 top-3 z-10"
+        />
         {!proposal ? (
           <div className="p-6">Proposal not found.</div>
         ) : (
