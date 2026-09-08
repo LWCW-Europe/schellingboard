@@ -50,6 +50,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   could never be opened. Creating one now fails with the same message other reserved names give
 - **Session save confirmations clear themselves** (#859): the message confirming a session
   was added, updated or deleted now goes after ten seconds instead of waiting to be closed
+- **Schedule details wait until you stop moving**: the pop-up on a session, 1-on-1 or room name
+  now appears once the mouse rests on it, instead of at every block the cursor crosses on its way
 
 ### Fixed
 
