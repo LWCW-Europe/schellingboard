@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-import { canCancel, statusLine } from "@/utils/meeting-rules";
+import {
+  blockTimeLabel,
+  canCancel,
+  slotSummaryLine,
+  statusLine,
+} from "@/utils/meeting-rules";
 
 const NOW = new Date("2026-10-01T09:00:00.000Z");
 const LATER = "2026-10-01T10:00:00.000Z";
@@ -50,6 +55,65 @@ describe("canCancel", () => {
         canCancel({ status, role: "requester", slotStart: LATER }, NOW)
       ).toBe(false);
     }
+  });
+});
+
+// The one line a collapsed slot has room for, under "4 1-on-1s".
+describe("slotSummaryLine", () => {
+  const pending = (role: "requester" | "recipient") =>
+    ({ status: "pending", role }) as const;
+
+  it("leads with what is waiting on the viewer", () => {
+    expect(
+      slotSummaryLine([
+        { status: "accepted", role: "requester" },
+        pending("requester"),
+        pending("recipient"),
+      ])
+    ).toBe("1 needs your reply");
+    expect(slotSummaryLine([pending("recipient"), pending("recipient")])).toBe(
+      "2 need your reply"
+    );
+  });
+
+  it("counts what the viewer is waiting on when nothing is theirs to answer", () => {
+    expect(slotSummaryLine([pending("requester")])).toBe("1 waiting for reply");
+    expect(slotSummaryLine([pending("requester"), pending("requester")])).toBe(
+      "2 waiting for reply"
+    );
+  });
+
+  it("says so when there is nothing left to answer", () => {
+    expect(
+      slotSummaryLine([
+        { status: "accepted", role: "requester" },
+        { status: "accepted", role: "recipient" },
+      ])
+    ).toBe("all confirmed");
+  });
+});
+
+// What a block of several is named by, when the block is all the reader sees.
+describe("blockTimeLabel", () => {
+  const BERLIN = "Europe/Berlin";
+  const slot = (start: string, end: string) => ({
+    slotStart: `2026-10-01T${start}:00.000Z`,
+    slotEnd: `2026-10-01T${end}:00.000Z`,
+  });
+
+  it("reads as the meeting's own time when it is alone", () => {
+    expect(blockTimeLabel([slot("08:00", "08:30")], BERLIN)).toBe(
+      "10:00 – 10:30"
+    );
+  });
+
+  // Overlapping meetings of unequal length share one block, so naming it after
+  // the first of them puts a time on the block the rest do not have.
+  it("covers the earliest start and the latest end", () => {
+    const uneven = [slot("08:00", "09:00"), slot("08:30", "09:30")];
+
+    expect(blockTimeLabel(uneven, BERLIN)).toBe("10:00 – 11:30");
+    expect(blockTimeLabel([...uneven].reverse(), BERLIN)).toBe("10:00 – 11:30");
   });
 });
 

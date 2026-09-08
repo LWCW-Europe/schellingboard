@@ -300,6 +300,11 @@ you agreed to meet, and whether it is confirmed, waiting for your reply, or
 waiting for theirs. Each sits in its own time slot, next to whatever it would
 clash with.
 
+More than one can share a slot — an agreed 1-on-1 and someone asking for the
+same time is ordinary. They sit one above the other, and where there are more
+of them than the slot has room to name, the block says how many there are and
+opens the list of them instead.
+
 The column is yours alone — nobody else sees it, and it stays put when you
 filter the schedule down to one room. It is there on every day of the event
 once you take part at all — open to 1-on-1s, or with one arranged — so the

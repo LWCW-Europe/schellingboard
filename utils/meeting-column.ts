@@ -1,4 +1,4 @@
-import { getNumSlots } from "@/utils/slots";
+import { getNumSlots, SLOT_HEIGHT_PX } from "@/utils/slots";
 import type { MeetingView } from "@/utils/meeting-views";
 
 const LIVE = new Set<MeetingView["status"]>(["pending", "accepted"]);
@@ -31,6 +31,27 @@ export function takesPartInMeetings(
 }
 
 /**
+ * How a block of meetings is drawn. The column is 96–160px wide, so blocks set
+ * side by side are unreadable at two; they stack instead, until the block runs
+ * out of height and the whole slot becomes one block that opens a list.
+ */
+export type MeetingBlockDisplay = "single" | "stack" | "summary";
+
+/** Least height a stacked entry stays legible in, and the gap below it. */
+const ENTRY_PX = 18;
+const ENTRY_GAP_PX = 2;
+/** The block's own vertical margin (my-0.5), top and bottom. */
+const BLOCK_INSET_PX = 4;
+
+function stackCapacity(span: number): number {
+  const height = span * SLOT_HEIGHT_PX - BLOCK_INSET_PX;
+  return Math.max(
+    1,
+    Math.floor((height + ENTRY_GAP_PX) / (ENTRY_PX + ENTRY_GAP_PX))
+  );
+}
+
+/**
  * One row of the schedule's 1-on-1 column: what the viewer has in that slot,
  * or why they have nothing there.
  */
@@ -43,12 +64,15 @@ export type MeetingColumnRow = {
   kind: "meetings" | "unavailable" | "free";
   /** Empty unless `kind` is "meetings". */
   meetings: MeetingView[];
+  /** Set on a "meetings" row, absent on the empty kinds. */
+  display?: MeetingBlockDisplay;
 };
 
 /**
- * The column's rows for one day, one per slot. Nothing merges: what the
- * viewer cleared governs who may book *them*, and they can still arrange a
- * 1-on-1 in it themselves, so every slot stays separately bookable (#945).
+ * The column's rows for one day, one per slot — except where meetings overlap,
+ * which share one block. Nothing else merges: what the viewer cleared governs
+ * who may book *them*, and they can still arrange a 1-on-1 in it themselves,
+ * so every empty slot stays separately bookable (#945).
  */
 export function meetingColumnRows({
   meetings,
@@ -71,31 +95,50 @@ export function meetingColumnRows({
   const rowOf = (start: string) =>
     Math.floor((new Date(start).getTime() - day.start.getTime()) / slotMs) + 1;
 
-  const byRow = new Map<number, MeetingView[]>();
-  for (const meeting of meetings) {
-    const row = rowOf(meeting.slotStart);
-    byRow.set(row, [...(byRow.get(row) ?? []), meeting]);
-  }
   // Measured from the row's start rather than the meeting's, so one that
   // starts mid-row and reaches into the next covers both -- and never past the
   // last row, which a day shortened after the booking would otherwise do,
   // stretching the day's grid row beyond the rooms beside it.
-  const spanOf = (meeting: MeetingView) => {
-    const row = rowOf(meeting.slotStart);
+  const spanOf = (meeting: MeetingView, row: number) => {
     const rowStart = day.start.getTime() + (row - 1) * slotMs;
     const wanted = Math.ceil(
       (new Date(meeting.slotEnd).getTime() - rowStart) / slotMs
     );
     return Math.min(Math.max(1, wanted), Math.max(1, numSlots - row + 1));
   };
-  // Rows are keyed by start, so two such meetings of unequal length that
-  // overlap without sharing a row would draw over each other. Knowingly out
-  // of scope: it takes an increment change *and* two bookings athwart it.
 
+  const placed = meetings
+    .map((meeting) => {
+      const row = rowOf(meeting.slotStart);
+      return { meeting, row, end: row + spanOf(meeting, row) };
+    })
+    // Earliest first, then by name: an order the reader can predict, and one a
+    // block keeps from one read to the next.
+    .sort(
+      (a, b) =>
+        a.meeting.slotStart.localeCompare(b.meeting.slotStart) ||
+        a.meeting.otherName.localeCompare(b.meeting.otherName) ||
+        a.meeting.id.localeCompare(b.meeting.id)
+    );
+
+  // Everything that overlaps goes in one block: two grid items in the same
+  // column draw over each other, and unequal lengths make that a wider net
+  // than sharing a start row.
+  const blocks: { row: number; end: number; meetings: MeetingView[] }[] = [];
+  for (const { meeting, row, end } of placed) {
+    const open = blocks[blocks.length - 1];
+    if (open && row < open.end) {
+      open.end = Math.max(open.end, end);
+      open.meetings.push(meeting);
+      continue;
+    }
+    blocks.push({ row, end, meetings: [meeting] });
+  }
+
+  const byRow = new Map(blocks.map((block) => [block.row, block]));
   const covered = new Set<number>();
-  for (const [row, atRow] of byRow) {
-    const span = Math.max(...atRow.map(spanOf));
-    for (let i = 0; i < span; i++) covered.add(row + i);
+  for (const block of blocks) {
+    for (let row = block.row; row < block.end; row++) covered.add(row);
   }
 
   // Being asked takes no availability of your own, so a guest can hold
@@ -109,14 +152,21 @@ export function meetingColumnRows({
     const start = new Date(
       day.start.getTime() + (row - 1) * slotMs
     ).toISOString();
-    const atRow = byRow.get(row);
-    if (atRow) {
+    const block = byRow.get(row);
+    if (block) {
+      const span = block.end - block.row;
       rows.push({
         row,
-        span: Math.max(...atRow.map(spanOf)),
+        span,
         start,
         kind: "meetings",
-        meetings: atRow,
+        meetings: block.meetings,
+        display:
+          block.meetings.length === 1
+            ? "single"
+            : block.meetings.length <= stackCapacity(span)
+              ? "stack"
+              : "summary",
       });
       continue;
     }

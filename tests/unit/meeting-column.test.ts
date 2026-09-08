@@ -61,6 +61,75 @@ describe("meetingColumnRows", () => {
     expect(both[0].meetings).toHaveLength(2);
   });
 
+  // Two meetings of unequal length are placed by their own start row, and two
+  // grid items in the same column draw over each other -- so anything that
+  // overlaps has to end up in one block.
+  it("groups meetings that overlap without sharing a start row", () => {
+    const uneven = rows(
+      [meeting(0, { slotEnd: at(60) }), meeting(30, { id: "second" })],
+      []
+    ).filter((r) => r.kind === "meetings");
+
+    expect(uneven).toHaveLength(1);
+    expect(uneven[0]).toMatchObject({ row: 1, span: 2 });
+    expect(uneven[0].meetings.map((m) => m.id)).toEqual(["m-0", "second"]);
+  });
+
+  // Nothing the reader can predict orders them otherwise, and an order that
+  // changes from one read to the next moves the block under their finger.
+  it("puts the earliest first in a block, then the names in order", () => {
+    const together = rows(
+      [
+        meeting(0, { id: "later", otherName: "Zoë", slotEnd: at(60) }),
+        meeting(30, { id: "second", otherName: "Bea" }),
+        meeting(0, { id: "first", otherName: "Amir" }),
+      ],
+      []
+    ).filter((r) => r.kind === "meetings");
+
+    expect(together[0].meetings.map((m) => m.id)).toEqual([
+      "first",
+      "later",
+      "second",
+    ]);
+  });
+
+  it("leaves meetings that do not overlap in rows of their own", () => {
+    const apart = rows([meeting(0), meeting(30, { id: "second" })], []).filter(
+      (r) => r.kind === "meetings"
+    );
+
+    expect(apart.map((r) => r.row)).toEqual([1, 2]);
+  });
+
+  // The column is 96–160px wide, so blocks side by side stop being readable at
+  // two and stop being tappable at four. Stacked full-width lines fit while
+  // there is height for them; past that the slot is one block that opens a list.
+  it("stacks what fits the block's height and summarises the rest", () => {
+    const parallel = (count: number) =>
+      rows(
+        Array.from({ length: count }, (_, i) =>
+          meeting(0, { id: `m${i}`, otherName: `Guest ${i}` })
+        ),
+        []
+      ).filter((r) => r.kind === "meetings")[0];
+
+    expect(parallel(1).display).toBe("single");
+    expect(parallel(2).display).toBe("stack");
+    expect(parallel(3).display).toBe("summary");
+  });
+
+  it("stacks more of them in a block spanning two slots", () => {
+    const tall = rows(
+      Array.from({ length: 3 }, (_, i) =>
+        meeting(0, { id: `m${i}`, slotEnd: at(60) })
+      ),
+      []
+    ).filter((r) => r.kind === "meetings")[0];
+
+    expect(tall).toMatchObject({ span: 2, display: "stack" });
+  });
+
   // An event whose slot increment changed leaves older meetings longer than
   // one row.
   it("spans a meeting longer than one slot", () => {
