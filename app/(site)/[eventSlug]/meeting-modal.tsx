@@ -149,10 +149,13 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
               </p>
             )}
 
-            {/* A canceled meeting drops off the schedule column, so this modal
-                -- reached from the notification -- is where the note is read. */}
+            {/* A canceled meeting leaves the column, so this modal is where the
+                note is read -- named, since the message above is a box like it. */}
             {meeting.cancelNote && (
               <p className="text-sm rounded-md bg-surface-sunken p-3 text-fg">
+                <span className="font-medium text-fg-muted">
+                  Why it was called off:{" "}
+                </span>
                 {meeting.cancelNote}
               </p>
             )}
@@ -206,22 +209,21 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
                   <p className="text-sm text-fg">
                     {meeting.otherName} will be told. Cancel it?
                   </p>
-                  {/* Optional, and the one place in the feature where a word
-                      of explanation is worth something: calling off something
-                      the other person had agreed to. */}
-                  <label
-                    htmlFor="cancel-note"
-                    className="text-sm font-medium text-fg-muted"
-                  >
-                    Say why, if you like (optional)
-                  </label>
-                  <Input
-                    id="cancel-note"
-                    value={cancelNote}
-                    onChange={(e) => setCancelNote(e.target.value)}
-                    placeholder="Sorry — my session moved…"
-                    className="w-full h-10"
-                  />
+                  <div className="flex flex-col gap-1">
+                    <label
+                      htmlFor="cancel-note"
+                      className="text-sm font-medium text-fg-muted"
+                    >
+                      Say why, if you like (optional)
+                    </label>
+                    <Input
+                      id="cancel-note"
+                      value={cancelNote}
+                      onChange={(e) => setCancelNote(e.target.value)}
+                      placeholder="Sorry — my session moved…"
+                      className="w-full h-10"
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <button
                       type="button"

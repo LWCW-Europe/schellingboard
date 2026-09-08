@@ -450,10 +450,8 @@ test.describe("1-on-1 meetings", () => {
       .fill("sorry, my session moved");
     await confirmed.getByRole("button", { name: "Yes, cancel it" }).click();
     await expect(confirmed.getByText(/was canceled/)).toBeVisible();
-    // The note is on the meeting from here on, which is where the other one
-    // reads it too -- their notification is what takes them back to it, since
-    // a canceled 1-on-1 has left the column. That half is covered where it is
-    // cheap: meeting-views carries it, and the action stores it.
+    // The other party reads it here too, reached from their notification --
+    // that half is covered where it is cheap, in meeting-views.
     await expect(confirmed.getByText("sorry, my session moved")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(

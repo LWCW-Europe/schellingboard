@@ -268,9 +268,8 @@ export async function cancelMeetingAction(
   const from: MeetingStatus[] = isRequester
     ? ["pending", "accepted"]
     : ["accepted"];
-  // The note goes in with the status change rather than after it: a cancel
-  // the compare-and-set refuses is one that did not happen, and it must not
-  // leave a word about it on a meeting that still stands.
+  // The note goes in with the status change: a cancel the compare-and-set
+  // refuses must leave no word about it on a meeting that still stands.
   const canceled = await repos.meetings.updateStatus(
     meeting.id,
     "canceled",

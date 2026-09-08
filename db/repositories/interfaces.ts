@@ -935,11 +935,9 @@ export interface MeetingsRepository {
    * Moves the meeting to `status`, but only from one of `from` — undefined
    * when it is in some other state, which is how a caller learns that someone
    * (a cancelling requester, a second tab) got there first.
-   */
-  /**
-   * Moves the meeting, but only from one of `from` — the compare-and-set that
-   * decides which of two tabs wins. `cancelNote` rides along in the same
-   * statement, so a note is stored only where the move it explains happened.
+   *
+   * `cancelNote` rides along in the same statement, so a note is stored only
+   * where the move it explains happened.
    */
   updateStatus(
     id: string,
