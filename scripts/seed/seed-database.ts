@@ -38,6 +38,10 @@ const TZ = "Europe/Berlin";
 // derives 1-on-1 slots from it, and so does the availability seeding below.
 const SLOT_INCREMENT_MINUTES = 30;
 
+// The attendee the documentation screenshots are taken as, so the large
+// profile gives her the 1-on-1s to photograph (docs/screenshots/README.md).
+const SCREENSHOT_GUEST = "Hana Kobayashi";
+
 // Returns a UTC Date representing the given clock time on a specific day in Berlin.
 // dayOffset is added to baseDate's Berlin calendar date before setting the time.
 function berlinTime(
@@ -456,7 +460,12 @@ async function seedTestData(profile: SeedProfile) {
 
   // Only every third guest, and only mid-afternoon: enough overlap that any two
   // of them can meet, while leaving "nobody is free" a state you can still see.
-  const bookableGuests = guestRows.filter((_, index) => index % 3 === 0);
+  // The screenshot guest is held back from it because she declares her own,
+  // wider day below -- two sources for one guest would collide on the primary
+  // key the moment her index fell on a multiple of three.
+  const bookableGuests = guestRows.filter(
+    (guest, index) => index % 3 === 0 && guest.name !== SCREENSHOT_GUEST
+  );
   const availabilityRows = dayRows.flatMap((day) => {
     const start = new Date(day.start);
     const afternoon = (slotStart: Date) => {
@@ -477,6 +486,30 @@ async function seedTestData(profile: SeedProfile) {
         }))
       );
   });
+  // A wider day than the shared afternoon, with gaps in it: the screenshot
+  // guest's own availability is one of the shots. Large profile only, so the
+  // small fixture the E2E suite pins on keeps the availability it had.
+  if (profile === "large") {
+    const screenshotGuestId = guestIdByName(SCREENSHOT_GUEST);
+    for (const day of dayRows) {
+      const start = new Date(day.start);
+      for (const slot of meetingSlotsForDay(
+        { start, end: new Date(day.end) },
+        SLOT_INCREMENT_MINUTES
+      )) {
+        const hoursIn =
+          (slot.start.getTime() - start.getTime()) / (60 * 60 * 1000);
+        const overLunch = hoursIn >= 3.5 && hoursIn < 5;
+        if (hoursIn < 1 || hoursIn >= 8.5 || overLunch) continue;
+        availabilityRows.push({
+          eventId: day.eventId,
+          guestId: screenshotGuestId,
+          slotStart: slot.start.toISOString(),
+        });
+      }
+    }
+  }
+
   insertChunked(availabilityRows, (chunk) =>
     db.insert(schema.meetingAvailability).values(chunk)
   );
@@ -976,6 +1009,69 @@ async function seedTestData(profile: SeedProfile) {
   }
   insertChunked(rsvpRows, (chunk) => db.insert(schema.rsvps).values(chunk));
   console.log(`  ✅ Created ${rsvpRows.length} RSVPs`);
+
+  // One 1-on-1 of each state for the screenshot guest's column of Gamma's
+  // grid, in the afternoon the others here are bookable. Curated partners
+  // only: bulk guests are named by the generator's RNG, so pinning one here
+  // would break the seed the day bulk.ts's name lists change.
+  if (profile === "large") {
+    console.log("  🤝 Creating test 1-on-1s...");
+    const screenshotGuestId = guestIdByName(SCREENSHOT_GUEST);
+    const gammaDayOne = dayRows.find((d) => d.eventId === gammaEvent.id)!;
+    const slotAt = (hour: number, minute: number) => ({
+      slotStart: berlinTime(
+        new Date(gammaDayOne.start),
+        0,
+        hour,
+        minute
+      ).toISOString(),
+      slotEnd: berlinTime(
+        new Date(gammaDayOne.start),
+        0,
+        hour,
+        minute + SLOT_INCREMENT_MINUTES
+      ).toISOString(),
+    });
+    const meetingRows = [
+      {
+        other: "Rafael Souza",
+        role: "requester" as const,
+        ...slotAt(14, 0),
+        meetingPoint: "Coffee bar",
+        message: "Would love to hear how you mentor the juniors on your team.",
+        status: "accepted" as const,
+      },
+      {
+        other: "Aisha Diallo",
+        role: "recipient" as const,
+        ...slotAt(15, 0),
+        meetingPoint: "Garden bench",
+        message: "Could we compare notes on multilingual research?",
+        status: "pending" as const,
+      },
+      {
+        other: "Wei Chen",
+        role: "requester" as const,
+        ...slotAt(16, 0),
+        meetingPoint: "Coffee bar",
+        message: "Happy to swap documentation war stories.",
+        status: "pending" as const,
+      },
+    ].map(({ other, role, status, ...rest }) => ({
+      id: nanoid(),
+      eventId: gammaEvent.id,
+      requesterId:
+        role === "requester" ? screenshotGuestId : guestIdByName(other),
+      recipientId:
+        role === "requester" ? guestIdByName(other) : screenshotGuestId,
+      status,
+      createdAt: new Date().toISOString(),
+      respondedAt: status === "accepted" ? new Date().toISOString() : null,
+      ...rest,
+    }));
+    db.insert(schema.meetings).values(meetingRows).run();
+    console.log(`  ✅ Created ${meetingRows.length} 1-on-1s`);
+  }
 
   console.log("✅ Test data seeded successfully");
 }

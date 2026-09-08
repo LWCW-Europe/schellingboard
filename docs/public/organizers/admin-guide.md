@@ -66,6 +66,8 @@ One global row shown when there's more than one event (see
 
 ![Admin event configuration form with name, dates, timezone, and scheduling settings](../../screenshots/admin-event-settings.webp)
 
+![The Meetings section of an event's configuration, with 1-on-1s enabled, two suggested meeting points, and the cap on open requests](../../screenshots/admin-meetings.webp)
+
 ## Locations
 
 Locations are a **global pool**, not per-event — one location can be
