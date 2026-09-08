@@ -21,7 +21,7 @@ import { setActionErrors } from "@/utils/forms";
  *
  * The stored count is fetched here rather than read off the session: it is
  * absent from the `Session` type on purpose, because that type reaches every
- * visitor's browser (docs/dev/adr/0006).
+ * visitor's browser (docs/dev/adr/0007).
  */
 export function AttendeeCountField({
   sessionId,

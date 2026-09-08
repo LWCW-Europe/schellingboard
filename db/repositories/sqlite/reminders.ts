@@ -31,11 +31,11 @@ export class SqliteRemindersRepository implements RemindersRepository {
   constructor(private readonly db: DB) {}
 
   async listCandidates(now: Date): Promise<DueReminderCandidate[]> {
-    // A heads-up is due from `start + break - 60 min`, and break is never
-    // negative, so nothing due by `now` can start more than an hour from now.
-    // A follow-up is due later still. Narrowing on the start time keeps the
-    // scan off the whole schedule without the per-event break arithmetic
-    // having to happen in SQL — the pure predicates decide eligibility.
+    // A heads-up is due from `start + break - 60 min` and break is never
+    // negative, so nothing due by `now` starts more than an hour from now; a
+    // follow-up is due later still. Deliberately no lower bound: a follow-up
+    // is never dropped for being late (FR-011), so a session that ended
+    // during a long outage is still owed one on the next tick.
     const horizon = new Date(now.getTime() + HOUR_MS).toISOString();
 
     const sessionRows = this.db

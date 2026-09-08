@@ -31,6 +31,7 @@ export function headsUpEligible({
   endTime,
   breakMinutes,
   storedDueTime,
+  storedClaimedAt,
   alreadyNotifiedHost,
 }: {
   now: Date;
@@ -38,6 +39,7 @@ export function headsUpEligible({
   endTime: Date;
   breakMinutes: number;
   storedDueTime: Date | null;
+  storedClaimedAt: Date | null;
   // Fed from the notification, not from any mail marker: a failed send clears
   // what gates a retry, and asking "did they already get one" of that field
   // let a reschedule slip a second heads-up through (research.md §14).
@@ -50,7 +52,9 @@ export function headsUpEligible({
   if (now >= endTime) return false;
 
   if (!alreadyNotifiedHost) return true;
-  if (sameInstant(storedDueTime, due)) return false;
+  // Same due time, notified, claim cleared: markFailed re-armed a send that
+  // failed, and the retry window runs to the end of the session above.
+  if (sameInstant(storedDueTime, due)) return storedClaimedAt === null;
 
   // The reschedule guard (FR-014). Expressed as "the heads-up this host
   // already received went out 90 minutes or less before the new displayed

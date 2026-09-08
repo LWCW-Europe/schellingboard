@@ -25,7 +25,7 @@ export function attendeeCountHeadsUpEmail(props: {
         <p>
           While you&rsquo;re there, please count how many people attend. Once
           the session has finished you&rsquo;ll be able to record the number,
-          and we&rsquo;ll email you a link when it&rsquo;s time.
+          and we&rsquo;ll remind you when it&rsquo;s time.
         </p>
         <p>
           <a href={props.sessionUrl}>View the session</a>

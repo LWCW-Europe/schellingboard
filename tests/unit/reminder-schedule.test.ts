@@ -21,6 +21,7 @@ const headsUp = {
   endTime,
   breakMinutes: BREAK_MINUTES,
   storedDueTime: null,
+  storedClaimedAt: null,
   alreadyNotifiedHost: false,
 };
 
@@ -64,24 +65,39 @@ describe("headsUpEligible", () => {
     expect(headsUpEligible({ ...headsUp, now: at("11:01") })).toBe(false);
   });
 
-  it("is not repeated for a due time the host was already notified of", () => {
+  it("is not repeated for a due time already claimed and notified", () => {
     expect(
       headsUpEligible({
         ...headsUp,
         now: at("09:20"),
         storedDueTime: at("09:10"),
+        storedClaimedAt: at("09:10"),
         alreadyNotifiedHost: true,
       })
     ).toBe(false);
   });
 
-  it("is retried when the claim for this due time was re-armed", () => {
+  it("is retried when the notification for this due time failed", () => {
     expect(
       headsUpEligible({
         ...headsUp,
         now: at("09:20"),
         storedDueTime: at("09:10"),
         alreadyNotifiedHost: false,
+      })
+    ).toBe(true);
+  });
+
+  // markFailed clears the claim and leaves notified_at set, so the host has
+  // their notification and is still owed the mail.
+  it("is retried when the mail for this due time failed", () => {
+    expect(
+      headsUpEligible({
+        ...headsUp,
+        now: at("09:20"),
+        storedDueTime: at("09:10"),
+        storedClaimedAt: null,
+        alreadyNotifiedHost: true,
       })
     ).toBe(true);
   });
@@ -133,12 +149,14 @@ describe("headsUpEligible", () => {
     // matching email then failed, which clears the delivery marker that gates
     // a retry but never `notified_at`. Asked whether they already received a
     // heads-up, the old input (fed from that cleared marker) answered "no" and
-    // let a second one through 35 minutes later.
+    // let a second one through 35 minutes later. The retry the cleared claim
+    // is owed belongs to the old due time, which the move has superseded.
     it("sends nothing to a host whose heads-up mail failed before the move", () => {
       expect(
         headsUpEligible({
           ...moved,
           storedDueTime: at("09:10"),
+          storedClaimedAt: null,
           alreadyNotifiedHost: true,
         })
       ).toBe(false);

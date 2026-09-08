@@ -1,6 +1,6 @@
 // The recurring dispatch tick. Started from instrumentation.ts, which is the
 // only hook that runs once per server process regardless of traffic — see
-// docs/dev/adr/0006.
+// docs/dev/adr/0007.
 //
 // The dispatcher is imported inside the tick, not at the top of this module:
 // Next compiles instrumentation.ts for the Edge runtime as well, and a static
