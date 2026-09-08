@@ -11,7 +11,6 @@ import {
   InformationCircleIcon,
   LinkIcon,
   TableCellsIcon,
-  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { DateTime } from "luxon";
 import Link from "next/link";
@@ -65,12 +64,6 @@ export function ScheduleToolbar(props: {
             <Link href={`/${event.slug}/proposals`} className={ITEM_CLASS}>
               <ClipboardDocumentListIcon className="h-4 w-4 stroke-2" />
               Proposals
-            </Link>
-          )}
-          {event.meetingsEnabled && (
-            <Link href={`/${event.slug}/meetings`} className={ITEM_CLASS}>
-              <UserGroupIcon className="h-4 w-4 stroke-2" />
-              1-on-1s
             </Link>
           )}
         </div>

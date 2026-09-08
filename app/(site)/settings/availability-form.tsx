@@ -1,35 +1,26 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { BackLink } from "@/app/components/back-link";
+import { useId, useState, useTransition } from "react";
 import { saveMeetingAvailabilityAction } from "@/app/actions/meetings";
 import { PRIMARY_BUTTON } from "@/app/components/buttons";
-
-export type SlotDay = {
-  /** Two days may share a date, so the id is what keys them apart. */
-  id: string;
-  label: string;
-  slots: { start: string; label: string }[];
-};
+import type {
+  AvailabilityFormData,
+  SlotDay,
+} from "@/utils/meeting-availability-form";
 
 const QUIET_BUTTON =
   "px-2 py-1 text-sm rounded-md text-fg-muted bg-surface-muted hover:bg-surface-hover transition-colors";
 
+/** One event's availability, inside its panel on the Settings page. */
 export function AvailabilityForm({
   eventId,
-  eventSlug,
   eventName,
   timezone,
   days,
   declared,
-}: {
-  eventId: string;
-  eventSlug: string;
-  eventName: string;
-  timezone: string;
-  days: SlotDay[];
-  declared: string[];
-}) {
+}: AvailabilityFormData) {
+  // Settings holds one of these per event, so the checkbox id cannot be fixed.
+  const switchId = useId();
   // No rows means not bookable, which is also the state of someone who never
   // turned the switch on -- so the switch is simply "did you declare anything".
   const [open, setOpen] = useState(declared.length > 0);
@@ -94,28 +85,22 @@ export function AvailabilityForm({
   return (
     <form
       onSubmit={handleSave}
-      aria-label="1-on-1s"
-      className="max-w-2xl mx-auto w-full px-4 sm:px-0 flex flex-col gap-6 py-8"
+      aria-label={`1-on-1s at ${eventName}`}
+      className="flex flex-col gap-4"
     >
-      <BackLink href={`/${eventSlug}`}>Schedule</BackLink>
-      <div>
-        <h1 className="text-3xl font-bold text-fg">1-on-1s</h1>
-        <p className="text-fg-muted mt-2">{eventName}</p>
-      </div>
-
       {error && <p className="text-sm text-danger-fg">{error}</p>}
 
       <div className="rounded-md border border-line-subtle p-4">
         <div className="flex items-start gap-2">
           <input
-            id="meetings-open"
+            id={switchId}
             type="checkbox"
             checked={open}
             onChange={(e) => toggleOpen(e.target.checked)}
             className="mt-0.5 h-4 w-4 rounded border-line text-brand-fg focus:ring-brand-accent"
           />
           <div>
-            <label htmlFor="meetings-open" className="font-medium text-fg">
+            <label htmlFor={switchId} className="font-medium text-fg">
               I&apos;m open to 1-on-1s at this event
             </label>
             <p className="text-sm text-fg-subtle">
@@ -144,7 +129,7 @@ export function AvailabilityForm({
           {days.map((day) => (
             <section key={day.id} aria-label={day.label}>
               <div className="flex items-center justify-between gap-3 mb-1">
-                <h2 className="text-lg font-semibold text-fg">{day.label}</h2>
+                <h3 className="text-base font-semibold text-fg">{day.label}</h3>
                 <div className="flex gap-2">
                   <button
                     type="button"
