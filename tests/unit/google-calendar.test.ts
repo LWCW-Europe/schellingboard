@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { googleCalendarUrl } from "@/utils/google-calendar";
+import {
+  DESCRIPTION_MAX_CHARS,
+  googleCalendarUrl,
+} from "@/utils/google-calendar";
 
 const ENTRY = {
   description: "Some **bold** words\n\n- one\n- two",
@@ -43,6 +46,43 @@ describe("googleCalendarUrl", () => {
         "https://sessions.example.org/Conference-Gamma?viewSession=abc",
       ].join("\n\n")
     );
+  });
+
+  it("cuts a long description short and keeps the hosts and link back", () => {
+    const details = new URL(
+      googleCalendarUrl({
+        ...ENTRY,
+        description: "x".repeat(DESCRIPTION_MAX_CHARS + 500),
+      })
+    ).searchParams.get("details");
+
+    const [description, hosts, url] = (details ?? "").split("\n\n");
+    expect(description).toHaveLength(DESCRIPTION_MAX_CHARS);
+    expect(description.endsWith("…")).toBe(true);
+    expect(hosts).toBe("Hosted by Ada Lovelace, Grace Hopper");
+    expect(url).toBe(ENTRY.url);
+  });
+
+  it("cuts between characters, never through an emoji", () => {
+    const details = new URL(
+      googleCalendarUrl({
+        ...ENTRY,
+        description: "😀".repeat(DESCRIPTION_MAX_CHARS + 1),
+      })
+    ).searchParams.get("details");
+
+    const description = (details ?? "").split("\n\n")[0];
+    expect(Array.from(description)).toHaveLength(DESCRIPTION_MAX_CHARS);
+    expect(description).not.toContain("�");
+  });
+
+  it("leaves a description at the limit alone", () => {
+    const description = "y".repeat(DESCRIPTION_MAX_CHARS);
+    const details = new URL(
+      googleCalendarUrl({ ...ENTRY, description })
+    ).searchParams.get("details");
+
+    expect((details ?? "").split("\n\n")[0]).toBe(description);
   });
 
   it("leaves out what the session doesn't have", () => {

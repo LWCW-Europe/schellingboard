@@ -14,15 +14,28 @@ export type CalendarEntry = {
   url?: string;
 };
 
+// Google answers 400 once the whole URL passes 16 KiB, and its description
+// field holds 8K characters. Percent-encoding can triple a character, so this
+// keeps even all-Unicode text inside both; the link back carries the rest.
+export const DESCRIPTION_MAX_CHARS = 6000;
+
 // Google's "dates" wants basic-format ISO 8601: 20261002T070000Z.
 function utcStamp(date: Date): string {
   return date.toISOString().replace(/[-:]|\.\d{3}/g, "");
 }
 
+// Counted in code points: cutting a string's UTF-16 units can split an emoji,
+// and the lone surrogate left behind encodes as U+FFFD.
+function truncate(text: string): string {
+  const chars = Array.from(text);
+  if (chars.length <= DESCRIPTION_MAX_CHARS) return text;
+  return `${chars.slice(0, DESCRIPTION_MAX_CHARS - 1).join("")}…`;
+}
+
 function details(entry: CalendarEntry): string {
   const hosts =
     entry.hostNames.length > 0 ? `Hosted by ${entry.hostNames.join(", ")}` : "";
-  return [stripMarkdown(entry.description), hosts, entry.url ?? ""]
+  return [truncate(stripMarkdown(entry.description)), hosts, entry.url ?? ""]
     .filter((part) => part !== "")
     .join("\n\n");
 }
