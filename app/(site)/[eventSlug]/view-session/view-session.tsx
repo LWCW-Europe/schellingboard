@@ -21,6 +21,7 @@ import { viewProposalLinkFromElsewhere } from "../modal-nav";
 import { SessionComments } from "../session-comments";
 import { Markdown } from "@/app/(site)/markdown";
 import { AttendeeCountField } from "./attendee-count-field";
+import { AddToGoogleCalendar } from "./add-to-google-calendar";
 
 export function ViewSession(props: {
   session: Session;
@@ -265,6 +266,12 @@ export function ViewSession(props: {
               Edit
             </Link>
           )}
+
+          <AddToGoogleCalendar
+            session={session}
+            event={event}
+            location={location}
+          />
         </div>
         {rsvpError && (
           <p role="alert" className="mt-2 text-xs text-danger-fg">

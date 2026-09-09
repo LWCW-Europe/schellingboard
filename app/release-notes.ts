@@ -44,7 +44,9 @@ export const SHOWN_RELEASES = 3;
 export const releaseNotes: ReleaseNote[] = [
   {
     version: "Unreleased",
-    highlights: [],
+    highlights: [
+      "**Add a session to your Google Calendar** from its details: title, time, room, hosts and description arrive filled in, with a link back to the session.",
+    ],
   },
   {
     version: "3.6.0",
