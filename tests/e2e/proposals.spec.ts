@@ -296,7 +296,7 @@ test("filters the proposal list down to your own proposals", async ({
   // delete in Conference Alpha can't shift the count this one reads. Hana
   // Kobayashi hosts the first of these; nobody hosts the second.
   await loginAndGoto(page, "/Conference-Gamma/proposals");
-  await selectUser(page, /Hana Kobayashi/i);
+  await selectUser(page, "Hana Kobayashi");
 
   const hers = page.getByRole("row", {
     name: /Writing Documentation People Actually Read/,

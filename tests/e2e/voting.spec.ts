@@ -222,7 +222,7 @@ test("a host sees the vote breakdown of their own proposal", async ({
   page,
 }) => {
   await loginAndGoto(page, "/Conference-Gamma/proposals");
-  await selectUser(page, /Hana Kobayashi/i);
+  await selectUser(page, "Hana Kobayashi");
 
   const modal = await openGammaProposal(page, HOSTED_PROPOSAL);
   const breakdown = modal.getByRole("region", { name: "Vote breakdown" });

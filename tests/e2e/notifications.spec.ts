@@ -9,8 +9,10 @@ import { selectUser } from "./helpers/user";
 // two tests watching the same person's badge would see each other's counts.
 
 // selectUser logs out and back in; navigating before that settles aborts the
-// request and drops the selection.
-async function actAs(page: Page, name: RegExp) {
+// request and drops the selection. The name is typed, not matched: the picker
+// shows 20 names, and specs running alongside add guests that push the later
+// names (Hana, Isabella) off the list.
+async function actAs(page: Page, name: string) {
   await selectUser(page, name);
   await expect(page.getByRole("button", { name: /^Your name:/ })).toBeVisible();
 }
@@ -37,12 +39,12 @@ test("a comment on your profile becomes a notification you can open", async ({
   await login(page);
   await page.goto("/guests");
 
-  await actAs(page, /Anna Kowalska/i);
+  await actAs(page, "Anna Kowalska");
   await commentOnProfile(page, "Isabella Rossi", "great to meet you");
 
   // Isabella hosts a session other specs comment on, so this test reads its
   // own row rather than the badge's count: unread is not hers alone.
-  await actAs(page, /Isabella Rossi/i);
+  await actAs(page, "Isabella Rossi");
   await expect(bell(page)).toHaveAccessibleName(/unread/);
 
   await bell(page).click();
@@ -74,12 +76,12 @@ test("marks a notification read without opening it", async ({ page }) => {
   await login(page);
   await page.goto("/guests");
 
-  await actAs(page, /Anna Kowalska/i);
+  await actAs(page, "Anna Kowalska");
   await commentOnProfile(page, "Hana Kobayashi", "hello from Anna");
 
   // Hana hosts proposals other specs comment on, so this test reads its own
   // row rather than the badge: the count is not hers alone.
-  await actAs(page, /Hana Kobayashi/i);
+  await actAs(page, "Hana Kobayashi");
   await bell(page).click();
   const row = page
     .getByRole("listitem")
@@ -102,12 +104,12 @@ test("acts on the ticked notifications and nothing else", async ({ page }) => {
 
   // Two different commenters, so the two rows read differently and can be
   // told apart by name rather than by position.
-  await actAs(page, /Anna Kowalska/i);
+  await actAs(page, "Anna Kowalska");
   await commentOnProfile(page, "Freya Nielsen", "Anna says hello");
-  await actAs(page, /Isabella Rossi/i);
+  await actAs(page, "Isabella Rossi");
   await commentOnProfile(page, "Freya Nielsen", "Isabella says hello");
 
-  await actAs(page, /Freya Nielsen/i);
+  await actAs(page, "Freya Nielsen");
   await bell(page).click();
   const actions = page.getByRole("group", { name: "Notification actions" });
 
@@ -154,7 +156,7 @@ test("closing a session opened from a notification stays on the schedule", async
   await login(page);
   await page.goto("/Conference-Gamma");
 
-  await actAs(page, /Anna Kowalska/i);
+  await actAs(page, "Anna Kowalska");
   const commented = await openSession(page, GREEN_SESSION);
   await commented.getByPlaceholder("Add a comment").fill("count me in");
   await commented.getByRole("button", { name: "Comment", exact: true }).click();
@@ -164,7 +166,7 @@ test("closing a session opened from a notification stays on the schedule", async
   await page.keyboard.press("Escape");
   await expect(commented).toBeHidden();
 
-  await actAs(page, /Carlos Silva/i);
+  await actAs(page, "Carlos Silva");
 
   // Opening a session from the schedule arms "dismiss by going back" (see
   // modal-nav.ts, anchor MnpjIo7Y). That must not still be armed for the modal
@@ -174,8 +176,10 @@ test("closing a session opened from a notification stays on the schedule", async
   await expect(fromSchedule).toBeHidden();
 
   await bell(page).click();
+  // .first(): a retry comments again, and the earlier notification remains.
   await page
     .getByRole("button", { name: /Anna Kowalska commented on/ })
+    .first()
     .click();
 
   const fromNotification = page.getByRole("dialog", {
@@ -234,6 +238,10 @@ test.describe("attendee-count reminders", () => {
     await page.getByRole("button", { name: "Send due reminders" }).click();
     await expect(page.getByText(/sent \d+ reminders/)).toBeVisible();
 
+    // The badge is rendered by the layout and the dev button refreshes nothing,
+    // so only a reload shows the count. (In a full run attendee-count.spec.ts
+    // usually dispatches first, which is why this passed without one.)
+    await page.reload();
     await expect(bell(page)).toHaveAccessibleName(/unread/);
     await bell(page).click();
     await expect(
