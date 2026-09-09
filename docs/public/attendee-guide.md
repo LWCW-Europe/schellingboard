@@ -180,14 +180,6 @@ Unlike votes, hosts plan around it. If you change your mind, take it back with
 - A session marked **closed** warns that you can be at most five minutes late,
   but doesn't block your RSVP.
 
-### Add a session to your calendar
-
-A scheduled session's details have an **"Add to Google Calendar"** button. It
-opens Google Calendar in a new tab with the title, time, room, hosts and
-description filled in, plus a link back to the session; save it there and it is
-in your calendar. The entry is a copy: if the session moves later, the schedule
-here is what counts.
-
 ### Discuss a session
 
 Open a session to find the same comment section proposals have — useful for
