@@ -24,6 +24,19 @@ export function useLocalZone(): string | null {
   );
 }
 
+/**
+ * The site's origin as the browser sees it, or null on the server and during
+ * the first hydration pass. For links that must be absolute to mean anything
+ * once they leave the site, such as a calendar entry's link back.
+ */
+export function useSiteOrigin(): string | null {
+  return useSyncExternalStore(
+    subscribeToNothing,
+    () => window.location.origin,
+    () => null
+  );
+}
+
 export const useScreenWidth = () => {
   const [screenWidth, setScreenWidth] = useState(0);
 

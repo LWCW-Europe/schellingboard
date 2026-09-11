@@ -41,6 +41,36 @@ test("hard-navigating to a session URL renders the modal without hydration error
   await page.waitForLoadState("networkidle");
 });
 
+test("a scheduled session offers to be added to Google Calendar", async ({
+  page,
+  baseURL,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Gamma");
+  await page.getByRole("link", { name: KEYNOTE }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Session details" });
+  await expect(dialog).toBeVisible();
+
+  const link = dialog.getByRole("link", { name: "Add to Google Calendar" });
+  await expect(link).toHaveAttribute("target", "_blank");
+  // The link back is filled in once the browser knows its own origin, a moment
+  // after hydration, so wait for it rather than reading the href straight away.
+  // It sits inside the details parameter, hence the encoded "=".
+  await expect(link).toHaveAttribute("href", /viewSession%3D/);
+
+  const href = new URL((await link.getAttribute("href"))!);
+  expect(`${href.origin}${href.pathname}`).toBe(
+    "https://calendar.google.com/calendar/render"
+  );
+  expect(href.searchParams.get("text")).toBe(
+    "Opening Keynote - Conference Gamma"
+  );
+  expect(href.searchParams.get("location")).toBe("Main Hall");
+  const details = href.searchParams.get("details") ?? "";
+  expect(details).toContain("Welcome to Conference Gamma");
+  expect(details).toContain(`${baseURL}/Conference-Gamma?viewSession=`);
+});
+
 test("leaving a session modal whose RSVPs are still loading is quiet", async ({
   page,
 }) => {

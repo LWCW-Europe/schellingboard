@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Add a session to Google Calendar**: a session's details offer a button that opens Google
+  Calendar with the title, time, room, hosts and description filled in, ready to save
+
 ## [3.6.0] - 2026-09-08
 
 ### Added
