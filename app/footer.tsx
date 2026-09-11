@@ -17,13 +17,18 @@ export default function Footer({ inline }: { inline?: boolean }) {
   const content = (
     // Wrapping matters on narrow phones: the version can be a long dev string
     // (`a1b2c3d4-dirty`), and three links plus it no longer fit on one line.
-    <div className="px-3 flex flex-wrap gap-x-2 gap-y-1 justify-between items-center text-xs text-fg-subtle">
-      <WhatsNew className={OPTICAL_CENTRE} />
+    // From md up, equal side columns centre the theme switch on the page rather
+    // than between the uneven texts beside it.
+    <div className="px-3 flex flex-wrap gap-x-2 gap-y-1 justify-between items-center md:grid md:grid-cols-[1fr_auto_1fr] text-xs text-fg-subtle">
+      {/* Wrapped because WhatsNew's modal would otherwise take a grid cell. */}
+      <div className="md:justify-self-start">
+        <WhatsNew className={OPTICAL_CENTRE} />
+      </div>
       {/* The only control that is on every page, which is why the theme lives
           here: the settings page needs a name to have been picked first. */}
       <ThemeSelect />
       <div
-        className={`flex flex-wrap justify-end items-center gap-1 ${OPTICAL_CENTRE}`}
+        className={`flex flex-wrap justify-end items-center gap-1 md:justify-self-end ${OPTICAL_CENTRE}`}
       >
         <span className="hidden sm:block">Powered by</span>
         <a

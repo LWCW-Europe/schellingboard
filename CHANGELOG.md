@@ -21,6 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   RSVP'd the confirmed ones, where until now only the Grid view showed them
 - **Links to another attendee open their profile** (#1022): following one from inside an open
   profile — a comment's author, say — left the old one on screen. Closing still returns to the list
+- **Theme switch centred in the footer**: on wider screens it sits in the middle of the page
+  rather than off to one side
 
 ## [3.6.0] - 2026-09-08
 
