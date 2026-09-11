@@ -56,6 +56,7 @@ describe("meetingViewsFor", () => {
 
     expect(view.id).toBe(meeting.id);
     expect(view.role).toBe("recipient");
+    expect(view.otherId).toBe(requester.id);
     expect(view.otherName).toBe("Ada");
     expect(view.status).toBe("pending");
     expect(view.meetingPoint).toBe("Coffee bar");
@@ -70,6 +71,7 @@ describe("meetingViewsFor", () => {
     const [view] = await meetingViewsFor(requester.id, event.id, BEFORE);
 
     expect(view.role).toBe("requester");
+    expect(view.otherId).toBe(recipient.id);
     expect(view.otherName).toBe("Grace");
   });
 

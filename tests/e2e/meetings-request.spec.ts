@@ -361,6 +361,23 @@ test.describe("1-on-1 meetings", () => {
     const meeting = page.getByRole("dialog", { name: "1-on-1 details" });
     await expect(meeting).toBeVisible();
     await expect(meeting.getByText("Coffee bar")).toBeVisible();
+
+    // Who is asking is a click away (#1020). Back to the request the way it
+    // was reached, and by links: going back re-renders the page under the
+    // modal and detaches the button mid-click, and a goto aborts the profile
+    // page still loading behind its modal.
+    await meeting.getByRole("link", { name: asker }).click();
+    const profile = page.getByRole("dialog", { name: asker });
+    await expect(profile.getByRole("heading", { name: asker })).toBeVisible();
+    await profile.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("link", { name: /^Notifications/ }).click();
+    await page
+      .getByRole("button", {
+        name: new RegExp(`${asker} asked you for a 1-on-1`),
+      })
+      .click();
+    await expect(meeting).toBeVisible();
+
     await meeting.getByRole("button", { name: "Accept" }).click();
     await expect(meeting.getByText(/Confirmed/)).toBeVisible();
 
