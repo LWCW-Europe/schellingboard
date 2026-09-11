@@ -46,7 +46,7 @@ type Drag = { guestId: string } & Slide;
  * collection is never invisible state.
  */
 export function ProfileModal({
-  guestId: initialGuestId,
+  guestId: urlGuestId,
   view,
   currentUserId,
 }: {
@@ -56,11 +56,31 @@ export function ProfileModal({
 }) {
   // Which profile is on screen, ahead of the URL rather than read off it: a
   // slide has to know where it is going while it is going there. `advanceTo`
-  // keeps the two in step, and the popstate listener below picks up the
-  // navigations that move the URL on their own.
-  const [guestId, setGuestId] = useState(initialGuestId);
-
+  // moves both together; when something else moves the URL — a link to another
+  // profile, Back — the effect below follows it, the popstate listener sooner.
+  const [guestId, setGuestId] = useState(urlGuestId);
+  const [dragged, setDrag] = useState<Drag | null>(null);
   const { matches, everyone, listQuery } = view;
+  // A link to another profile carries no list query, so the one the profile
+  // was opened over is kept here and put back, or closing lands elsewhere.
+  const [openedOver] = useState(listQuery);
+  // The router echoes `advanceTo`'s own pushState back through the prop a render
+  // later; a prop the URL no longer agrees with is such an echo, not a move.
+  useEffect(() => {
+    if (urlGuestId === guestId) return;
+    if (guestIdFromPath(window.location.pathname) !== urlGuestId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGuestId(urlGuestId);
+    setDrag(null);
+    if (openedOver && !window.location.search) {
+      window.history.replaceState(
+        null,
+        "",
+        profileHref(urlGuestId, openedOver)
+      );
+    }
+  }, [urlGuestId, guestId, openedOver]);
+
   const collection = matches.some((a) => a.id === guestId) ? matches : everyone;
   const index = collection.findIndex((a) => a.id === guestId);
   const guest = index >= 0 ? collection[index] : null;
@@ -104,7 +124,6 @@ export function ProfileModal({
 
   const viewport = useRef<HTMLDivElement>(null);
   const row = useRef<HTMLDivElement>(null);
-  const [dragged, setDrag] = useState<Drag | null>(null);
   // The row's styling needs the viewport width even when nothing is being
   // dragged, so it lives as state instead of riding along on each Drag.
   const [width, setWidth] = useState(0);
@@ -119,10 +138,9 @@ export function ProfileModal({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  // Browser Back/Forward moves through the history, not through this state.
-  // Reading through pushes one entry per profile, so going back has to land the
-  // modal on the profile the URL names; pushState does not fire popstate, so
-  // only genuine navigations sync here.
+  // Back/Forward could wait for the effect above, but that runs only once the
+  // router's transition commits — after a fetch, for a profile it has let go
+  // of. Reading the URL here lands the modal the moment the entry changes.
   useEffect(() => {
     const onPop = () => {
       const id = guestIdFromPath(window.location.pathname);
