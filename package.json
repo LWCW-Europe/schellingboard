@@ -52,18 +52,18 @@
     "@types/web-push": "^3.6.4",
     "@typescript-eslint/eslint-plugin": "^8.69.0",
     "@typescript-eslint/parser": "^8.69.0",
-    "@vitest/coverage-v8": "^4",
-    "@vitest/ui": "^4",
+    "@vitest/coverage-v8": "^5",
+    "@vitest/ui": "^5",
     "dependency-cruiser": "^18.2.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "^16",
-    "postcss": "^8.5.26",
+    "postcss": "^8.5.28",
     "prettier": "3.9.6",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.13",
     "typescript": "^6",
     "typescript-eslint": "^8.69.0",
-    "vitest": "^4"
+    "vitest": "^5"
   }
 }
