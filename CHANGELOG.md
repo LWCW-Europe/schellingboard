@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Agenda view (beta)**: a list of sessions and your 1-on-1s in start-time order, all rooms
+  together, as an alternative to the grid on narrow screens
+
 ### Fixed
 
 - **Links to another attendee open their profile** (#1022): following one from inside an open

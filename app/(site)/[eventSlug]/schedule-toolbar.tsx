@@ -10,6 +10,7 @@ import {
   FlagIcon,
   InformationCircleIcon,
   LinkIcon,
+  QueueListIcon,
   TableCellsIcon,
 } from "@heroicons/react/24/outline";
 import { DateTime } from "luxon";
@@ -24,13 +25,13 @@ const ITEM_CLASS =
   "flex items-center gap-1 rounded-md py-1.5 px-1 text-xs sm:text-sm text-fg-subtle hover:text-brand-fg focus:outline-none focus:ring-2 focus:ring-brand-accent";
 
 // Slim single-row (wrapping on mobile) header for the schedule views. The view
-// toggle (Grid/Text/RSVP'd) sits next to "Now", which jumps the grid to the
-// current time, and two distinct navigation links — "Event details" (opens a
+// toggle (Grid/Agenda/Text/RSVP'd) sits next to "Now", which jumps the grid
+// or agenda to the current time, and two distinct navigation links — "Event details" (opens a
 // popup with dates/description) and "Proposals". The event name is
 // intentionally omitted: the site header already shows it.
 export function ScheduleToolbar(props: {
   event: Event;
-  /** Whether to offer "Now" — only while the grid has a line to jump to. */
+  /** Whether to offer "Now" — only while the view has a line to jump to. */
   showJumpToNow?: boolean;
 }) {
   const { event, showJumpToNow } = props;
@@ -132,6 +133,12 @@ function SelectView() {
       icon: TableCellsIcon,
     },
     {
+      name: "agenda",
+      label: "Agenda",
+      icon: QueueListIcon,
+      beta: true,
+    },
+    {
       name: "text",
       label: "Text",
       icon: DocumentTextIcon,
@@ -143,10 +150,11 @@ function SelectView() {
     },
   ];
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {VIEWS.map((v) => (
         <button
           key={v.name}
+          aria-pressed={view === v.name}
           className={clsx(
             "flex gap-1 items-center rounded-md text-xs sm:text-sm py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-brand-accent",
             view === v.name
@@ -162,6 +170,11 @@ function SelectView() {
         >
           <v.icon className="h-4 w-4 stroke-2" />
           {v.label}
+          {v.beta && (
+            <span className="rounded-sm px-1 text-[9px] uppercase tracking-wide ring-1 ring-current opacity-80">
+              beta
+            </span>
+          )}
         </button>
       ))}
     </div>

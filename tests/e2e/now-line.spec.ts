@@ -42,11 +42,11 @@ test("no now line or Now button outside the event's days", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Now" })).toHaveCount(0);
 });
 
-test("the Now button is only offered by the grid view", async ({ page }) => {
+test("the Now button is not offered by the text view", async ({ page }) => {
   await openGammaScheduleDuringEvent(page, "/Conference-Gamma");
   await expect(page.getByRole("button", { name: "Now" })).toBeVisible();
 
-  // The text view has no grid to jump around in. The toggle is server-rendered,
+  // The text view has no now line to jump to. The toggle is server-rendered,
   // so a click can land before React has attached its handler and be dropped —
   // retry until the view has actually switched (docs/dev/testing.md § E2E
   // conventions). Re-clicking the active view is a no-op, so this is safe.

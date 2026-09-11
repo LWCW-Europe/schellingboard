@@ -44,7 +44,9 @@ export const SHOWN_RELEASES = 3;
 export const releaseNotes: ReleaseNote[] = [
   {
     version: "Unreleased",
-    highlights: [],
+    highlights: [
+      "**Agenda view (beta)**: a list of sessions and your 1-on-1s in start-time order, all rooms together, as an alternative to the grid on narrow screens.",
+    ],
   },
   {
     version: "3.6.0",
