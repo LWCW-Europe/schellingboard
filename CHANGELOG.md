@@ -15,6 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **1-on-1 details link to the other attendee** (#1020): their name in the request's
   heading now opens their profile.
 
+### Fixed
+
+- **RSVPing over a 1-on-1 warns you** (#1033): the clash warning only knew about sessions, so
+  a session overlapping a confirmed 1-on-1 could be RSVP'd without a word
+
 ## [3.7.0] - 2026-09-11
 
 ### Added

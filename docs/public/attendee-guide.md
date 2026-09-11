@@ -180,7 +180,8 @@ Unlike votes, hosts plan around it. If you change your mind, take it back with
 "Un-RSVP" — someone else may want the place.
 :::
 
-- You'll be warned if you RSVP to two sessions that overlap.
+- You'll be warned if you RSVP to two sessions that overlap, or to one that
+  overlaps a confirmed 1-on-1.
 - Capacity is either advisory or a hard limit, depending on how the organizers
   set the event up. With a hard limit the button reads "Session full".
 - A session marked **closed** warns that you can be at most five minutes late,
