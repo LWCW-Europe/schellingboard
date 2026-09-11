@@ -112,8 +112,14 @@ Proposing and voting close.
 A room name with an **ⓘ** next to it has more to say — tap it (or hover it)
 to read what the room offers: projector, whiteboard, the kind of seating.
 
-While the event is running, a red line across the grid marks the current time,
-and **"Now"** at the top of the schedule jumps straight to it.
+The buttons at the top switch how the schedule is laid out: **Grid** (rooms
+side by side, the day running down), **Agenda** (new, in beta: every session
+under the time it starts, all rooms together — handy on a phone), **Text** (one
+entry per session with its description, and a search box) and **RSVP'd** (the
+sessions you are attending or hosting).
+
+While the event is running, a red line marks the current time in the grid and
+the agenda, and **"Now"** at the top of the schedule jumps straight to it.
 
 On a phone, pull down from the top of the schedule and let go to load the
 latest sessions.

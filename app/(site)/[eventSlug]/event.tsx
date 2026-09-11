@@ -5,6 +5,7 @@ import { ChevronRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { DateTime } from "luxon";
 import { useSearchParams } from "next/navigation";
 import { DayText } from "./day-text";
+import { DayAgenda } from "./day-agenda";
 import { Input } from "@/app/input";
 import { useState, useContext, useRef } from "react";
 import { EventContext, useSlotIncrement } from "../context";
@@ -52,8 +53,8 @@ export function EventDisplay() {
     });
   const locationsForEvent = locations;
 
-  // "Now" only makes sense while the event is running, and only in the grid:
-  // it scrolls to the now line, which is drawn there and only on a day the
+  // "Now" only makes sense while the event is running, and only in the grid
+  // and the agenda: it scrolls to the now line, which they draw on the day the
   // current moment falls inside.
   const nowIsOnSchedule = daysForEvent.some(
     (day) => getNowOffsetPx(day, now, slotIncrement) !== null
@@ -61,7 +62,7 @@ export function EventDisplay() {
   const toolbar = (
     <ScheduleToolbar
       event={event}
-      showJumpToNow={view === "grid" && nowIsOnSchedule}
+      showJumpToNow={(view === "grid" || view === "agenda") && nowIsOnSchedule}
     />
   );
 
@@ -115,6 +116,46 @@ export function EventDisplay() {
           </div>
         ))}
         <Footer inline />
+      </div>
+    ) : view === "agenda" ? (
+      // Its own branch rather than a variant of the text view below, so the
+      // beta leaves the text and RSVP'd views untouched.
+      <div
+        data-testid="schedule-scroll"
+        ref={scrollerRef}
+        className="flex-1 w-full overflow-auto flex flex-col items-stretch"
+      >
+        {toolbar}
+        <p className="mx-auto w-full max-w-3xl px-2 pt-3 text-xs text-fg-subtle">
+          Beta: the agenda is new this event. If anything looks off, the Grid
+          view has everything.
+        </p>
+        <div className="flex flex-col gap-4 w-full lg:grow">
+          {daysForEvent.map((day) => (
+            <div key={day.id}>
+              {defaultFoldedDayIds.has(day.id) && (
+                <div className="max-w-3xl mx-auto">
+                  <DayFoldBar
+                    day={day}
+                    timezone={event.timezone}
+                    folded={isFolded(day.id)}
+                    onToggle={() => toggleDayFold(day.id)}
+                  />
+                </div>
+              )}
+              {!isFolded(day.id) && (
+                <DayAgenda
+                  day={day}
+                  locations={locationsForEvent}
+                  eventSlug={event.slug}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="lg:sticky lg:bottom-0">
+          <Footer inline />
+        </div>
       </div>
     ) : (
       <div
