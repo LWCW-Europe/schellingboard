@@ -43,6 +43,10 @@ export const SHOWN_RELEASES = 3;
 
 export const releaseNotes: ReleaseNote[] = [
   {
+    version: "Unreleased",
+    highlights: [],
+  },
+  {
     version: "3.7.0",
     date: "2026-09-11",
     highlights: [
