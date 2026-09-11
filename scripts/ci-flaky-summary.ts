@@ -35,7 +35,7 @@ function repoRelative(file: string, rootDir?: string): string {
   if (!rootDir) return file;
   const relative = path.relative(process.cwd(), path.resolve(rootDir, file));
   return relative && !relative.startsWith("..") && !path.isAbsolute(relative)
-    ? relative
+    ? relative.split(path.sep).join("/")
     : file;
 }
 

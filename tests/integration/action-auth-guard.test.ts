@@ -49,7 +49,7 @@ function actionFiles(): string[] {
         walk(full);
       } else if (entry.name.endsWith(".ts")) {
         if (fs.readFileSync(full, "utf8").startsWith('"use server"')) {
-          results.push(path.relative(root, full));
+          results.push(path.relative(root, full).split(path.sep).join("/"));
         }
       }
     }
