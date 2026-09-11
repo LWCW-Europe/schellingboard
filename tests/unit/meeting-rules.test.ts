@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  blockStatus,
   blockTimeLabel,
   canCancel,
   slotSummaryLine,
@@ -114,6 +115,26 @@ describe("blockTimeLabel", () => {
 
     expect(blockTimeLabel(uneven, BERLIN)).toBe("10:00 – 11:30");
     expect(blockTimeLabel([...uneven].reverse(), BERLIN)).toBe("10:00 – 11:30");
+  });
+});
+
+describe("blockStatus", () => {
+  it("tells each side whose turn it is", () => {
+    expect(blockStatus({ status: "pending", role: "recipient" })).toBe(
+      "needs your reply"
+    );
+    expect(blockStatus({ status: "pending", role: "requester" })).toBe(
+      "waiting for reply"
+    );
+  });
+
+  it("names what became of it, the same to both sides", () => {
+    for (const role of ["requester", "recipient"] as const) {
+      expect(blockStatus({ status: "accepted", role })).toBe("confirmed");
+      expect(blockStatus({ status: "declined", role })).toBe("declined");
+      expect(blockStatus({ status: "canceled", role })).toBe("canceled");
+      expect(blockStatus({ status: "expired", role })).toBe("unanswered");
+    }
   });
 });
 

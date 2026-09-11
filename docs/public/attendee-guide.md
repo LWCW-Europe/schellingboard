@@ -311,6 +311,9 @@ same time is ordinary. They sit one above the other, and where there are more
 of them than the slot has room to name, the block says how many there are and
 opens the list of them instead.
 
+The **Text** view lists them too, in among the sessions by time, with the same
+name, place and state. **RSVP'd** lists only the confirmed ones.
+
 The column is yours alone — nobody else sees it, and it stays put when you
 filter the schedule down to one room. It is there on every day of the event
 once you take part at all — open to 1-on-1s, or with one arranged — so the

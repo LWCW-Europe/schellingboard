@@ -20,6 +20,18 @@ export function meetingsForDay(
 }
 
 /**
+ * Earliest first, then by name: an order the reader can predict, and one a
+ * list keeps from one read to the next.
+ */
+export function compareMeetings(a: MeetingView, b: MeetingView): number {
+  return (
+    a.slotStart.localeCompare(b.slotStart) ||
+    a.otherName.localeCompare(b.otherName) ||
+    a.id.localeCompare(b.id)
+  );
+}
+
+/**
  * Whether the viewer gets the column at all. Decided for the whole event
  * rather than day by day, so the rooms line up from one day to the next.
  */
@@ -112,14 +124,7 @@ export function meetingColumnRows({
       const row = rowOf(meeting.slotStart);
       return { meeting, row, end: row + spanOf(meeting, row) };
     })
-    // Earliest first, then by name: an order the reader can predict, and one a
-    // block keeps from one read to the next.
-    .sort(
-      (a, b) =>
-        a.meeting.slotStart.localeCompare(b.meeting.slotStart) ||
-        a.meeting.otherName.localeCompare(b.meeting.otherName) ||
-        a.meeting.id.localeCompare(b.meeting.id)
-    );
+    .sort((a, b) => compareMeetings(a.meeting, b.meeting));
 
   // Everything that overlaps goes in one block: two grid items in the same
   // column draw over each other, and unequal lengths make that a wider net

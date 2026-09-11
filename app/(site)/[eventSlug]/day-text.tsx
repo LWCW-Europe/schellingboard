@@ -1,11 +1,14 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { SessionText } from "./session-text";
+import { MeetingText } from "./meeting-text";
+import { useMyMeetings } from "./use-meetings";
 import { DateTime } from "luxon";
 import { useContext } from "react";
 import { UserContext, EventContext } from "../context";
 import type { DayWithSessions } from "@/app/(site)/context";
 import type { Rsvp, Location, Session } from "@/db/repositories/interfaces";
+import { dayTextEntries } from "@/utils/day-text-entries";
 import { containsIgnoringAccents } from "@/utils/utils";
 
 export function DayText(props: {
@@ -21,6 +24,7 @@ export function DayText(props: {
   const searchParams = useSearchParams();
   const { user: currentUser } = useContext(UserContext);
   const { event } = useContext(EventContext);
+  const { meetings } = useMyMeetings();
   const timezone = event?.timezone ?? "UTC";
   const locParams = searchParams?.getAll("loc");
   const locationsFromParams = locations.filter((loc) =>
@@ -56,6 +60,14 @@ export function DayText(props: {
         (currentUser && session.hosts.some((h) => h.id === currentUser))
     );
   }
+  // Past the ?loc= filter, as on the grid: a 1-on-1 is in no room.
+  const entries = dayTextEntries({
+    sessions,
+    meetings: meetings ?? [],
+    day,
+    search,
+    rsvpOnly,
+  });
   return (
     <div className="flex flex-col max-w-3xl mx-auto">
       <h2 className="text-2xl font-bold w-full text-left">
@@ -64,23 +76,34 @@ export function DayText(props: {
           .toFormat("EEEE, MMMM d")}{" "}
       </h2>
       <div className="flex flex-col divide-y divide-line-subtle">
-        {sessions.length > 0 ? (
+        {entries.length > 0 ? (
           <>
-            {sessions.map((session) => (
-              <SessionText
-                key={`${session.title}+${session.startTime?.toISOString()}+${session.endTime?.toISOString()}`}
-                session={session}
-                locations={locations.filter((loc) =>
-                  session.locations.some((l) => l.id === loc.id)
-                )}
-                eventSlug={eventSlug}
-              />
-            ))}
+            {entries.map(({ key, session, meeting }) =>
+              session ? (
+                <SessionText
+                  key={key}
+                  session={session}
+                  locations={locations.filter((loc) =>
+                    session.locations.some((l) => l.id === loc.id)
+                  )}
+                  eventSlug={eventSlug}
+                />
+              ) : (
+                <MeetingText
+                  key={key}
+                  meeting={meeting}
+                  eventSlug={eventSlug}
+                />
+              )
+            )}
           </>
         ) : (
-          <p className="text-fg-subtle italic text-sm w-full text-left">
-            No sessions
-          </p>
+          // Not before the 1-on-1s are in: one of them may yet fill the day.
+          meetings !== null && (
+            <p className="text-fg-subtle italic text-sm w-full text-left">
+              No sessions
+            </p>
+          )
         )}
       </div>
     </div>

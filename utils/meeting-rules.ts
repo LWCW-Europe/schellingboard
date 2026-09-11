@@ -44,7 +44,7 @@ export function slotSummaryLine(
   meetings: Pick<MeetingView, "status" | "role">[]
 ): string {
   const pending = meetings.filter((m) => m.status === "pending");
-  const yours = pending.filter((m) => m.role === "recipient").length;
+  const yours = pending.filter(needsReply).length;
   if (yours > 0) {
     return yours === 1 ? "1 needs your reply" : `${yours} need your reply`;
   }
@@ -54,6 +54,34 @@ export function slotSummaryLine(
       : `${pending.length} waiting for reply`;
   }
   return "all confirmed";
+}
+
+export function meetingTitle(meeting: Pick<MeetingView, "otherName">): string {
+  return `1-on-1 with ${meeting.otherName}`;
+}
+
+export function needsReply(
+  meeting: Pick<MeetingView, "status" | "role">
+): boolean {
+  return meeting.status === "pending" && meeting.role === "recipient";
+}
+
+/** The state in a couple of words, where `statusLine` would not fit. */
+export function blockStatus(
+  meeting: Pick<MeetingView, "status" | "role">
+): string {
+  switch (meeting.status) {
+    case "pending":
+      return needsReply(meeting) ? "needs your reply" : "waiting for reply";
+    case "accepted":
+      return "confirmed";
+    case "declined":
+      return "declined";
+    case "canceled":
+      return "canceled";
+    case "expired":
+      return "unanswered";
+  }
 }
 
 /** What has become of the request, in the words of whoever is reading. */

@@ -15,22 +15,18 @@ import { EventContext, useSlotIncrement } from "@/app/(site)/context";
 import { Modal } from "@/app/components/modal";
 import { clashLines } from "@/utils/meeting-clash-text";
 import {
+  blockStatus,
   blockTimeLabel,
+  meetingTitle,
+  needsReply,
   slotSummaryLine,
   statusLine,
 } from "@/utils/meeting-rules";
+import { meetingStateClasses } from "./meeting-state-classes";
 import { isPlainLeftClick, viewMeetingLinkFromOwner } from "./modal-nav";
 import { NowLine } from "./now-line";
 import { BookMeeting } from "./book-meeting";
 import { Tooltip } from "./tooltip";
-
-/** The word of status a block has room for; the tooltip says the rest. */
-function blockStatus(meeting: MeetingView): string {
-  if (meeting.status === "accepted") return "confirmed";
-  return meeting.role === "recipient"
-    ? "needs your reply"
-    : "waiting for reply";
-}
 
 /** "14:30", in the event's zone, for a control's accessible name. */
 function slotLabel(start: string, timezone: string): string {
@@ -92,17 +88,12 @@ function SlotCell({
   );
 }
 
-const needsReply = (meeting: MeetingView) =>
-  meeting.status === "pending" && meeting.role === "recipient";
-
 // What the block has no room for, on hover -- the pattern a session block
 // already follows. A tap still opens the modal, where all of it is anyway.
 function MeetingSummary({ meeting }: { meeting: MeetingView }) {
   return (
     <div className="p-2 space-y-1">
-      <p className="text-sm font-semibold text-fg">
-        1-on-1 with {meeting.otherName}
-      </p>
+      <p className="text-sm font-semibold text-fg">{meetingTitle(meeting)}</p>
       <p className="text-xs text-fg-muted">
         {meeting.timeLabel} · {meeting.meetingPoint}
       </p>
@@ -169,11 +160,8 @@ function MeetingBlock({
       <Link
         {...viewMeetingLinkFromOwner(searchParams, eventSlug, meeting.id)}
         className={clsx(
-          "flex-1 min-w-0 rounded px-1 py-0.5 overflow-hidden font-roboto",
-          meeting.status === "accepted"
-            ? "bg-brand-tint border-2 border-brand-accent"
-            : // Pending reads as unfinished business, not a plan.
-              "bg-surface-muted border-2 border-dashed border-line"
+          "flex-1 min-w-0 rounded border-2 px-1 py-0.5 overflow-hidden font-roboto",
+          meetingStateClasses(meeting.status)
         )}
       >
         <p className="font-medium text-xs leading-[1.15] line-clamp-1 text-fg">
@@ -226,15 +214,13 @@ function StackEntry({
     >
       <Link
         {...viewMeetingLinkFromOwner(searchParams, eventSlug, meeting.id)}
-        aria-label={`1-on-1 with ${meeting.otherName} at ${slotLabel(
+        aria-label={`${meetingTitle(meeting)} at ${slotLabel(
           meeting.slotStart,
           timezone
         )} — ${blockStatus(meeting)}`}
         className={clsx(
           "flex flex-1 min-w-0 items-center gap-1 overflow-hidden rounded-sm border-l-4 px-1 font-roboto",
-          meeting.status === "accepted"
-            ? "bg-brand-tint border-brand-accent"
-            : "bg-surface-muted border-dashed border-line"
+          meetingStateClasses(meeting.status)
         )}
       >
         <span className="truncate text-[11px] leading-none font-medium text-fg">

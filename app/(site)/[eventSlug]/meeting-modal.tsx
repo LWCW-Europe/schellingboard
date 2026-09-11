@@ -17,7 +17,7 @@ import { Input } from "@/app/input";
 import { ModalCloseButton } from "@/app/components/modal-close-button";
 import { EventContext } from "@/app/(site)/context";
 import { clashLines } from "@/utils/meeting-clash-text";
-import { canCancel, statusLine } from "@/utils/meeting-rules";
+import { canCancel, meetingTitle, statusLine } from "@/utils/meeting-rules";
 import { dismissViewMeeting } from "./modal-nav";
 import { useMyMeetings } from "./use-meetings";
 
@@ -110,7 +110,7 @@ function MeetingModal({ meetingId }: { meetingId: string }) {
         ) : (
           <div className="flex flex-col gap-4">
             <h2 className="text-xl font-bold text-fg pr-8">
-              1-on-1 with {meeting.otherName}
+              {meetingTitle(meeting)}
             </h2>
 
             <dl className="flex flex-col gap-1 text-sm">
