@@ -16,7 +16,7 @@ async function openProfile(page: Page, name: string) {
 
 // selectUser logs out and back in; navigating before that settles aborts the
 // request and drops the selection.
-async function actAs(page: Page, name: RegExp) {
+async function actAs(page: Page, name: string | RegExp) {
   await selectUser(page, name);
   await expect(page.getByRole("button", { name: /^Your name:/ })).toBeVisible();
 }
@@ -156,6 +156,41 @@ test("leaves a deep-linked profile scrollable back to its top", async ({
   await expect
     .poll(async () => (await photo.boundingBox())?.y)
     .toBeCloseTo(top, 0);
+});
+
+// Linh and Jean-Pierre are nobody else's subject, so the comment count here is
+// this test's alone.
+test("opens a comment author's profile from the profile it was left on", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/guests");
+  await actAs(page, "Linh Nguyen");
+
+  await page.getByLabel("Search").fill("Dubois");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page).toHaveURL(/[?&]q=Dubois/);
+
+  const profile = await openProfile(page, "Jean-Pierre Dubois");
+  await profile.getByPlaceholder("Add a comment").fill("hello from Linh");
+  await profile.getByRole("button", { name: "Comment", exact: true }).click();
+  await expect(postedComment(profile, "hello from Linh").first()).toBeVisible();
+
+  // The author's name is a real link to their profile, not a Prev/Next step,
+  // so the modal has to pick the new profile up off the URL.
+  await profile.getByRole("link", { name: "Linh Nguyen" }).first().click();
+  const author = page.getByRole("dialog", { name: "Linh Nguyen" });
+  await expect(author).toBeVisible();
+  await expect(
+    author.getByRole("heading", { name: "0 comments" })
+  ).toBeVisible();
+
+  // The link carries no list context, so the modal has to keep the search it
+  // was opened over: closing still lands on the list reading started from.
+  await author.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/guests\?q=Dubois/);
+  await expect(page.getByLabel("Search")).toHaveValue("Dubois");
 });
 
 // A section that can't reach its endpoint used to sit on a "Loading

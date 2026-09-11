@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Links to another attendee open their profile** (#1022): following one from inside an open
+  profile — a comment's author, say — left the old one on screen. Closing still returns to the list
+
 ## [3.6.0] - 2026-09-08
 
 ### Added
