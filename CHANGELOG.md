@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Agenda view (beta)**: a list of sessions and your 1-on-1s in start-time order, all rooms
   together, as an alternative to the grid on narrow screens
 
+### Changed
+
+- **Session capacity on the Grid**: a session's RSVP count shows its capacity too, e.g. 31/45
+
 ### Fixed
 
 - **Your 1-on-1s in the Text and RSVP'd views** (#1023): Text lists them among the sessions and

@@ -355,6 +355,7 @@ export function RealSessionCard(props: {
           >
             <UserIcon className="h-.5 w-2.5" />
             {numRSVPs}
+            {session.capacity > 0 && `/${session.capacity}`}
           </div>
         </div>
       </div>
