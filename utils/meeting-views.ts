@@ -12,12 +12,14 @@ import type { MeetingClash } from "@/utils/meeting-clash-text";
  */
 export type MeetingViewStatus = MeetingStatus | "expired";
 
-/** One of the viewer's 1-on-1s, ready to render: no ids of anyone's else's. */
+/** One of the viewer's 1-on-1s, ready to render. */
 export type MeetingView = {
   id: string;
   status: MeetingViewStatus;
   /** Which side the viewer is on — only a recipient can answer. */
   role: "requester" | "recipient";
+  /** The other party, for linking their profile. */
+  otherId: string;
   otherName: string;
   /** ISO instants, for placing the meeting on the schedule grid. */
   slotStart: string;
@@ -103,6 +105,7 @@ export async function meetingViewsFor(
           ? "expired"
           : meeting.status,
       role: meeting.requesterId === viewerId ? "requester" : "recipient",
+      otherId,
       otherName: byGuest.get(otherId)?.guestName ?? "Someone",
       slotStart: meeting.slotStart.toISOString(),
       slotEnd: meeting.slotEnd.toISOString(),

@@ -22,6 +22,7 @@ function meeting(minutesIn: number, patch?: Partial<MeetingView>): MeetingView {
     id: `m-${minutesIn}`,
     status: "accepted",
     role: "requester",
+    otherId: "grace",
     otherName: "Grace",
     slotStart: at(minutesIn),
     slotEnd: at(minutesIn + SLOT),

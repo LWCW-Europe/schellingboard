@@ -25,6 +25,7 @@ function meeting(
     id,
     status: "accepted",
     role: "requester",
+    otherId: "grace",
     otherName: "Grace",
     slotStart: at(hour),
     slotEnd: at(hour + 1),

@@ -45,6 +45,7 @@ const meeting = (start: Date, otherName: string): MeetingView => ({
   id: otherName,
   status: "accepted",
   role: "requester",
+  otherId: otherName,
   otherName,
   slotStart: start.toISOString(),
   slotEnd: new Date(start.getTime() + 30 * 60 * 1000).toISOString(),
