@@ -540,6 +540,44 @@ describe("POST /api/update-session", () => {
     expect(updated.capacity).toBe(10);
   });
 
+  it("saves the max attendee count the host chose", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ capacity: 30, eventId: event.id });
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(
+      makeUpdateReq(
+        { ...basePayload(host, location, day, { capacity: 8 }), id },
+        { editorGuestId: host.id }
+      )
+    );
+    expect(res.ok).toBe(true);
+
+    const updated = (await getRepositories().sessions.findById(id))!;
+    expect(updated.capacity).toBe(8);
+  });
+
+  it("rejects a negative max attendee count and leaves the session alone", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ capacity: 30, eventId: event.id });
+    const day = await createDay(event.id);
+    const id = await createScheduledSession(event.id, host, location, day);
+
+    const res = await POST(
+      makeUpdateReq(
+        { ...basePayload(host, location, day, { capacity: -1 }), id },
+        { editorGuestId: host.id }
+      )
+    );
+    expect(res.status).toBe(400);
+
+    const unchanged = (await getRepositories().sessions.findById(id))!;
+    expect(unchanged.capacity).toBe(30);
+  });
+
   it("rejects moving the session to a location that is not part of the event", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const host = await createGuest({ eventId: event.id });

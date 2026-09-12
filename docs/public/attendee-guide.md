@@ -137,6 +137,10 @@ Two ways, whichever you find first:
 
 ![Form for adding a session to the schedule, with a Pre-fill from proposal dropdown](../screenshots/add-session.webp)
 
+**Max attendees** starts at what the room holds. Cap it lower for a hands-on
+session, or raise it past the room's own maximum for standing room — you'll be
+warned, but it's your call. **0 means no limit.**
+
 Worth knowing: **proposals with no host are up for grabs** — anyone can
 schedule one, and they appear in your "Pre-fill from proposal" dropdown
 alongside your own. And **the same proposal can be scheduled more than once**,

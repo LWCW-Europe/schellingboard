@@ -21,8 +21,28 @@ export type SessionParams = {
    */
   startTime: string;
   duration: number;
+  /**
+   * The host's own attendee maximum, 0 meaning no limit. Absent falls back to
+   * the chosen location's capacity.
+   */
+  capacity?: number;
   proposal?: string;
 };
+
+export const CAPACITY_ERROR =
+  "Max attendees must be a non-negative whole number";
+
+/** Null when the value may be saved; absent means "whatever the room holds". */
+export function sessionCapacityError(capacity: unknown): string | null {
+  if (capacity === undefined) return null;
+  if (
+    typeof capacity !== "number" ||
+    !Number.isInteger(capacity) ||
+    capacity < 0
+  )
+    return CAPACITY_ERROR;
+  return null;
+}
 
 export type SessionInterval = {
   start: Date;
@@ -56,7 +76,7 @@ export function prepareToInsert(
     locationIds: [location.id],
     startTime: start,
     endTime: end,
-    capacity: location.capacity ?? 0,
+    capacity: params.capacity ?? location.capacity ?? 0,
     adminManaged: false,
     blocker: false,
     proposalId: params.proposal ?? undefined,

@@ -30,7 +30,10 @@ import { ConfirmDeletionModal } from "../modals";
 import { UserContext } from "../context";
 import { newEmptySession } from "../session_utils";
 import { useToast } from "../toast";
-import { buildSessionInterval } from "@/app/api/session-form-utils";
+import {
+  buildSessionInterval,
+  CAPACITY_ERROR,
+} from "@/app/api/session-form-utils";
 import { revalidateEvent } from "./session-actions";
 import { detectGuestClashes, type GuestClash } from "./clash-actions";
 import { MarkdownHint } from "@/app/(site)/markdown";
@@ -121,6 +124,29 @@ export function SessionForm(props: {
     locations.find((l) => l.name === initLocation)?.id ??
       locations.find((l) => l.id === session.locations[0]?.id)?.id
   );
+  const location = locations.find((loc) => loc.id === locationId);
+  // null while the field still follows the room. An existing session whose
+  // capacity already differs from its room's is a number the host chose, so
+  // it survives a move to another room.
+  const [capacityInput, setCapacityInput] = useState<string | null>(
+    sessionID &&
+      session.capacity !==
+        (locations.find((l) => l.id === session.locations[0]?.id)?.capacity ??
+          0)
+      ? String(session.capacity)
+      : null
+  );
+  const capacity = capacityInput ?? String(location?.capacity ?? 0);
+  const capacityNumber = Number(capacity);
+  const capacityValid =
+    capacity.trim() !== "" &&
+    Number.isInteger(capacityNumber) &&
+    capacityNumber >= 0;
+  const overRoomCapacity =
+    capacityValid &&
+    !!location &&
+    location.capacity > 0 &&
+    capacityNumber > location.capacity;
   const startTimes = getAvailableStartTimes(
     day,
     sessions,
@@ -255,7 +281,6 @@ export function SessionForm(props: {
   const Submit = async () => {
     setIsSubmitting(true);
     setError(null);
-    const location = locations.find((loc) => loc.id === locationId);
     if (!location || !day || effectiveStartTime === undefined) {
       setError("Missing required fields");
       setIsSubmitting(false);
@@ -274,6 +299,7 @@ export function SessionForm(props: {
         closed,
         dayId: day.id,
         location,
+        capacity: capacityNumber,
         startTime: new Date(effectiveStartTime).toISOString(),
         duration: effectiveDuration,
         hosts,
@@ -454,6 +480,28 @@ export function SessionForm(props: {
           truncateText={true}
         />
       </div>
+      <div className="flex flex-col gap-1 w-72">
+        <label htmlFor="max-attendees" className="font-medium">
+          Max attendees
+        </label>
+        <Input
+          id="max-attendees"
+          type="number"
+          min="0"
+          value={capacity}
+          onChange={(e) => setCapacityInput(e.target.value)}
+          error={!capacityValid}
+          errorMessage={CAPACITY_ERROR}
+        />
+        <p className="text-sm text-fg-subtle">
+          Starts at what the room holds. 0 means no limit.
+        </p>
+        {overRoomCapacity && location && (
+          <p className="text-sm text-danger-fg">
+            That is more than {location.name} holds ({location.capacity}).
+          </p>
+        )}
+      </div>
       <div className="flex flex-col gap-1">
         <label className="font-medium">
           Day
@@ -530,6 +578,7 @@ export function SessionForm(props: {
           effectiveStartTime === undefined ||
           !hosts.length ||
           !locationId ||
+          !capacityValid ||
           !day ||
           !effectiveDuration ||
           isCheckingClashes ||
