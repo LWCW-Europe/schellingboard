@@ -9,7 +9,11 @@ import {
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 import { sessionBookingWindowError } from "@/utils/day-window";
 import { sessionDurationError } from "@/utils/slots";
-import { prepareToInsert, validateSession } from "../session-form-utils";
+import {
+  prepareToInsert,
+  sessionCapacityError,
+  validateSession,
+} from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
 
 export const dynamic = "force-dynamic"; // defaults to auto
@@ -99,9 +103,13 @@ export async function POST(req: NextRequest) {
       { status: 403 }
     );
   }
-  // The payload carries the client's copy of the location; capacity gates the
-  // RSVP hard limit, so take it from the stored row instead.
-  input.capacity = chosen[0].capacity;
+  const capacityError = sessionCapacityError(params.capacity);
+  if (capacityError) {
+    return Response.json({ error: capacityError }, { status: 400 });
+  }
+  // The payload's location is the client's copy, so the room's own maximum
+  // comes from the stored row; a number the host chose themselves wins.
+  input.capacity = params.capacity ?? chosen[0].capacity;
   const existingSessions = allSessions.filter((ses) => ses.id !== params.id);
   const sessionValid = validateSession(input, existingSessions, now);
   if (sessionValid) {

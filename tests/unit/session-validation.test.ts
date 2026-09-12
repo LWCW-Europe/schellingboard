@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { validateSession } from "@/app/api/session-form-utils";
+import {
+  CAPACITY_ERROR,
+  sessionCapacityError,
+  validateSession,
+} from "@/app/api/session-form-utils";
 import type { Session, SessionCreateInput } from "@/db/repositories/interfaces";
 
 const LOC_A = "loc-a";
@@ -53,6 +57,31 @@ function makeExisting(
     eventId: "111",
   };
 }
+
+describe("sessionCapacityError", () => {
+  // Absent is not a rejection: the routes then fall back to the room's own
+  // maximum, which is what a client that never sends the field expects.
+  it("accepts an absent capacity", () => {
+    expect(sessionCapacityError(undefined)).toBeNull();
+  });
+
+  it("accepts 0, the existing 'no maximum' convention", () => {
+    expect(sessionCapacityError(0)).toBeNull();
+  });
+
+  it("accepts a positive whole number", () => {
+    expect(sessionCapacityError(12)).toBeNull();
+  });
+
+  // Each case is wrapped because `it.each` spreads a bare array over the
+  // arguments.
+  it.each([[-1], [2.5], [NaN], ["8"], [null], [{}]])(
+    "rejects %p",
+    (capacity) => {
+      expect(sessionCapacityError(capacity)).toBe(CAPACITY_ERROR);
+    }
+  );
+});
 
 describe("validateSession", () => {
   it("accepts a valid session with no existing sessions", () => {

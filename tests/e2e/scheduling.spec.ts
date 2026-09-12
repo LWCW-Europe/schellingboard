@@ -121,6 +121,48 @@ test("a host can delete a session and it disappears from the grid", async ({
   await expect(page.getByRole("link", { name: title })).toHaveCount(0);
 });
 
+test("a host can cap attendance below the room's own maximum", async ({
+  page,
+}) => {
+  await login(page);
+  const title = `E2E Capped Session ${uniqueSuffix()}`;
+
+  await page.goto("/Conference-Gamma");
+  await selectUser(page, /Alice Test/i);
+  await page.getByRole("link", { name: "Add session" }).first().click();
+  await expect(
+    page.getByRole("heading", { name: /Add a session/i })
+  ).toBeVisible();
+
+  await page.getByRole("textbox").first().fill(title);
+  await dayRadios(page).last().check();
+  await listboxButton(page, /^Location/).click();
+  await page.getByRole("option", { name: /Workshop Room/ }).click();
+  await listboxButton(page, /^Start Time/).click();
+  await page.getByRole("option", { name: "17:10" }).click();
+
+  // Defaults to the room's own maximum. Going above it is allowed — standing
+  // room is the host's call — but says so.
+  const maxAttendees = page.getByLabel("Max attendees");
+  await expect(maxAttendees).toHaveValue("30");
+  await maxAttendees.fill("99");
+  await expect(page.getByText(/more than Workshop Room holds/i)).toBeVisible();
+  await maxAttendees.fill("6");
+  await expect(page.getByText(/more than Workshop Room holds/i)).toHaveCount(0);
+
+  const submit = page.getByRole("button", { name: "Submit" });
+  await expect(submit).toBeEnabled();
+  await submit.click();
+  await expect(page.getByRole("link", { name: title })).toBeVisible();
+  await dismissToast(page);
+
+  // What attendees see is the host's cap, not the room's 30.
+  await page.getByRole("link", { name: title }).click();
+  const dialog = page.getByRole("dialog", { name: "Session details" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText("Attendees (0 / 6):")).toBeVisible();
+});
+
 test("a session booked after midnight lands on the next calendar date", async ({
   page,
 }) => {

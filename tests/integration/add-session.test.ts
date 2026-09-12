@@ -477,6 +477,72 @@ describe("POST /api/add-session", () => {
     expect(session.capacity).toBe(10);
   });
 
+  it("saves the max attendee count the host chose", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ capacity: 30, eventId: event.id });
+    const day = await createDay(event.id);
+
+    const res = await POST(
+      makeReq(buildPayload(guest, location, day, { capacity: 8 }))
+    );
+    expect(res.ok).toBe(true);
+
+    const [session] = await getRepositories().sessions.listByEvent(event.id);
+    expect(session.capacity).toBe(8);
+  });
+
+  // The room may not hold them, but standing room or an overflow area is the
+  // host's call; the form warns rather than blocking.
+  it("accepts a max above the room's own", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ capacity: 30, eventId: event.id });
+    const day = await createDay(event.id);
+
+    const res = await POST(
+      makeReq(buildPayload(guest, location, day, { capacity: 100 }))
+    );
+    expect(res.ok).toBe(true);
+
+    const [session] = await getRepositories().sessions.listByEvent(event.id);
+    expect(session.capacity).toBe(100);
+  });
+
+  it("saves 0 as no maximum, even where the room has one", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ capacity: 30, eventId: event.id });
+    const day = await createDay(event.id);
+
+    const res = await POST(
+      makeReq(buildPayload(guest, location, day, { capacity: 0 }))
+    );
+    expect(res.ok).toBe(true);
+
+    const [session] = await getRepositories().sessions.listByEvent(event.id);
+    expect(session.capacity).toBe(0);
+  });
+
+  it.each([[-1], [2.5]])("rejects a max attendee count of %p", async (cap) => {
+    const event = await createEvent({ phase: "scheduling" });
+    const guest = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+
+    const res = await POST(
+      makeReq(buildPayload(guest, location, day, { capacity: cap }))
+    );
+    expect(res.status).toBe(400);
+    // Named, so the rejection can't be mistaken for one of the other rules.
+    expect(await res.json()).toEqual({
+      error: "Max attendees must be a non-negative whole number",
+    });
+
+    const sessions = await getRepositories().sessions.listByEvent(event.id);
+    expect(sessions).toHaveLength(0);
+  });
+
   it("rejects creating as a protected guest without a verified session", async () => {
     const event = await createEvent({ phase: "scheduling" });
     const guest = await createGuest({ eventId: event.id });
