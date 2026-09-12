@@ -61,6 +61,33 @@ test("RSVP to a session persists across reloads and can be removed again", async
   await expect(dialog.getByText(/Bob Test/)).toHaveCount(0);
 });
 
+// Zanele's seeded 1-on-1 with Rafael falls inside "API Design" on Gamma's
+// first day (scripts/seed/seed-database.ts). Only the warning is under test,
+// so it is declined and her diary is left as it was.
+test("RSVPing over a confirmed 1-on-1 warns about it first", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Gamma");
+  await selectUser(page, "Zanele Khumalo");
+
+  await page
+    .getByRole("link", { name: /API Design: RESTful vs GraphQL/ })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Session details" });
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByRole("button", { name: "RSVP", exact: true }).click();
+  await expect(
+    page.getByText(/clashes with your 1-on-1 with Rafael Souza/)
+  ).toBeVisible();
+  await page.getByRole("button", { name: "No" }).click();
+  await expect(
+    dialog.getByRole("button", { name: "RSVP", exact: true })
+  ).toBeVisible();
+});
+
 test("the RSVP'd view lists nothing when the guest has no RSVPs", async ({
   page,
 }) => {

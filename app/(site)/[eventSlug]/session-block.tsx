@@ -15,7 +15,6 @@ import {
   useBreakMinutes,
   useSlotIncrement,
 } from "../context";
-import { sessionsOverlap } from "../session_utils";
 import {
   formatOptionalTime,
   formatStartTimePlusBreak,
@@ -25,6 +24,12 @@ import { isBookableSlot } from "@/utils/session-bookable";
 import { LockIcon } from "../lock-icon";
 import { viewSessionLinkFromOwner } from "./modal-nav";
 import { stripMarkdown } from "@/utils/markdown";
+import {
+  describeRsvpClash,
+  findRsvpClash,
+  type RsvpClash,
+} from "@/utils/rsvp-clash";
+import { useMyMeetings } from "./use-meetings";
 
 export function SessionBlock(props: {
   session: Session;
@@ -206,11 +211,12 @@ export function RealSessionCard(props: {
   const { user: currentUser } = useContext(UserContext);
   const { localSessions, updateRsvp, userBusySessions, event } =
     useContext(EventContext);
+  const { meetings } = useMyMeetings();
   const timezone = event?.timezone ?? "UTC";
   const searchParams = useSearchParams();
   const [isRsvping, setIsRsvping] = useState(false);
   const [userModalOpen, setUserModalOpen] = useState(false);
-  const [clashingSession, setClashingSession] = useState<Session | null>(null);
+  const [clash, setClash] = useState<RsvpClash | null>(null);
   const [confirmRSVPModalOpen, setConfirmRSVPModalOpen] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
 
@@ -242,12 +248,9 @@ export function RealSessionCard(props: {
     }
 
     if (!rsvpd) {
-      const clashing = userBusySessions().find((busySession: Session) =>
-        sessionsOverlap(currentSession, busySession)
-      );
-
-      if (clashing) {
-        setClashingSession(clashing);
+      const found = findRsvpClash(currentSession, userBusySessions(), meetings);
+      if (found) {
+        setClash(found);
         setConfirmRSVPModalOpen(true);
         return;
       }
@@ -282,7 +285,7 @@ export function RealSessionCard(props: {
 
   const handleConfirmRSVP = () => {
     setConfirmRSVPModalOpen(false);
-    setClashingSession(null);
+    setClash(null);
     void doRsvp();
   };
 
@@ -374,9 +377,9 @@ export function RealSessionCard(props: {
         open={confirmRSVPModalOpen}
         close={() => setConfirmRSVPModalOpen(false)}
         message={
-          clashingSession
-            ? `This session conflicts with "${clashingSession.title}". Do you want to RSVP anyway?`
-            : "This session conflicts with another session you're attending. Do you want to RSVP anyway?"
+          clash
+            ? `This session clashes with ${describeRsvpClash(clash, currentUser)}. Do you want to RSVP anyway?`
+            : ""
         }
         confirm={handleConfirmRSVP}
         portal={true}

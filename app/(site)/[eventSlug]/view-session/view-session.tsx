@@ -14,12 +14,17 @@ import {
 } from "@/utils/utils";
 import { UserContext, EventContext } from "../../context";
 import { CurrentUserModal, ConfirmationModal } from "../../modals";
-import { sessionsOverlap } from "../../session_utils";
 import { LockIcon } from "../../lock-icon";
 import { LocationTag } from "../session-text";
 import { viewProposalLinkFromElsewhere } from "../modal-nav";
 import { SessionComments } from "../session-comments";
 import { Markdown } from "@/app/(site)/markdown";
+import {
+  describeRsvpClash,
+  findRsvpClash,
+  type RsvpClash,
+} from "@/utils/rsvp-clash";
+import { useMyMeetings } from "../use-meetings";
 import { AttendeeCountField } from "./attendee-count-field";
 
 export function ViewSession(props: {
@@ -42,6 +47,7 @@ export function ViewSession(props: {
   } = props;
 
   const { user: currentUser } = useContext(UserContext);
+  const { meetings } = useMyMeetings();
   const {
     rsvpdForSession,
     updateRsvp,
@@ -72,7 +78,7 @@ export function ViewSession(props: {
   const searchParams = useSearchParams();
   const [isRsvping, setIsRsvping] = useState(false);
   const [userModalOpen, setUserModalOpen] = useState(false);
-  const [clashingSession, setClashingSession] = useState<Session | null>(null);
+  const [clash, setClash] = useState<RsvpClash | null>(null);
   const [confirmRSVPModalOpen, setConfirmRSVPModalOpen] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
 
@@ -108,11 +114,9 @@ export function ViewSession(props: {
     }
 
     if (!rsvpd) {
-      const overlappingSession = userBusySessions().find((ses) =>
-        sessionsOverlap(session, ses)
-      );
-      if (overlappingSession) {
-        setClashingSession(overlappingSession);
+      const found = findRsvpClash(session, userBusySessions(), meetings);
+      if (found) {
+        setClash(found);
         setConfirmRSVPModalOpen(true);
         return;
       }
@@ -190,9 +194,9 @@ export function ViewSession(props: {
         zIndex="z-[100]"
         portal={true}
         message={
-          `Warning: that session clashes with ${clashingSession?.title}, which you ` +
-          `are ${clashingSession?.hosts.some((h) => h.id === (currentUser || "")) ? "hosting" : "attending"}. ` +
-          "Are you sure you want to proceed?"
+          clash
+            ? `Warning: that session clashes with ${describeRsvpClash(clash, currentUser)}. Are you sure you want to proceed?`
+            : ""
         }
       />
       <div className="flex items-start gap-2 mb-2 mt-5">

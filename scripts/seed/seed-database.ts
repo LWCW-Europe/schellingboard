@@ -43,8 +43,8 @@ const SLOT_INCREMENT_MINUTES = 30;
 const SCREENSHOT_GUEST = "Hana Kobayashi";
 
 // The attendee whose Gamma morning is crowded with 1-on-1s, for
-// tests/e2e/meetings-column.spec.ts. Nothing else acts as her: those meetings
-// give her a column that shifts the rooms of every schedule she looks at.
+// tests/e2e/meetings-column.spec.ts. Nothing else changes her diary: those
+// meetings give her a column that shifts the rooms of every schedule she looks at.
 const PARALLEL_GUEST = "Zanele Khumalo";
 
 // Returns a UTC Date representing the given clock time on a specific day in Berlin.
@@ -1087,6 +1087,16 @@ async function seedTestData(profile: SeedProfile) {
         message: "Free at eleven?",
       })
     ),
+    // Inside the 15:30 "API Design" session, which she has no RSVP for: the
+    // clash an RSVP there has to warn about (tests/e2e/rsvp.spec.ts).
+    {
+      other: "Rafael Souza",
+      role: "requester",
+      status: "accepted",
+      ...slotAt(15, 30),
+      meetingPoint: "Garden bench",
+      message: "Keen to hear how you run your platform team.",
+    },
   ]);
 
   // One of each state for the screenshot guest's column, in the afternoon the
