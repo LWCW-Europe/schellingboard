@@ -68,6 +68,13 @@ the admin UI:
   on the grid. The same proposal can be scheduled more than once.
 - Attendees can also book a blank slot directly in a "bookable" location
   during that day's booking window, without going through a proposal.
+- A session's hosts can edit it for the whole scheduling phase, but not move
+  one that has already started. Marking a session "admin-managed" is still
+  what puts it beyond their reach entirely.
+- Placing a session for someone — after bookings close for the day, in a room
+  that isn't bookable, longer than the maximum — leaves the host able to fix
+  its details without being forced to move it somewhere legal first. Only a
+  time or room they actually change is held to the booking rules.
 - RSVPs happen only during the scheduling phase, and only for guests assigned
   to the event. If the event enforces capacity as a hard limit, RSVPs are
   rejected once a session is full; otherwise capacity is advisory.

@@ -21,6 +21,7 @@ import {
   createGuest,
   createLocation,
   createDay,
+  createSession,
   slotStart,
 } from "../helpers/factories";
 import { getRepositories } from "@/db/container";
@@ -32,7 +33,12 @@ import {
 import { POST as addPOST } from "@/app/api/add-session/route";
 import { POST } from "@/app/api/update-session/route";
 import type { SessionParams } from "@/app/api/session-form-utils";
-import type { Day, Guest, Location } from "@/db/repositories/interfaces";
+import type {
+  Day,
+  Guest,
+  Location,
+  Session,
+} from "@/db/repositories/interfaces";
 
 const VALID_SECRET = "0123456789abcdef0123456789abcdef";
 
@@ -97,6 +103,44 @@ function basePayload(
     startTime: slotStart(day, 60),
     duration: 60,
     ...overrides,
+  };
+}
+
+const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * A day whose booking window straddles the present: it opened three hours ago
+ * and closes in three. Anchored to a whole hour so every slot in it stays on
+ * the event's grid.
+ */
+async function createOngoingDay(eventId: string): Promise<Day> {
+  const anchor = new Date();
+  anchor.setMinutes(0, 0, 0);
+  return createDay(eventId, {
+    start: new Date(anchor.getTime() - 4 * HOUR_MS),
+    end: new Date(anchor.getTime() + 4 * HOUR_MS),
+    startBookings: new Date(anchor.getTime() - 3 * HOUR_MS),
+    endBookings: new Date(anchor.getTime() + 3 * HOUR_MS),
+  });
+}
+
+/** The payload the form posts when it re-sends a session's own times. */
+function payloadFor(
+  session: Session,
+  host: Guest,
+  location: Location,
+  day: Day,
+  overrides?: Partial<SessionParams>
+): SessionParams {
+  return {
+    ...basePayload(host, location, day, {
+      title: session.title,
+      startTime: session.startTime!.toISOString(),
+      duration:
+        (session.endTime!.getTime() - session.startTime!.getTime()) / 60_000,
+      ...overrides,
+    }),
+    id: session.id,
   };
 }
 
@@ -681,6 +725,373 @@ describe("POST /api/update-session", () => {
 
     const unchanged = (await getRepositories().sessions.findById(id))!;
     expect(unchanged.title).toBe("Test Session");
+  });
+
+  it("lets a host retitle a session that has already started", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createOngoingDay(event.id);
+    const started = await createSession(event.id, {
+      title: "Underway",
+      hostIds: [host.id],
+      locationIds: [location.id],
+      startTime: new Date(slotStart(day, 120)),
+      endTime: new Date(slotStart(day, 180)),
+    });
+
+    const res = await POST(
+      makeUpdateReq(
+        payloadFor(started, host, location, day, { title: "Fixed" }),
+        {
+          editorGuestId: host.id,
+        }
+      )
+    );
+    expect(res.ok).toBe(true);
+
+    const updated = (await getRepositories().sessions.findById(started.id))!;
+    expect(updated.title).toBe("Fixed");
+  });
+
+  it("rejects moving a session that has already started", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createOngoingDay(event.id);
+    const started = await createSession(event.id, {
+      title: "Underway",
+      hostIds: [host.id],
+      locationIds: [location.id],
+      startTime: new Date(slotStart(day, 120)),
+      endTime: new Date(slotStart(day, 180)),
+    });
+
+    const res = await POST(
+      makeUpdateReq(
+        payloadFor(started, host, location, day, {
+          startTime: slotStart(day, 240),
+        }),
+        { editorGuestId: host.id }
+      )
+    );
+    expect(res.status).toBe(403);
+
+    const unchanged = (await getRepositories().sessions.findById(started.id))!;
+    expect(unchanged.startTime!.toISOString()).toBe(slotStart(day, 120));
+  });
+
+  it("lets a host stretch a session that has already started", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createOngoingDay(event.id);
+    const started = await createSession(event.id, {
+      title: "Underway",
+      hostIds: [host.id],
+      locationIds: [location.id],
+      startTime: new Date(slotStart(day, 120)),
+      endTime: new Date(slotStart(day, 180)),
+    });
+
+    const res = await POST(
+      makeUpdateReq(
+        payloadFor(started, host, location, day, { duration: 120 }),
+        {
+          editorGuestId: host.id,
+        }
+      )
+    );
+    expect(res.ok).toBe(true);
+
+    const updated = (await getRepositories().sessions.findById(started.id))!;
+    expect(updated.endTime!.toISOString()).toBe(slotStart(day, 240));
+  });
+
+  // An organizer can place a session where no host could book one — before the
+  // day's bookings open, longer than the maximum, in a room nobody may
+  // self-book — and still leave it to an attendee to host. Keeping what they
+  // chose is not an edit; changing it is judged like any other booking.
+  describe("a placement the host could not have booked", () => {
+    it("keeps a start outside the day's bookable hours", async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const host = await createGuest({ eventId: event.id });
+      const location = await createLocation({ eventId: event.id });
+      const day = await createDay(event.id);
+      const placed = await createSession(event.id, {
+        title: "Early Bird",
+        hostIds: [host.id],
+        locationIds: [location.id],
+        startTime: new Date(slotStart(day, -60)),
+        endTime: new Date(slotStart(day, 0)),
+      });
+
+      const res = await POST(
+        makeUpdateReq(
+          payloadFor(placed, host, location, day, { title: "Sunrise Yoga" }),
+          { editorGuestId: host.id }
+        )
+      );
+      expect(res.ok).toBe(true);
+
+      const updated = (await getRepositories().sessions.findById(placed.id))!;
+      expect(updated.title).toBe("Sunrise Yoga");
+      expect(updated.startTime!.toISOString()).toBe(slotStart(day, -60));
+    });
+
+    it("rejects moving it to another hour the host cannot book", async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const host = await createGuest({ eventId: event.id });
+      const location = await createLocation({ eventId: event.id });
+      const day = await createDay(event.id);
+      const placed = await createSession(event.id, {
+        title: "Early Bird",
+        hostIds: [host.id],
+        locationIds: [location.id],
+        startTime: new Date(slotStart(day, -60)),
+        endTime: new Date(slotStart(day, 0)),
+      });
+
+      const res = await POST(
+        makeUpdateReq(
+          payloadFor(placed, host, location, day, {
+            startTime: slotStart(day, -120),
+          }),
+          { editorGuestId: host.id }
+        )
+      );
+      expect(res.status).toBe(400);
+
+      const unchanged = (await getRepositories().sessions.findById(placed.id))!;
+      expect(unchanged.startTime!.toISOString()).toBe(slotStart(day, -60));
+    });
+
+    it("lets the host move it to an hour they could have booked", async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const host = await createGuest({ eventId: event.id });
+      const location = await createLocation({ eventId: event.id });
+      const day = await createDay(event.id);
+      const placed = await createSession(event.id, {
+        title: "Early Bird",
+        hostIds: [host.id],
+        locationIds: [location.id],
+        startTime: new Date(slotStart(day, -60)),
+        endTime: new Date(slotStart(day, 0)),
+      });
+
+      const res = await POST(
+        makeUpdateReq(
+          payloadFor(placed, host, location, day, {
+            startTime: slotStart(day, 60),
+          }),
+          { editorGuestId: host.id }
+        )
+      );
+      expect(res.ok).toBe(true);
+
+      const updated = (await getRepositories().sessions.findById(placed.id))!;
+      expect(updated.startTime!.toISOString()).toBe(slotStart(day, 60));
+    });
+
+    it("judges the new end without holding the old start against it", async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const host = await createGuest({ eventId: event.id });
+      const location = await createLocation({ eventId: event.id });
+      const day = await createDay(event.id);
+      const placed = await createSession(event.id, {
+        title: "Early Bird",
+        hostIds: [host.id],
+        locationIds: [location.id],
+        startTime: new Date(slotStart(day, -60)),
+        endTime: new Date(slotStart(day, 0)),
+      });
+
+      const res = await POST(
+        makeUpdateReq(
+          payloadFor(placed, host, location, day, { duration: 120 }),
+          { editorGuestId: host.id }
+        )
+      );
+      expect(res.ok).toBe(true);
+
+      const updated = (await getRepositories().sessions.findById(placed.id))!;
+      expect(updated.startTime!.toISOString()).toBe(slotStart(day, -60));
+      expect(updated.endTime!.toISOString()).toBe(slotStart(day, 60));
+    });
+
+    it("keeps a run longer than the event's maximum", async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const host = await createGuest({ eventId: event.id });
+      const location = await createLocation({ eventId: event.id });
+      const day = await createDay(event.id);
+      const placed = await createSession(event.id, {
+        title: "All Morning",
+        hostIds: [host.id],
+        locationIds: [location.id],
+        startTime: new Date(slotStart(day, 0)),
+        endTime: new Date(slotStart(day, 180)),
+      });
+
+      const res = await POST(
+        makeUpdateReq(
+          payloadFor(placed, host, location, day, {
+            title: "All Morning Long",
+          }),
+          { editorGuestId: host.id }
+        )
+      );
+      expect(res.ok).toBe(true);
+
+      const updated = (await getRepositories().sessions.findById(placed.id))!;
+      expect(updated.title).toBe("All Morning Long");
+      expect(updated.endTime!.toISOString()).toBe(slotStart(day, 180));
+    });
+
+    it("rejects re-stretching it to another over-long run", async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const host = await createGuest({ eventId: event.id });
+      const location = await createLocation({ eventId: event.id });
+      const day = await createDay(event.id);
+      const placed = await createSession(event.id, {
+        title: "All Morning",
+        hostIds: [host.id],
+        locationIds: [location.id],
+        startTime: new Date(slotStart(day, 0)),
+        endTime: new Date(slotStart(day, 180)),
+      });
+
+      const res = await POST(
+        makeUpdateReq(
+          payloadFor(placed, host, location, day, { duration: 150 }),
+          {
+            editorGuestId: host.id,
+          }
+        )
+      );
+      expect(res.status).toBe(400);
+
+      const unchanged = (await getRepositories().sessions.findById(placed.id))!;
+      expect(unchanged.endTime!.toISOString()).toBe(slotStart(day, 180));
+    });
+
+    it("keeps a room attendees cannot book", async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const host = await createGuest({ eventId: event.id });
+      const staffOnly = await createLocation({
+        name: "Staff Room",
+        bookable: false,
+        eventId: event.id,
+      });
+      const day = await createDay(event.id);
+      const placed = await createSession(event.id, {
+        title: "Briefing",
+        hostIds: [host.id],
+        locationIds: [staffOnly.id],
+        startTime: new Date(slotStart(day, 60)),
+        endTime: new Date(slotStart(day, 120)),
+      });
+
+      const res = await POST(
+        makeUpdateReq(
+          payloadFor(placed, host, staffOnly, day, { title: "Staff briefing" }),
+          { editorGuestId: host.id }
+        )
+      );
+      expect(res.ok).toBe(true);
+
+      const updated = (await getRepositories().sessions.findById(placed.id))!;
+      expect(updated.title).toBe("Staff briefing");
+      expect(updated.locations[0].id).toBe(staffOnly.id);
+    });
+
+    it("rejects moving it into another room attendees cannot book", async () => {
+      const event = await createEvent({ phase: "scheduling" });
+      const host = await createGuest({ eventId: event.id });
+      const staffOnly = await createLocation({
+        name: "Staff Room",
+        bookable: false,
+        eventId: event.id,
+      });
+      const backstage = await createLocation({
+        name: "Backstage",
+        bookable: false,
+        eventId: event.id,
+      });
+      const day = await createDay(event.id);
+      const placed = await createSession(event.id, {
+        title: "Briefing",
+        hostIds: [host.id],
+        locationIds: [staffOnly.id],
+        startTime: new Date(slotStart(day, 60)),
+        endTime: new Date(slotStart(day, 120)),
+      });
+
+      const res = await POST(
+        makeUpdateReq(payloadFor(placed, host, backstage, day), {
+          editorGuestId: host.id,
+        })
+      );
+      expect(res.status).toBe(403);
+
+      const unchanged = (await getRepositories().sessions.findById(placed.id))!;
+      expect(unchanged.locations[0].id).toBe(staffOnly.id);
+    });
+  });
+
+  it("still refuses to edit an organizer-managed session", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+    const keynote = await createSession(event.id, {
+      title: "Keynote",
+      hostIds: [host.id],
+      locationIds: [location.id],
+      startTime: new Date(slotStart(day, 60)),
+      endTime: new Date(slotStart(day, 120)),
+      adminManaged: true,
+    });
+
+    const res = await POST(
+      makeUpdateReq(
+        payloadFor(keynote, host, location, day, { title: "Talk" }),
+        {
+          editorGuestId: host.id,
+        }
+      )
+    );
+    expect(res.status).toBe(400);
+
+    const unchanged = (await getRepositories().sessions.findById(keynote.id))!;
+    expect(unchanged.title).toBe("Keynote");
+  });
+
+  it("still refuses to edit a blocker", async () => {
+    const event = await createEvent({ phase: "scheduling" });
+    const host = await createGuest({ eventId: event.id });
+    const location = await createLocation({ eventId: event.id });
+    const day = await createDay(event.id);
+    const lunch = await createSession(event.id, {
+      title: "Lunch Break",
+      hostIds: [host.id],
+      locationIds: [location.id],
+      startTime: new Date(slotStart(day, 60)),
+      endTime: new Date(slotStart(day, 120)),
+      blocker: true,
+    });
+
+    const res = await POST(
+      makeUpdateReq(
+        payloadFor(lunch, host, location, day, { title: "Brunch" }),
+        {
+          editorGuestId: host.id,
+        }
+      )
+    );
+    expect(res.status).toBe(400);
+
+    const unchanged = (await getRepositories().sessions.findById(lunch.id))!;
+    expect(unchanged.title).toBe("Lunch Break");
   });
 
   it("accepts a protected host with a verified session", async () => {

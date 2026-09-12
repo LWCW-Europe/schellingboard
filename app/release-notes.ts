@@ -46,6 +46,7 @@ export const releaseNotes: ReleaseNote[] = [
     version: "Unreleased",
     highlights: [
       "**Hosts choose how many people fit**: a session's max attendees starts at what the room holds, and the host can cap it lower or allow standing room.",
+      "**Fix a session after it has started**, or one an organizer placed in a slot you could never have booked yourself — without having to move it first.",
     ],
   },
   {

@@ -18,6 +18,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- **Hosts can edit more of their sessions** (#1027): one that has already started is editable
+  apart from its start, and one an organizer placed outside bookable hours or in a room nobody
+  may book can be fixed without being forced to move it first.
 - **1-on-1 details link to the other attendee** (#1020): their name in the request's
   heading now opens their profile.
 

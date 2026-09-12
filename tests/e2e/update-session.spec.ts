@@ -158,3 +158,37 @@ test("updating a session emails the RSVP'd guest and the added co-host", async (
     }
   }
 });
+
+test("a host can fix a session placed where they could never have booked one", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/Conference-Gamma");
+  // "Evening Wrap-up" sits in day 2's tail after bookings close at 17:30, so
+  // its slot is one the form never offers — but it is Charlie's session, not
+  // an organizer-managed one (see scripts/seed/data/gamma-schedule.ts).
+  await selectUser(page, /Charlie Test/i);
+  await page.getByRole("link", { name: "Evening Wrap-up" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Session details" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("link", { name: "Edit" }).click();
+  await expect(
+    page.getByRole("heading", { name: /Edit session/i })
+  ).toBeVisible();
+
+  // The slot it already holds is offered, so keeping it is possible at all.
+  // Labels carry the 10-minute break, so 17:30 reads as 17:40.
+  await expect(listboxButton(page, /^Start Time/)).toContainText("17:40");
+
+  const description = `Loose ends ${uniqueSuffix()}`;
+  await page.getByRole("textbox").nth(1).fill(description);
+  await page.getByRole("button", { name: "Submit" }).click();
+  await page.waitForURL(/\/Conference-Gamma$/);
+  await expect(toast(page)).toContainText(
+    /Your session .* has been updated successfully/i
+  );
+  await dismissToast(page);
+
+  await page.getByRole("link", { name: "Evening Wrap-up" }).first().click();
+  await expect(dialog.getByText(description)).toBeVisible();
+});

@@ -12,6 +12,7 @@ import { sessionDurationError } from "@/utils/slots";
 import {
   prepareToInsert,
   sessionCapacityError,
+  sessionHasStarted,
   validateSession,
 } from "../session-form-utils";
 import type { SessionParams } from "../session-form-utils";
@@ -64,23 +65,42 @@ export async function POST(req: NextRequest) {
       { status: 403 }
     );
   }
+  const startChanged =
+    input.startTime!.getTime() !== prevSession.startTime?.getTime();
+  const endChanged =
+    input.endTime!.getTime() !== prevSession.endTime?.getTime();
+  if (startChanged && sessionHasStarted(prevSession, now)) {
+    return Response.json(
+      {
+        error: "This session has already started, so it can no longer be moved",
+      },
+      { status: 403 }
+    );
+  }
+  // Only what the host is changing is theirs to answer for. An organizer may
+  // have placed the session somewhere a host could not book it — outside the
+  // day's bookable hours, off the slot grid, longer than the maximum, in a
+  // room nobody may self-book — and leaving that as it stands is not an edit.
   const windowError = sessionBookingWindowError(
     day,
     input.startTime!,
     input.endTime!,
-    event.slotIncrementMinutes
+    event.slotIncrementMinutes,
+    { start: startChanged, end: endChanged }
   );
   if (windowError) {
     return Response.json({ error: windowError }, { status: 400 });
   }
-  const durationError = sessionDurationError(
-    input.startTime!,
-    input.endTime!,
-    event.slotIncrementMinutes,
-    event.maxSessionDuration
-  );
-  if (durationError) {
-    return Response.json({ error: durationError }, { status: 400 });
+  if (startChanged || endChanged) {
+    const durationError = sessionDurationError(
+      input.startTime!,
+      input.endTime!,
+      event.slotIncrementMinutes,
+      event.maxSessionDuration
+    );
+    if (durationError) {
+      return Response.json({ error: durationError }, { status: 400 });
+    }
   }
   const eventGuestIds = new Set(
     (await repos.guests.listByEvent(event.id)).map((g) => g.id)
@@ -96,6 +116,13 @@ export async function POST(req: NextRequest) {
   const bookable = new Map(
     (await repos.locations.listBookableByEvent(event.id)).map((l) => [l.id, l])
   );
+  // Plus the room the session is already in — an organizer may have picked one
+  // attendees cannot book, and staying put is not a booking.
+  const currentLocationId = prevSession.locations[0]?.id;
+  if (currentLocationId && !bookable.has(currentLocationId)) {
+    const current = await repos.locations.findById(currentLocationId);
+    if (current) bookable.set(current.id, current);
+  }
   const chosen = input.locationIds.flatMap((id) => bookable.get(id) ?? []);
   if (chosen.length !== input.locationIds.length || chosen.length === 0) {
     return Response.json(
@@ -111,7 +138,9 @@ export async function POST(req: NextRequest) {
   // comes from the stored row; a number the host chose themselves wins.
   input.capacity = params.capacity ?? chosen[0].capacity;
   const existingSessions = allSessions.filter((ses) => ses.id !== params.id);
-  const sessionValid = validateSession(input, existingSessions, now);
+  const sessionValid = validateSession(input, existingSessions, now, {
+    allowPastStart: !startChanged,
+  });
   if (sessionValid) {
     let updated;
     try {

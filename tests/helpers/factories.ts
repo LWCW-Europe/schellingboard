@@ -205,6 +205,8 @@ export async function createSession(
     startTime?: Date;
     endTime?: Date;
     capacity?: number;
+    adminManaged?: boolean;
+    blocker?: boolean;
   }
 ): Promise<Session> {
   const { sessions } = getRepositories();
@@ -214,8 +216,8 @@ export async function createSession(
     startTime: opts?.startTime,
     endTime: opts?.endTime,
     capacity: opts?.capacity ?? 30,
-    adminManaged: false,
-    blocker: false,
+    adminManaged: opts?.adminManaged ?? false,
+    blocker: opts?.blocker ?? false,
     closed: false,
     eventId,
     hostIds: opts?.hostIds ?? [],

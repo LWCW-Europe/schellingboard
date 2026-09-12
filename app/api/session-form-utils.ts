@@ -84,18 +84,30 @@ export function prepareToInsert(
   };
 }
 
+/**
+ * A session under way keeps the start its attendees turned up for. Everything
+ * else about it, its duration included, is still the host's to fix.
+ */
+export function sessionHasStarted(
+  session: Pick<Session, "startTime">,
+  now: Date
+): boolean {
+  return !!session.startTime && session.startTime <= now;
+}
+
 // `now` is the effective current time (see docs/dev/adr/0004-dev-fake-clock.md),
 // required rather than defaulted so a caller cannot silently bypass the fake
 // clock and judge "in the past" against real time.
 export const validateSession = (
   session: SessionCreateInput,
   existingSessions: Session[],
-  now: Date
+  now: Date,
+  opts?: { allowPastStart?: boolean }
 ): boolean => {
   const sessionStart = session.startTime ?? new Date(0);
   const sessionEnd = session.endTime ?? new Date(0);
   const sessionStartsBeforeEnds = sessionStart < sessionEnd;
-  const sessionStartsAfterNow = sessionStart > now;
+  const sessionStartsAfterNow = opts?.allowPastStart || sessionStart > now;
   const sessionsHere = existingSessions.filter((s) => {
     return s.locations.some((l) => l.id === session.locationIds[0]);
   });

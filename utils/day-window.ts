@@ -51,26 +51,34 @@ export function daysOverlap(
  * The session must both start and finish inside the bookings window: the tail
  * between it and the day's end is what organizers keep for the sessions they
  * place themselves.
+ *
+ * `judge` narrows that to the endpoints the caller is asking about. An editing
+ * host may keep an endpoint an organizer placed out of their reach, so only
+ * the ones they are actually changing are theirs to answer for.
  */
 export function sessionBookingWindowError(
   day: Day,
   start: Date,
   end: Date,
-  incrementMinutes: number
+  incrementMinutes: number,
+  judge: { start: boolean; end: boolean } = { start: true, end: true }
 ): string | null {
-  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+  if (
+    (judge.start && isNaN(start.getTime())) ||
+    (judge.end && isNaN(end.getTime()))
+  ) {
     return "Session times are not valid dates";
   }
-  if (start < day.startBookings || start >= day.endBookings) {
+  if (judge.start && (start < day.startBookings || start >= day.endBookings)) {
     return "That start time is outside the day's booking window";
   }
-  if (end > day.endBookings) {
+  if (judge.end && end > day.endBookings) {
     return "The session would run past the end of the day's booking window";
   }
-  if (
-    !isSlotAligned(start, day.start, incrementMinutes) ||
-    !isSlotAligned(end, day.start, incrementMinutes)
-  ) {
+  const misaligned =
+    (judge.start && !isSlotAligned(start, day.start, incrementMinutes)) ||
+    (judge.end && !isSlotAligned(end, day.start, incrementMinutes));
+  if (misaligned) {
     return `Session times must align to the event's ${incrementMinutes}-minute slots`;
   }
   return null;

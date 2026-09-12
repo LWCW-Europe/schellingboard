@@ -146,6 +146,20 @@ schedule one, and they appear in your "Pre-fill from proposal" dropdown
 alongside your own. And **the same proposal can be scheduled more than once**,
 for instance twice if interest is high.
 
+### Fix a session you're hosting
+
+Open your session and click **"Edit"**. Title, description, room, max
+attendees, co-hosts — all of it stays yours to change for as long as the
+scheduling phase runs.
+
+- **Once it has started** you can no longer move it, though how long it runs
+  is still up to you.
+- **If an organizer put it somewhere you couldn't have booked it yourself** —
+  outside the day's bookable hours, in a room that isn't open to bookings,
+  longer than sessions are normally allowed to run — it simply stays there
+  while you fix everything else. Move it and it has to land somewhere you
+  could have booked.
+
 ### How many people to expect
 
 Vote counts show how much interest there is, not how many people will walk in

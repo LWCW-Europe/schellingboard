@@ -27,12 +27,13 @@ import type {
   SessionProposal,
 } from "@/db/repositories/interfaces";
 import { ConfirmDeletionModal } from "../modals";
-import { UserContext } from "../context";
+import { EventContext, UserContext } from "../context";
 import { newEmptySession } from "../session_utils";
 import { useToast } from "../toast";
 import {
   buildSessionInterval,
   CAPACITY_ERROR,
+  sessionHasStarted,
 } from "@/app/api/session-form-utils";
 import { revalidateEvent } from "./session-actions";
 import { detectGuestClashes, type GuestClash } from "./clash-actions";
@@ -52,21 +53,16 @@ export function SessionForm(props: {
   event: Event;
   days: Day[];
   sessions: Session[];
+  /** Every room the event shows, bookable or not — see `locations` below. */
   locations: Location[];
   guests: Guest[];
   proposals: SessionProposal[];
   maxSessionDuration: number;
 }) {
-  const {
-    event,
-    days,
-    sessions,
-    locations,
-    guests,
-    proposals,
-    maxSessionDuration,
-  } = props;
+  const { event, days, sessions, guests, proposals, maxSessionDuration } =
+    props;
   const { user: currentUser } = useContext(UserContext);
+  const { now } = useContext(EventContext);
   const eventName = event.name;
   const timezone = event.timezone ?? "UTC";
 
@@ -79,6 +75,17 @@ export function SessionForm(props: {
   const initialProposal = proposals.find((p) => p.id === proposalID) ?? null;
   const session =
     sessions.find((ses) => ses.id === sessionID) || newEmptySession(event.id);
+  // A started session keeps the start its attendees turned up for, so that
+  // start stops being a form field: it is read from the session rather than
+  // from the picker, which need not offer it once another room is selected.
+  const lockedStart = sessionHasStarted(session, now)
+    ? session.startTime!.getTime()
+    : null;
+  // Attendees may book only some of the event's rooms; the one this session is
+  // already in is offered too, so keeping it is never what blocks a save.
+  const locations = props.locations.filter(
+    (loc) => loc.bookable || loc.id === session.locations[0]?.id
+  );
   const initDateTime =
     dayParam && timeParam
       ? convertParamDateTime(dayParam, timeParam, timezone)
@@ -118,8 +125,8 @@ export function SessionForm(props: {
   );
   const [closed, setClosed] = useState(session.closed);
   const [day, setDay] = useState(initDay ?? days[0]);
-  // Only preselect a location the picker offers: an existing session may sit in
-  // one that has since been unassigned, hidden or closed to self-booking.
+  // Only preselect a location the picker offers: an existing session may sit
+  // in one that has since been unassigned from the event or hidden.
   const [locationId, setLocationId] = useState<string | undefined>(
     locations.find((l) => l.name === initLocation)?.id ??
       locations.find((l) => l.id === session.locations[0]?.id)?.id
@@ -169,9 +176,14 @@ export function SessionForm(props: {
   )
     ? startTime
     : undefined;
+  const chosenStart = lockedStart ?? effectiveStartTime;
   const maxDuration =
-    startTimes.find((st) => st.time === effectiveStartTime)?.maxDuration ??
+    startTimes.find((st) => st.time === chosenStart)?.maxDuration ??
     maxSessionDuration;
+  const keepsOwnSlot =
+    chosenStart !== undefined &&
+    chosenStart === session.startTime?.getTime() &&
+    locationId === session.locations[0]?.id;
   // Proposal durations are free-form, so they get snapped to the nearest
   // selectable slot multiple; an existing session's duration already sits on
   // the grid and passes through unchanged.
@@ -186,8 +198,14 @@ export function SessionForm(props: {
           snapDurationToSlots(60, event.slotIncrementMinutes, maxDuration))
   );
   // Derived: clamp duration to maxDuration. Preserves user-set value so it
-  // restores when the limit widens again.
-  const effectiveDuration = duration > maxDuration ? maxDuration : duration;
+  // restores when the limit widens again. While the session stays in the slot
+  // it was placed in, the length it already runs is exempt: an organizer may
+  // have given it more than a host may book, and clamping it would move the
+  // session's end without anyone asking.
+  const effectiveDuration =
+    duration > maxDuration && !(keepsOwnSlot && duration === sessionDuration)
+      ? maxDuration
+      : duration;
   const [hosts, setHosts] = useState<Guest[]>(initialHosts);
 
   function applyProposal(next: SessionProposal | null) {
@@ -214,9 +232,9 @@ export function SessionForm(props: {
   }
 
   let dummySession = newEmptySession(event.id);
-  if (effectiveStartTime !== undefined && day) {
+  if (chosenStart !== undefined && day) {
     const { start, end } = buildSessionInterval(
-      new Date(effectiveStartTime),
+      new Date(chosenStart),
       effectiveDuration
     );
     dummySession = {
@@ -281,7 +299,7 @@ export function SessionForm(props: {
   const Submit = async () => {
     setIsSubmitting(true);
     setError(null);
-    if (!location || !day || effectiveStartTime === undefined) {
+    if (!location || !day || chosenStart === undefined) {
       setError("Missing required fields");
       setIsSubmitting(false);
       return;
@@ -300,7 +318,7 @@ export function SessionForm(props: {
         dayId: day.id,
         location,
         capacity: capacityNumber,
-        startTime: new Date(effectiveStartTime).toISOString(),
+        startTime: new Date(chosenStart).toISOString(),
         duration: effectiveDuration,
         hosts,
         proposal: proposal?.id ?? session.proposalId,
@@ -502,33 +520,59 @@ export function SessionForm(props: {
           </p>
         )}
       </div>
+      {lockedStart !== null && (
+        <p className="text-sm text-fg-subtle">
+          This session has already started, so it can no longer be moved to
+          another time — but you can still change everything else, including how
+          long it runs.
+        </p>
+      )}
       <div className="flex flex-col gap-1">
         <label className="font-medium">
           Day
           <RequiredStar />
         </label>
-        <SelectDay days={days} day={day} setDay={setDay} timezone={timezone} />
+        {lockedStart !== null ? (
+          <LockedValue value={formatDayLabel(day, timezone)} />
+        ) : (
+          <SelectDay
+            days={days}
+            day={day}
+            setDay={setDay}
+            timezone={timezone}
+          />
+        )}
       </div>
       <div className="flex flex-col gap-1 w-72">
         <label className="font-medium">
           Start Time
           <RequiredStar />
         </label>
-        <MyListbox
-          currValue={
-            effectiveStartTime !== undefined
-              ? String(effectiveStartTime)
-              : undefined
-          }
-          setCurrValue={(v) => setStartTime(parseInt(v, 10))}
-          options={startTimes.map((st) => ({
-            value: String(st.time),
-            display: st.formattedTime,
-            available: st.available,
-          }))}
-          placeholder={"Select a start time"}
-          truncateText={true}
-        />
+        {lockedStart !== null ? (
+          <LockedValue
+            value={formatSlotLabel(
+              new Date(lockedStart + event.breakMinutes * 60 * 1000),
+              day.start,
+              timezone
+            )}
+          />
+        ) : (
+          <MyListbox
+            currValue={
+              effectiveStartTime !== undefined
+                ? String(effectiveStartTime)
+                : undefined
+            }
+            setCurrValue={(v) => setStartTime(parseInt(v, 10))}
+            options={startTimes.map((st) => ({
+              value: String(st.time),
+              display: st.formattedTime,
+              available: st.available,
+            }))}
+            placeholder={"Select a start time"}
+            truncateText={true}
+          />
+        )}
       </div>
       <div className="flex flex-col gap-1">
         <label className="font-medium">
@@ -539,6 +583,9 @@ export function SessionForm(props: {
           duration={effectiveDuration}
           setDuration={setDuration}
           maxDuration={maxDuration}
+          ownDuration={
+            keepsOwnSlot ? (sessionDuration ?? undefined) : undefined
+          }
           breakMinutes={event.breakMinutes}
           slotIncrementMinutes={event.slotIncrementMinutes}
         />
@@ -575,7 +622,7 @@ export function SessionForm(props: {
         className="bg-brand text-on-brand font-semibold py-2 rounded shadow disabled:bg-surface-hover disabled:text-fg-muted disabled:shadow-none hover:bg-brand-hover active:bg-brand-hover mx-auto px-12"
         disabled={
           !title ||
-          effectiveStartTime === undefined ||
+          chosenStart === undefined ||
           !hosts.length ||
           !locationId ||
           !capacityValid ||
@@ -600,6 +647,10 @@ export function SessionForm(props: {
 }
 
 const RequiredStar = () => <span className="text-brand-fg mx-1">*</span>;
+
+const LockedValue = ({ value }: { value: string }) => (
+  <p className="text-fg-muted">{value}</p>
+);
 
 type StartTime = {
   formattedTime: string;
@@ -684,6 +735,46 @@ function getAvailableStartTimes(
       });
     }
   }
+
+  // The slot the session already occupies, which an organizer may have put
+  // where no host could book one: outside the bookable hours, off the grid, or
+  // on top of another session. Keeping it has to stay possible, so it is
+  // offered in its own right — only while its room and day are still the ones
+  // it was placed in, since anywhere else is a move like any other.
+  const ownSlot = currentSession.startTime?.getTime();
+  const staysPut =
+    ownSlot !== undefined &&
+    locationSelected &&
+    currentSession.locations[0]?.id === locationId &&
+    dateOnDay(currentSession.startTime!, day);
+  if (staysPut) {
+    const nextSession = sortedSessions.find(
+      (session) => (session.startTime?.getTime() ?? 0) > ownSlot
+    );
+    const latestEndTime = nextSession
+      ? nextSession.startTime!.getTime()
+      : day.endBookings.getTime();
+    const slot: StartTime = {
+      formattedTime: formatSlotLabel(
+        new Date(ownSlot + breakMinutes * 60 * 1000),
+        day.start,
+        timezone
+      ),
+      time: ownSlot,
+      maxDuration: Math.max(
+        0,
+        Math.min((latestEndTime - ownSlot) / 1000 / 60, maxSessionDuration)
+      ),
+      available: true,
+    };
+    const at = startTimes.findIndex((st) => st.time === ownSlot);
+    if (at === -1) {
+      startTimes.push(slot);
+      startTimes.sort((a, b) => a.time - b.time);
+    } else {
+      startTimes[at] = slot;
+    }
+  }
   return startTimes;
 }
 
@@ -691,15 +782,19 @@ function SelectDuration(props: {
   duration: number;
   setDuration: (duration: number) => void;
   maxDuration?: number;
+  /** The length the session already runs, offered even if it exceeds the max. */
+  ownDuration?: number;
   breakMinutes: number;
   slotIncrementMinutes: number;
 }) {
-  const { duration, setDuration, maxDuration, breakMinutes } = props;
+  const { duration, setDuration, maxDuration, ownDuration, breakMinutes } =
+    props;
   const limit = maxDuration ?? 180;
-  const availableDurations = slotDurationOptions(
-    props.slotIncrementMinutes,
-    limit
-  );
+  const offered = slotDurationOptions(props.slotIncrementMinutes, limit);
+  const availableDurations =
+    ownDuration && !offered.includes(ownDuration)
+      ? [...offered, ownDuration].sort((a, b) => a - b)
+      : offered;
 
   return (
     <fieldset>
