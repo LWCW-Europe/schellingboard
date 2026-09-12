@@ -15,6 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Hosts set a session's max attendees** (#1032): the session form starts at what the room
   holds and the host can change it — lower for a hands-on session, higher for standing room,
   0 for no limit
+- **Shuffle the attendee directory** (#1037): "Sort by → Random" reorders everyone, and draws
+  a new order on every page load, so 1-on-1 requests don't all land on the names at the top
+  of the alphabet
 
 ### Changed
 

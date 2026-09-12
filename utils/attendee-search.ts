@@ -40,11 +40,26 @@ function rank(attendee: Attendee, query: string): number {
 export const ATTENDEE_SORTS = [
   { value: "name", label: "Name (A–Z)" },
   { value: "updated", label: "Recently updated" },
+  { value: "random", label: "Random" },
 ] as const;
 
 export type AttendeeSort = (typeof ATTENDEE_SORTS)[number]["value"];
 
 export const DEFAULT_ATTENDEE_SORT: AttendeeSort = "name";
+
+export function newSortSeed(): string {
+  return Math.random().toString(36).slice(2);
+}
+
+// FNV-1a. Any well-mixed hash would do: the order only has to look arbitrary
+// and come out identical on the server and in the browser.
+function hash(text: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  }
+  return h >>> 0;
+}
 
 /**
  * In-memory search over the full attendee list. Case-insensitive substring
@@ -54,11 +69,15 @@ export const DEFAULT_ATTENDEE_SORT: AttendeeSort = "name";
  *
  * A query overrides `sort`: relevance ranking is the more useful answer to a
  * search, and an explicit sort would discard it.
+ *
+ * `seed` drives the random sort. A per-attendee key rather than a shuffle, so
+ * that filtering the list down never reorders what is left of it.
  */
 export function searchAttendees<A extends Attendee>(
   attendees: A[],
   query: string,
-  sort: AttendeeSort = DEFAULT_ATTENDEE_SORT
+  sort: AttendeeSort = DEFAULT_ATTENDEE_SORT,
+  seed = ""
 ): A[] {
   const byName = (a: A, b: A) =>
     a.name.localeCompare(b.name) || a.id.localeCompare(b.id);
@@ -75,6 +94,12 @@ export function searchAttendees<A extends Attendee>(
   };
 
   const q = query.trim();
+  if (!q && sort === "random") {
+    return attendees
+      .map((attendee) => ({ attendee, key: hash(`${seed}:${attendee.id}`) }))
+      .sort((x, y) => x.key - y.key || byName(x.attendee, y.attendee))
+      .map((r) => r.attendee);
+  }
   if (!q) return [...attendees].sort(sort === "updated" ? byRecency : byName);
 
   return attendees

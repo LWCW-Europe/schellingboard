@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import type { Attendee } from "@/db/repositories/interfaces";
-import { searchAttendees } from "@/utils/attendee-search";
+import { newSortSeed, searchAttendees } from "@/utils/attendee-search";
 
 let counter = 0;
 
@@ -212,5 +212,44 @@ describe("searchAttendees sorted by recently updated", () => {
 
     const result = searchAttendees(rows, "Italian", "updated");
     expect(result.map((r) => r.name)).toEqual(["Speaker", "Foodie"]);
+  });
+});
+
+describe("searchAttendees sorted randomly", () => {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  const rows = alphabet.map((name) => attendee({ name }));
+  const order = (seed: string, from = rows) =>
+    searchAttendees(from, "", "random", seed).map((r) => r.name);
+
+  it("gives the same order every time for one seed, and a different one for another", () => {
+    expect(order("seed-a")).toEqual(order("seed-a"));
+    expect(order("seed-a")).not.toEqual(alphabet);
+    expect(order("seed-a")).not.toEqual(order("seed-b"));
+    expect([...order("seed-a")].sort()).toEqual(alphabet);
+  });
+
+  it("keeps the same relative order once the list is filtered", () => {
+    const half = rows.filter((_, i) => i % 2 === 0);
+    const withinFull = order("seed-a").filter((name) =>
+      half.some((r) => r.name === name)
+    );
+
+    expect(order("seed-a", half)).toEqual(withinFull);
+  });
+
+  it("keeps relevance ranking while a query is active", () => {
+    const hits = [
+      attendee({ name: "Zoe", languages: ["French"] }),
+      attendee({ name: "Anna", aboutMe: "French cinema" }),
+    ];
+
+    expect(searchAttendees(hits, "French", "random", "seed-a")).toEqual([
+      hits[0],
+      hits[1],
+    ]);
+  });
+
+  it("mints a fresh seed each time", () => {
+    expect(newSortSeed()).not.toEqual(newSortSeed());
   });
 });

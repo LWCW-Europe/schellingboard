@@ -611,3 +611,45 @@ test("sorts the attendee directory by recently updated", async ({ page }) => {
   await expect(page).toHaveURL(/[?&]q=Alice/);
   await expect(page.getByLabel("Sort by")).toBeDisabled();
 });
+
+// Compared only where both readings hold the same rows: admin.spec.ts adds
+// attendees in parallel, and a newcomer between two readings is not a reshuffle.
+const expectReordered = (before: string[], after: string[]) =>
+  expect(after.filter((row) => before.includes(row))).not.toEqual(
+    before.filter((row) => after.includes(row))
+  );
+
+test("shuffles the attendee directory anew on every load", async ({ page }) => {
+  await login(page);
+  await page.goto("/guests");
+
+  const attendees = page
+    .getByRole("list")
+    .filter({ has: page.getByRole("link", { name: "Alice Test" }) })
+    .getByRole("listitem");
+  const order = async () => {
+    await expect(attendees.first()).toBeVisible();
+    return attendees.allInnerTexts();
+  };
+  const alphabetical = await order();
+
+  await page.getByLabel("Sort by").selectOption("Random");
+  await expect(page).toHaveURL(/[?&]sort=random/);
+  const shuffled = await order();
+  expectReordered(alphabetical, shuffled);
+
+  // Reloading is how you draw another sample, and both readings come from one:
+  // picking Random draws its own order, which would mask a load that never does.
+  await page.reload();
+  await expect(page.getByLabel("Sort by")).toHaveValue("random");
+  const loaded = await order();
+  await page.reload();
+  const reshuffled = await order();
+  expectReordered(loaded, reshuffled);
+
+  // As is leaving the random order and coming back to it.
+  await page.getByLabel("Sort by").selectOption("Name (A–Z)");
+  await expect(firstOfAliceOrAhmad(attendees)).toContainText("Ahmad Karimi");
+  await page.getByLabel("Sort by").selectOption("Random");
+  expectReordered(reshuffled, await order());
+});

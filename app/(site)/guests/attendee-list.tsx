@@ -81,8 +81,17 @@ export function AttendeeList({
   view: DirectoryView;
   canEditProfile: boolean;
 }) {
-  const { query, filters, sort, rows, page, total, listQuery, setParams } =
-    view;
+  const {
+    query,
+    filters,
+    sort,
+    rows,
+    page,
+    total,
+    listQuery,
+    setParams,
+    reshuffle,
+  } = view;
   // A search is ranked by relevance, which an explicit sort would throw away.
   const sortDisabled = query !== "";
   const toolbar = (
@@ -128,6 +137,9 @@ export function AttendeeList({
           value={sort}
           disabled={sortDisabled}
           onChange={(e) => {
+            // Coming back to Random draws a new order, as a reload does —
+            // otherwise it would only ever show the one drawn on page load.
+            if (e.target.value === "random") reshuffle();
             setParams({
               sort:
                 e.target.value === DEFAULT_ATTENDEE_SORT

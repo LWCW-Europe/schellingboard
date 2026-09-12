@@ -390,6 +390,10 @@ opening anything.
   in since you last looked. Each row shows when the profile last changed;
   empty profiles show no date and come last. While searching, results stay
   ordered by match instead, so the sort choice is unavailable.
+- **Sort by → Random** puts everyone in a random order, and draws a new one
+  every time you reload the page or choose Random again — a different few
+  people to read at the top each time, and no one left at the bottom of
+  everybody's list when 1-on-1 requests go out.
 
 Click any name, wherever it appears, to open that person's profile — bio,
 proposals, and the sessions they're hosting. It opens _over_ the directory

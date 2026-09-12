@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Attendee } from "@/db/repositories/interfaces";
 import { useTableParams } from "@/app/admin/data-table";
 import {
   ATTENDEE_SORTS,
   AttendeeSort,
   DEFAULT_ATTENDEE_SORT,
+  newSortSeed,
   searchAttendees,
 } from "@/utils/attendee-search";
 import { AttendeeFilter, parseAttendeeFilters } from "@/utils/attendee-filters";
@@ -35,9 +36,19 @@ export type DirectoryView = ReturnType<typeof useDirectoryView>;
  *
  * `now` comes from the server so the relative update times match what was
  * server-rendered, and so the dev fake clock applies.
+ *
+ * So does `randomSeed`, for the same reason — the shuffle has to hydrate to
+ * what was rendered. A new one per request is what makes every page load a
+ * fresh draw; `reshuffle` is the other way to ask for one.
  */
-export function useDirectoryView(attendees: Attendee[], now: Date) {
+export function useDirectoryView(
+  attendees: Attendee[],
+  now: Date,
+  randomSeed: string
+) {
   const { searchParams, setParams } = useTableParams({ shallow: true });
+  const [seed, setSeed] = useState(randomSeed);
+  const reshuffle = useCallback(() => setSeed(newSortSeed()), []);
 
   const query = (searchParams.get("q") ?? "").trim();
   const filterParam = searchParams.get("filter") ?? "";
@@ -76,8 +87,8 @@ export function useDirectoryView(attendees: Attendee[], now: Date) {
         (!filters.includes("hasProfile") || card.hasProfile) &&
         (!filters.includes("openToMeetings") || card.openToMeetings)
     );
-    return searchAttendees(scoped, query, sort);
-  }, [cards, filters, query, sort]);
+    return searchAttendees(scoped, query, sort, seed);
+  }, [cards, filters, query, sort, seed]);
 
   const total = matches.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -104,5 +115,6 @@ export function useDirectoryView(attendees: Attendee[], now: Date) {
     // or reloading, or sharing it — comes back to the same list.
     listQuery: searchParams.toString(),
     setParams,
+    reshuffle,
   };
 }

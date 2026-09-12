@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { getRepositories } from "@/db/container";
 import { AttendeeDirectory } from "@/app/(site)/guests/directory";
+import { newSortSeed } from "@/utils/attendee-search";
 import { serverNow } from "@/utils/dev-clock-server";
 import { verifiedCurrentUser } from "@/utils/acting-guest";
 
@@ -30,6 +31,7 @@ export default async function AttendeeDirectoryLayout({
         attendees={attendees}
         now={now}
         currentUserId={currentUser}
+        randomSeed={newSortSeed()}
       />
       {children}
     </>
