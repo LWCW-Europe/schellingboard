@@ -31,6 +31,7 @@ import {
 } from "@/utils/agenda";
 import type { MeetingView } from "@/utils/meeting-views";
 import { meetingsForDay } from "@/utils/meeting-column";
+import { shownSlotStart } from "@/utils/meeting-slots";
 import { statusLine } from "@/utils/meeting-rules";
 import { useMyMeetings } from "./use-meetings";
 import {
@@ -299,10 +300,12 @@ function MeetingRow(props: {
   const { meeting, eventSlug, timezone } = props;
   const searchParams = useSearchParams();
   const { now } = useContext(EventContext);
+  const breakMinutes = useBreakMinutes();
+  const start = shownSlotStart(new Date(meeting.slotStart), breakMinutes);
   const end = new Date(meeting.slotEnd);
   return (
     <AgendaRow
-      state={timeState(new Date(meeting.slotStart), end, now)}
+      state={timeState(start, end, now)}
       swatchClass={
         meeting.status === "accepted" ? "bg-brand-accent" : "bg-line"
       }

@@ -10,8 +10,9 @@ import { selectUser } from "./helpers/user";
  * is covered by meetings-request.spec.ts.
  *
  * Conference Gamma is the seeded event in its scheduling phase, and Zanele's
- * first morning there holds two 1-on-1s at 10:00 and three at 11:00
- * (scripts/seed/seed-database.ts).
+ * first morning there holds two 1-on-1s in the 10:00 slot and three in the
+ * 11:00 slot (scripts/seed/seed-database.ts) — shown from 10:10 and 11:10,
+ * after the event's break, as sessions in those slots are.
  */
 const VIEWER = "Zanele Khumalo";
 const AT_TEN = ["Leilani Kahale", "Samuel Adeyemi"];
@@ -28,7 +29,7 @@ test.describe("parallel 1-on-1s on the schedule", () => {
     // Two in a slot: both readable at full column width, one above the other
     // rather than in half-width slivers.
     const [confirmed, waiting] = AT_TEN.map((name) =>
-      page.getByRole("link", { name: new RegExp(`${name} at 10:00`) })
+      page.getByRole("link", { name: new RegExp(`${name} at 10:10`) })
     );
     await expect(confirmed).toBeVisible();
     await expect(waiting).toBeVisible();
@@ -52,13 +53,13 @@ test.describe("parallel 1-on-1s on the schedule", () => {
     // Three in a slot no longer fit, so the block stands for the slot itself
     // and opens the list.
     const crowded = page.getByRole("button", {
-      name: "3 1-on-1s, 11:00 – 11:30 — 3 need your reply",
+      name: "3 1-on-1s, 11:10 – 11:30 — 3 need your reply",
     });
     await expect(crowded).toBeVisible();
     await crowded.click();
 
     const slotList = page.getByRole("dialog", {
-      name: /3 1-on-1s, 11:00 – 11:30/,
+      name: /3 1-on-1s, 11:10 – 11:30/,
     });
     const listed = AT_ELEVEN.map((name) =>
       slotList.getByRole("link", { name: new RegExp(name) })

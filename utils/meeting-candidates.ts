@@ -7,7 +7,7 @@ import {
   toMeetingClashes,
   type MeetingClash,
 } from "@/utils/meeting-clash-text";
-import { meetingSlotsForDay } from "@/utils/meeting-slots";
+import { meetingSlotsForDay, slotTimeLabel } from "@/utils/meeting-slots";
 
 /** One person the viewer could ask for a 1-on-1 in a given slot. */
 export type MeetingCandidate = {
@@ -157,9 +157,7 @@ export async function meetingCandidatesFor(
   return {
     eventName: event.name,
     dayLabel: zoned(slot.start).toFormat("EEE d LLL"),
-    slotLabel: `${zoned(slot.start).toFormat("HH:mm")} – ${zoned(
-      slot.end
-    ).toFormat("HH:mm")}`,
+    slotLabel: slotTimeLabel(slot, event.breakMinutes, event.timezone),
     meetingPoints: meetingPoints.map(({ id, name, description }) => ({
       id,
       name,

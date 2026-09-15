@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { meetingSlotsForDay } from "@/utils/meeting-slots";
+import { meetingSlotsForDay, slotTimeLabel } from "@/utils/meeting-slots";
 
 const DAY = {
   start: new Date("2026-09-11T07:00:00.000Z"),
@@ -74,5 +74,22 @@ describe("meetingSlotsForDay", () => {
     );
 
     expect(slots).toEqual([]);
+  });
+});
+
+// A 1-on-1 is shown like a session in the same slot: starting after the break
+// at the head of the slot, ending with it.
+describe("slotTimeLabel", () => {
+  const slot = {
+    start: new Date("2026-09-11T08:00:00.000Z"),
+    end: new Date("2026-09-11T08:30:00.000Z"),
+  };
+
+  it("starts after the break, in the event's zone", () => {
+    expect(slotTimeLabel(slot, 10, "Europe/Berlin")).toBe("10:10 – 10:30");
+  });
+
+  it("is the bare slot when the event has no break", () => {
+    expect(slotTimeLabel(slot, 0, "Europe/Berlin")).toBe("10:00 – 10:30");
   });
 });

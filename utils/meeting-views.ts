@@ -3,6 +3,7 @@ import { getRepositories } from "@/db/container";
 import type { MeetingStatus } from "@/db/repositories/interfaces";
 import { clashesForInterval, loadGuestSchedules } from "@/utils/guest-clashes";
 import { toMeetingClashes } from "@/utils/meeting-clash-text";
+import { slotTimeLabel } from "@/utils/meeting-slots";
 import type { MeetingClash } from "@/utils/meeting-clash-text";
 
 /**
@@ -110,9 +111,11 @@ export async function meetingViewsFor(
       slotStart: meeting.slotStart.toISOString(),
       slotEnd: meeting.slotEnd.toISOString(),
       dayLabel: zoned(meeting.slotStart).toFormat("EEE d LLL"),
-      timeLabel: `${zoned(meeting.slotStart).toFormat("HH:mm")} – ${zoned(
-        meeting.slotEnd
-      ).toFormat("HH:mm")}`,
+      timeLabel: slotTimeLabel(
+        { start: meeting.slotStart, end: meeting.slotEnd },
+        event.breakMinutes,
+        event.timezone
+      ),
       meetingPoint: meeting.meetingPoint,
       message: meeting.message,
       cancelNote: meeting.cancelNote,

@@ -1,6 +1,6 @@
 import { getRepositories } from "@/db/container";
 import { serverNow } from "@/utils/dev-clock-server";
-import { meetingSlotsForDay } from "@/utils/meeting-slots";
+import { meetingSlotsForDay, slotTimeLabel } from "@/utils/meeting-slots";
 import { clashesForInterval, loadGuestSchedules } from "@/utils/guest-clashes";
 import { toMeetingClashes } from "@/utils/meeting-clash-text";
 import type { MeetingClash } from "@/utils/meeting-clash-text";
@@ -94,9 +94,7 @@ export async function meetingOptionsFor(
         // and the organizer's cap only counts requests still ahead.
         if (slot.start <= now) continue;
         const start = slot.start.toISOString();
-        const label = `${zoned(slot.start).toFormat("HH:mm")} – ${zoned(
-          slot.end
-        ).toFormat("HH:mm")}`;
+        const label = slotTimeLabel(slot, event.breakMinutes, event.timezone);
         if (!declaredStarts.has(start)) {
           slots.push({ start, label, state: "unavailable", clashes: [] });
           continue;

@@ -251,14 +251,14 @@ test.describe("1-on-1 meetings", () => {
     // The slot they did not offer, which is still a slot they can book in.
     await page
       .getByRole("button", {
-        name: /^Arrange a 1-on-1 at 09:00 — you are not offering/,
+        name: /^Arrange a 1-on-1 at 09:10 — you are not offering/,
       })
       .first()
       .click();
 
     const picker = page.getByRole("dialog");
     await expect(
-      picker.getByRole("heading", { name: /Who's free at 09:00/ })
+      picker.getByRole("heading", { name: /Who's free at 09:10/ })
     ).toBeVisible();
     await picker.getByRole("button", { name: `Ask ${askee}` }).click();
 
@@ -340,9 +340,10 @@ test.describe("1-on-1 meetings", () => {
     await expect(send).toBeVisible();
     await page.getByRole("button", { name: "Coffee bar" }).click();
 
-    // Every day has an 09:00, so the slot has to be found within its own day.
+    // Every day has a 09:00 slot (shown as 09:10, after the break), so the slot
+    // has to be found within its own day.
     const dayRegion = page.getByRole("region", { name: DAY_HEADING }).first();
-    await dayRegion.getByRole("button", { name: /^09:00/ }).click();
+    await dayRegion.getByRole("button", { name: /^09:10/ }).click();
 
     await send.click();
 
@@ -413,7 +414,7 @@ test.describe("1-on-1 meetings", () => {
     await page
       .getByRole("region", { name: DAY_HEADING })
       .first()
-      .getByRole("button", { name: /^09:30/ })
+      .getByRole("button", { name: /^09:40/ })
       .click();
     await sendAgain.click();
     await expect(page.getByText(new RegExp(`Asked ${askee}`))).toBeVisible();

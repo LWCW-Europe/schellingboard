@@ -148,15 +148,22 @@ describe("agendaGroups", () => {
       sessions: [session(at(9), at(10)), session(at(11), at(12))],
       meetings: [meeting(at(10), "Leilani")],
     });
-    expect(groups.map((g) => g.start)).toEqual([at(9, 10), at(10), at(11, 10)]);
+    expect(groups.map((g) => g.start)).toEqual([
+      at(9, 10),
+      at(10, 10),
+      at(11, 10),
+    ]);
     expect(groups[1].sessions).toEqual([]);
     expect(groups[1].meetings.map((m) => m.otherName)).toEqual(["Leilani"]);
   });
 
-  it("lists 1-on-1s at an existing time under that heading", () => {
+  // Both sit after the break at the head of the slot, so a 1-on-1 in a
+  // session's slot is listed under the session's heading, not ten minutes
+  // before it.
+  it("lists 1-on-1s sharing a session's slot under its heading", () => {
     const groups = group({
       sessions: [session(at(9), at(10))],
-      meetings: [meeting(at(9, 10), "Sam"), meeting(at(9, 10), "Ana")],
+      meetings: [meeting(at(9), "Sam"), meeting(at(9), "Ana")],
     });
     expect(groups).toHaveLength(1);
     expect(groups[0].meetings.map((m) => m.otherName)).toEqual(["Sam", "Ana"]);
