@@ -16,6 +16,7 @@ Each issue should get one `component: *` label indicating the area it touches:
 | `component: scheduling`    | Sessions, session grid, scheduling phase       |
 | `component: admin`         | `/admin` backend                               |
 | `component: attendees`     | Attendee list, profiles, RSVPs on profiles     |
+| `component: 1-on-1s`       | 1-on-1 meetings: booking, availability, column |
 | `component: auth`          | Login, passwords, protected accounts           |
 | `component: infra & dev`   | CI, testing, tooling, perf, security, upgrades |
 | `component: notifications` | Email and in-app notifications                 |
