@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Confirmed 1-on-1s carry the agenda's booked mark** (#1047): the same check as on a session
+  you have RSVP'd to, so everything you are booked into is marked alike.
+
 ## [3.8.0] - 2026-09-12
 
 ### Added
