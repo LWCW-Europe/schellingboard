@@ -21,7 +21,7 @@
     "moment-timezone": "^0.6.3",
     "nanoid": "^6.0.1",
     "next": "^16",
-    "nodemailer": "^9.1.1",
+    "nodemailer": "^10.0.1",
     "react": "^19",
     "react-dom": "^19",
     "react-hook-form": "^7.87.0",
@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@docmd/core": "^0.9.4",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/better-sqlite3": "^9.6.0",
     "@types/js-cookie": "^3.0.6",
@@ -50,8 +50,8 @@
     "@types/react-dom": "^19",
     "@types/turndown": "^5.0.6",
     "@types/web-push": "^3.6.4",
-    "@typescript-eslint/eslint-plugin": "^8.69.0",
-    "@typescript-eslint/parser": "^8.69.0",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
     "@vitest/coverage-v8": "^5",
     "@vitest/ui": "^5",
     "dependency-cruiser": "^18.2.0",
@@ -63,7 +63,7 @@
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.13",
     "typescript": "^6",
-    "typescript-eslint": "^8.69.0",
+    "typescript-eslint": "^8.70.0",
     "vitest": "^5"
   }
 }
