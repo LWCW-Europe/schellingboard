@@ -103,8 +103,8 @@ describe("blockTimeLabel", () => {
   });
 
   it("reads as the meeting's own time when it is alone", () => {
-    expect(blockTimeLabel([slot("08:00", "08:30")], BERLIN)).toBe(
-      "10:00 – 10:30"
+    expect(blockTimeLabel([slot("08:00", "08:30")], 10, BERLIN)).toBe(
+      "10:10 – 10:30"
     );
   });
 
@@ -113,8 +113,10 @@ describe("blockTimeLabel", () => {
   it("covers the earliest start and the latest end", () => {
     const uneven = [slot("08:00", "09:00"), slot("08:30", "09:30")];
 
-    expect(blockTimeLabel(uneven, BERLIN)).toBe("10:00 – 11:30");
-    expect(blockTimeLabel([...uneven].reverse(), BERLIN)).toBe("10:00 – 11:30");
+    expect(blockTimeLabel(uneven, 10, BERLIN)).toBe("10:10 – 11:30");
+    expect(blockTimeLabel([...uneven].reverse(), 10, BERLIN)).toBe(
+      "10:10 – 11:30"
+    );
   });
 });
 

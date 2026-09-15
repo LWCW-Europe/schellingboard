@@ -1,5 +1,6 @@
 import type { Location, Session } from "@/db/repositories/interfaces";
 import type { MeetingView } from "@/utils/meeting-views";
+import { shownSlotStart } from "@/utils/meeting-slots";
 import { getStartTimePlusBreak } from "@/utils/utils";
 
 export type AgendaGroup = {
@@ -69,7 +70,9 @@ export function agendaGroups(input: {
     }
   }
   for (const meeting of meetings) {
-    groupAt(new Date(meeting.slotStart).getTime()).meetings.push(meeting);
+    groupAt(
+      shownSlotStart(new Date(meeting.slotStart), breakMinutes).getTime()
+    ).meetings.push(meeting);
   }
 
   const groups = [...byStart.values()];

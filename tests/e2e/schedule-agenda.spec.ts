@@ -66,16 +66,17 @@ test("the agenda groups sessions by start time and opens their details", async (
   ).toBeVisible();
 });
 
-// Zanele's first Gamma morning holds seeded 1-on-1s at 10:00, a slot no
+// Zanele's first Gamma morning holds seeded 1-on-1s in the 10:00 slot, one no
 // session starts in (see meetings-column.spec.ts). They are hers alone: the
-// grid gives her a column for them, the agenda a time of their own.
+// grid gives her a column for them, the agenda a time of their own — shown
+// after the break, as a session in that slot would be.
 test("the viewer's own 1-on-1s are listed at their time", async ({ page }) => {
   await loginAndGoto(page, "/guests");
   await selectUser(page, "Zanele Khumalo");
   await page.getByRole("link", { name: "Conference Gamma" }).first().click();
   await switchToView(page, "Agenda");
 
-  const tenOClock = page.getByRole("region", { name: "10:00" }).first();
+  const tenOClock = page.getByRole("region", { name: "10:10" }).first();
   await tenOClock
     .getByRole("link", { name: /1-on-1 with Leilani Kahale/ })
     .click();

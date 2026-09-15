@@ -10,8 +10,13 @@ import { useContext, useState } from "react";
 
 import type { MeetingView } from "@/utils/meeting-views";
 import { meetingColumnRows } from "@/utils/meeting-column";
+import { shownSlotStart } from "@/utils/meeting-slots";
 import type { DayWithSessions } from "@/app/(site)/context";
-import { EventContext, useSlotIncrement } from "@/app/(site)/context";
+import {
+  EventContext,
+  useBreakMinutes,
+  useSlotIncrement,
+} from "@/app/(site)/context";
 import { Modal } from "@/app/components/modal";
 import { clashLines } from "@/utils/meeting-clash-text";
 import {
@@ -28,9 +33,15 @@ import { NowLine } from "./now-line";
 import { BookMeeting } from "./book-meeting";
 import { Tooltip } from "./tooltip";
 
-/** "14:30", in the event's zone, for a control's accessible name. */
-function slotLabel(start: string, timezone: string): string {
-  return DateTime.fromISO(start).setZone(timezone).toFormat("HH:mm");
+/** "14:40", in the event's zone, for a control's accessible name. */
+function slotLabel(
+  start: string,
+  breakMinutes: number,
+  timezone: string
+): string {
+  return DateTime.fromJSDate(shownSlotStart(new Date(start), breakMinutes))
+    .setZone(timezone)
+    .toFormat("HH:mm");
 }
 
 /**
@@ -56,6 +67,7 @@ function SlotCell({
   timezone: string;
   onBook: () => void;
 }) {
+  const breakMinutes = useBreakMinutes();
   const shape = clsx(
     `row-span-${span} my-0.5 flex items-center justify-center rounded`,
     blocked && "meetings-col-blocked"
@@ -74,8 +86,8 @@ function SlotCell({
       // there themselves, so the slot stays as bookable as any other.
       aria-label={
         blocked
-          ? `Arrange a 1-on-1 at ${slotLabel(start, timezone)} — you are not offering this slot to others`
-          : `Arrange a 1-on-1 at ${slotLabel(start, timezone)}`
+          ? `Arrange a 1-on-1 at ${slotLabel(start, breakMinutes, timezone)} — you are not offering this slot to others`
+          : `Arrange a 1-on-1 at ${slotLabel(start, breakMinutes, timezone)}`
       }
       className={clsx(
         shape,
@@ -122,10 +134,12 @@ function SlotSummary({
   meetings: MeetingView[];
   timezone: string;
 }) {
+  const breakMinutes = useBreakMinutes();
   return (
     <div className="p-2 space-y-1">
       <p className="text-sm font-semibold text-fg">
-        {meetings.length} 1-on-1s · {blockTimeLabel(meetings, timezone)}
+        {meetings.length} 1-on-1s ·{" "}
+        {blockTimeLabel(meetings, breakMinutes, timezone)}
       </p>
       <ul className="space-y-0.5">
         {meetings.map((meeting) => (
@@ -205,6 +219,7 @@ function StackEntry({
   timezone: string;
 }) {
   const searchParams = useSearchParams();
+  const breakMinutes = useBreakMinutes();
   return (
     <Tooltip
       content={<MeetingSummary meeting={meeting} />}
@@ -216,6 +231,7 @@ function StackEntry({
         {...viewMeetingLinkFromOwner(searchParams, eventSlug, meeting.id)}
         aria-label={`${meetingTitle(meeting)} at ${slotLabel(
           meeting.slotStart,
+          breakMinutes,
           timezone
         )} — ${blockStatus(meeting)}`}
         className={clsx(
@@ -250,6 +266,7 @@ function SlotBlock({
   timezone: string;
   onOpen: () => void;
 }) {
+  const breakMinutes = useBreakMinutes();
   return (
     <Tooltip
       content={<SlotSummary meetings={meetings} timezone={timezone} />}
@@ -262,6 +279,7 @@ function SlotBlock({
         onClick={onOpen}
         aria-label={`${meetings.length} 1-on-1s, ${blockTimeLabel(
           meetings,
+          breakMinutes,
           timezone
         )} — ${slotSummaryLine(meetings)}`}
         className="flex flex-1 min-w-0 flex-col justify-center overflow-hidden rounded border-2 border-line bg-surface-muted px-1 text-left font-roboto hover:border-brand-accent"
@@ -290,10 +308,12 @@ function SlotMeetings({
   onClose: () => void;
 }) {
   const searchParams = useSearchParams();
+  const breakMinutes = useBreakMinutes();
   return (
     <Modal open setOpen={onClose} zIndex="z-[60]" portal maxWidth="sm:max-w-md">
       <Dialog.Title className="pr-8 text-base font-semibold text-fg">
-        {meetings.length} 1-on-1s, {blockTimeLabel(meetings, timezone)}
+        {meetings.length} 1-on-1s,{" "}
+        {blockTimeLabel(meetings, breakMinutes, timezone)}
       </Dialog.Title>
       <p className="text-sm text-fg-muted">{meetings[0].dayLabel}</p>
       <ul className="mt-3 flex max-h-72 flex-col gap-1 overflow-y-auto">

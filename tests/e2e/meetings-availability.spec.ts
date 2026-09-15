@@ -112,7 +112,7 @@ test.describe("attendee meeting availability", () => {
     // Switching it on marks every slot available; you clear what you want kept
     // free rather than building the set up from nothing.
     await form.getByLabel(/open to 1-on-1s/).check();
-    await expect(form.getByText("09:00 – 09:30")).toBeVisible();
+    await expect(form.getByText("09:10 – 09:30")).toBeVisible();
     const firstSlot = form.getByRole("listitem").first().getByRole("checkbox");
     await expect(firstSlot).toBeChecked();
 
