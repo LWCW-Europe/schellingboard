@@ -272,6 +272,7 @@ function SessionRow(props: {
           {isHost && (
             <AcademicCapIcon
               className="h-4 w-4"
+              aria-hidden={false}
               role="img"
               aria-label="You are hosting this session"
             />
@@ -279,6 +280,7 @@ function SessionRow(props: {
           {rsvpd && (
             <CheckCircleIcon
               className="h-4 w-4"
+              aria-hidden={false}
               role="img"
               aria-label="You have RSVP'd to this session"
             />
@@ -312,6 +314,16 @@ function MeetingRow(props: {
       link={viewMeetingLinkFromOwner(searchParams, eventSlug, meeting.id)}
       title={`1-on-1 with ${meeting.otherName}`}
       details={`${meeting.meetingPoint} · until ${formatOptionalTime(end, timezone, TIME_FORMAT)} · ${statusLine(meeting)}`}
+      trailing={
+        meeting.status === "accepted" && (
+          <CheckCircleIcon
+            className="h-4 w-4"
+            aria-hidden={false}
+            role="img"
+            aria-label="This 1-on-1 is confirmed"
+          />
+        )
+      }
     />
   );
 }

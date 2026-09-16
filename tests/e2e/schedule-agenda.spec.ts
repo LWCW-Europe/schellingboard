@@ -77,9 +77,21 @@ test("the viewer's own 1-on-1s are listed at their time", async ({ page }) => {
   await switchToView(page, "Agenda");
 
   const tenOClock = page.getByRole("region", { name: "10:10" }).first();
-  await tenOClock
-    .getByRole("link", { name: /1-on-1 with Leilani Kahale/ })
-    .click();
+  const confirmed = tenOClock.getByRole("link", {
+    name: /1-on-1 with Leilani Kahale/,
+  });
+  const waiting = tenOClock.getByRole("link", {
+    name: /1-on-1 with Samuel Adeyemi/,
+  });
+  // The confirmed one carries the same mark as a session she has RSVP'd to;
+  // the one still waiting for an answer does not.
+  await expect(
+    confirmed.getByRole("img", { name: "This 1-on-1 is confirmed" })
+  ).toBeVisible();
+  await expect(waiting).toBeVisible();
+  await expect(waiting.getByRole("img")).toHaveCount(0);
+
+  await confirmed.click();
   const details = page.getByRole("dialog", { name: "1-on-1 details" });
   await expect(
     details.getByRole("heading", { name: "1-on-1 with Leilani Kahale" })
