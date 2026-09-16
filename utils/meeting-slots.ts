@@ -8,6 +8,8 @@
 // a slot's start instant, which is why changing that increment clears them —
 // a coarser grid would re-read a declared half-hour as a full hour.
 
+import { DateTime } from "luxon";
+
 export type MeetingSlot = { start: Date; end: Date };
 
 const MS_PER_MINUTE = 60 * 1000;
@@ -33,4 +35,23 @@ export function meetingSlotsForDay(
     slots.push({ start: new Date(start), end: new Date(start + step) });
   }
   return slots;
+}
+
+/**
+ * When a slot is shown to start: after the break at its head, as a session in
+ * the same slot is (see `getStartTimePlusBreak`), so the two line up on the
+ * schedule. Booking, clashes and expiry keep using the slot itself.
+ */
+export function shownSlotStart(slotStart: Date, breakMinutes: number): Date {
+  return new Date(slotStart.getTime() + breakMinutes * MS_PER_MINUTE);
+}
+
+export function slotTimeLabel(
+  slot: MeetingSlot,
+  breakMinutes: number,
+  timezone: string
+): string {
+  const clock = (date: Date) =>
+    DateTime.fromJSDate(date).setZone(timezone).toFormat("HH:mm");
+  return `${clock(shownSlotStart(slot.start, breakMinutes))} – ${clock(slot.end)}`;
 }

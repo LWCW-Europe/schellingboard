@@ -153,7 +153,7 @@ export function clashesForInterval(
         guestName: schedule.guestName,
         kind: describe ? "meeting" : "busy",
         title: null,
-        start: meeting.slotStart.toISOString(),
+        start: getStartTimePlusBreak(meeting.slotStart, breakMinutes).toISO()!,
         end: meeting.slotEnd.toISOString(),
       });
     }

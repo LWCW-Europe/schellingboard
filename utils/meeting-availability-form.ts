@@ -1,7 +1,7 @@
 import { DateTime } from "luxon";
 import { getRepositories } from "@/db/container";
 import type { Day, Event } from "@/db/repositories/interfaces";
-import { meetingSlotsForDay } from "@/utils/meeting-slots";
+import { meetingSlotsForDay, slotTimeLabel } from "@/utils/meeting-slots";
 
 export type SlotDay = {
   /** Two days may share a date, so the id is what keys them apart. */
@@ -101,9 +101,7 @@ function slotDaysFor(event: Event, days: Day[]): SlotDay[] {
       slots: meetingSlotsForDay(day, event.slotIncrementMinutes).map(
         (slot) => ({
           start: slot.start.toISOString(),
-          label: `${zoned(slot.start).toFormat("HH:mm")} – ${zoned(
-            slot.end
-          ).toFormat("HH:mm")}`,
+          label: slotTimeLabel(slot, event.breakMinutes, event.timezone),
         })
       ),
     }))

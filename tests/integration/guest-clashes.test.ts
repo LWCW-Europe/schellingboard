@@ -173,6 +173,8 @@ describe("detectGuestClashes", () => {
     expect(clashes).toHaveLength(1);
     expect(clashes[0].kind).toBe("busy");
     expect(clashes[0].title).toBeNull();
+    expect(new Date(clashes[0].start)).toEqual(T(10, 10));
+    expect(new Date(clashes[0].end)).toEqual(T(10, 30));
     expect(JSON.stringify(clashes)).not.toContain("Their counterpart");
   });
 

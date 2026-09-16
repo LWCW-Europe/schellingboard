@@ -61,7 +61,7 @@ describe("meetingViewsFor", () => {
     expect(view.status).toBe("pending");
     expect(view.meetingPoint).toBe("Coffee bar");
     expect(view.message).toBe("the attendance model");
-    expect(view.timeLabel).toBe("13:00 – 13:30");
+    expect(view.timeLabel).toBe("13:10 – 13:30");
   });
 
   it("describes the same meeting from the requester's side", async () => {

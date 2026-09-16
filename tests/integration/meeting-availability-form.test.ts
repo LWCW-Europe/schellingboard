@@ -48,10 +48,10 @@ describe("availabilityFormsFor", () => {
     expect(forms[0].days).toHaveLength(1);
     expect(forms[0].days[0].label).toBe("Fri 2 Oct");
     expect(forms[0].days[0].slots.map((s) => s.label)).toEqual([
-      "09:00 – 09:30",
-      "09:30 – 10:00",
-      "10:00 – 10:30",
-      "10:30 – 11:00",
+      "09:10 – 09:30",
+      "09:40 – 10:00",
+      "10:10 – 10:30",
+      "10:40 – 11:00",
     ]);
   });
 

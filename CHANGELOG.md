@@ -15,6 +15,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Confirmed 1-on-1s carry the agenda's booked mark** (#1047): the same check as on a session
   you have RSVP'd to, so everything you are booked into is marked alike.
 
+### Fixed
+
+- **1-on-1s start after the break, like sessions** (#1049): a 1-on-1 in the 12:00 slot now
+  reads 12:10 wherever it is shown, and sits with that slot's sessions on the agenda instead
+  of ten minutes ahead of them.
+
 ## [3.8.0] - 2026-09-12
 
 ### Added

@@ -1,4 +1,5 @@
 import { DateTime } from "luxon";
+import { shownSlotStart } from "@/utils/meeting-slots";
 
 import type { MeetingView } from "@/utils/meeting-views";
 
@@ -27,13 +28,15 @@ export function canCancel(
  */
 export function blockTimeLabel(
   meetings: Pick<MeetingView, "slotStart" | "slotEnd">[],
+  breakMinutes: number,
   timezone: string
 ): string {
-  const clock = (iso: string) =>
-    DateTime.fromISO(iso).setZone(timezone).toFormat("HH:mm");
+  const clock = (date: Date) =>
+    DateTime.fromJSDate(date).setZone(timezone).toFormat("HH:mm");
   const starts = meetings.map((m) => m.slotStart).sort();
   const ends = meetings.map((m) => m.slotEnd).sort();
-  return `${clock(starts[0])} – ${clock(ends[ends.length - 1])}`;
+  const start = shownSlotStart(new Date(starts[0]), breakMinutes);
+  return `${clock(start)} – ${clock(new Date(ends[ends.length - 1]))}`;
 }
 
 /**

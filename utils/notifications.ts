@@ -24,6 +24,7 @@ import {
   meetingRequestEmail,
   meetingRequestNoticeText,
 } from "@/emails/meeting";
+import { shownSlotStart } from "@/utils/meeting-slots";
 import { getStartTimePlusBreak } from "@/utils/utils";
 
 // One line in the past tense, where it happened, and when — `at` comes from
@@ -637,7 +638,9 @@ async function meetingContext(
 ): Promise<{ time: string; path: string } | undefined> {
   const event = await getRepositories().events.findById(meeting.eventId);
   if (!event) return undefined;
-  const start = DateTime.fromJSDate(meeting.slotStart).setZone(event.timezone);
+  const start = DateTime.fromJSDate(
+    shownSlotStart(meeting.slotStart, event.breakMinutes)
+  ).setZone(event.timezone);
   const end = DateTime.fromJSDate(meeting.slotEnd).setZone(event.timezone);
   return {
     time: `${start.toFormat("cccc d LLLL, HH:mm")}–${end.toFormat("HH:mm")}`,

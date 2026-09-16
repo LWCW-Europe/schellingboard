@@ -236,7 +236,7 @@ describe("meetingCandidatesFor", () => {
 
     expect(found?.eventName).toBe(event.name);
     expect(found?.meetingPoints.map((p) => p.name)).toEqual(["Coffee bar"]);
-    expect(found?.slotLabel).toBe("10:00 – 10:30");
+    expect(found?.slotLabel).toBe("10:10 – 10:30");
   });
 
   it("refuses a slot that has already begun", async () => {

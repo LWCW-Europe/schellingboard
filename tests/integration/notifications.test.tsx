@@ -1233,7 +1233,7 @@ describe("meeting notifications", () => {
     expect(message.to).toBe("grace@test.example");
     expect(message.subject).toContain("Ada");
     const html = await render(message.body);
-    expect(html).toContain("Sunday 2 August, 13:00–13:30");
+    expect(html).toContain("Sunday 2 August, 13:10–13:30");
     expect(html).toContain("Coffee bar");
     expect(html).toContain(
       `href="https://site.example/${event.slug}/meetings?viewMeeting=${meeting.id}"`
@@ -1256,7 +1256,7 @@ describe("meeting notifications", () => {
     await notifyMeetingRequested({ meeting, now: NOW });
 
     const html = await render(vi.mocked(sendMail).mock.calls[0][0].body);
-    expect(html).toContain("Monday 3 August, 01:00–01:30");
+    expect(html).toContain("Monday 3 August, 01:10–01:30");
   });
 
   it("skips the mail for a recipient who opted out, keeping the notification", async () => {
