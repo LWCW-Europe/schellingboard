@@ -1,0 +1,154 @@
+model {
+
+  attendee = person 'Attendee' {
+    description 'Proposes and votes on sessions, RSVPs, books slots, keeps a personal agenda, arranges 1-on-1s.'
+  }
+  organizer = person 'Organizer' {
+    description 'Configures an event: days, places, phases, booking rules, fixtures. Moderates. A role on a person, not a separate login.'
+  }
+  siteAdmin = person 'Site admin' {
+    description 'Runs the installation: site settings, people, events, API tokens.'
+  }
+  bot = person 'Bot / integration' {
+    description 'A script or chat bot holding an API token. Same API, same rules as a person.'
+  }
+
+  smtp = external 'Email provider' {
+    description 'Any SMTP relay.'
+  }
+  pushService = external 'Browser push services' {
+    description 'Web Push endpoints operated by browser vendors.'
+  }
+  chatPlatform = external 'Chat platform' {
+    description 'Telegram, Matrix or Signal — reached through a channel adapter.'
+  }
+  reverseProxy = external 'Reverse proxy' {
+    description 'Terminates TLS. Not part of the app; documented for self-hosters.'
+  }
+
+  sb = system 'SchellingBoard' {
+    description 'Unconference scheduling: propose → vote → schedule, with a live personal agenda.'
+
+    web = container 'Web app' {
+      technology 'React, Vite, TypeScript, PWA'
+      description 'Static single-page app. Holds a per-event replica and renders every view from it.'
+
+      shell = component 'Shell & router' {
+        description 'Routes, layout, auth gate, theme. Nothing here knows the domain.'
+      }
+      replica = component 'Replica' {
+        description 'Normalized copy of one event as the viewer may see it. Snapshot + change feed, persisted in IndexedDB.'
+      }
+      commands = component 'Commands' {
+        description 'Every mutation: predict with a domain policy, call the API, reconcile with the confirmed change.'
+      }
+      features = component 'Feature views' {
+        description 'Schedule, agenda, proposals, voting, people, meetings, settings, admin. Pure functions of replica + local UI state.'
+      }
+      pwa = component 'PWA runtime' {
+        technology 'Service worker'
+        description 'Precached shell, push notifications, kiosk keep-awake.'
+      }
+    }
+
+    server = container 'Server' {
+      technology 'Node, Hono, TypeScript'
+      description 'One process: HTTP API, change feed, background jobs. Serves the web app as static files.'
+
+      http = component 'HTTP API' {
+        technology 'OpenAPI 3.1'
+        description 'Versioned REST endpoints generated from the contracts package. Auth, rate limiting, problem-details errors.'
+      }
+      feed = component 'Change feed' {
+        technology 'SSE'
+        description 'Per-viewer stream of changes filtered by audience, resumable by sequence number. Also builds snapshots.'
+      }
+      jobs = component 'Jobs' {
+        description 'Single scheduler loop: reactions to changes, scheduled work (reminders, lapses), delivery attempts. Leased, idempotent.'
+      }
+      kernel = component 'Kernel' {
+        description 'Unit of work, change log, clock, ids, actor context, errors. The only code every module may import.'
+      }
+
+      mEvents = module 'events' {
+        description 'Event, days, phases, timezone, per-event settings.'
+      }
+      mVenue = module 'venue' {
+        description 'Places (rooms, areas, meeting points), floors, directions, map pins.'
+      }
+      mPeople = module 'people' {
+        description 'Persons, participation in events, profiles, profile comments, labels.'
+      }
+      mIdentity = module 'identity' {
+        description 'Join links, email codes, passkeys, passwords, login sessions, API tokens, roles.'
+      }
+      mProposals = module 'proposals' {
+        description 'Proposals, votes, proposal comments, attendance prediction.'
+      }
+      mScheduling = module 'scheduling' {
+        description 'Sessions (kinds: session, shift, fixture), RSVPs, booking rules, reserved windows, capacity.'
+      }
+      mMeetings = module 'meetings' {
+        description '1-on-1 requests, availability, meeting settings, lapse.'
+      }
+      mPersonal = module 'personal' {
+        description 'Private marks (star, hide, note) on sessions, proposals and people. Preferences.'
+      }
+      mNotifications = module 'notifications' {
+        description 'Notification records, per-channel preferences and bindings, delivery log. Channels: in-app, email, push, chat.'
+      }
+    }
+
+    db = datastore 'SQLite database' {
+      technology 'SQLite, WAL mode'
+      description 'State tables plus the append-only change log. One file to back up.'
+    }
+    files = datastore 'File store' {
+      technology 'Directory on disk'
+      description 'Avatars and venue maps, re-encoded on upload, immutable names.'
+    }
+  }
+
+  attendee -> sb.web 'uses, installs on phone'
+  organizer -> sb.web 'configures event, moderates'
+  siteAdmin -> sb.web 'administers installation'
+  bot -[http]-> sb.server.http 'calls with API token'
+
+  reverseProxy -> sb.server 'forwards HTTPS'
+
+  sb.web.commands -[http]-> sb.server.http 'commands and queries'
+  sb.web.replica -[sse]-> sb.server.feed 'snapshot, then changes since seq'
+  sb.web.replica -> sb.web.features 'renders from'
+  sb.web.commands -> sb.web.replica 'predicts, then reconciles'
+  sb.web.shell -> sb.web.features 'routes to'
+  sb.web.pwa -> sb.web.shell 'installs, delivers push'
+
+  sb.server.http -> sb.server.mScheduling 'invokes use cases'
+  sb.server.http -> sb.server.mProposals 'invokes use cases'
+  sb.server.http -> sb.server.mIdentity 'authenticates'
+  sb.server.feed -> sb.server.kernel 'reads change log'
+  sb.server.jobs -> sb.server.mNotifications 'runs reactions and deliveries'
+  sb.server.mScheduling -> sb.server.kernel 'records changes'
+  sb.server.mNotifications -[changes]-> sb.server.mScheduling 'reacts to'
+  sb.server.mNotifications -[changes]-> sb.server.mMeetings 'reacts to'
+  sb.server.mNotifications -[changes]-> sb.server.mProposals 'reacts to'
+  sb.server.mScheduling -> sb.server.mEvents 'reads phases, days'
+  sb.server.mScheduling -> sb.server.mVenue 'reads places'
+  sb.server.mProposals -> sb.server.mEvents 'reads phases'
+  sb.server.mPersonal -> sb.server.mScheduling 'references sessions'
+  sb.server.mPersonal -[changes]-> sb.server.mScheduling 'clears marks on SessionDeleted'
+  sb.server.mPersonal -> sb.server.mProposals 'references proposals'
+  sb.server.mPersonal -> sb.server.mPeople 'references persons'
+  sb.server.mMeetings -> sb.server.mEvents 'reads phases, slot grid'
+  sb.server.mMeetings -> sb.server.mVenue 'reads places'
+  sb.server.mMeetings -> sb.server.mPeople 'reads participations'
+  sb.server.mIdentity -> sb.server.mPeople 'resolves persons'
+  sb.server.mPeople -> sb.server.mEvents 'participation is per event'
+
+  sb.server -[sql]-> sb.db 'reads and writes'
+  sb.server -> sb.files 'stores uploads'
+  sb.server.mNotifications -> smtp 'sends email'
+  sb.server.mNotifications -> pushService 'sends Web Push'
+  sb.server.mNotifications -> chatPlatform 'sends messages'
+  pushService -> sb.web.pwa 'delivers push'
+}

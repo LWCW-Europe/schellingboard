@@ -14,6 +14,7 @@ This file covers what you need day to day. Longer chapters live under
 | [Releasing a new version](docs/dev/releasing.md)                | tagging, the release checklist, publishing Docker images                   |
 | [GitHub issues](docs/dev/github-issues.md)                      | setting Issue Type and Priority via `gh api graphql`                       |
 | [ADRs](docs/dev/adr/)                                           | why the significant decisions were made                                    |
+| [Target architecture](docs/dev/target-architecture/)            | the from-scratch design proposal: levels 0–3, decisions, C4 diagrams       |
 | [Attendance model](docs/dev/attendance-model/)                  | predicting how many people show up to a session, from its voting results   |
 | [Matrix chat feasibility](docs/dev/exploration/matrix-chat.md)  | exploratory notes on integrating a Matrix chat server — not yet decided    |
 

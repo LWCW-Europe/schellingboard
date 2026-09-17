@@ -1,0 +1,86 @@
+views {
+
+  view index {
+    title 'L1 · System context'
+    description 'Who uses SchellingBoard and what it talks to.'
+    include *
+    exclude reverseProxy
+    autoLayout TopBottom
+  }
+
+  view containers of sb {
+    title 'L2 · Containers'
+    description 'One process, one static bundle, one database file.'
+    include *, attendee, bot, smtp, pushService, chatPlatform
+    autoLayout LeftRight
+  }
+
+  view server of sb.server {
+    title 'L3 · Server: infrastructure components and modules'
+    description 'HTTP, feed and jobs are the drivers. Modules hold the business rules. The kernel is the only shared code.'
+    include *, sb.db, sb.files
+    autoLayout TopBottom
+  }
+
+  view modules of sb.server {
+    title 'L3 · Server: module dependencies'
+    description 'Solid arrows are direct use-case calls (allowed only downward). Dashed arrows are reactions to recorded changes: the reacting module depends on the other, never the reverse.'
+    include sb.server.mEvents, sb.server.mVenue, sb.server.mPeople, sb.server.mIdentity,
+            sb.server.mProposals, sb.server.mScheduling, sb.server.mMeetings,
+            sb.server.mPersonal, sb.server.mNotifications
+    autoLayout BottomTop
+  }
+
+  view web of sb.web {
+    title 'L3 · Web app components'
+    description 'Everything renders from the replica. Commands are the only writers.'
+    include *, sb.server.http, sb.server.feed
+    autoLayout TopBottom
+  }
+
+  dynamic view flowRsvp {
+    title 'Flow · RSVP with optimistic update and live propagation'
+    attendee -> sb.web.features 'taps RSVP on a session'
+    sb.web.features -> sb.web.commands 'rsvp(sessionId)'
+    sb.web.commands -> sb.web.replica 'apply predicted change (policy says allowed, capacity not exceeded)'
+    sb.web.commands -> sb.server.http 'POST /events/{slug}/sessions/{id}/rsvp (Idempotency-Key)'
+    sb.server.http -> sb.server.mScheduling 'rsvp use case: authorize, check phase and capacity, write, record change'
+    sb.server.mScheduling -> sb.server.kernel 'commit state + change in one transaction'
+    sb.server.kernel -> sb.server.feed 'publish change seq N'
+    sb.server.feed -> sb.web.replica 'change seq N to every viewer of the event (this one matches it to the prediction by command_key)'
+    sb.server.http -> sb.web.commands '201 with the recorded change'
+  }
+
+  dynamic view flowSessionMoved {
+    title 'Flow · Organizer moves a session; attendees are told'
+    organizer -> sb.server.http 'POST /sessions/{id}/move'
+    sb.server.http -> sb.server.mScheduling 'move use case: booking rules, reserved windows, clash check'
+    sb.server.mScheduling -> sb.server.kernel 'record SessionMoved'
+    sb.server.kernel -> sb.server.feed 'publish to event audience'
+    sb.server.jobs -> sb.server.mNotifications "reaction: SessionMoved -> notifications for hosts and RSVP'd attendees"
+    sb.server.mNotifications -> sb.server.kernel 'record NotificationCreated (audience: one person each)'
+    sb.server.jobs -> sb.server.mNotifications 'delivery per bound channel with attempt log'
+    sb.server.mNotifications -> smtp 'email'
+    sb.server.mNotifications -> pushService 'push'
+    sb.server.mNotifications -> chatPlatform 'chat message'
+  }
+
+  dynamic view flowJoin {
+    title 'Flow · First login through a personal join link'
+    attendee -> sb.web.shell 'opens /join/{token} from email or QR'
+    sb.web.shell -> sb.server.http 'POST /auth/join {token}'
+    sb.server.http -> sb.server.mIdentity 'validate token, create a verified login session'
+    sb.server.http -> sb.web.shell 'Set-Cookie (httpOnly, SameSite=Lax) + actor context'
+    sb.web.shell -> sb.web.replica 'load event'
+    sb.web.replica -> sb.server.feed 'GET snapshot, then subscribe since seq'
+  }
+
+  dynamic view flowReconnect {
+    title 'Flow · Back online after a wifi drop'
+    sb.web.pwa -> sb.web.shell 'app opened offline: shell from precache'
+    sb.web.shell -> sb.web.replica 'load persisted replica (seq 4120), show "last synced 14:02"'
+    sb.web.replica -> sb.server.feed 'GET feed?since=4120'
+    sb.server.feed -> sb.web.replica 'changes 4121..4187, or 410 Gone if pruned → full snapshot'
+    sb.web.replica -> sb.web.features 're-render, banner disappears'
+  }
+}

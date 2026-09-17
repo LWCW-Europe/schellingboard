@@ -1,0 +1,43 @@
+// Vocabulary for the model. Kept tiny on purpose: C4's four levels plus
+// the relationship kinds that matter for reading a diagram.
+specification {
+  element person {
+    style {
+      shape person
+    }
+  }
+  element system
+  element external {
+    style {
+      color muted
+    }
+  }
+  element container
+  element datastore {
+    style {
+      shape storage
+      color secondary
+    }
+  }
+  element component
+  element module {
+    style {
+      color primary
+    }
+  }
+
+  relationship http {
+    technology 'HTTPS / JSON'
+  }
+  relationship sse {
+    technology 'Server-Sent Events'
+    line dotted
+  }
+  relationship sql {
+    technology 'SQL via ports'
+  }
+  relationship changes {
+    technology 'change log'
+    line dashed
+  }
+}

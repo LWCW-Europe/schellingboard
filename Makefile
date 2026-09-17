@@ -1,4 +1,4 @@
-.PHONY: help dev mailpit build start lint typecheck arch arch-graph lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed test-e2e-docker format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed dump-release-db install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate www
+.PHONY: help dev mailpit build start lint typecheck arch arch-graph arch-diagrams arch-diagrams-check arch-diagrams-export lint-watch test test-unit test-integration test-watch test-coverage test-e2e test-e2e-headed test-e2e-docker format format-check precommit dev-migrate-up dev-migrate-status dev-migrate-create dev-db-seed dump-release-db install install-playwright clean clean-all docker-build check-and-format dev-db-reset test-e2e-ci docs docs-build docs-validate www
 
 SHELL := /usr/bin/env bash
 
@@ -26,6 +26,9 @@ help:
 	@printf "  %-28s %s\n" "make typecheck"          "Run TypeScript type checking"
 	@printf "  %-28s %s\n" "make arch"               "Check architecture rules (cycles, layer boundaries)"
 	@printf "  %-28s %s\n" "make arch-graph"         "Render the dependency graph to arch-graph.svg"
+	@printf "  %-28s %s\n" "make arch-diagrams"      "Browse the target-architecture C4 diagrams (LikeC4)"
+	@printf "  %-28s %s\n" "make arch-diagrams-check" "Check the LikeC4 diagram sources parse"
+	@printf "  %-28s %s\n" "make arch-diagrams-export" "Regenerate the PNGs committed under diagrams/export"
 	@printf "  %-28s %s\n" "make format"             "Format code"
 	@printf "  %-28s %s\n" "make format-check"       "Check code formatting"
 	@printf "\nDatabase:\n"
@@ -83,8 +86,23 @@ DEPCRUISE := bun x depcruise app db model utils emails tests scripts instrumenta
 
 # Module-graph rules (cycles, layer boundaries) — the constraints eslint can't
 # see, since it reads one file at a time. See docs/dev/architecture-rules.md.
-arch: install
+arch: install arch-diagrams-check
 	$(DEPCRUISE) --output-type err-long
+
+LIKEC4_DIR := docs/dev/target-architecture/diagrams
+
+arch-diagrams: install
+	bun x likec4 start $(LIKEC4_DIR)
+
+arch-diagrams-check: install
+	bun x likec4 validate $(LIKEC4_DIR)
+
+# likec4 pins a different playwright than install-playwright sets up, so it needs its
+# own browser. Exports render at 2x; scaling to 1x keeps text sharp at half the size.
+arch-diagrams-export: install
+	bun --bun node_modules/likec4/node_modules/playwright/cli.js install chromium
+	bun x likec4 export png --seq --flat -o $(LIKEC4_DIR)/export $(LIKEC4_DIR)
+	for f in $(LIKEC4_DIR)/export/*.png; do convert "$$f" -resize 50% "$$f"; done
 
 # Writes a dependency graph to arch-graph.svg. Needs graphviz (`dot`).
 arch-graph: install
