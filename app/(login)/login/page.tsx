@@ -13,10 +13,9 @@ function LoginForm() {
   const redirectTo = searchParams?.get("redirect") || "/";
   const [state, formAction] = useActionState(loginAction, null);
 
-  // Hard reload rather than a client-side transition: the (site) layout
-  // persists across a soft navigation from /login, so it can render the
-  // destination from stale pre-login state (see logoutAction's comment for
-  // the same issue on the way out).
+  // Hard reload rather than a client-side transition: a soft navigation can
+  // render the destination from router-cached pre-login state (see
+  // logoutAction's comment for the same issue on the way out).
   useEffect(() => {
     if (state?.redirectTo) {
       window.location.href = state.redirectTo;
@@ -26,13 +25,13 @@ function LoginForm() {
   return (
     <div className="max-w-md w-full space-y-8">
       <div className="text-center">
-        <h2 className="mt-6 text-3xl font-bold text-fg">Access Required</h2>
+        <h2 className="text-3xl font-bold text-fg">Access Required</h2>
         <p className="mt-2 text-sm text-fg-muted">
           Please enter the password to access this site
         </p>
       </div>
 
-      <form className="mt-8 space-y-6" action={formAction}>
+      <form className="space-y-6" action={formAction}>
         <input type="hidden" name="redirect" value={redirectTo} />
         <PasswordManagerHint username="Site Password" />
 
@@ -72,10 +71,8 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-sunken py-12 px-4 sm:px-6 lg:px-8">
-      <Suspense fallback={<div>Loading...</div>}>
-        <LoginForm />
-      </Suspense>
-    </div>
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
