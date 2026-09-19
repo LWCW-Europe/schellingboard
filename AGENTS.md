@@ -157,6 +157,10 @@ Follow red → green → refactor strictly. **No skipping steps.**
 
 Exceptions (be very conservative): pure UI/styling-only changes; refactors where existing tests already give full coverage.
 
+For those exceptions, **don't write a test at all** — no E2E test asserting layout,
+spacing, scroll height or which chrome is on the page. Keep the existing suite passing
+instead, adapting the tests that the change genuinely breaks and nothing more.
+
 ## Coding Guidelines
 
 ### Comments
